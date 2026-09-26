@@ -68,6 +68,7 @@
   - Tabbed notification configuration: **Discord**, **Telegram**, **Ntfy / Gotify**, and **Generic Webhooks**.
   - Configurable notification triggers (`notify_service_events`) and one-click test notification dispatcher.
 - **⏱️ Extended Endpoint Uptime & SSL Tracking:**
+  - **User-Controlled (Opt-in) Uptime & Live Connection Testing:** Containers discovered from Docker are not blindly polled; they reside cleanly in an unmonitored pool on the Uptime page. Users configure target endpoints, verify reachability via an instant "Test Connection" button (`POST /api/uptime/test-connection`), and explicitly opt in.
   - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.
   - **Advanced Monitor Parameters (`AdvancedCheckOptions`):** Independent per-service check intervals (`check_interval`: 10s-300s), custom timeouts (`timeout_seconds`), failure tolerance (`max_retries` / `retry_interval`), ignore TLS errors (`ignore_tls`), accepted HTTP status codes (`accepted_status_codes`, e.g. `200-299, 401`), and HTTP method selection (GET/POST/HEAD).
   - **Customizable Service Endpoints & Check Types:** Standalone modular modal accessible from both Services and Uptime pages to configure target URLs, custom health endpoints (`/api/health`), TCP ports, or native Docker daemon health checks. Preserved across restarts via `service_overrides`.
