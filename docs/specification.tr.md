@@ -75,7 +75,8 @@ Otomatik algılanan veya manuel eklenen tüm servisler (launcher + durum takibi 
 | port | INTEGER (nullable) | TCP port numarası |
 | ssl_expiry_days | INTEGER (nullable) | Kalan SSL sertifika günü |
 | ssl_issuer | TEXT (nullable) | Sertifikayı veren kurum |
-| is_public | INTEGER | `1`: Halka açık durum sayfasında görünür, `0`: gizli |
+| is_public | INTEGER | `1`: Halka açık durum sayfasında görünür (yalnızca `is_uptime_enabled = 1` iken), `0`: gizli |
+| is_uptime_enabled | INTEGER | `1`: Uptime sağlık takibi aktif, `0`: Kapalı (keşfedilen Docker servisleri varsayılan `0`) |
 | display_order | INTEGER | Özel sıralama sırası |
 | created_at, updated_at | DATETIME | |
 
@@ -86,6 +87,7 @@ Docker'dan otomatik algılanan bir container için kullanıcının panel üzerin
 |---|---|---|
 | container_id | TEXT | Birincil anahtar, `services.container_id` ile eşleşir |
 | name, description, url, icon, category | TEXT (nullable) | Override edilen alanlar |
+| is_uptime_enabled | INTEGER (nullable) | Uptime takip tercihi override'ı |
 
 ### `push_monitors` (Dead Man's Snitch)
 Periyodik cron veya yedekleme scriptlerinin zamanında çalışıp çalışmadığını izleyen monitörler.
@@ -171,6 +173,7 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | `POST /api/push/{token}` | Cron veya yedekleme sinyalini alır, snitch durumunu günceller |
 | `GET /api/metrics/system` | Sistem kaynakları zaman serisi (`?range=1h\|24h\|7d`) |
 | `GET /api/uptime` | Servis uptime geçmişi (`?service_id=...&range=7d`) |
+| `POST /api/uptime/test-connection` | **Canlı Bağlantı Sınama:** HTTP/HTTPS veya TCP port hedefine anlık ping atar; yanıt süresi (ms) ve durum kodunu döner |
 | `POST /api/notifications/test` | Alarm kanallarını (Discord, Telegram, Ntfy, Webhook) test eder |
 | `GET /api/version` | GitHub Releases API üzerinden güncel Corvus sürümünü ve güncelleme durumunu sorgular |
 | `GET /api/stream/events` | **SSE:** Servis durumu ve sistem olaylarının anlık yayını |
@@ -184,9 +187,9 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 
 | Servis | Periyot | İş |
 |---|---|---|
-| `ContainerDiscoveryService` | 10 sn | Docker socket'ten container listesini senkronize eder |
+| `ContainerDiscoveryService` | 10 sn | Docker socket'ten container listesini senkronize eder. Keşfedilen yeni konteynerler `is_uptime_enabled = 0` olarak başlatılır; Docker running olduğu sürece durumları `healthy` senkronize edilir |
 | `SystemMetricsCollector` | 15 sn | Host CPU/RAM/disk/network ölçer, `system_metrics` tablosuna yazar |
-| `UptimeCheckerService` | 60 sn | HTTP/TCP ve SSL kontrolleri. 3 durumlu sonlu durum makinesi (`healthy` -> `degraded` -> `down`), 3 ardışık hata eşiği ile yanlış alarmları engeller, loopback hedeflerini bridge ağ geçidine yönlendirir |
+| `UptimeCheckerService` | 5 sn (tick) / 60 sn | Yalnızca `is_uptime_enabled = 1` olan servislerin HTTP/TCP ve SSL kontrolleri. Durdurulmuş konteynerleri atlar, 3 durumlu sonlu durum makinesi (`healthy` -> `degraded` -> `down`) ile false-alarmları engeller |
 | `UpdateCheckerService` | 24 saat | GitHub Releases API'sini sorgulayarak yeni sürüm kontrolü yapar, güncelleme bildirimlerini önbelleğe alır |
 | `RetentionCleanupService` | Günde 1 kez | `retention_days` ayarını dinamik okur; > 0 ise `system_metrics` ve `uptime_checks` eski kayıtlarını temizler, 0 (Sınırsız) ise silmeyi atlar ve bellek sıkıştırması (`GC.Collect`) uygular |
 

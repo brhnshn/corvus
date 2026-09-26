@@ -61,7 +61,8 @@ corvus/
 │   │   │       ├── 003_roadmap_features.sql
 │   │   │       ├── 004_performance_indexes.sql
 │   │   │       ├── 005_service_overrides_extended.sql
-│   │   │       └── 006_uptime_advanced_options.sql
+│   │   │       ├── 006_uptime_advanced_options.sql
+│   │   │       └── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing status reset and index
 │   │   ├── Models/                 # DTOs and Database Entities
 │   │   │   ├── Service.cs                    # Service entity (check_type, port, ssl, is_public, display_order)
 │   │   │   ├── ServiceOverride.cs            # Docker label override model
@@ -155,16 +156,20 @@ corvus/
 │       │       │   └── DiskStorageCard.tsx   # Disk usage and partition distribution
 │       │       └── Uptime/
 │       │           ├── index.tsx             # Uptime shell and tab selector
-│       │           ├── PingUptimeTab.tsx     # HTTP/TCP ping, latency, and SSL tracking
+│       │           ├── PingUptimeTab.tsx     # HTTP/TCP ping, latency, and SSL tracking main tab
 │       │           ├── PushMonitorsTab.tsx   # Dead Man's Snitch cron monitor list
 │       │           ├── AddSnitchModal.tsx    # Modal for creating push monitors
 │       │           ├── UptimeStatsCards.tsx  # Target URL card and edit endpoint trigger
 │       │           ├── UptimeRecentChecks.tsx# Historical check list with status badges
-│       │           └── UptimeBar.tsx         # Historical 90-day uptime status bar
+│       │           ├── UptimeBar.tsx         # Historical 90-day uptime status bar
+│       │           └── components/           # Modular Uptime sub-components
+│       │               ├── DiscoveredServicesSection.tsx # Unmonitored discovered services pool
+│       │               ├── EnableUptimeModal.tsx          # Smart pre-filled live connection test modal
+│       │               └── DisableUptimeDialog.tsx        # Opt-out confirmation dialog
 │       └── wwwroot/                # Production compiled bundle output (hosted by Corvus.Api)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Suite (119 Passing Tests)
+│   └── Corvus.Api.Tests/           # xUnit Test Suite (123 Passing Tests)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Container operations, micro-cache, and batch stats tests
 │       ├── DockerLogDemuxerTests.cs

@@ -75,7 +75,8 @@ Unified table for auto-discovered and manually registered services.
 | port | INTEGER (nullable) | TCP port number |
 | ssl_expiry_days | INTEGER (nullable) | Remaining SSL certificate validity days |
 | ssl_issuer | TEXT (nullable) | SSL issuing authority |
-| is_public | INTEGER | `1`: Visible on public status page, `0`: private |
+| is_public | INTEGER | `1`: Visible on public status page (only when `is_uptime_enabled = 1`), `0`: private |
+| is_uptime_enabled | INTEGER | `1`: Active uptime monitoring, `0`: Disabled (discovered containers default to `0`) |
 | display_order | INTEGER | Custom visual order index |
 | created_at, updated_at | DATETIME | Timestamp tracking |
 
@@ -86,6 +87,7 @@ User customization overrides for auto-discovered Docker containers.
 |---|---|---|
 | container_id | TEXT | Primary key matching `services.container_id` |
 | name, description, url, icon, category | TEXT (nullable) | User-overridden fields |
+| is_uptime_enabled | INTEGER (nullable) | Opt-in uptime tracking preference override |
 
 ### `push_monitors` (Dead Man's Snitch)
 Monitors periodic cron jobs and backup scripts to ensure timely execution.
@@ -171,6 +173,7 @@ Incoming push monitor heartbeat records.
 | `POST /api/push/{token}` | Push webhook ping for cron and backup jobs |
 | `GET /api/metrics/system` | System resource time-series (`?range=1h\|24h\|7d`) |
 | `GET /api/uptime` | Service uptime history (`?service_id=...&range=7d`) |
+| `POST /api/uptime/test-connection` | **Live Connection Testing:** Performs instant HTTP/HTTPS or TCP socket test; returns latency (ms) and status code |
 | `POST /api/notifications/test` | Test dispatch alerts (Discord, Telegram, Ntfy, Webhook) |
 | `GET /api/version` | Queries GitHub Releases API for current Corvus version and update availability |
 | `GET /api/stream/events` | **SSE:** Real-time stream of service state changes and events |
@@ -184,9 +187,9 @@ Incoming push monitor heartbeat records.
 
 | Service | Interval | Function |
 |---|---|---|
-| `ContainerDiscoveryService` | 10 sec | Synchronizes container state from the Docker socket |
+| `ContainerDiscoveryService` | 10 sec | Synchronizes container state from the Docker socket. Newly discovered containers initialize with `is_uptime_enabled = 0`; runtime state directly maps to `healthy` as long as Docker reports running |
 | `SystemMetricsCollector` | 15 sec | Samples host CPU, RAM, disk, and network stats into `system_metrics` |
-| `UptimeCheckerService` | 60 sec | HTTP/TCP and SSL checks with a 3-state finite state machine (`healthy` -> `degraded` -> `down`); requires 3 consecutive failures to suppress false positives; auto-resolves loopback targets to Docker bridge gateway |
+| `UptimeCheckerService` | 5 sec (tick) / 60 sec | HTTP/TCP and SSL checks exclusively for services with `is_uptime_enabled = 1`. Skips stopped containers; 3-state finite state machine (`healthy` -> `degraded` -> `down`) suppresses false alarms |
 | `UpdateCheckerService` | 24 hours | Checks GitHub Releases API for updates and caches release notifications |
 | `RetentionCleanupService` | Once daily | Dynamically reads `retention_days` from application settings; prunes aged time-series records from `system_metrics` and `uptime_checks` when > 0, skips deletion when 0 (Unlimited mode), and performs optimized memory compaction (`GC.Collect`) |
 
