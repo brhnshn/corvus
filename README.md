@@ -67,8 +67,9 @@
 - **🔔 Multi-Channel Alerting Engine:**
   - Tabbed notification configuration: **Discord**, **Telegram**, **Ntfy / Gotify**, and **Generic Webhooks**.
   - Configurable notification triggers (`notify_service_events`) and one-click test notification dispatcher.
-- **⏱️ Extended Endpoint Uptime & SSL Tracking:**
+- **⏱️ Extended Endpoint Uptime & SSL Tracking (Uptime Kuma Architecture):**
   - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.
+  - **Advanced Monitor Parameters (`AdvancedCheckOptions`):** Independent per-service check intervals (`check_interval`: 10s-300s), custom timeouts (`timeout_seconds`), failure tolerance (`max_retries` / `retry_interval`), ignore TLS errors (`ignore_tls`), accepted HTTP status codes (`accepted_status_codes`, e.g. `200-299, 401`), and HTTP method selection (GET/POST/HEAD).
   - **Customizable Service Endpoints & Check Types:** Standalone modular modal accessible from both Services and Uptime pages to configure target URLs, custom health endpoints (`/api/health`), TCP ports, or native Docker daemon health checks. Preserved across restarts via `service_overrides`.
   - **Native Docker Health Checks for Internal/Agent Containers:** Internal background services without exposed web ports (e.g. `internal-beszel-agent`) are monitored via direct Docker daemon state (`checkType: 'docker'`), providing real green SLA bars and audit trails.
   - **HTTP/HTTPS & TCP Port Ping:** Socket-level connection test for non-HTTP services (databases, SSH, game servers).
@@ -76,9 +77,10 @@
 - **💀 Dead Man's Snitch (Periodic Push Monitor):**
   - Monitor cron jobs and backup scripts (`borg`, `restic`, scripts).
   - Configurable expected interval (e.g. every 24h) and grace period; automatically alerts when overdue.
-- **🌐 Public Status Page:**
-  - Unauthenticated, dark-themed `/status` route and `/api/status-page` API.
-  - Displays overall system status banner, service uptime percentages, and SSL days.
+- **🌐 Public Status Page (Disabled by Default & Opt-in):**
+  - Follows Uptime Kuma security principles: **disabled by default** (`status_page_enabled = false`); easily toggled on/off in Settings.
+  - Renders a clean, dark-themed "Status Page Disabled" card (`PublicStatusDisabled.tsx`) when inactive.
+  - **Strictly Opt-in:** Discovered Docker containers or manual services are never auto-published; only services explicitly marked with `is_public` appear on the public board.
 - **🛡️ Zero-Trust SSO & Reverse Proxy Auth:**
   - Auto-login support via trusted headers: `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`.
   - Built-in credentials authentication with configurable registration toggle.
@@ -110,7 +112,7 @@ Corvus Architecture:
 │       ASP.NET Core Minimal API (.NET 9 Native AOT)     │
 ├───────────────────────────┬────────────────────────────┤
 │  Docker REST API Client   │  SQLite + Dapper.AOT       │
-│  (SocketsHttpHandler)     │  (DbUp Migrations 001-005) │
+│  (SocketsHttpHandler)     │  (DbUp Migrations 001-006) │
 ├───────────────────────────┴────────────────────────────┤
 │  Core Services:                                        │
 │  - DockerLogDemuxer (Zero-alloc multiplexed demuxer)   │

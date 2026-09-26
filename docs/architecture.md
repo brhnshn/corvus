@@ -60,7 +60,8 @@ corvus/
 │   │   │       ├── 002_add_users.sql
 │   │   │       ├── 003_roadmap_features.sql
 │   │   │       ├── 004_performance_indexes.sql
-│   │   │       └── 005_service_overrides_extended.sql
+│   │   │       ├── 005_service_overrides_extended.sql
+│   │   │       └── 006_uptime_advanced_options.sql
 │   │   ├── Models/                 # DTOs and Database Entities
 │   │   │   ├── Service.cs                    # Service entity (check_type, port, ssl, is_public, display_order)
 │   │   │   ├── ServiceOverride.cs            # Docker label override model
@@ -73,6 +74,8 @@ corvus/
 │   │   │   ├── User.cs                       # User authentication entity
 │   │   │   ├── VersionInfo.cs                # Update checker DTO
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
+│   │   ├── Utils/                  # Helper utilities
+│   │   │   └── StatusCodeMatcher.cs          # HTTP status code pattern matcher (ranges and discrete codes)
 │   │   └── Services/                # Core domain business logic
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler direct socket client
 │   │       ├── DockerService.cs              # Container operations, stats, and label parsing
@@ -131,15 +134,17 @@ corvus/
 │       │       │   ├── AttentionRequiredCard.tsx # Degraded services and SSL certificate warning card
 │       │       │   └── ActiveContainersWidget.tsx # 2-column responsive active containers card
 │       │       ├── PublicStatus/
-│       │       │   └── index.tsx             # Unauthenticated status page (/status)
+│       │       │   ├── index.tsx             # Unauthenticated status page (/status)
+│       │       │   └── PublicStatusDisabled.tsx # Clean minimalist card rendered when status page is disabled
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Service launcher and drag & drop reordering
 │       │       │   ├── ServiceCard.tsx       # Service card with edit modal trigger
 │       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services
-│       │       │   └── EditServiceModal.tsx  # Modular modal for service endpoint, reverse proxy domain & check type
+│       │       │   ├── EditServiceModal.tsx  # Modular modal for service endpoint, reverse proxy domain & check type
+│       │       │   └── AdvancedCheckOptions.tsx # Uptime Kuma-style accordion for interval, retries, TLS & status codes
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Settings shell and tab switcher
-│       │       │   ├── GeneralSettingsTab.tsx # General options, retention & DB telemetry
+│       │       │   ├── GeneralSettingsTab.tsx # General options, retention, DB telemetry & status page toggle
 │       │       │   ├── NotificationSettingsTab.tsx # Multi-channel alert configuration
 │       │       │   └── BackupSettingsTab.tsx # Dual-mode internal/external backup manager
 │       │       ├── SystemMetrics/
@@ -159,13 +164,14 @@ corvus/
 │       └── wwwroot/                # Production compiled bundle output (hosted by Corvus.Api)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Suite (89 Passing Tests)
+│   └── Corvus.Api.Tests/           # xUnit Test Suite (119 Passing Tests)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Container operations, micro-cache, and batch stats tests
 │       ├── DockerLogDemuxerTests.cs
 │       ├── NotificationServiceTests.cs
 │       ├── RoadmapFeaturesTests.cs
 │       ├── UpdateCheckerTests.cs
+│       ├── StatusCodeMatcherTests.cs
 │       └── DatabaseMigrationAndRepositoryTests.cs
 │
 └── docs/                           # Technical specifications and architectural guides

@@ -13,6 +13,10 @@ export const settingsApi = {
     return res;
   },
 
+  updateSetting: async (key: string, value: string) => {
+    return settingsApi.updateSettings({ [key]: value });
+  },
+
   getDbStats: () => fetchJson<DbStatsResponse>('/settings/db-stats'),
 
   downloadBackup: async () => {

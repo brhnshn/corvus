@@ -17,6 +17,13 @@ export interface Service {
   sslIssuer?: string;
   isPublic?: boolean;
   displayOrder?: number;
+  checkInterval?: number;
+  maxRetries?: number;
+  retryInterval?: number;
+  timeoutSeconds?: number;
+  ignoreTls?: boolean;
+  acceptedStatusCodes?: string;
+  httpMethod?: string;
 }
 
 export interface DockerContainer {
@@ -65,10 +72,14 @@ export interface PublicService {
 }
 
 export interface PublicStatusPage {
-  systemStatus: 'all_operational' | 'some_degraded' | 'major_outage';
+  systemStatus: 'all_operational' | 'some_degraded' | 'major_outage' | 'disabled';
   services: PublicService[];
   generatedAt: string;
+  enabled?: boolean;
+  message?: string;
 }
+
+export type PublicStatusResponse = PublicStatusPage;
 
 export interface SystemMetric {
   id: number;

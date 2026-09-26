@@ -22,7 +22,14 @@ public record CreateServiceRequest(
     string? HealthCheckUrl,
     string? CheckType = "http",
     int? Port = null,
-    bool? IsPublic = true
+    bool? IsPublic = false,
+    int? CheckInterval = 60,
+    int? MaxRetries = 1,
+    int? RetryInterval = 30,
+    int? TimeoutSeconds = 5,
+    bool? IgnoreTls = false,
+    string? AcceptedStatusCodes = "200-299",
+    string? HttpMethod = "GET"
 );
 
 public record UpdateServiceRequest(
@@ -34,7 +41,14 @@ public record UpdateServiceRequest(
     string? HealthCheckUrl,
     string? CheckType = null,
     int? Port = null,
-    bool? IsPublic = null
+    bool? IsPublic = null,
+    int? CheckInterval = null,
+    int? MaxRetries = null,
+    int? RetryInterval = null,
+    int? TimeoutSeconds = null,
+    bool? IgnoreTls = null,
+    string? AcceptedStatusCodes = null,
+    string? HttpMethod = null
 );
 
 public record ContainerStatsDto(
@@ -80,7 +94,9 @@ public record PublicServiceDto(
 public record PublicStatusPageDto(
     string SystemStatus,
     List<PublicServiceDto> Services,
-    string GeneratedAt
+    string GeneratedAt,
+    bool Enabled = true,
+    string? Message = null
 );
 
 public record ServerEventDto(

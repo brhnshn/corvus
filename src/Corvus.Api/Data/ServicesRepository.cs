@@ -47,6 +47,13 @@ public class ServicesRepository : IServicesRepository
         string? ssl_issuer,
         int? is_public,
         int? display_order,
+        int? check_interval,
+        int? max_retries,
+        int? retry_interval,
+        int? timeout_seconds,
+        int? ignore_tls,
+        string? accepted_status_codes,
+        string? http_method,
         string? OverrideName,
         string? OverrideDescription,
         string? OverrideUrl,
@@ -55,7 +62,14 @@ public class ServicesRepository : IServicesRepository
         string? OverrideHealthCheckUrl,
         string? OverrideCheckType,
         int? OverridePort,
-        int? OverrideIsPublic
+        int? OverrideIsPublic,
+        int? OverrideCheckInterval,
+        int? OverrideMaxRetries,
+        int? OverrideRetryInterval,
+        int? OverrideTimeoutSeconds,
+        int? OverrideIgnoreTls,
+        string? OverrideAcceptedStatusCodes,
+        string? OverrideHttpMethod
     );
 
     private static Service MapRowToService(ServiceDbRow r) => new Service
@@ -76,28 +90,44 @@ public class ServicesRepository : IServicesRepository
         Port = r.OverridePort ?? r.port,
         SslExpiryDays = r.ssl_expiry_days,
         SslIssuer = r.ssl_issuer,
-        IsPublic = (r.OverrideIsPublic ?? r.is_public ?? 1) == 1,
-        DisplayOrder = r.display_order ?? 0
+        IsPublic = (r.OverrideIsPublic ?? r.is_public ?? 0) == 1,
+        DisplayOrder = r.display_order ?? 0,
+        CheckInterval = r.OverrideCheckInterval ?? r.check_interval ?? 60,
+        MaxRetries = r.OverrideMaxRetries ?? r.max_retries ?? 1,
+        RetryInterval = r.OverrideRetryInterval ?? r.retry_interval ?? 30,
+        TimeoutSeconds = r.OverrideTimeoutSeconds ?? r.timeout_seconds ?? 5,
+        IgnoreTls = (r.OverrideIgnoreTls ?? r.ignore_tls ?? 0) == 1,
+        AcceptedStatusCodes = r.OverrideAcceptedStatusCodes ?? r.accepted_status_codes ?? "200-299",
+        HttpMethod = r.OverrideHttpMethod ?? r.http_method ?? "GET"
     };
+
+    private const string BaseSelectSql = @"
+        SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
+               s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.display_order,
+               s.check_interval, s.max_retries, s.retry_interval, s.timeout_seconds, s.ignore_tls, s.accepted_status_codes, s.http_method,
+               o.name AS OverrideName, 
+               o.description AS OverrideDescription, 
+               o.url AS OverrideUrl, 
+               o.icon AS OverrideIcon, 
+               o.category AS OverrideCategory,
+               o.health_check_url AS OverrideHealthCheckUrl,
+               o.check_type AS OverrideCheckType,
+               o.port AS OverridePort,
+               o.is_public AS OverrideIsPublic,
+               o.check_interval AS OverrideCheckInterval,
+               o.max_retries AS OverrideMaxRetries,
+               o.retry_interval AS OverrideRetryInterval,
+               o.timeout_seconds AS OverrideTimeoutSeconds,
+               o.ignore_tls AS OverrideIgnoreTls,
+               o.accepted_status_codes AS OverrideAcceptedStatusCodes,
+               o.http_method AS OverrideHttpMethod
+        FROM services s
+        LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))";
 
     public async Task<List<Service>> GetAllAsync()
     {
         using var conn = _db.CreateConnection();
-        var sql = @"
-            SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
-                   s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.display_order,
-                   o.name AS OverrideName, 
-                   o.description AS OverrideDescription, 
-                   o.url AS OverrideUrl, 
-                   o.icon AS OverrideIcon, 
-                   o.category AS OverrideCategory,
-                   o.health_check_url AS OverrideHealthCheckUrl,
-                   o.check_type AS OverrideCheckType,
-                   o.port AS OverridePort,
-                   o.is_public AS OverrideIsPublic
-            FROM services s
-            LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))
-            ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
+        var sql = $"{BaseSelectSql} ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
 
         var rows = await conn.QueryAsync<ServiceDbRow>(sql);
         return rows.Select(MapRowToService).ToList();
@@ -106,21 +136,8 @@ public class ServicesRepository : IServicesRepository
     public async Task<List<Service>> GetPublicServicesAsync()
     {
         using var conn = _db.CreateConnection();
-        var sql = @"
-            SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
-                   s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.display_order,
-                   o.name AS OverrideName, 
-                   o.description AS OverrideDescription, 
-                   o.url AS OverrideUrl, 
-                   o.icon AS OverrideIcon, 
-                   o.category AS OverrideCategory,
-                   o.health_check_url AS OverrideHealthCheckUrl,
-                   o.check_type AS OverrideCheckType,
-                   o.port AS OverridePort,
-                   o.is_public AS OverrideIsPublic
-            FROM services s
-            LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))
-            WHERE s.is_public = 1
+        var sql = $@"{BaseSelectSql}
+            WHERE COALESCE(o.is_public, s.is_public, 0) = 1
             ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
 
         var rows = await conn.QueryAsync<ServiceDbRow>(sql);
@@ -130,21 +147,7 @@ public class ServicesRepository : IServicesRepository
     public async Task<Service?> GetByIdAsync(string id)
     {
         using var conn = _db.CreateConnection();
-        var sql = @"
-            SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
-                   s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.display_order,
-                   o.name AS OverrideName, 
-                   o.description AS OverrideDescription, 
-                   o.url AS OverrideUrl, 
-                   o.icon AS OverrideIcon, 
-                   o.category AS OverrideCategory,
-                   o.health_check_url AS OverrideHealthCheckUrl,
-                   o.check_type AS OverrideCheckType,
-                   o.port AS OverridePort,
-                   o.is_public AS OverrideIsPublic
-            FROM services s
-            LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))
-            WHERE s.id = @id";
+        var sql = $"{BaseSelectSql} WHERE s.id = @id";
 
         var r = await conn.QuerySingleOrDefaultAsync<ServiceDbRow>(sql, new { id });
         return r == null ? null : MapRowToService(r);
@@ -169,12 +172,19 @@ public class ServicesRepository : IServicesRepository
             UpdatedAt = DateTime.UtcNow.ToString("o"),
             CheckType = request.CheckType ?? "http",
             Port = request.Port,
-            IsPublic = request.IsPublic ?? true
+            IsPublic = request.IsPublic ?? false,
+            CheckInterval = request.CheckInterval ?? 60,
+            MaxRetries = request.MaxRetries ?? 1,
+            RetryInterval = request.RetryInterval ?? 30,
+            TimeoutSeconds = request.TimeoutSeconds ?? 5,
+            IgnoreTls = request.IgnoreTls ?? false,
+            AcceptedStatusCodes = request.AcceptedStatusCodes ?? "200-299",
+            HttpMethod = request.HttpMethod ?? "GET"
         };
 
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, display_order)
-            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @DisplayOrder)";
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)";
 
         await conn.ExecuteAsync(sql, new {
             service.Id,
@@ -192,7 +202,14 @@ public class ServicesRepository : IServicesRepository
             service.CheckType,
             service.Port,
             IsPublicInt = service.IsPublic ? 1 : 0,
-            service.DisplayOrder
+            service.DisplayOrder,
+            service.CheckInterval,
+            service.MaxRetries,
+            service.RetryInterval,
+            service.TimeoutSeconds,
+            IgnoreTlsInt = service.IgnoreTls ? 1 : 0,
+            service.AcceptedStatusCodes,
+            service.HttpMethod
         });
         return service;
     }
@@ -207,12 +224,22 @@ public class ServicesRepository : IServicesRepository
         int isPublicInt = (request.IsPublic ?? existing.IsPublic) ? 1 : 0;
         string checkType = request.CheckType ?? existing.CheckType;
         int? port = request.Port ?? existing.Port;
+        int checkInterval = request.CheckInterval ?? existing.CheckInterval ?? 60;
+        int maxRetries = request.MaxRetries ?? existing.MaxRetries ?? 1;
+        int retryInterval = request.RetryInterval ?? existing.RetryInterval ?? 30;
+        int timeoutSeconds = request.TimeoutSeconds ?? existing.TimeoutSeconds ?? 5;
+        int ignoreTlsInt = (request.IgnoreTls ?? existing.IgnoreTls) ? 1 : 0;
+        string acceptedStatusCodes = request.AcceptedStatusCodes ?? existing.AcceptedStatusCodes ?? "200-299";
+        string httpMethod = request.HttpMethod ?? existing.HttpMethod ?? "GET";
 
         var sql = @"
             UPDATE services 
             SET name = @Name, description = @Description, url = @Url, icon = @Icon, 
                 category = @Category, health_check_url = @HealthCheckUrl, updated_at = @now,
-                check_type = @checkType, port = @port, is_public = @isPublicInt
+                check_type = @checkType, port = @port, is_public = @isPublicInt,
+                check_interval = @checkInterval, max_retries = @maxRetries, retry_interval = @retryInterval,
+                timeout_seconds = @timeoutSeconds, ignore_tls = @ignoreTlsInt,
+                accepted_status_codes = @acceptedStatusCodes, http_method = @httpMethod
             WHERE id = @id";
 
         await conn.ExecuteAsync(sql, new { 
@@ -226,6 +253,13 @@ public class ServicesRepository : IServicesRepository
             checkType, 
             port, 
             isPublicInt, 
+            checkInterval,
+            maxRetries,
+            retryInterval,
+            timeoutSeconds,
+            ignoreTlsInt,
+            acceptedStatusCodes,
+            httpMethod,
             id 
         });
 
@@ -233,8 +267,8 @@ public class ServicesRepository : IServicesRepository
         {
             string overrideKey = !string.IsNullOrEmpty(existing.ContainerId) ? existing.ContainerId : id;
             var overrideSql = @"
-                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public)
-                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt)
+                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod)
                 ON CONFLICT(container_id) DO UPDATE SET
                     service_id = excluded.service_id,
                     name = excluded.name,
@@ -245,7 +279,14 @@ public class ServicesRepository : IServicesRepository
                     health_check_url = excluded.health_check_url,
                     check_type = excluded.check_type,
                     port = excluded.port,
-                    is_public = excluded.is_public";
+                    is_public = excluded.is_public,
+                    check_interval = excluded.check_interval,
+                    max_retries = excluded.max_retries,
+                    retry_interval = excluded.retry_interval,
+                    timeout_seconds = excluded.timeout_seconds,
+                    ignore_tls = excluded.ignore_tls,
+                    accepted_status_codes = excluded.accepted_status_codes,
+                    http_method = excluded.http_method";
 
             await conn.ExecuteAsync(overrideSql, new { 
                 overrideKey, 
@@ -254,11 +295,18 @@ public class ServicesRepository : IServicesRepository
                 request.Description, 
                 request.Url, 
                 request.Icon, 
-                request.Category,
-                request.HealthCheckUrl,
-                checkType,
-                port,
-                isPublicInt
+                request.Category, 
+                request.HealthCheckUrl, 
+                checkType, 
+                port, 
+                isPublicInt,
+                checkInterval,
+                maxRetries,
+                retryInterval,
+                timeoutSeconds,
+                ignoreTlsInt,
+                acceptedStatusCodes,
+                httpMethod
             });
         }
 
@@ -308,8 +356,8 @@ public class ServicesRepository : IServicesRepository
     {
         using var conn = _db.CreateConnection();
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
                 status = CASE 
@@ -325,7 +373,30 @@ public class ServicesRepository : IServicesRepository
                 port = COALESCE(services.port, excluded.port),
                 updated_at = excluded.updated_at";
 
-        await conn.ExecuteAsync(sql, service);
+        await conn.ExecuteAsync(sql, new {
+            service.Id,
+            service.ContainerId,
+            service.Name,
+            service.Description,
+            service.Url,
+            service.Icon,
+            service.Category,
+            service.HealthCheckUrl,
+            service.Status,
+            service.CreatedAt,
+            service.UpdatedAt,
+            service.CheckType,
+            service.Port,
+            IsPublicInt = service.IsPublic ? 1 : 0,
+            service.DisplayOrder,
+            CheckInterval = service.CheckInterval ?? 60,
+            MaxRetries = service.MaxRetries ?? 1,
+            RetryInterval = service.RetryInterval ?? 30,
+            TimeoutSeconds = service.TimeoutSeconds ?? 5,
+            IgnoreTlsInt = service.IgnoreTls ? 1 : 0,
+            AcceptedStatusCodes = service.AcceptedStatusCodes ?? "200-299",
+            HttpMethod = service.HttpMethod ?? "GET"
+        });
     }
 
     public async Task SyncDockerServicesAsync(List<string> activeContainerIds)
@@ -354,8 +425,8 @@ public class ServicesRepository : IServicesRepository
         using var tx = conn.BeginTransaction();
 
         var upsertSql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
                 status = CASE 
@@ -373,7 +444,30 @@ public class ServicesRepository : IServicesRepository
 
         foreach (var s in services)
         {
-            await conn.ExecuteAsync(upsertSql, s, tx);
+            await conn.ExecuteAsync(upsertSql, new {
+                s.Id,
+                s.ContainerId,
+                s.Name,
+                s.Description,
+                s.Url,
+                s.Icon,
+                s.Category,
+                s.HealthCheckUrl,
+                s.Status,
+                s.CreatedAt,
+                s.UpdatedAt,
+                s.CheckType,
+                s.Port,
+                IsPublicInt = s.IsPublic ? 1 : 0,
+                s.DisplayOrder,
+                CheckInterval = s.CheckInterval ?? 60,
+                MaxRetries = s.MaxRetries ?? 1,
+                RetryInterval = s.RetryInterval ?? 30,
+                TimeoutSeconds = s.TimeoutSeconds ?? 5,
+                IgnoreTlsInt = s.IgnoreTls ? 1 : 0,
+                AcceptedStatusCodes = s.AcceptedStatusCodes ?? "200-299",
+                HttpMethod = s.HttpMethod ?? "GET"
+            }, tx);
         }
 
         if (activeContainerIds.Count == 0)

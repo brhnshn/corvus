@@ -19,6 +19,14 @@ public class Service
     public int? Port { get; set; }
     public int? SslExpiryDays { get; set; }
     public string? SslIssuer { get; set; }
-    public bool IsPublic { get; set; } = true;
+    public bool IsPublic { get; set; } = false;
     public int DisplayOrder { get; set; } = 0;
+
+    public int? CheckInterval { get; set; } = 60;
+    public int? MaxRetries { get; set; } = 1;
+    public int? RetryInterval { get; set; } = 30;
+    public int? TimeoutSeconds { get; set; } = 5;
+    public bool IgnoreTls { get; set; } = false;
+    public string? AcceptedStatusCodes { get; set; } = "200-299";
+    public string? HttpMethod { get; set; } = "GET";
 }

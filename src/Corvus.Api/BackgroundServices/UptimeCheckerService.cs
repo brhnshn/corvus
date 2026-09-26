@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Corvus.Api.Utils;
 
 namespace Corvus.Api.BackgroundServices;
 
@@ -14,7 +15,9 @@ public class UptimeCheckerService : BackgroundService
     private readonly IEventBroadcaster _eventBroadcaster;
     private readonly ConcurrentDictionary<string, int> _consecutiveFailures = new();
     private readonly ConcurrentDictionary<string, bool> _alertedDown = new();
+    private readonly ConcurrentDictionary<string, DateTime> _lastCheckTimes = new();
     private static readonly HttpRequestOptionsKey<SslInfoHolder> SslInfoKey = new("Corvus_SslInfo");
+    private static readonly HttpRequestOptionsKey<bool> IgnoreTlsKey = new("Corvus_IgnoreTls");
     private readonly HttpClient _httpClient;
 
     private class SslInfoHolder
@@ -41,16 +44,22 @@ public class UptimeCheckerService : BackgroundService
                     holder.SslDays = (int)Math.Max(0, (cert.NotAfter - DateTime.UtcNow).TotalDays);
                     holder.SslIssuer = cert.Issuer;
                 }
-                return true;
+
+                if (errors == System.Net.Security.SslPolicyErrors.None)
+                {
+                    return true;
+                }
+
+                return message.Options.TryGetValue(IgnoreTlsKey, out bool ignore) && ignore;
             }
         };
 
-        _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
+        _httpClient = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("UptimeCheckerService başlatıldı (Periyot: 60sn).");
+        _logger.LogInformation("UptimeCheckerService başlatıldı (Periyot tabanlı denetim, tick: 5sn).");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -72,75 +81,95 @@ public class UptimeCheckerService : BackgroundService
                 }
 
                 var allServices = await servicesRepo.GetAllAsync();
+                var now = DateTime.UtcNow;
 
-                // Uptime Kuma tarzı kontrollü eşzamanlılık (DNS/soket tükenmesini engellemek için)
-                var checkResults = new ConcurrentBag<(Service Service, UptimeCheck? Check, SslInfoHolder? Ssl)>();
-                var parallelOptions = new ParallelOptions
+                // check_interval süresi dolmuş veya hiç kontrol edilmemiş servisleri seç
+                var servicesToCheck = allServices.Where(s =>
                 {
-                    MaxDegreeOfParallelism = 6,
-                    CancellationToken = stoppingToken
-                };
-
-                await Parallel.ForEachAsync(allServices, parallelOptions, async (s, ct) =>
-                {
-                    var res = await CheckSingleServiceAsync(s, ct);
-                    checkResults.Add(res);
-                });
-
-                foreach (var (s, check, sslHolder) in checkResults)
-                {
-                    if (check == null) continue;
-
-                    if (sslHolder?.SslDays.HasValue == true)
+                    int intervalSec = Math.Max(5, s.CheckInterval ?? 60);
+                    if (_lastCheckTimes.TryGetValue(s.Id, out var lastTime))
                     {
-                        await servicesRepo.UpdateSslInfoAsync(s.Id, sslHolder.SslDays.Value, sslHolder.SslIssuer);
-                        if (sslHolder.SslDays.Value <= 14)
-                        {
-                            _logger.LogWarning("SSL sertifikası yakında bitiyor: Servis {ServiceName}, Kalan Gün: {Days}", s.Name, sslHolder.SslDays.Value);
-                        }
+                        return (now - lastTime).TotalSeconds >= intervalSec;
+                    }
+                    return true;
+                }).ToList();
+
+                if (servicesToCheck.Count > 0)
+                {
+                    foreach (var s in servicesToCheck)
+                    {
+                        _lastCheckTimes[s.Id] = now;
                     }
 
-                    await uptimeRepo.InsertAsync(check);
-
-                    string? targetUrl = !string.IsNullOrWhiteSpace(s.HealthCheckUrl) ? s.HealthCheckUrl : s.Url;
-
-                    if (check.Status == "down")
+                    // Uptime Kuma tarzı kontrollü eşzamanlılık (DNS/soket tükenmesini engellemek için)
+                    var checkResults = new ConcurrentBag<(Service Service, UptimeCheck? Check, SslInfoHolder? Ssl)>();
+                    var parallelOptions = new ParallelOptions
                     {
-                        _consecutiveFailures.AddOrUpdate(s.Id, 1, (_, count) => count + 1);
-                        int failures = _consecutiveFailures[s.Id];
+                        MaxDegreeOfParallelism = 6,
+                        CancellationToken = stoppingToken
+                    };
 
-                        // Uptime Kuma 3-State Machine Mantığı:
-                        // Eşik değerine ulaşıldıysa -> Kesin DOWN
-                        if (failures >= alertThreshold)
+                    await Parallel.ForEachAsync(servicesToCheck, parallelOptions, async (s, ct) =>
+                    {
+                        var res = await CheckSingleServiceAsync(s, ct);
+                        checkResults.Add(res);
+                    });
+
+                    foreach (var (s, check, sslHolder) in checkResults)
+                    {
+                        if (check == null) continue;
+
+                        if (sslHolder?.SslDays.HasValue == true)
                         {
-                            if (_alertedDown.TryAdd(s.Id, true))
+                            await servicesRepo.UpdateSslInfoAsync(s.Id, sslHolder.SslDays.Value, sslHolder.SslIssuer);
+                            if (sslHolder.SslDays.Value <= 14)
                             {
-                                _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: true, check.ErrorMessage, stoppingToken);
+                                _logger.LogWarning("SSL sertifikası yakında bitiyor: Servis {ServiceName}, Kalan Gün: {Days}", s.Name, sslHolder.SslDays.Value);
+                            }
+                        }
+
+                        await uptimeRepo.InsertAsync(check);
+
+                        string? targetUrl = !string.IsNullOrWhiteSpace(s.HealthCheckUrl) ? s.HealthCheckUrl : s.Url;
+
+                        if (check.Status == "down")
+                        {
+                            _consecutiveFailures.AddOrUpdate(s.Id, 1, (_, count) => count + 1);
+                            int failures = _consecutiveFailures[s.Id];
+
+                            // Uptime Kuma 3-State Machine Mantığı:
+                            // Eşik değerine ulaşıldıysa -> Kesin DOWN
+                            if (failures >= alertThreshold)
+                            {
+                                if (_alertedDown.TryAdd(s.Id, true))
+                                {
+                                    _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: true, check.ErrorMessage, stoppingToken);
+                                }
+
+                                await servicesRepo.UpdateStatusAsync(s.Id, "down");
+                                _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"down\"}}");
+                            }
+                            else
+                            {
+                                // Henüz eşik aşılmadı -> Geçici aksaklık (PENDING / DEGRADED)
+                                _logger.LogInformation("Servis {Name} geçici hata verdi ({Failures}/{Threshold}). Durum 'degraded' olarak işaretlendi.", s.Name, failures, alertThreshold);
+                                await servicesRepo.UpdateStatusAsync(s.Id, "degraded");
+                                _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"degraded\"}}");
+                            }
+                        }
+                        else if (check.Status == "up")
+                        {
+                            _consecutiveFailures[s.Id] = 0;
+
+                            // Önceden kesinti bildirimi gönderilmişse kurtarıldı bildirimi gönder
+                            if (_alertedDown.TryRemove(s.Id, out _))
+                            {
+                                _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: false, null, stoppingToken);
                             }
 
-                            await servicesRepo.UpdateStatusAsync(s.Id, "down");
-                            _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"down\"}}");
+                            _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"healthy\"}}");
+                            await servicesRepo.UpdateStatusAsync(s.Id, "healthy");
                         }
-                        else
-                        {
-                            // Henüz eşik aşılmadı -> Geçici aksaklık (PENDING / DEGRADED)
-                            _logger.LogInformation("Servis {Name} geçici hata verdi ({Failures}/{Threshold}). Durum 'degraded' olarak işaretlendi.", s.Name, failures, alertThreshold);
-                            await servicesRepo.UpdateStatusAsync(s.Id, "degraded");
-                            _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"degraded\"}}");
-                        }
-                    }
-                    else if (check.Status == "up")
-                    {
-                        _consecutiveFailures[s.Id] = 0;
-
-                        // Önceden kesinti bildirimi gönderilmişse kurtarıldı bildirimi gönder
-                        if (_alertedDown.TryRemove(s.Id, out _))
-                        {
-                            _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: false, null, stoppingToken);
-                        }
-
-                        _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"healthy\"}}");
-                        await servicesRepo.UpdateStatusAsync(s.Id, "healthy");
                     }
                 }
 
@@ -178,7 +207,7 @@ public class UptimeCheckerService : BackgroundService
 
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -324,6 +353,9 @@ public class UptimeCheckerService : BackgroundService
 
         var sw = Stopwatch.StartNew();
         SslInfoHolder? sslHolder = null;
+        int maxRetries = Math.Max(0, s.MaxRetries ?? 1);
+        int retryIntervalSec = Math.Max(1, s.RetryInterval ?? 30);
+        int timeoutSeconds = Math.Max(1, s.TimeoutSeconds ?? 5);
 
         if (isDockerCheck)
         {
@@ -404,7 +436,7 @@ public class UptimeCheckerService : BackgroundService
                 {
                     using var tcp = new TcpClient();
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    cts.CancelAfter(TimeSpan.FromSeconds(5));
+                    cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
                     await tcp.ConnectAsync(checkHost, port, cts.Token);
                     return null;
                 }
@@ -415,10 +447,9 @@ public class UptimeCheckerService : BackgroundService
             }
 
             var tcpEx = await TryConnectTcpAsync();
-            if (tcpEx != null && !ct.IsCancellationRequested)
+            for (int r = 0; r < maxRetries && tcpEx != null && !ct.IsCancellationRequested; r++)
             {
-                // Hızlı tekrar deneme: Geçici aksamalarda 1 saniye sonra 1 kez daha dene
-                try { await Task.Delay(1000, ct); } catch (OperationCanceledException) { }
+                try { await Task.Delay(TimeSpan.FromSeconds(Math.Min(retryIntervalSec, 30)), ct); } catch (OperationCanceledException) { break; }
                 if (!ct.IsCancellationRequested)
                 {
                     tcpEx = await TryConnectTcpAsync();
@@ -446,7 +477,8 @@ public class UptimeCheckerService : BackgroundService
 
             async Task<(bool Ok, string? Error)> TrySendHttpAsync()
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, internalCheckUrl);
+                var method = new HttpMethod(string.IsNullOrWhiteSpace(s.HttpMethod) ? "GET" : s.HttpMethod.Trim().ToUpperInvariant());
+                using var request = new HttpRequestMessage(method, internalCheckUrl);
                 try
                 {
                     // Reverse proxy veya Virtual Host etiketleri için orijinal Host başlığını koru
@@ -455,14 +487,25 @@ public class UptimeCheckerService : BackgroundService
                 catch { }
 
                 request.Options.Set(SslInfoKey, sslHolder);
+                request.Options.Set(IgnoreTlsKey, s.IgnoreTls);
+
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
                 try
                 {
-                    var response = await _httpClient.SendAsync(request, ct);
-                    if (response.IsSuccessStatusCode)
+                    var response = await _httpClient.SendAsync(request, cts.Token);
+                    int code = (int)response.StatusCode;
+                    bool isAccepted = StatusCodeMatcher.IsMatch(code, s.AcceptedStatusCodes);
+                    if (isAccepted)
                     {
                         return (true, null);
                     }
-                    return (false, $"HTTP {(int)response.StatusCode}");
+                    return (false, $"HTTP {code}");
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    return (false, $"Zaman aşımı ({timeoutSeconds}s) - Hedefe ulaşılamadı ({internalCheckUrl})");
                 }
                 catch (Exception ex)
                 {
@@ -471,10 +514,9 @@ public class UptimeCheckerService : BackgroundService
             }
 
             var httpResult = await TrySendHttpAsync();
-            if (!httpResult.Ok && !ct.IsCancellationRequested)
+            for (int r = 0; r < maxRetries && !httpResult.Ok && !ct.IsCancellationRequested; r++)
             {
-                // Hızlı tekrar deneme: 1 saniye sonra 1 kez daha dene
-                try { await Task.Delay(1000, ct); } catch (OperationCanceledException) { }
+                try { await Task.Delay(TimeSpan.FromSeconds(Math.Min(retryIntervalSec, 30)), ct); } catch (OperationCanceledException) { break; }
                 if (!ct.IsCancellationRequested)
                 {
                     httpResult = await TrySendHttpAsync();
@@ -491,14 +533,7 @@ public class UptimeCheckerService : BackgroundService
             else
             {
                 check.Status = "down";
-                string err = httpResult.Error ?? "Bilinmeyen HTTP hatası";
-                if (err.Contains("configured HttpClient.Timeout", StringComparison.OrdinalIgnoreCase) ||
-                    err.Contains("timed out", StringComparison.OrdinalIgnoreCase) ||
-                    err.Contains("The operation was canceled", StringComparison.OrdinalIgnoreCase))
-                {
-                    err = $"Zaman aşımı (5s) - Hedefe ulaşılamadı ({internalCheckUrl})";
-                }
-                check.ErrorMessage = err;
+                check.ErrorMessage = httpResult.Error ?? "Bilinmeyen HTTP hatası";
             }
         }
 

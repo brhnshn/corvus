@@ -67,8 +67,9 @@
 - **🔔 Çok Kanallı Alarm Motoru:**
   - Sekmeli yapılandırma: **Discord**, **Telegram**, **Ntfy / Gotify** ve **Özel Webhook** kanalları.
   - Özelleştirilebilir olay tetikleyicileri (`notify_service_events`) ve tek tıkla test bildirimi gönderme.
-- **⏱️ Genişletilmiş Uptime & SSL Takibi:**
+- **⏱️ Genişletilmiş Uptime & SSL Takibi (Uptime Kuma Mimarisi):**
   - **Ters Vekil (Reverse Proxy) Otomatik Algılama:** Traefik kuralları (`Host(...)`), Caddy etiketleri, `VIRTUAL_HOST`, `LETSENCRYPT_HOST` ve konteyner ortam değişkenleri (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) taranarak yerel `localhost` yerine gerçek alan adlarını otomatik bağlama.
+  - **Gelişmiş Monitör Parametreleri (`AdvancedCheckOptions`):** Servis bazında bağımsız kontrol sıklığı (`check_interval`: 10s-300s), özel zaman aşımı (`timeout_seconds`), başarısızlık toleransı (`max_retries` / `retry_interval`), SSL hatalarını yoksayma (`ignore_tls`), kabul edilen HTTP durum kodları (`accepted_status_codes`, örn: `200-299, 401`) ve HTTP yöntemi (GET/POST/HEAD).
   - **Konteyner ve Servis Uç Noktası Düzenleme:** Hem Servisler hem de Uptime ekranlarından açılan bağımsız modüler düzenleme penceresi ile erişim adresi, özel sağlık endpoint'i (`/api/health`), TCP portu veya Docker daemon kontrol türü tanımlama. Yapılandırmalar `service_overrides` tablosunda kalıcı olarak saklanır.
   - **Dahili Konteynerler ve Agent'lar İçin Yerel Docker Uptime Takibi:** Web portu açmayan dahili servisler (örn. `internal-beszel-agent`) için Docker Engine API üzerinden konteyner çalışma/sağlık durumu denetimi (`checkType: 'docker'`); eksiksiz yeşil SLA barı ve kontrol kaydı.
   - **HTTP/HTTPS & TCP Port Ping:** Veritabanları, SSH veya oyun sunucuları gibi HTTP dışı servisler için soket seviyesinde bağlantı testi.
@@ -76,9 +77,10 @@
 - **💀 Dead Man's Snitch (Periyodik Push Monitörü):**
   - Cron görevlerini ve yedekleme script'lerini (`borg`, `restic`, bash) izleme.
   - Beklenen periyot (örn. 24 saatte bir) ve tolerans süresi tanımlayabilme; sinyal gelmediğinde otomatik alarm oluşturma.
-- **🌐 Genel Durum Sayfası (Public Status):**
-  - Şifre gerektirmeyen, bağımsız koyu temalı `/status` sayfası ve `/api/status-page` uç noktası.
-  - Genel sistem durum banner'ı, servis uptime oranları ve SSL günlerini ziyaretçilere açık olarak sunar.
+- **🌐 Genel Durum Sayfası (Public Status — Varsayılan Kapalı & Opt-in):**
+  - Uptime Kuma prensibiyle **varsayılan olarak kapalı** (`status_page_enabled = false`); Ayarlar ekranından tek tıkla yayına alınabilir veya yayından kaldırılabilir.
+  - Kapalıyken ziyaretçilere şık, koyu temalı "Durum Sayfası Devre Dışı" (`PublicStatusDisabled.tsx`) ekranı sunar.
+  - **Tamamen Opt-in (Seçmeli):** Servisler asla otomatik olarak durum sayfasına sızmaz; yalnızca kullanıcının açıkça `is_public` olarak işaretlediği servisler durum sayfasında listelenir.
 - **🛡️ Zero-Trust SSO & Ters Vekil (Reverse Proxy) Kimlik Doğrulama:**
   - Güvenilen proxy başlıkları ile otomatik giriş desteği: `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`.
   - Yerleşik kullanıcı adı/şifre doğrulaması ve kapatılabilir kayıt mekanizması.
@@ -110,7 +112,7 @@ Corvus Mimarisi:
 │       ASP.NET Core Minimal API (.NET 9 Native AOT)     │
 ├───────────────────────────┬────────────────────────────┤
 │  Docker REST API Client   │  SQLite + Dapper.AOT       │
-│  (SocketsHttpHandler)     │  (DbUp Migrations 001-005) │
+│  (SocketsHttpHandler)     │  (DbUp Migrations 001-006) │
 ├───────────────────────────┴────────────────────────────┤
 │  Çekirdek Servisler:                                   │
 │  - DockerLogDemuxer (Sıfır bellek tahsisli log demux)  │

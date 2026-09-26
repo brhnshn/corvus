@@ -4,6 +4,7 @@ import { formatServiceUrl } from '../../utils/url';
 import { CheckCircle2, AlertTriangle, XCircle, ShieldCheck, Clock, RefreshCw, ExternalLink } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { LanguageSwitch } from '../../components/LanguageSwitch';
+import { PublicStatusDisabled } from './PublicStatusDisabled';
 
 export default function PublicStatus() {
   const { t } = useI18n();
@@ -59,6 +60,10 @@ export default function PublicStatus() {
   };
 
   const statusHeader = getSystemStatusHeader();
+
+  if (data?.enabled === false) {
+    return <PublicStatusDisabled message={data.message} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center py-10 px-4 sm:px-6 selection:bg-indigo-500/30">

@@ -8,8 +8,22 @@ public static class StatusPageEndpoints
     public static void MapStatusPageEndpoints(this IEndpointRouteBuilder app)
     {
         // 1.6: Halka Açık / Şifresiz Durum Sayfası Uç Noktası (N+1 engellenmiş tekil SQL agregasyonu)
-        app.MapGet("/api/status-page", async (IServicesRepository repo, IUptimeRepository uptimeRepo) =>
+        app.MapGet("/api/status-page", async (IServicesRepository repo, IUptimeRepository uptimeRepo, ISettingsRepository settingsRepo) =>
         {
+            var enabledSetting = await settingsRepo.GetAsync("status_page_enabled");
+            bool isEnabled = string.Equals(enabledSetting, "true", StringComparison.OrdinalIgnoreCase);
+
+            if (!isEnabled)
+            {
+                return Results.Ok(new PublicStatusPageDto(
+                    SystemStatus: "disabled",
+                    Services: [],
+                    GeneratedAt: DateTime.UtcNow.ToString("o"),
+                    Enabled: false,
+                    Message: "Durum sayfası şu anda devre dışıdır."
+                ));
+            }
+
             var publicServices = await repo.GetPublicServicesAsync();
             var uptimePercentages = await uptimeRepo.Get24hUptimePercentagesAsync();
             var serviceDtos = new List<PublicServiceDto>(publicServices.Count);
@@ -45,7 +59,9 @@ public static class StatusPageEndpoints
             var result = new PublicStatusPageDto(
                 SystemStatus: overallStatus,
                 Services: serviceDtos,
-                GeneratedAt: DateTime.UtcNow.ToString("o")
+                GeneratedAt: DateTime.UtcNow.ToString("o"),
+                Enabled: true,
+                Message: null
             );
 
             return Results.Ok(result);

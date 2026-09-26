@@ -60,7 +60,8 @@ corvus/
 │   │   │       ├── 002_add_users.sql
 │   │   │       ├── 003_roadmap_features.sql
 │   │   │       ├── 004_performance_indexes.sql
-│   │   │       └── 005_service_overrides_extended.sql
+│   │   │       ├── 005_service_overrides_extended.sql
+│   │   │       └── 006_uptime_advanced_options.sql
 │   │   ├── Models/                 # DTO'lar ve Veritabanı Varlıkları
 │   │   │   ├── Service.cs                    # Servis modeli (check_type, port, ssl, is_public, display_order)
 │   │   │   ├── ServiceOverride.cs            # Docker override modeli
@@ -73,6 +74,8 @@ corvus/
 │   │   │   ├── User.cs                       # Kullanıcı modeli
 │   │   │   ├── VersionInfo.cs                # Dinamik GitHub SemVer sürüm DTO'su
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
+│   │   ├── Utils/                  # Yardımcı sınıflar
+│   │   │   └── StatusCodeMatcher.cs          # HTTP durum kodu (aralık ve tekil kod) ayrıştırıcı
 │   │   └── Services/                # Çekirdek iş mantığı servisleri
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler ile doğrudan Docker REST istemcisi
 │   │       ├── DockerService.cs              # 2.5s önbellekli konteyner işlemleri, toplu stats özeti ve etiket eşleme
@@ -131,12 +134,14 @@ corvus/
 │       │       │   ├── AttentionRequiredCard.tsx # Kritik arızalar ve SSL uyarıları kartı
 │       │       │   └── ActiveContainersWidget.tsx # 2 sütunlu duyarlı aktif konteynerler kartı
 │       │       ├── PublicStatus/
-│       │       │   └── index.tsx             # Şifresiz halka açık durum sayfası (/status)
+│       │       │   ├── index.tsx             # Şifresiz halka açık durum sayfası (/status)
+│       │       │   └── PublicStatusDisabled.tsx # Durum sayfası kapalıyken gösterilen minimalist kart
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Servis launcher ve sürükle-bırak sıralama
 │       │       │   ├── ServiceCard.tsx       # Servis kartı ve düzenleme aksiyonu
 │       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı
-│       │       │   └── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL ve kontrol türü düzenleme modalı
+│       │       │   ├── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL ve kontrol türü düzenleme modalı
+│       │       │   └── AdvancedCheckOptions.tsx # Uptime Kuma stili gelişmiş kontrol parametreleri akordiyonu
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Ayarlar kabuğu ve sekme seçici
 │       │       │   ├── GeneralSettingsTab.tsx # Genel ayarlar, retention ve DB boyutu telemetrisi
@@ -159,13 +164,14 @@ corvus/
 │       └── wwwroot/                # Üretime hazır derlenmiş arayüz paketi (Corvus.Api tarafından sunulur)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Paketi (89 Başarılı Test)
+│   └── Corvus.Api.Tests/           # xUnit Test Paketi (119 Başarılı Test)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Konteyner işlemleri, micro-cache ve batch stats testleri
 │       ├── DockerLogDemuxerTests.cs
 │       ├── NotificationServiceTests.cs
 │       ├── RoadmapFeaturesTests.cs
 │       ├── UpdateCheckerTests.cs
+│       ├── StatusCodeMatcherTests.cs
 │       └── DatabaseMigrationAndRepositoryTests.cs
 │
 └── docs/                           # Teknik şartnameler ve mimari kılavuzlar

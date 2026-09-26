@@ -238,6 +238,137 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
         Assert.DoesNotContain(updatedAll, s => s.Id == "docker_c2");
     }
 
+    [Fact]
+    public async Task AdvancedUptimeOptions_And_StatusPageSetting_WorkEndToEnd()
+    {
+        var settingsRepo = new SettingsRepository(_dbFactory);
+        var servicesRepo = new ServicesRepository(_dbFactory);
+
+        // 1. Verify default migration value for status_page_enabled
+        var statusPageSetting = await settingsRepo.GetAsync("status_page_enabled");
+        Assert.Equal("false", statusPageSetting);
+
+        // 2. Create manual service with advanced check options
+        var req = new CreateServiceRequest(
+            Name: "Advanced Monitor",
+            Description: "Monitors with custom parameters",
+            Url: "https://example.com",
+            Icon: "⚡",
+            Category: "Infra",
+            HealthCheckUrl: "https://example.com/api/ping",
+            CheckType: "http",
+            Port: 443,
+            IsPublic: false,
+            CheckInterval: 30,
+            MaxRetries: 3,
+            RetryInterval: 15,
+            TimeoutSeconds: 10,
+            IgnoreTls: true,
+            AcceptedStatusCodes: "200-204, 301",
+            HttpMethod: "HEAD"
+        );
+
+        var created = await servicesRepo.CreateManualAsync(req);
+        Assert.NotNull(created);
+        Assert.False(created.IsPublic);
+        Assert.Equal(30, created.CheckInterval);
+        Assert.Equal(3, created.MaxRetries);
+        Assert.Equal(15, created.RetryInterval);
+        Assert.Equal(10, created.TimeoutSeconds);
+        Assert.True(created.IgnoreTls);
+        Assert.Equal("200-204, 301", created.AcceptedStatusCodes);
+        Assert.Equal("HEAD", created.HttpMethod);
+
+        // 3. Not in public services list (opt-in is 0)
+        var publicList = await servicesRepo.GetPublicServicesAsync();
+        Assert.DoesNotContain(publicList, s => s.Id == created.Id);
+
+        // 4. Update service to make it public and modify timeout
+        var updated = await servicesRepo.UpdateAsync(created.Id, new UpdateServiceRequest(
+            Name: created.Name,
+            Description: created.Description,
+            Url: created.Url,
+            Icon: created.Icon,
+            Category: created.Category,
+            HealthCheckUrl: created.HealthCheckUrl,
+            CheckType: created.CheckType,
+            Port: created.Port,
+            IsPublic: true,
+            CheckInterval: 15,
+            MaxRetries: 2,
+            RetryInterval: 10,
+            TimeoutSeconds: 8,
+            IgnoreTls: false,
+            AcceptedStatusCodes: "200-299",
+            HttpMethod: "GET"
+        ));
+
+        Assert.NotNull(updated);
+        Assert.True(updated.IsPublic);
+        Assert.Equal(15, updated.CheckInterval);
+        Assert.Equal(8, updated.TimeoutSeconds);
+        Assert.False(updated.IgnoreTls);
+
+        var publicListAfter = await servicesRepo.GetPublicServicesAsync();
+        Assert.Contains(publicListAfter, s => s.Id == created.Id);
+
+        // 5. Test Docker service with override of advanced options
+        var dockerSvc = new Service
+        {
+            Id = "docker_adv_test",
+            Source = "docker",
+            ContainerId = "adv_container_999",
+            Name = "adv_docker_app",
+            Status = "healthy",
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UpdatedAt = DateTime.UtcNow.ToString("o"),
+            CheckInterval = 60,
+            MaxRetries = 1,
+            RetryInterval = 30,
+            TimeoutSeconds = 5,
+            IgnoreTls = false,
+            AcceptedStatusCodes = "200-299",
+            HttpMethod = "GET"
+        };
+
+        await servicesRepo.UpsertDockerServiceAsync(dockerSvc);
+
+        // User overrides Docker service check interval and accepted codes
+        await servicesRepo.UpdateAsync("docker_adv_test", new UpdateServiceRequest(
+            Name: "adv_docker_app_custom",
+            Description: null,
+            Url: null,
+            Icon: null,
+            Category: null,
+            HealthCheckUrl: null,
+            CheckType: "http",
+            Port: null,
+            IsPublic: true,
+            CheckInterval: 120,
+            MaxRetries: 5,
+            RetryInterval: 45,
+            TimeoutSeconds: 12,
+            IgnoreTls: true,
+            AcceptedStatusCodes: "200, 204",
+            HttpMethod: "POST"
+        ));
+
+        // Re-sync docker batch: override should take precedence!
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["adv_container_999"]);
+        var fetchedDocker = await servicesRepo.GetByIdAsync("docker_adv_test");
+
+        Assert.NotNull(fetchedDocker);
+        Assert.Equal("adv_docker_app_custom", fetchedDocker.Name);
+        Assert.Equal(120, fetchedDocker.CheckInterval);
+        Assert.Equal(5, fetchedDocker.MaxRetries);
+        Assert.Equal(45, fetchedDocker.RetryInterval);
+        Assert.Equal(12, fetchedDocker.TimeoutSeconds);
+        Assert.True(fetchedDocker.IgnoreTls);
+        Assert.Equal("200, 204", fetchedDocker.AcceptedStatusCodes);
+        Assert.Equal("POST", fetchedDocker.HttpMethod);
+        Assert.True(fetchedDocker.IsPublic);
+    }
+
     public void Dispose()
     {
         try

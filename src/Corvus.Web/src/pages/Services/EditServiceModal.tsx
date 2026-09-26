@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { api, type Service } from '../../api/client';
+import { AdvancedCheckOptions } from './AdvancedCheckOptions';
 
 interface EditServiceModalProps {
   isOpen: boolean;
@@ -25,7 +26,14 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [formIcon, setFormIcon] = useState('');
   const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'docker' | 'none'>('http');
   const [formPort, setFormPort] = useState<number | ''>('');
-  const [formIsPublic, setFormIsPublic] = useState(true);
+  const [formIsPublic, setFormIsPublic] = useState(false);
+  const [formCheckInterval, setFormCheckInterval] = useState<number | ''>(60);
+  const [formTimeoutSeconds, setFormTimeoutSeconds] = useState<number | ''>(5);
+  const [formMaxRetries, setFormMaxRetries] = useState<number | ''>(1);
+  const [formRetryInterval, setFormRetryInterval] = useState<number | ''>(30);
+  const [formIgnoreTls, setFormIgnoreTls] = useState(false);
+  const [formAcceptedStatusCodes, setFormAcceptedStatusCodes] = useState('200-299');
+  const [formHttpMethod, setFormHttpMethod] = useState('GET');
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -39,7 +47,14 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setFormIcon(service.icon || '');
       setFormCheckType((service.checkType as 'http' | 'tcp' | 'docker' | 'none') || (service.source === 'docker' && !service.url ? 'docker' : 'http'));
       setFormPort(service.port !== undefined && service.port !== null ? service.port : '');
-      setFormIsPublic(service.isPublic !== false);
+      setFormIsPublic(service.isPublic === true);
+      setFormCheckInterval(service.checkInterval ?? 60);
+      setFormTimeoutSeconds(service.timeoutSeconds ?? 5);
+      setFormMaxRetries(service.maxRetries ?? 1);
+      setFormRetryInterval(service.retryInterval ?? 30);
+      setFormIgnoreTls(service.ignoreTls === true);
+      setFormAcceptedStatusCodes(service.acceptedStatusCodes || '200-299');
+      setFormHttpMethod(service.httpMethod || 'GET');
       setErrorMsg(null);
     }
   }, [service]);
@@ -57,7 +72,6 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
     let finalHealth = formHealth.trim();
     if (finalHealth && !/^https?:\/\//i.test(finalHealth) && formCheckType === 'http') {
-      // Relative path or domain
       if (finalHealth.startsWith('/')) {
         if (finalUrl) {
           try {
@@ -85,7 +99,14 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         icon: formIcon.trim() || undefined,
         checkType: formCheckType,
         port: formPort !== '' ? Number(formPort) : undefined,
-        isPublic: formIsPublic
+        isPublic: formIsPublic,
+        checkInterval: formCheckInterval !== '' ? Number(formCheckInterval) : 60,
+        timeoutSeconds: formTimeoutSeconds !== '' ? Number(formTimeoutSeconds) : 5,
+        maxRetries: formMaxRetries !== '' ? Number(formMaxRetries) : 1,
+        retryInterval: formRetryInterval !== '' ? Number(formRetryInterval) : 30,
+        ignoreTls: formIgnoreTls,
+        acceptedStatusCodes: formAcceptedStatusCodes.trim() || '200-299',
+        httpMethod: formHttpMethod || 'GET'
       });
 
       onClose();
@@ -324,6 +345,25 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
               className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-indigo-500 text-xs resize-none"
             />
           </div>
+
+          {/* Gelişmiş Uptime & Kontrol Parametreleri (Modüler Bileşen) */}
+          <AdvancedCheckOptions
+            checkType={formCheckType}
+            checkInterval={formCheckInterval}
+            onChangeCheckInterval={setFormCheckInterval}
+            timeoutSeconds={formTimeoutSeconds}
+            onChangeTimeoutSeconds={setFormTimeoutSeconds}
+            maxRetries={formMaxRetries}
+            onChangeMaxRetries={setFormMaxRetries}
+            retryInterval={formRetryInterval}
+            onChangeRetryInterval={setFormRetryInterval}
+            ignoreTls={formIgnoreTls}
+            onChangeIgnoreTls={setFormIgnoreTls}
+            acceptedStatusCodes={formAcceptedStatusCodes}
+            onChangeAcceptedStatusCodes={setFormAcceptedStatusCodes}
+            httpMethod={formHttpMethod}
+            onChangeHttpMethod={setFormHttpMethod}
+          />
 
           {/* Genel Durum Sayfası Görünürlüğü */}
           <div className="pt-1">
