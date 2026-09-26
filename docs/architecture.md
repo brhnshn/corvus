@@ -141,7 +141,7 @@ corvus/
 │       │       │   ├── ServiceCard.tsx       # Service card with edit modal trigger
 │       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services
 │       │       │   ├── EditServiceModal.tsx  # Modular modal for service endpoint, reverse proxy domain & check type
-│       │       │   └── AdvancedCheckOptions.tsx # Uptime Kuma-style accordion for interval, retries, TLS & status codes
+│       │       │   └── AdvancedCheckOptions.tsx # Modular accordion for check interval, retries, TLS & status codes
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Settings shell and tab switcher
 │       │       │   ├── GeneralSettingsTab.tsx # General options, retention, DB telemetry & status page toggle
@@ -248,10 +248,18 @@ Corvus implements a multi-tier optimization architecture to sustain system memor
 
 ---
 
-## 🛡️ Uptime Kuma-Grade 3-State Health Engine
+## 🛡️ Advanced 3-State Health & Resilience Engine
 
 To prevent false alarms from transient network latency or brief blips, Corvus applies a 3-state finite state machine for service health verification:
 - **`healthy`:** Service responds promptly and passes HTTP 2xx/3xx or TCP port checks.
 - **`degraded`:** A first failure is detected; the monitor enters degraded status with a yellow warning indicator, suppressing alarm dispatches.
 - **`down`:** After 3 consecutive failures, the service transitions to down (red) and immediately dispatches alerts across configured notification webhooks (Discord, Telegram, Ntfy, Webhook).
 - **Loopback Gateway Resolution:** Corvus automatically resolves loopback targets (`localhost`, `127.0.0.1`) to the Docker bridge gateway (`host.docker.internal`) so checks run accurately from within containerized environments.
+
+---
+
+## 💡 Inspirations & Credits
+- [Uptime Kuma](https://github.com/louislam/uptime-kuma) — Health monitoring philosophy and status page concepts
+- [Beszel](https://github.com/henrygd/beszel) — Compact telemetry and system resource metrics approach
+- [Portainer](https://github.com/portainer/portainer) — Container lifecycle management vision
+

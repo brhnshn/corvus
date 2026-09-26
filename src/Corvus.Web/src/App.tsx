@@ -128,7 +128,7 @@ export const App: React.FC = () => {
           eventSource?.close();
           eventSource = null;
 
-          // Uptime Kuma tarzı: Asla pes etme; 1s, 2s, 4s, 8s, 16s ... max 20s aralıkla arka planda denemeye devam et
+          // Üstel geri çekilme (exponential backoff): 1s, 2s, 4s, 8s, 16s ... max 20s aralıkla yeniden bağlan
           const delay = Math.min(1000 * 2 ** Math.min(retryCount, 4), 20000);
           retryCount++;
           if (retryTimer) clearTimeout(retryTimer);

@@ -27,7 +27,7 @@
 
 ## 🌟 Overview
 
-**Corvus** is an ultra-lightweight, self-hosted server launcher and observability dashboard designed for homelabs, VPS instances, and self-hosted environments. Compiled ahead-of-time (**Native AOT**) with zero dynamic reflection, it runs within a **<30 MB RAM footprint** while providing real-time container discovery, Uptime Kuma-grade 3-state service health monitoring, time-series resource tracking, container live logs, multi-channel alerts, and periodic push monitoring.
+**Corvus** is an ultra-lightweight, self-hosted server launcher and observability dashboard designed for homelabs, VPS instances, and self-hosted environments. Compiled ahead-of-time (**Native AOT**) with zero dynamic reflection, it runs within a **<30 MB RAM footprint** while providing real-time container discovery, enterprise-grade 3-state service health monitoring, time-series resource tracking, container live logs, multi-channel alerts, and periodic push monitoring.
 
 ---
 
@@ -45,7 +45,7 @@
   - 2.5-second zero-allocation in-memory cache: Eliminates 90% of redundant Docker socket and SQLite calls during rapid tab switching (<150 KB memory footprint).
   - Batch container stats endpoint (`GET /api/containers/stats-summary`) gathering all active container metrics in a single HTTP request instead of N+1.
   - .NET 9 `System.GC.ConserveMemory=5` runtime configuration and periodic post-retention memory compaction, keeping memory strictly between 30–45 MB.
-- **🛡️ Uptime Kuma-Grade 3-State Resilience Engine:**
+- **🛡️ Advanced 3-State Resilience & Health Engine:**
   - `healthy` ➔ `degraded` ➔ `down` state machine: Prevents panicky false alarms during transient network glitches; only raises alarms after 3 consecutive failures.
   - Concurrent health probing powered by `Parallel.ForEachAsync` with bounded concurrency.
   - Automatic container loopback networking resolution (`host.docker.internal` / default bridge gateway routing).
@@ -67,18 +67,18 @@
 - **🔔 Multi-Channel Alerting Engine:**
   - Tabbed notification configuration: **Discord**, **Telegram**, **Ntfy / Gotify**, and **Generic Webhooks**.
   - Configurable notification triggers (`notify_service_events`) and one-click test notification dispatcher.
-- **⏱️ Extended Endpoint Uptime & SSL Tracking (Uptime Kuma Architecture):**
+- **⏱️ Extended Endpoint Uptime & SSL Tracking:**
   - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.
   - **Advanced Monitor Parameters (`AdvancedCheckOptions`):** Independent per-service check intervals (`check_interval`: 10s-300s), custom timeouts (`timeout_seconds`), failure tolerance (`max_retries` / `retry_interval`), ignore TLS errors (`ignore_tls`), accepted HTTP status codes (`accepted_status_codes`, e.g. `200-299, 401`), and HTTP method selection (GET/POST/HEAD).
   - **Customizable Service Endpoints & Check Types:** Standalone modular modal accessible from both Services and Uptime pages to configure target URLs, custom health endpoints (`/api/health`), TCP ports, or native Docker daemon health checks. Preserved across restarts via `service_overrides`.
-  - **Native Docker Health Checks for Internal/Agent Containers:** Internal background services without exposed web ports (e.g. `internal-beszel-agent`) are monitored via direct Docker daemon state (`checkType: 'docker'`), providing real green SLA bars and audit trails.
+  - **Native Docker Health Checks for Internal/Agent Containers:** Internal background services without exposed web ports (e.g. `internal-agent`, `cloudflared`, `local-dns`) are monitored via direct Docker daemon state (`checkType: 'docker'`), providing real green SLA bars and audit trails.
   - **HTTP/HTTPS & TCP Port Ping:** Socket-level connection test for non-HTTP services (databases, SSH, game servers).
   - **SSL Certificate Expiration:** Auto-tracks SSL remaining days and issuer; triggers alert if expiration is within 14 days.
 - **💀 Dead Man's Snitch (Periodic Push Monitor):**
   - Monitor cron jobs and backup scripts (`borg`, `restic`, scripts).
   - Configurable expected interval (e.g. every 24h) and grace period; automatically alerts when overdue.
 - **🌐 Public Status Page (Disabled by Default & Opt-in):**
-  - Follows Uptime Kuma security principles: **disabled by default** (`status_page_enabled = false`); easily toggled on/off in Settings.
+  - Security & privacy-first: **disabled by default** (`status_page_enabled = false`); easily toggled on/off in Settings.
   - Renders a clean, dark-themed "Status Page Disabled" card (`PublicStatusDisabled.tsx`) when inactive.
   - **Strictly Opt-in:** Discovered Docker containers or manual services are never auto-published; only services explicitly marked with `is_public` appear on the public board.
 - **🛡️ Zero-Trust SSO & Reverse Proxy Auth:**
@@ -236,6 +236,15 @@ labels:
    ```bash
    dotnet test tests/Corvus.Api.Tests
    ```
+
+---
+
+## 💡 Inspirations & Credits
+
+Corvus is inspired by the architectural philosophies of pioneering open-source homelab and observability tools, re-imagined from the ground up as a single, ultra-lightweight .NET 9 Native AOT command center:
+- [Uptime Kuma](https://github.com/louislam/uptime-kuma) — Health monitoring philosophy and status page concepts
+- [Beszel](https://github.com/henrygd/beszel) — Compact telemetry and system resource metrics approach
+- [Portainer](https://github.com/portainer/portainer) — Container lifecycle management vision
 
 ---
 

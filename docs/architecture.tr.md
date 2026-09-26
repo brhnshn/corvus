@@ -43,7 +43,7 @@ corvus/
 │   │   ├── BackgroundServices/    # Arka plan çalışan iş parçacıkları
 │   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periyodik konteyner senkronizasyonu (10s)
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrik toplayıcısı (15s)
-│   │   │   ├── UptimeCheckerService.cs       # Uptime Kuma 3 durumlu HTTP/TCP ping, SSL ve Snitch denetimi (60s)
+│   │   │   ├── UptimeCheckerService.cs       # 3 durumlu HTTP/TCP ping, SSL ve Snitch denetimi (60s)
 │   │   │   └── RetentionCleanupService.cs    # Dinamik veri saklama temizleyicisi, PRAGMA optimize & GC compact (24h)
 │   │   ├── Data/                  # Veri erişim katmanı (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000 ve PRAGMA optimizasyonları
@@ -141,7 +141,7 @@ corvus/
 │       │       │   ├── ServiceCard.tsx       # Servis kartı ve düzenleme aksiyonu
 │       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı
 │       │       │   ├── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL ve kontrol türü düzenleme modalı
-│       │       │   └── AdvancedCheckOptions.tsx # Uptime Kuma stili gelişmiş kontrol parametreleri akordiyonu
+│       │       │   └── AdvancedCheckOptions.tsx # Bağımsız gelişmiş kontrol parametreleri akordiyonu
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Ayarlar kabuğu ve sekme seçici
 │       │       │   ├── GeneralSettingsTab.tsx # Genel ayarlar, retention ve DB boyutu telemetrisi
@@ -248,10 +248,18 @@ Corvus, harici bir önbellek sunucusu (Redis vb.) çalıştırmadan sistem belle
 
 ---
 
-## 🛡️ Uptime Kuma Seviyesinde 3 Durumlu Sağlık Motoru
+## 🛡️ Gelişmiş 3 Durumlu Dayanıklılık ve Sağlık Motoru
 
 Servis sağlığı kontrollerinde geçici ağ dalgalanmalarının yanlış alarm (false-positive) üretmesini önlemek için 3 durumlu sonlu durum makinesi (finite state machine) kullanılır:
 - **`healthy`:** Servis yanıt veriyor ve HTTP 2xx/3xx veya açık TCP portu doğrulandı.
 - **`degraded`:** İlk başarısızlık tespit edildi; sistem alarm üretmez, servisi sarı uyarı moduna alır.
 - **`down`:** 3 ardışık başarısızlık sonrasında servis kırmızıya döner ve yapılandırılmış bildirim kanallarına (Discord, Telegram, vb.) alarm fırlatılır.
 - **Loopback Ağ Çözümlemesi:** Docker içinde çalışan Corvus'un host üzerindeki servislere (`localhost`, `127.0.0.1`) erişebilmesi için varsayılan bridge ağ geçidi (`host.docker.internal`) otomatik çözümlenir.
+
+---
+
+## 💡 İlham Kaynakları (Inspirations & Credits)
+- [Uptime Kuma](https://github.com/louislam/uptime-kuma) — İzleme mantığı ve durum sayfası felsefesi
+- [Beszel](https://github.com/henrygd/beszel) — Hafif telemetri ve sistem kaynak takibi yaklaşımı
+- [Portainer](https://github.com/portainer/portainer) — Konteyner yaşam döngüsü vizyonu
+

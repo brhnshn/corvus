@@ -101,7 +101,7 @@ public class UptimeCheckerService : BackgroundService
                         _lastCheckTimes[s.Id] = now;
                     }
 
-                    // Uptime Kuma tarzı kontrollü eşzamanlılık (DNS/soket tükenmesini engellemek için)
+                    // Kontrollü eşzamanlılık (DNS ve soket tükenmesini engellemek için)
                     var checkResults = new ConcurrentBag<(Service Service, UptimeCheck? Check, SslInfoHolder? Ssl)>();
                     var parallelOptions = new ParallelOptions
                     {
@@ -137,7 +137,7 @@ public class UptimeCheckerService : BackgroundService
                             _consecutiveFailures.AddOrUpdate(s.Id, 1, (_, count) => count + 1);
                             int failures = _consecutiveFailures[s.Id];
 
-                            // Uptime Kuma 3-State Machine Mantığı:
+                            // 3 Durumlu Durum Makinesi (Finite State Machine) Mantığı:
                             // Eşik değerine ulaşıldıysa -> Kesin DOWN
                             if (failures >= alertThreshold)
                             {

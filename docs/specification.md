@@ -240,7 +240,8 @@ Incoming push monitor heartbeat records.
 - [x] Flexible data retention & disk telemetry: Presets, Unlimited mode with disk advisory, live DB size indicator, and dynamic `RetentionCleanupService`
 - [x] In-Memory Micro-Cache (<150 KB) & .NET 9 `System.GC.ConserveMemory=5` elastic memory management (30–45 MB RAM)
 - [x] Batch Stats Endpoint (`GET /api/containers/stats-summary`) eliminating N+1 socket calls
-- [x] Uptime Kuma-grade 3-state resilience engine (`healthy` -> `degraded` -> `down`) & Docker loopback bridge gateway resolution
+- [x] Advanced 3-state resilience engine (`healthy` -> `degraded` -> `down`) & Docker loopback bridge gateway resolution
 - [x] Mobile-first 2-column compact KPI strip & active containers widget
 - [x] GitHub Releases API dynamic SemVer version update checker (`GET /api/version`)
-- [x] 85/85 passing xUnit test coverage
+- [x] Advanced Uptime monitoring parameters (custom interval, timeout, retries, ignore TLS, status codes) and opt-in status page
+- [x] 119/119 passing xUnit test coverage

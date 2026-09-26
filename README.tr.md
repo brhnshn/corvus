@@ -27,7 +27,7 @@
 
 ## 🌟 Genel Bakış
 
-**Corvus**, homelab ortamları, VPS sunucuları ve self-hosted altyapılar için tasarlanmış ultra hafif, yerel bir servis başlatıcı ve gözlemlenebilirlik (observability) kontrol panelidir. Sıfır çalışma zamanı yansıması (zero-reflection) ile önceden derlenen (**Native AOT**) Corvus, **30 MB'ın altında RAM** tüketerek çalışırken gerçek zamanlı Docker konteyner keşfi, Uptime Kuma seviyesinde 3 durumlu servis sağlık denetimi, zaman serisi kaynak takibi, canlı konteyner logları, çok kanallı alarmlar ve periyodik push izleme sunar.
+**Corvus**, homelab ortamları, VPS sunucuları ve self-hosted altyapılar için tasarlanmış ultra hafif, yerel bir servis başlatıcı ve gözlemlenebilirlik (observability) kontrol panelidir. Sıfır çalışma zamanı yansıması (zero-reflection) ile önceden derlenen (**Native AOT**) Corvus, **30 MB'ın altında RAM** tüketerek çalışırken gerçek zamanlı Docker konteyner keşfi, endüstriyel standartta 3 durumlu servis sağlık denetimi, zaman serisi kaynak takibi, canlı konteyner logları, çok kanallı alarmlar ve periyodik push izleme sunar.
 
 ---
 
@@ -45,7 +45,7 @@
   - 2.5 saniyelik sıfır-tahsisli dahili önbellekleme: Sekmeler arası hızlı geçişlerde Docker soket ve SQLite sorgu yükünü %90 azaltarak bellek sıçramalarını önler (<150 KB bellek maliyeti).
   - N+1 yerine tek sorguda tüm çalışan konteynerleri toplayan toplu metrik uç noktası (`GET /api/containers/stats-summary`).
   - .NET 9 `System.GC.ConserveMemory=5` yapılandırması ve periyodik idle bellek sıkıştırmasıyla RAM'i boşta ~30-35 MB, aktif kullanımda 40-50 MB bandında tutar.
-- **🛡️ Uptime Kuma Seviyesinde 3 Durumlu Dayanıklılık Motoru:**
+- **🛡️ Gelişmiş 3 Durumlu Dayanıklılık ve Sağlık Motoru:**
   - `healthy` ➔ `degraded` ➔ `down` durum makinesi: Anlık ağ dalgalanmalarında panik false-alarmı üretmez; 3 ardışık başarısızlıktan sonra gerçek arıza alarmı üretir.
   - `Parallel.ForEachAsync` ile onlarca servisi darboğazsız eşzamanlı denetler.
   - Konteyner loopback ağını otomatik çözümler (`host.docker.internal` / varsayılan bridge gateway yönlendirmesi).
@@ -67,18 +67,18 @@
 - **🔔 Çok Kanallı Alarm Motoru:**
   - Sekmeli yapılandırma: **Discord**, **Telegram**, **Ntfy / Gotify** ve **Özel Webhook** kanalları.
   - Özelleştirilebilir olay tetikleyicileri (`notify_service_events`) ve tek tıkla test bildirimi gönderme.
-- **⏱️ Genişletilmiş Uptime & SSL Takibi (Uptime Kuma Mimarisi):**
+- **⏱️ Genişletilmiş Uptime & SSL Takibi:**
   - **Ters Vekil (Reverse Proxy) Otomatik Algılama:** Traefik kuralları (`Host(...)`), Caddy etiketleri, `VIRTUAL_HOST`, `LETSENCRYPT_HOST` ve konteyner ortam değişkenleri (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) taranarak yerel `localhost` yerine gerçek alan adlarını otomatik bağlama.
   - **Gelişmiş Monitör Parametreleri (`AdvancedCheckOptions`):** Servis bazında bağımsız kontrol sıklığı (`check_interval`: 10s-300s), özel zaman aşımı (`timeout_seconds`), başarısızlık toleransı (`max_retries` / `retry_interval`), SSL hatalarını yoksayma (`ignore_tls`), kabul edilen HTTP durum kodları (`accepted_status_codes`, örn: `200-299, 401`) ve HTTP yöntemi (GET/POST/HEAD).
   - **Konteyner ve Servis Uç Noktası Düzenleme:** Hem Servisler hem de Uptime ekranlarından açılan bağımsız modüler düzenleme penceresi ile erişim adresi, özel sağlık endpoint'i (`/api/health`), TCP portu veya Docker daemon kontrol türü tanımlama. Yapılandırmalar `service_overrides` tablosunda kalıcı olarak saklanır.
-  - **Dahili Konteynerler ve Agent'lar İçin Yerel Docker Uptime Takibi:** Web portu açmayan dahili servisler (örn. `internal-beszel-agent`) için Docker Engine API üzerinden konteyner çalışma/sağlık durumu denetimi (`checkType: 'docker'`); eksiksiz yeşil SLA barı ve kontrol kaydı.
+  - **Dahili Konteynerler ve Agent'lar İçin Yerel Docker Uptime Takibi:** Web portu açmayan dahili servisler (örn. `internal-agent`, `cloudflared`, `local-dns`) için Docker Engine API üzerinden konteyner çalışma/sağlık durumu denetimi (`checkType: 'docker'`); eksiksiz yeşil SLA barı ve kontrol kaydı.
   - **HTTP/HTTPS & TCP Port Ping:** Veritabanları, SSH veya oyun sunucuları gibi HTTP dışı servisler için soket seviyesinde bağlantı testi.
   - **SSL Sertifika Bitiş Süresi:** SSL kalan gün sayısını ve sertifika sağlayıcısını otomatik takip eder; bitime 14 gün kala uyarı üretir.
 - **💀 Dead Man's Snitch (Periyodik Push Monitörü):**
   - Cron görevlerini ve yedekleme script'lerini (`borg`, `restic`, bash) izleme.
   - Beklenen periyot (örn. 24 saatte bir) ve tolerans süresi tanımlayabilme; sinyal gelmediğinde otomatik alarm oluşturma.
 - **🌐 Genel Durum Sayfası (Public Status — Varsayılan Kapalı & Opt-in):**
-  - Uptime Kuma prensibiyle **varsayılan olarak kapalı** (`status_page_enabled = false`); Ayarlar ekranından tek tıkla yayına alınabilir veya yayından kaldırılabilir.
+  - Sıfır-güven (zero-trust) ve gizlilik prensibiyle **varsayılan olarak kapalı** (`status_page_enabled = false`); Ayarlar ekranından tek tıkla yayına alınabilir veya yayından kaldırılabilir.
   - Kapalıyken ziyaretçilere şık, koyu temalı "Durum Sayfası Devre Dışı" (`PublicStatusDisabled.tsx`) ekranı sunar.
   - **Tamamen Opt-in (Seçmeli):** Servisler asla otomatik olarak durum sayfasına sızmaz; yalnızca kullanıcının açıkça `is_public` olarak işaretlediği servisler durum sayfasında listelenir.
 - **🛡️ Zero-Trust SSO & Ters Vekil (Reverse Proxy) Kimlik Doğrulama:**
@@ -236,6 +236,15 @@ labels:
    ```bash
    dotnet test tests/Corvus.Api.Tests
    ```
+
+---
+
+## 💡 İlham Kaynakları & Teşekkürler (Inspirations & Credits)
+
+Corvus, açık kaynak homelab ve sistem izleme ekosistemindeki öncü araçların felsefelerinden ilham alarak .NET 9 Native AOT üzerinde tek ve ultra hafif bir komuta merkezi olarak tasarlanmıştır:
+- [Uptime Kuma](https://github.com/louislam/uptime-kuma) — İzleme mantığı ve durum sayfası felsefesi
+- [Beszel](https://github.com/henrygd/beszel) — Hafif telemetri ve sistem kaynak takibi yaklaşımı
+- [Portainer](https://github.com/portainer/portainer) — Konteyner yaşam döngüsü vizyonu
 
 ---
 

@@ -240,7 +240,8 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Esnek veri saklama süresi ve disk telemetrisi: Hazır periyotlar, Sınırsız mod, risk uyarısı, canlı DB boyutu ve dinamik `RetentionCleanupService`
 - [x] In-Memory Micro-Cache (<150 KB) & .NET 9 `System.GC.ConserveMemory=5` elastik bellek yönetimi (30–45 MB RAM)
 - [x] Toplu İstatistikler (Batch Stats) Uç Noktası (`GET /api/containers/stats-summary`) ile N+1 soket çağrılarının kaldırılması
-- [x] Uptime Kuma seviyesinde 3 durumlu dayanıklılık motoru (`healthy` -> `degraded` -> `down`) & Docker loopback ağ geçidi çözümlemesi
+- [x] Gelişmiş 3 durumlu dayanıklılık motoru (`healthy` -> `degraded` -> `down`) & Docker loopback ağ geçidi çözümlemesi
 - [x] Mobil-öncelikli 2 sütunlu kompakt KPI şeridi & aktif konteynerler widget'ı
 - [x] GitHub Releases API dinamik SemVer sürüm denetleyicisi (`GET /api/version`)
-- [x] 85/85 xUnit birim ve entegrasyon testi doğrulaması
+- [x] Gelişmiş Uptime izleme parametreleri (özel kontrol aralığı, timeout, retry, TLS yoksayma, durum kodları) ve varsayılan kapalı opt-in durum sayfası
+- [x] 119/119 xUnit birim ve entegrasyon testi doğrulaması
