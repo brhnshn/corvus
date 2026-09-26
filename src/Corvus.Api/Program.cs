@@ -107,7 +107,15 @@ app.MapStatusPageEndpoints();
 app.MapNotificationEndpoints();
 app.MapStreamEndpoints();
 
-// SPA Routing Fallback
-app.MapFallbackToFile("index.html");
+// SPA Routing Fallback (Asla önbelleklenmemeli; her zaman taze chunk hash'lerini döndürür)
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate, max-age=0";
+        ctx.Context.Response.Headers.Pragma = "no-cache";
+        ctx.Context.Response.Headers.Expires = "0";
+    }
+});
 
 app.Run();

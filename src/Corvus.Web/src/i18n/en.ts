@@ -366,6 +366,8 @@ export const en = {
     outageDesc: 'One or more critical services are currently unavailable.',
     disabledTitle: 'Status Page Disabled',
     disabledDesc: 'The public status page for this system is currently disabled by the system administrator.',
+    noServicesTitle: 'No Active Uptime Services',
+    noServicesDesc: 'There are no active monitored services configured for the status page.',
     monitoredServices: 'Monitored Services ({count})',
     noPublicServices: 'No public services are currently configured.',
     sslDays: '{days} days',

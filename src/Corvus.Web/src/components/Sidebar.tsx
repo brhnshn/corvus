@@ -34,10 +34,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClose
 }) => {
   const [versionInfo, setVersionInfo] = React.useState<VersionInfo | null>(null);
+  const [isStatusLinkVisible, setIsStatusLinkVisible] = React.useState<boolean>(false);
   const { t } = useI18n();
 
   useEffect(() => {
     api.getVersion().then(setVersionInfo).catch(() => {});
+    api.getPublicStatusPage()
+      .then(res => setIsStatusLinkVisible(Boolean(res.enabled && res.services && res.services.length > 0)))
+      .catch(() => setIsStatusLinkVisible(false));
   }, []);
   const navItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
@@ -129,17 +133,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             );
           })}
 
-          <div className="pt-2 mt-2 border-t border-[#2a2e3f]/60">
-            <a
-              href="/status"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors"
-            >
-              <span>{t('nav.liveStatus')}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#0f1117] border border-[#2a2e3f] text-slate-400 font-mono">/status</span>
-            </a>
-          </div>
+          {isStatusLinkVisible && (
+            <div className="pt-2 mt-2 border-t border-[#2a2e3f]/60">
+              <a
+                href="/status"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors"
+              >
+                <span>{t('nav.liveStatus')}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#0f1117] border border-[#2a2e3f] text-slate-400 font-mono">/status</span>
+              </a>
+            </div>
+          )}
         </nav>
 
         {/* User Profile Footer */}

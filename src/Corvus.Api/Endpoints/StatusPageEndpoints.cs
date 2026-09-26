@@ -53,15 +53,25 @@ public static class StatusPageEndpoints
             }
 
             string overallStatus = "all_operational";
-            if (downCount > 0) overallStatus = "major_outage";
-            else if (degradedCount > 0) overallStatus = "some_degraded";
+            if (publicServices.Count == 0)
+            {
+                overallStatus = "no_services";
+            }
+            else if (downCount > 0)
+            {
+                overallStatus = "major_outage";
+            }
+            else if (degradedCount > 0)
+            {
+                overallStatus = "some_degraded";
+            }
 
             var result = new PublicStatusPageDto(
                 SystemStatus: overallStatus,
                 Services: serviceDtos,
                 GeneratedAt: DateTime.UtcNow.ToString("o"),
                 Enabled: true,
-                Message: null
+                Message: publicServices.Count == 0 ? "Uptime takibi aktif edilmiş veya halka açık herhangi bir servis bulunmuyor." : null
             );
 
             return Results.Ok(result);

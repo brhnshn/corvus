@@ -368,6 +368,8 @@ export const tr: TranslationDictionary = {
     outageDesc: 'Bir veya birden fazla kritik servis erişilemez durumda.',
     disabledTitle: 'Durum Sayfası Devre Dışı',
     disabledDesc: 'Bu sistemin halka açık durum sayfası şu anda sistem yöneticisi tarafından devre dışı bırakılmıştır.',
+    noServicesTitle: 'Aktif Uptime Servisi Yok',
+    noServicesDesc: 'Durum sayfasında görüntülenecek aktif bir Uptime servisi bulunmuyor veya servislerin izleme ayarı yapılmadı.',
     monitoredServices: 'İzlenen Servisler ({count})',
     noPublicServices: 'Şu anda halka açık olarak tanımlanmış bir servis bulunmuyor.',
     sslDays: '{days} gün',

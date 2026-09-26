@@ -5,15 +5,83 @@ import { RegistrationPromptModal } from './components/RegistrationPromptModal';
 import { Menu, RefreshCw } from 'lucide-react';
 import { useI18n } from './i18n';
 
-// Code-splitting via React.lazy for bundle optimization (Roadmap 3.1)
-const DashboardPage = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
-const ServicesPage = lazy(() => import('./pages/Services').then(m => ({ default: m.ServicesPage })));
-const ContainersPage = lazy(() => import('./pages/Containers').then(m => ({ default: m.ContainersPage })));
-const SystemMetricsPage = lazy(() => import('./pages/SystemMetrics').then(m => ({ default: m.SystemMetricsPage })));
-const UptimePage = lazy(() => import('./pages/Uptime').then(m => ({ default: m.UptimePage })));
-const SettingsPage = lazy(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
-const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
-const PublicStatus = lazy(() => import('./pages/PublicStatus'));
+// Chunk yükleme hatalarını (yeni dağıtımlarda 404 veren eski JS dosyalarını) yakalayıp tazeleyen dirençli lazy sarmalayıcı
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  componentImport: () => Promise<{ default: T }>
+) {
+  return lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('chunk_reload_retry') || 'false'
+    );
+    try {
+      const component = await componentImport();
+      window.sessionStorage.removeItem('chunk_reload_retry');
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem('chunk_reload_retry', 'true');
+        window.location.reload();
+        return new Promise<{ default: T }>(() => {});
+      }
+      window.sessionStorage.removeItem('chunk_reload_retry');
+      throw error;
+    }
+  });
+}
+
+// Code-splitting via lazyWithRetry for bundle optimization (Roadmap 3.1)
+const DashboardPage = lazyWithRetry(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
+const ServicesPage = lazyWithRetry(() => import('./pages/Services').then(m => ({ default: m.ServicesPage })));
+const ContainersPage = lazyWithRetry(() => import('./pages/Containers').then(m => ({ default: m.ContainersPage })));
+const SystemMetricsPage = lazyWithRetry(() => import('./pages/SystemMetrics').then(m => ({ default: m.SystemMetricsPage })));
+const UptimePage = lazyWithRetry(() => import('./pages/Uptime').then(m => ({ default: m.UptimePage })));
+const SettingsPage = lazyWithRetry(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
+const AuthPage = lazyWithRetry(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
+const PublicStatus = lazyWithRetry(() => import('./pages/PublicStatus'));
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ChunkErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-full max-w-md bg-[#1a1d29] border border-[#2a2e3f] rounded-2xl p-8 space-y-4 shadow-2xl">
+            <RefreshCw className="w-10 h-10 text-indigo-400 mx-auto animate-spin" />
+            <h2 className="text-lg font-bold text-white">Yeni Sürüm Algılandı</h2>
+            <p className="text-xs text-slate-400">
+              Sistem güncellendiği için sayfanın taze varlıklarla yeniden yüklenmesi gerekiyor.
+            </p>
+            <button
+              onClick={() => {
+                window.sessionStorage.removeItem('chunk_reload_retry');
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold text-white transition-colors cursor-pointer"
+            >
+              Sayfayı Yenile
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const PageLoader = () => (
   <div className="flex items-center justify-center py-20 text-[#9ca3af]">
@@ -199,9 +267,11 @@ export const App: React.FC = () => {
   // Roadmap 1.6: Halka Açık Şifresiz Durum Sayfası
   if (isStatusPath) {
     return (
-      <Suspense fallback={<PageLoader />}>
-        <PublicStatus />
-      </Suspense>
+      <ChunkErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <PublicStatus />
+        </Suspense>
+      </ChunkErrorBoundary>
     );
   }
 
@@ -321,9 +391,11 @@ export const App: React.FC = () => {
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
-            <Suspense fallback={<PageLoader />}>
-              {renderPage()}
-            </Suspense>
+            <ChunkErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                {renderPage()}
+              </Suspense>
+            </ChunkErrorBoundary>
           </div>
         </main>
       </div>

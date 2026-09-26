@@ -88,7 +88,7 @@ export interface PublicService {
 }
 
 export interface PublicStatusPage {
-  systemStatus: 'all_operational' | 'some_degraded' | 'major_outage' | 'disabled';
+  systemStatus: 'all_operational' | 'some_degraded' | 'major_outage' | 'disabled' | 'no_services';
   services: PublicService[];
   generatedAt: string;
   enabled?: boolean;

@@ -35,6 +35,14 @@ export default function PublicStatus() {
 
   const getSystemStatusHeader = () => {
     if (!data) return null;
+    if (data.systemStatus === 'no_services' || data.services.length === 0) {
+      return {
+        title: t('publicStatus.noServicesTitle'),
+        desc: t('publicStatus.noServicesDesc'),
+        bgColor: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
+        icon: <AlertTriangle className="w-8 h-8 text-rose-400" />
+      };
+    }
     if (data.systemStatus === 'all_operational') {
       return {
         title: t('publicStatus.allOperationalTitle'),
@@ -140,8 +148,10 @@ export default function PublicStatus() {
             </h3>
 
             {data.services.length === 0 ? (
-              <div className="p-8 rounded-xl border border-slate-800 bg-slate-900/40 text-center text-slate-500 text-sm">
-                {t('publicStatus.noPublicServices')}
+              <div className="p-8 rounded-xl border border-rose-500/20 bg-rose-500/5 text-center text-rose-300 text-sm space-y-2">
+                <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto" />
+                <p className="font-semibold text-rose-300">{t('publicStatus.noServicesTitle')}</p>
+                <p className="text-xs text-slate-400">{t('publicStatus.noServicesDesc')}</p>
               </div>
             ) : (
               <div className="grid gap-3">
