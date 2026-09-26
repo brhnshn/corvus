@@ -24,10 +24,11 @@ export const UptimePage: React.FC = () => {
       const data = await api.getServices();
       if (!isMountedRef.current) return;
       setServices(data);
-      if (data.length > 0) {
+      const monitored = data.filter((s) => s.isUptimeEnabled);
+      if (monitored.length > 0) {
         setSelectedServiceId((prev) => {
-          const exists = data.some((s) => s.id === prev);
-          return exists ? prev : data[0].id;
+          const exists = monitored.some((s) => s.id === prev);
+          return exists ? prev : monitored[0].id;
         });
       } else {
         setSelectedServiceId('');

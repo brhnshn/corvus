@@ -16,6 +16,7 @@ export interface Service {
   sslExpiryDays?: number;
   sslIssuer?: string;
   isPublic?: boolean;
+  isUptimeEnabled?: boolean;
   displayOrder?: number;
   checkInterval?: number;
   maxRetries?: number;
@@ -24,6 +25,21 @@ export interface Service {
   ignoreTls?: boolean;
   acceptedStatusCodes?: string;
   httpMethod?: string;
+}
+
+export interface TestConnectionRequest {
+  checkType?: string;
+  url?: string;
+  port?: number;
+  timeoutSeconds?: number;
+  ignoreTls?: boolean;
+}
+
+export interface TestConnectionResponse {
+  success: boolean;
+  statusCode?: number;
+  responseTimeMs: number;
+  message: string;
 }
 
 export interface DockerContainer {

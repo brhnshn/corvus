@@ -423,6 +423,7 @@ public class DockerService : IDockerService
             Status = status,
             CheckType = checkType,
             Port = port,
+            IsUptimeEnabled = false,
             CreatedAt = DateTime.UtcNow.ToString("o"),
             UpdatedAt = DateTime.UtcNow.ToString("o")
         };

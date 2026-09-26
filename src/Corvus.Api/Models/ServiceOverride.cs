@@ -13,6 +13,7 @@ public class ServiceOverride
     public string? CheckType { get; set; }
     public int? Port { get; set; }
     public bool? IsPublic { get; set; }
+    public bool? IsUptimeEnabled { get; set; }
     public int? CheckInterval { get; set; }
     public int? MaxRetries { get; set; }
     public int? RetryInterval { get; set; }

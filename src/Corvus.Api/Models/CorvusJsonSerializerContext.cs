@@ -23,6 +23,7 @@ public record CreateServiceRequest(
     string? CheckType = "http",
     int? Port = null,
     bool? IsPublic = false,
+    bool? IsUptimeEnabled = null,
     int? CheckInterval = 60,
     int? MaxRetries = 1,
     int? RetryInterval = 30,
@@ -42,6 +43,7 @@ public record UpdateServiceRequest(
     string? CheckType = null,
     int? Port = null,
     bool? IsPublic = null,
+    bool? IsUptimeEnabled = null,
     int? CheckInterval = null,
     int? MaxRetries = null,
     int? RetryInterval = null,
@@ -49,6 +51,21 @@ public record UpdateServiceRequest(
     bool? IgnoreTls = null,
     string? AcceptedStatusCodes = null,
     string? HttpMethod = null
+);
+
+public record TestConnectionRequest(
+    string? CheckType = "http",
+    string? Url = null,
+    int? Port = null,
+    int? TimeoutSeconds = 5,
+    bool? IgnoreTls = true
+);
+
+public record TestConnectionResponse(
+    bool Success,
+    int? StatusCode,
+    long ResponseTimeMs,
+    string Message
 );
 
 public record ContainerStatsDto(
@@ -204,6 +221,8 @@ public record NotificationResult(
 [JsonSerializable(typeof(VersionInfoDto))]
 [JsonSerializable(typeof(GitHubReleaseDto))]
 [JsonSerializable(typeof(DbStatsResponse))]
+[JsonSerializable(typeof(TestConnectionRequest))]
+[JsonSerializable(typeof(TestConnectionResponse))]
 [JsonSerializable(typeof(string))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {

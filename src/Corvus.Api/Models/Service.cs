@@ -20,6 +20,7 @@ public class Service
     public int? SslExpiryDays { get; set; }
     public string? SslIssuer { get; set; }
     public bool IsPublic { get; set; } = false;
+    public bool IsUptimeEnabled { get; set; } = false;
     public int DisplayOrder { get; set; } = 0;
 
     public int? CheckInterval { get; set; } = 60;

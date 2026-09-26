@@ -83,16 +83,24 @@ public class UptimeCheckerService : BackgroundService
                 var allServices = await servicesRepo.GetAllAsync();
                 var now = DateTime.UtcNow;
 
-                // check_interval süresi dolmuş veya hiç kontrol edilmemiş servisleri seç
-                var servicesToCheck = allServices.Where(s =>
-                {
-                    int intervalSec = Math.Max(5, s.CheckInterval ?? 60);
-                    if (_lastCheckTimes.TryGetValue(s.Id, out var lastTime))
+                // SADECE Uptime takibi kullanıcı tarafından aktif edilmiş servisler denetlenir!
+                var servicesToCheck = allServices
+                    .Where(s => s.IsUptimeEnabled && !string.Equals(s.CheckType, "none", StringComparison.OrdinalIgnoreCase))
+                    .Where(s =>
                     {
-                        return (now - lastTime).TotalSeconds >= intervalSec;
-                    }
-                    return true;
-                }).ToList();
+                        // Konteyner Docker'da durdurulmuşsa (down) kontrolü atla (skip), degraded yapma!
+                        if (s.Source == "docker" && s.Status == "down")
+                        {
+                            return false;
+                        }
+
+                        int intervalSec = Math.Max(5, s.CheckInterval ?? 60);
+                        if (_lastCheckTimes.TryGetValue(s.Id, out var lastTime))
+                        {
+                            return (now - lastTime).TotalSeconds >= intervalSec;
+                        }
+                        return true;
+                    }).ToList();
 
                 if (servicesToCheck.Count > 0)
                 {
@@ -329,7 +337,12 @@ public class UptimeCheckerService : BackgroundService
 
     private async Task<(Service Service, UptimeCheck? Check, SslInfoHolder? Ssl)> CheckSingleServiceAsync(Service s, CancellationToken ct)
     {
-        if (string.Equals(s.CheckType, "none", StringComparison.OrdinalIgnoreCase))
+        if (!s.IsUptimeEnabled || string.Equals(s.CheckType, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            return (s, null, null);
+        }
+
+        if (s.Source == "docker" && s.Status == "down")
         {
             return (s, null, null);
         }

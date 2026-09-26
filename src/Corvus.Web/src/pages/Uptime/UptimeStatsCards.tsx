@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Pencil, Container } from 'lucide-react';
+import { ShieldCheck, Pencil, Container, PowerOff } from 'lucide-react';
 import type { Service, UptimeCheckItem } from '../../types';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useI18n } from '../../i18n';
@@ -9,13 +9,15 @@ interface UptimeStatsCardsProps {
   checks: UptimeCheckItem[];
   rangeLabel: string;
   onEditService?: (service: Service) => void;
+  onDisableUptime?: (service: Service) => void;
 }
 
 export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
   selectedService,
   checks,
   rangeLabel,
-  onEditService
+  onEditService,
+  onDisableUptime
 }) => {
   const { t } = useI18n();
 
@@ -138,6 +140,18 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
             >
               <Pencil className="w-3.5 h-3.5 text-indigo-400" />
               <span>{t('uptime.editEndpoint')}</span>
+            </button>
+          )}
+
+          {onDisableUptime && (
+            <button
+              type="button"
+              onClick={() => onDisableUptime(selectedService)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] hover:border-amber-500/50 hover:bg-[#1e2130] text-xs text-[#9ca3af] hover:text-amber-400 transition-all cursor-pointer shadow-xs"
+              title="Uptime Takibini Kapat"
+            >
+              <PowerOff className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Takibi Kapat</span>
             </button>
           )}
         </div>

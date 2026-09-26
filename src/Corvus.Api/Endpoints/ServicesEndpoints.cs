@@ -30,12 +30,28 @@ public static class ServicesEndpoints
                 return Results.BadRequest(new GenericApiResponse(false, "Servis adı boş olamaz."));
             }
 
+            if (request.IsPublic == true && request.IsUptimeEnabled == false)
+            {
+                return Results.BadRequest(new GenericApiResponse(false, "Uptime sağlık takibi aktif olmayan servisler durum sayfasına eklenemez."));
+            }
+
             var created = await repo.CreateManualAsync(request);
             return Results.Created($"/api/services/{created.Id}", created);
         });
 
         group.MapPut("/{id}", async (string id, UpdateServiceRequest request, IServicesRepository repo) =>
         {
+            var existing = await repo.GetByIdAsync(id);
+            if (existing == null) return Results.NotFound();
+
+            bool targetPublic = request.IsPublic ?? existing.IsPublic;
+            bool targetUptime = request.IsUptimeEnabled ?? existing.IsUptimeEnabled;
+
+            if (targetPublic && !targetUptime)
+            {
+                return Results.BadRequest(new GenericApiResponse(false, "Uptime sağlık takibi aktif olmayan servisler durum sayfasına eklenemez."));
+            }
+
             var updated = await repo.UpdateAsync(id, request);
             return updated != null ? Results.Ok(updated) : Results.NotFound();
         });

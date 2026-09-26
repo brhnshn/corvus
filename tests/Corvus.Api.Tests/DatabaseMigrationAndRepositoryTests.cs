@@ -369,6 +369,156 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
         Assert.True(fetchedDocker.IsPublic);
     }
 
+    [Fact]
+    public async Task OptInUptime_ManualService_DefaultsToEnabled_AndIncludedInPublic()
+    {
+        var servicesRepo = new ServicesRepository(_dbFactory);
+
+        var created = await servicesRepo.CreateManualAsync(new CreateServiceRequest(
+            Name: "Manual Opt-In Service",
+            Description: "Manual check",
+            Url: "https://example.com",
+            Icon: "⚡",
+            Category: "Web",
+            HealthCheckUrl: null,
+            CheckType: "http",
+            Port: 443,
+            IsPublic: true
+        ));
+
+        Assert.NotNull(created);
+        Assert.True(created.IsUptimeEnabled);
+
+        var publicList = await servicesRepo.GetPublicServicesAsync();
+        Assert.Contains(publicList, s => s.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task OptInUptime_DockerService_DefaultsToDisabled_AndStatusSynchronizedDirectly()
+    {
+        var servicesRepo = new ServicesRepository(_dbFactory);
+
+        var dockerSvc = new Service
+        {
+            Id = "docker_unmonitored_redis",
+            Source = "docker",
+            ContainerId = "redis_cont_123",
+            Name = "redis_cache",
+            Status = "healthy",
+            IsUptimeEnabled = false,
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UpdatedAt = DateTime.UtcNow.ToString("o")
+        };
+
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["redis_cont_123"]);
+
+        var fetched = await servicesRepo.GetByIdAsync("docker_unmonitored_redis");
+        Assert.NotNull(fetched);
+        Assert.False(fetched.IsUptimeEnabled);
+        Assert.Equal("healthy", fetched.Status);
+
+        // Docker status changed to degraded
+        dockerSvc.Status = "degraded";
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["redis_cont_123"]);
+
+        var fetchedDegraded = await servicesRepo.GetByIdAsync("docker_unmonitored_redis");
+        Assert.NotNull(fetchedDegraded);
+        Assert.Equal("degraded", fetchedDegraded.Status);
+
+        // Docker status changed to down
+        dockerSvc.Status = "down";
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["redis_cont_123"]);
+
+        var fetchedDown = await servicesRepo.GetByIdAsync("docker_unmonitored_redis");
+        Assert.NotNull(fetchedDown);
+        Assert.Equal("down", fetchedDown.Status);
+    }
+
+    [Fact]
+    public async Task OptInUptime_DoubleLock_ExcludesUnmonitoredServicesFromStatusPage()
+    {
+        var servicesRepo = new ServicesRepository(_dbFactory);
+
+        // 1. Docker service that is public BUT unmonitored (is_uptime_enabled = 0)
+        var dockerSvc = new Service
+        {
+            Id = "docker_internal_db",
+            Source = "docker",
+            ContainerId = "postgres_cont_555",
+            Name = "postgres_db",
+            Status = "healthy",
+            IsPublic = true,
+            IsUptimeEnabled = false,
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UpdatedAt = DateTime.UtcNow.ToString("o")
+        };
+
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["postgres_cont_555"]);
+
+        // Double lock check: even if is_public = 1, since is_uptime_enabled = 0 it MUST NOT leak to public status page
+        var publicList = await servicesRepo.GetPublicServicesAsync();
+        Assert.DoesNotContain(publicList, s => s.Id == "docker_internal_db");
+
+        // 2. User enables uptime tracking
+        await servicesRepo.UpdateAsync("docker_internal_db", new UpdateServiceRequest(
+            Name: "postgres_db",
+            Description: null,
+            Url: null,
+            Icon: null,
+            Category: null,
+            HealthCheckUrl: null,
+            CheckType: "tcp",
+            Port: 5432,
+            IsPublic: true,
+            IsUptimeEnabled: true
+        ));
+
+        var publicListAfterEnable = await servicesRepo.GetPublicServicesAsync();
+        Assert.Contains(publicListAfterEnable, s => s.Id == "docker_internal_db");
+    }
+
+    [Fact]
+    public async Task OptInUptime_WhenEnabled_UptimeStatusPreserved_UnlessContainerStopped()
+    {
+        var servicesRepo = new ServicesRepository(_dbFactory);
+
+        var dockerSvc = new Service
+        {
+            Id = "docker_monitored_api",
+            Source = "docker",
+            ContainerId = "api_cont_777",
+            Name = "api_gateway",
+            Status = "healthy",
+            IsUptimeEnabled = true,
+            Url = "http://192.168.1.100:8000",
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UpdatedAt = DateTime.UtcNow.ToString("o")
+        };
+
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["api_cont_777"]);
+
+        // UptimeChecker marks it degraded because HTTP returns 500
+        await servicesRepo.UpdateStatusAsync("docker_monitored_api", "degraded");
+
+        // Docker daemon runs sync with status 'healthy' (container process is running)
+        dockerSvc.Status = "healthy";
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["api_cont_777"]);
+
+        // Since uptime is enabled and container is running, Uptime's 'degraded' status MUST BE preserved!
+        var fetched = await servicesRepo.GetByIdAsync("docker_monitored_api");
+        Assert.NotNull(fetched);
+        Assert.Equal("degraded", fetched.Status);
+
+        // However, if Docker daemon stops container (docker stop -> 'down')
+        dockerSvc.Status = "down";
+        await servicesRepo.SyncDockerBatchAsync([dockerSvc], ["api_cont_777"]);
+
+        // Status MUST immediately become 'down'!
+        var fetchedStopped = await servicesRepo.GetByIdAsync("docker_monitored_api");
+        Assert.NotNull(fetchedStopped);
+        Assert.Equal("down", fetchedStopped.Status);
+    }
+
     public void Dispose()
     {
         try

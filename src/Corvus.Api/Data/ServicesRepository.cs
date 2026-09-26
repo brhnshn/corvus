@@ -46,6 +46,7 @@ public class ServicesRepository : IServicesRepository
         int? ssl_expiry_days,
         string? ssl_issuer,
         int? is_public,
+        int? is_uptime_enabled,
         int? display_order,
         int? check_interval,
         int? max_retries,
@@ -63,6 +64,7 @@ public class ServicesRepository : IServicesRepository
         string? OverrideCheckType,
         int? OverridePort,
         int? OverrideIsPublic,
+        int? OverrideIsUptimeEnabled,
         int? OverrideCheckInterval,
         int? OverrideMaxRetries,
         int? OverrideRetryInterval,
@@ -91,6 +93,7 @@ public class ServicesRepository : IServicesRepository
         SslExpiryDays = r.ssl_expiry_days,
         SslIssuer = r.ssl_issuer,
         IsPublic = (r.OverrideIsPublic ?? r.is_public ?? 0) == 1,
+        IsUptimeEnabled = (r.OverrideIsUptimeEnabled ?? r.is_uptime_enabled ?? 0) == 1,
         DisplayOrder = r.display_order ?? 0,
         CheckInterval = r.OverrideCheckInterval ?? r.check_interval ?? 60,
         MaxRetries = r.OverrideMaxRetries ?? r.max_retries ?? 1,
@@ -103,7 +106,7 @@ public class ServicesRepository : IServicesRepository
 
     private const string BaseSelectSql = @"
         SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
-               s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.display_order,
+               s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.is_uptime_enabled, s.display_order,
                s.check_interval, s.max_retries, s.retry_interval, s.timeout_seconds, s.ignore_tls, s.accepted_status_codes, s.http_method,
                o.name AS OverrideName, 
                o.description AS OverrideDescription, 
@@ -114,6 +117,7 @@ public class ServicesRepository : IServicesRepository
                o.check_type AS OverrideCheckType,
                o.port AS OverridePort,
                o.is_public AS OverrideIsPublic,
+               o.is_uptime_enabled AS OverrideIsUptimeEnabled,
                o.check_interval AS OverrideCheckInterval,
                o.max_retries AS OverrideMaxRetries,
                o.retry_interval AS OverrideRetryInterval,
@@ -138,6 +142,7 @@ public class ServicesRepository : IServicesRepository
         using var conn = _db.CreateConnection();
         var sql = $@"{BaseSelectSql}
             WHERE COALESCE(o.is_public, s.is_public, 0) = 1
+              AND COALESCE(o.is_uptime_enabled, s.is_uptime_enabled, 0) = 1
             ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
 
         var rows = await conn.QueryAsync<ServiceDbRow>(sql);
@@ -173,6 +178,7 @@ public class ServicesRepository : IServicesRepository
             CheckType = request.CheckType ?? "http",
             Port = request.Port,
             IsPublic = request.IsPublic ?? false,
+            IsUptimeEnabled = request.IsUptimeEnabled ?? true,
             CheckInterval = request.CheckInterval ?? 60,
             MaxRetries = request.MaxRetries ?? 1,
             RetryInterval = request.RetryInterval ?? 30,
@@ -183,8 +189,8 @@ public class ServicesRepository : IServicesRepository
         };
 
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)";
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)";
 
         await conn.ExecuteAsync(sql, new {
             service.Id,
@@ -202,6 +208,7 @@ public class ServicesRepository : IServicesRepository
             service.CheckType,
             service.Port,
             IsPublicInt = service.IsPublic ? 1 : 0,
+            IsUptimeEnabledInt = service.IsUptimeEnabled ? 1 : 0,
             service.DisplayOrder,
             service.CheckInterval,
             service.MaxRetries,
@@ -222,6 +229,7 @@ public class ServicesRepository : IServicesRepository
         using var conn = _db.CreateConnection();
         string now = DateTime.UtcNow.ToString("o");
         int isPublicInt = (request.IsPublic ?? existing.IsPublic) ? 1 : 0;
+        int isUptimeEnabledInt = (request.IsUptimeEnabled ?? existing.IsUptimeEnabled) ? 1 : 0;
         string checkType = request.CheckType ?? existing.CheckType;
         int? port = request.Port ?? existing.Port;
         int checkInterval = request.CheckInterval ?? existing.CheckInterval ?? 60;
@@ -236,7 +244,7 @@ public class ServicesRepository : IServicesRepository
             UPDATE services 
             SET name = @Name, description = @Description, url = @Url, icon = @Icon, 
                 category = @Category, health_check_url = @HealthCheckUrl, updated_at = @now,
-                check_type = @checkType, port = @port, is_public = @isPublicInt,
+                check_type = @checkType, port = @port, is_public = @isPublicInt, is_uptime_enabled = @isUptimeEnabledInt,
                 check_interval = @checkInterval, max_retries = @maxRetries, retry_interval = @retryInterval,
                 timeout_seconds = @timeoutSeconds, ignore_tls = @ignoreTlsInt,
                 accepted_status_codes = @acceptedStatusCodes, http_method = @httpMethod
@@ -253,6 +261,7 @@ public class ServicesRepository : IServicesRepository
             checkType, 
             port, 
             isPublicInt, 
+            isUptimeEnabledInt,
             checkInterval,
             maxRetries,
             retryInterval,
@@ -267,8 +276,8 @@ public class ServicesRepository : IServicesRepository
         {
             string overrideKey = !string.IsNullOrEmpty(existing.ContainerId) ? existing.ContainerId : id;
             var overrideSql = @"
-                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod)
+                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, is_uptime_enabled, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @isUptimeEnabledInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod)
                 ON CONFLICT(container_id) DO UPDATE SET
                     service_id = excluded.service_id,
                     name = excluded.name,
@@ -280,6 +289,7 @@ public class ServicesRepository : IServicesRepository
                     check_type = excluded.check_type,
                     port = excluded.port,
                     is_public = excluded.is_public,
+                    is_uptime_enabled = excluded.is_uptime_enabled,
                     check_interval = excluded.check_interval,
                     max_retries = excluded.max_retries,
                     retry_interval = excluded.retry_interval,
@@ -300,6 +310,7 @@ public class ServicesRepository : IServicesRepository
                 checkType, 
                 port, 
                 isPublicInt,
+                isUptimeEnabledInt,
                 checkInterval,
                 maxRetries,
                 retryInterval,
@@ -356,13 +367,14 @@ public class ServicesRepository : IServicesRepository
     {
         using var conn = _db.CreateConnection();
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
                 status = CASE 
+                    WHEN COALESCE(services.is_uptime_enabled, 0) = 0 THEN excluded.status
                     WHEN excluded.status = 'down' THEN 'down'
-                    WHEN services.status IN ('down', 'degraded', 'healthy') AND (services.url IS NOT NULL OR services.health_check_url IS NOT NULL OR services.check_type = 'tcp') THEN services.status
+                    WHEN services.status IN ('down', 'degraded', 'healthy') THEN services.status
                     ELSE excluded.status
                 END,
                 url = CASE 
@@ -371,6 +383,7 @@ public class ServicesRepository : IServicesRepository
                 END,
                 check_type = COALESCE(services.check_type, excluded.check_type),
                 port = COALESCE(services.port, excluded.port),
+                is_uptime_enabled = COALESCE(services.is_uptime_enabled, excluded.is_uptime_enabled),
                 updated_at = excluded.updated_at";
 
         await conn.ExecuteAsync(sql, new {
@@ -388,6 +401,7 @@ public class ServicesRepository : IServicesRepository
             service.CheckType,
             service.Port,
             IsPublicInt = service.IsPublic ? 1 : 0,
+            IsUptimeEnabledInt = service.IsUptimeEnabled ? 1 : 0,
             service.DisplayOrder,
             CheckInterval = service.CheckInterval ?? 60,
             MaxRetries = service.MaxRetries ?? 1,
@@ -425,13 +439,14 @@ public class ServicesRepository : IServicesRepository
         using var tx = conn.BeginTransaction();
 
         var upsertSql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
                 status = CASE 
+                    WHEN COALESCE(services.is_uptime_enabled, 0) = 0 THEN excluded.status
                     WHEN excluded.status = 'down' THEN 'down'
-                    WHEN services.status IN ('down', 'degraded', 'healthy') AND (services.url IS NOT NULL OR services.health_check_url IS NOT NULL OR services.check_type = 'tcp') THEN services.status
+                    WHEN services.status IN ('down', 'degraded', 'healthy') THEN services.status
                     ELSE excluded.status
                 END,
                 url = CASE 
@@ -440,6 +455,7 @@ public class ServicesRepository : IServicesRepository
                 END,
                 check_type = COALESCE(services.check_type, excluded.check_type),
                 port = COALESCE(services.port, excluded.port),
+                is_uptime_enabled = COALESCE(services.is_uptime_enabled, excluded.is_uptime_enabled),
                 updated_at = excluded.updated_at";
 
         foreach (var s in services)
@@ -459,6 +475,7 @@ public class ServicesRepository : IServicesRepository
                 s.CheckType,
                 s.Port,
                 IsPublicInt = s.IsPublic ? 1 : 0,
+                IsUptimeEnabledInt = s.IsUptimeEnabled ? 1 : 0,
                 s.DisplayOrder,
                 CheckInterval = s.CheckInterval ?? 60,
                 MaxRetries = s.MaxRetries ?? 1,
