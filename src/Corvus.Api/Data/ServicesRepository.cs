@@ -51,7 +51,11 @@ public class ServicesRepository : IServicesRepository
         string? OverrideDescription,
         string? OverrideUrl,
         string? OverrideIcon,
-        string? OverrideCategory
+        string? OverrideCategory,
+        string? OverrideHealthCheckUrl,
+        string? OverrideCheckType,
+        int? OverridePort,
+        int? OverrideIsPublic
     );
 
     private static Service MapRowToService(ServiceDbRow r) => new Service
@@ -64,15 +68,15 @@ public class ServicesRepository : IServicesRepository
         Url = r.OverrideUrl ?? r.url,
         Icon = r.OverrideIcon ?? r.icon,
         Category = r.OverrideCategory ?? r.category,
-        HealthCheckUrl = r.health_check_url,
+        HealthCheckUrl = r.OverrideHealthCheckUrl ?? r.health_check_url,
         Status = r.status,
         CreatedAt = r.created_at,
         UpdatedAt = r.updated_at,
-        CheckType = r.check_type ?? "http",
-        Port = r.port,
+        CheckType = r.OverrideCheckType ?? r.check_type ?? "http",
+        Port = r.OverridePort ?? r.port,
         SslExpiryDays = r.ssl_expiry_days,
         SslIssuer = r.ssl_issuer,
-        IsPublic = (r.is_public ?? 1) == 1,
+        IsPublic = (r.OverrideIsPublic ?? r.is_public ?? 1) == 1,
         DisplayOrder = r.display_order ?? 0
     };
 
@@ -86,9 +90,13 @@ public class ServicesRepository : IServicesRepository
                    o.description AS OverrideDescription, 
                    o.url AS OverrideUrl, 
                    o.icon AS OverrideIcon, 
-                   o.category AS OverrideCategory
+                   o.category AS OverrideCategory,
+                   o.health_check_url AS OverrideHealthCheckUrl,
+                   o.check_type AS OverrideCheckType,
+                   o.port AS OverridePort,
+                   o.is_public AS OverrideIsPublic
             FROM services s
-            LEFT JOIN service_overrides o ON s.container_id = o.container_id
+            LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))
             ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
 
         var rows = await conn.QueryAsync<ServiceDbRow>(sql);
@@ -105,9 +113,13 @@ public class ServicesRepository : IServicesRepository
                    o.description AS OverrideDescription, 
                    o.url AS OverrideUrl, 
                    o.icon AS OverrideIcon, 
-                   o.category AS OverrideCategory
+                   o.category AS OverrideCategory,
+                   o.health_check_url AS OverrideHealthCheckUrl,
+                   o.check_type AS OverrideCheckType,
+                   o.port AS OverridePort,
+                   o.is_public AS OverrideIsPublic
             FROM services s
-            LEFT JOIN service_overrides o ON s.container_id = o.container_id
+            LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))
             WHERE s.is_public = 1
             ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
 
@@ -125,9 +137,13 @@ public class ServicesRepository : IServicesRepository
                    o.description AS OverrideDescription, 
                    o.url AS OverrideUrl, 
                    o.icon AS OverrideIcon, 
-                   o.category AS OverrideCategory
+                   o.category AS OverrideCategory,
+                   o.health_check_url AS OverrideHealthCheckUrl,
+                   o.check_type AS OverrideCheckType,
+                   o.port AS OverridePort,
+                   o.is_public AS OverrideIsPublic
             FROM services s
-            LEFT JOIN service_overrides o ON s.container_id = o.container_id
+            LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))
             WHERE s.id = @id";
 
         var r = await conn.QuerySingleOrDefaultAsync<ServiceDbRow>(sql, new { id });
@@ -192,46 +208,58 @@ public class ServicesRepository : IServicesRepository
         string checkType = request.CheckType ?? existing.CheckType;
         int? port = request.Port ?? existing.Port;
 
-        if (existing.Source == "manual")
-        {
-            var sql = @"
-                UPDATE services 
-                SET name = @Name, description = @Description, url = @Url, icon = @Icon, 
-                    category = @Category, health_check_url = @HealthCheckUrl, updated_at = @now,
-                    check_type = @checkType, port = @port, is_public = @isPublicInt
-                WHERE id = @id";
+        var sql = @"
+            UPDATE services 
+            SET name = @Name, description = @Description, url = @Url, icon = @Icon, 
+                category = @Category, health_check_url = @HealthCheckUrl, updated_at = @now,
+                check_type = @checkType, port = @port, is_public = @isPublicInt
+            WHERE id = @id";
 
-            await conn.ExecuteAsync(sql, new { 
-                request.Name, 
-                request.Description, 
-                request.Url, 
-                request.Icon, 
-                request.Category, 
-                request.HealthCheckUrl, 
-                now, 
-                checkType, 
-                port, 
-                isPublicInt, 
-                id 
-            });
-        }
-        else if (!string.IsNullOrEmpty(existing.ContainerId))
-        {
-            // Update base service public/check_type and override name/desc/icon/cat
-            await conn.ExecuteAsync("UPDATE services SET check_type = @checkType, port = @port, is_public = @isPublicInt, updated_at = @now WHERE id = @id",
-                new { checkType, port, isPublicInt, now, id });
+        await conn.ExecuteAsync(sql, new { 
+            request.Name, 
+            request.Description, 
+            request.Url, 
+            request.Icon, 
+            request.Category, 
+            request.HealthCheckUrl, 
+            now, 
+            checkType, 
+            port, 
+            isPublicInt, 
+            id 
+        });
 
-            var sql = @"
-                INSERT INTO service_overrides (container_id, name, description, url, icon, category)
-                VALUES (@ContainerId, @Name, @Description, @Url, @Icon, @Category)
+        if (existing.Source == "docker")
+        {
+            string overrideKey = !string.IsNullOrEmpty(existing.ContainerId) ? existing.ContainerId : id;
+            var overrideSql = @"
+                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public)
+                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt)
                 ON CONFLICT(container_id) DO UPDATE SET
+                    service_id = excluded.service_id,
                     name = excluded.name,
                     description = excluded.description,
                     url = excluded.url,
                     icon = excluded.icon,
-                    category = excluded.category";
+                    category = excluded.category,
+                    health_check_url = excluded.health_check_url,
+                    check_type = excluded.check_type,
+                    port = excluded.port,
+                    is_public = excluded.is_public";
 
-            await conn.ExecuteAsync(sql, new { existing.ContainerId, request.Name, request.Description, request.Url, request.Icon, request.Category });
+            await conn.ExecuteAsync(overrideSql, new { 
+                overrideKey, 
+                id, 
+                request.Name, 
+                request.Description, 
+                request.Url, 
+                request.Icon, 
+                request.Category,
+                request.HealthCheckUrl,
+                checkType,
+                port,
+                isPublicInt
+            });
         }
 
         return await GetByIdAsync(id);
@@ -280,11 +308,21 @@ public class ServicesRepository : IServicesRepository
     {
         using var conn = _db.CreateConnection();
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port)
             ON CONFLICT(id) DO UPDATE SET
-                status = excluded.status,
-                url = COALESCE(services.url, excluded.url),
+                container_id = excluded.container_id,
+                status = CASE 
+                    WHEN excluded.status = 'down' THEN 'down'
+                    WHEN services.status IN ('down', 'degraded', 'healthy') AND (services.url IS NOT NULL OR services.health_check_url IS NOT NULL OR services.check_type = 'tcp') THEN services.status
+                    ELSE excluded.status
+                END,
+                url = CASE 
+                    WHEN (services.url IS NULL OR services.url LIKE 'http://localhost%' OR services.url LIKE 'http://127.0.0.1%') AND (excluded.url IS NOT NULL AND excluded.url NOT LIKE 'http://localhost%' AND excluded.url NOT LIKE 'http://127.0.0.1%') THEN excluded.url
+                    ELSE COALESCE(services.url, excluded.url)
+                END,
+                check_type = COALESCE(services.check_type, excluded.check_type),
+                port = COALESCE(services.port, excluded.port),
                 updated_at = excluded.updated_at";
 
         await conn.ExecuteAsync(sql, service);
@@ -316,11 +354,21 @@ public class ServicesRepository : IServicesRepository
         using var tx = conn.BeginTransaction();
 
         var upsertSql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port)
             ON CONFLICT(id) DO UPDATE SET
-                status = excluded.status,
-                url = COALESCE(services.url, excluded.url),
+                container_id = excluded.container_id,
+                status = CASE 
+                    WHEN excluded.status = 'down' THEN 'down'
+                    WHEN services.status IN ('down', 'degraded', 'healthy') AND (services.url IS NOT NULL OR services.health_check_url IS NOT NULL OR services.check_type = 'tcp') THEN services.status
+                    ELSE excluded.status
+                END,
+                url = CASE 
+                    WHEN (services.url IS NULL OR services.url LIKE 'http://localhost%' OR services.url LIKE 'http://127.0.0.1%') AND (excluded.url IS NOT NULL AND excluded.url NOT LIKE 'http://localhost%' AND excluded.url NOT LIKE 'http://127.0.0.1%') THEN excluded.url
+                    ELSE COALESCE(services.url, excluded.url)
+                END,
+                check_type = COALESCE(services.check_type, excluded.check_type),
+                port = COALESCE(services.port, excluded.port),
                 updated_at = excluded.updated_at";
 
         foreach (var s in services)

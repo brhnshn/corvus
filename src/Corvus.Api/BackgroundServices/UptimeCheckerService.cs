@@ -45,7 +45,7 @@ public class UptimeCheckerService : BackgroundService
             }
         };
 
-        _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
+        _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -300,11 +300,18 @@ public class UptimeCheckerService : BackgroundService
 
     private async Task<(Service Service, UptimeCheck? Check, SslInfoHolder? Ssl)> CheckSingleServiceAsync(Service s, CancellationToken ct)
     {
+        if (string.Equals(s.CheckType, "none", StringComparison.OrdinalIgnoreCase))
+        {
+            return (s, null, null);
+        }
+
         string? targetUrl = !string.IsNullOrWhiteSpace(s.HealthCheckUrl) ? s.HealthCheckUrl : s.Url;
+        bool isDockerCheck = string.Equals(s.CheckType, "docker", StringComparison.OrdinalIgnoreCase) ||
+                             (s.Source == "docker" && string.IsNullOrWhiteSpace(targetUrl) && !string.Equals(s.CheckType, "tcp", StringComparison.OrdinalIgnoreCase));
         bool isTcp = string.Equals(s.CheckType, "tcp", StringComparison.OrdinalIgnoreCase) ||
                     (!string.IsNullOrWhiteSpace(targetUrl) && targetUrl.StartsWith("tcp://", StringComparison.OrdinalIgnoreCase));
 
-        if (string.IsNullOrWhiteSpace(targetUrl) && !isTcp)
+        if (string.IsNullOrWhiteSpace(targetUrl) && !isTcp && !isDockerCheck)
         {
             return (s, null, null);
         }
@@ -318,7 +325,56 @@ public class UptimeCheckerService : BackgroundService
         var sw = Stopwatch.StartNew();
         SslInfoHolder? sslHolder = null;
 
-        if (isTcp)
+        if (isDockerCheck)
+        {
+            bool isContainerRunning = false;
+            string? containerStateDesc = null;
+
+            try
+            {
+                using var scope = _services.CreateScope();
+                var docker = scope.ServiceProvider.GetRequiredService<IDockerService>();
+                var containers = await docker.GetContainersAsync(ct);
+                var matched = containers.FirstOrDefault(c => 
+                    (!string.IsNullOrEmpty(s.ContainerId) && (c.Id == s.ContainerId || c.Id.StartsWith(s.ContainerId[..Math.Min(12, s.ContainerId.Length)], StringComparison.OrdinalIgnoreCase))) ||
+                    c.Names?.Any(n => n.TrimStart('/').Equals(s.Name, StringComparison.OrdinalIgnoreCase)) == true);
+
+                sw.Stop();
+                check.ResponseTimeMs = Math.Max(1, (int)sw.ElapsedMilliseconds);
+
+                if (matched != null)
+                {
+                    isContainerRunning = string.Equals(matched.State, "running", StringComparison.OrdinalIgnoreCase);
+                    containerStateDesc = matched.Status;
+                }
+                else
+                {
+                    isContainerRunning = false;
+                    containerStateDesc = "Container Docker üzerinde bulunamadı";
+                }
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                check.ResponseTimeMs = (int)sw.ElapsedMilliseconds;
+                isContainerRunning = false;
+                containerStateDesc = ex.Message;
+            }
+
+            if (isContainerRunning)
+            {
+                check.Status = "up";
+                check.ErrorMessage = null;
+            }
+            else
+            {
+                check.Status = "down";
+                check.ErrorMessage = $"Docker: {containerStateDesc}";
+            }
+
+            return (s, check, null);
+        }
+        else if (isTcp)
         {
             string host = "localhost";
             int port = s.Port ?? 80;
@@ -348,7 +404,7 @@ public class UptimeCheckerService : BackgroundService
                 {
                     using var tcp = new TcpClient();
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    cts.CancelAfter(TimeSpan.FromSeconds(8));
+                    cts.CancelAfter(TimeSpan.FromSeconds(5));
                     await tcp.ConnectAsync(checkHost, port, cts.Token);
                     return null;
                 }
@@ -361,8 +417,8 @@ public class UptimeCheckerService : BackgroundService
             var tcpEx = await TryConnectTcpAsync();
             if (tcpEx != null && !ct.IsCancellationRequested)
             {
-                // Hızlı tekrar deneme: Geçici aksamalarda 2 saniye sonra 1 kez daha dene
-                try { await Task.Delay(2000, ct); } catch (OperationCanceledException) { }
+                // Hızlı tekrar deneme: Geçici aksamalarda 1 saniye sonra 1 kez daha dene
+                try { await Task.Delay(1000, ct); } catch (OperationCanceledException) { }
                 if (!ct.IsCancellationRequested)
                 {
                     tcpEx = await TryConnectTcpAsync();
@@ -417,8 +473,8 @@ public class UptimeCheckerService : BackgroundService
             var httpResult = await TrySendHttpAsync();
             if (!httpResult.Ok && !ct.IsCancellationRequested)
             {
-                // Hızlı tekrar deneme: 2 saniye sonra 1 kez daha dene
-                try { await Task.Delay(2000, ct); } catch (OperationCanceledException) { }
+                // Hızlı tekrar deneme: 1 saniye sonra 1 kez daha dene
+                try { await Task.Delay(1000, ct); } catch (OperationCanceledException) { }
                 if (!ct.IsCancellationRequested)
                 {
                     httpResult = await TrySendHttpAsync();
@@ -435,7 +491,14 @@ public class UptimeCheckerService : BackgroundService
             else
             {
                 check.Status = "down";
-                check.ErrorMessage = httpResult.Error ?? "Bilinmeyen HTTP hatası";
+                string err = httpResult.Error ?? "Bilinmeyen HTTP hatası";
+                if (err.Contains("configured HttpClient.Timeout", StringComparison.OrdinalIgnoreCase) ||
+                    err.Contains("timed out", StringComparison.OrdinalIgnoreCase) ||
+                    err.Contains("The operation was canceled", StringComparison.OrdinalIgnoreCase))
+                {
+                    err = $"Zaman aşımı (5s) - Hedefe ulaşılamadı ({internalCheckUrl})";
+                }
+                check.ErrorMessage = err;
             }
         }
 

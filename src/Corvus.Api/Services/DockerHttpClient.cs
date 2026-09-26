@@ -18,6 +18,7 @@ public interface IDockerHttpClient
     Task<DockerActionResult> UnpauseContainerAsync(string containerId, CancellationToken cancellationToken = default);
     Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default);
     Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default);
+    Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default);
 }
 
 public class DockerHttpClient : IDockerHttpClient, IDisposable
@@ -135,6 +136,23 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         {
             _logger.LogWarning(ex, "Docker container listesi alınamadı.");
             return new List<DockerContainerInfo>();
+        }
+    }
+
+    public async Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/containers/{Uri.EscapeDataString(containerId)}/json", cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerContainerInspectInfo, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Container inspect alınamadı: {ContainerId}", containerId);
+            return null;
         }
     }
 

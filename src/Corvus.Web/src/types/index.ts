@@ -11,7 +11,7 @@ export interface Service {
   status: 'healthy' | 'degraded' | 'down' | 'unknown';
   createdAt: string;
   updatedAt: string;
-  checkType?: 'http' | 'tcp';
+  checkType?: 'http' | 'tcp' | 'docker' | 'none';
   port?: number;
   sslExpiryDays?: number;
   sslIssuer?: string;

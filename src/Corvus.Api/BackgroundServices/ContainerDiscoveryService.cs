@@ -25,6 +25,7 @@ public class ContainerDiscoveryService : BackgroundService
             {
                 using var scope = _services.CreateScope();
                 var docker = scope.ServiceProvider.GetRequiredService<IDockerService>();
+                var dockerClient = scope.ServiceProvider.GetService<IDockerHttpClient>();
                 var repo = scope.ServiceProvider.GetRequiredService<IServicesRepository>();
 
                 bool isDockerUp = await docker.IsAvailableAsync(stoppingToken);
@@ -42,7 +43,19 @@ public class ContainerDiscoveryService : BackgroundService
                         }
 
                         activeIds.Add(c.Id);
-                        batchServices.Add(docker.MapContainerToService(c));
+
+                        List<string>? env = null;
+                        if (dockerClient != null && DockerService.ExtractDomainFromLabels(c.Labels ?? new Dictionary<string, string>()) == null)
+                        {
+                            try
+                            {
+                                var inspect = await dockerClient.InspectContainerAsync(c.Id, stoppingToken);
+                                env = inspect?.Config?.Env;
+                            }
+                            catch { }
+                        }
+
+                        batchServices.Add(docker.MapContainerToService(c, env));
                     }
 
                     await repo.SyncDockerBatchAsync(batchServices, activeIds);

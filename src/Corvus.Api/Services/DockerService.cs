@@ -17,7 +17,7 @@ public interface IDockerService
     Task<Dictionary<string, ContainerStatsDto>> GetActiveContainersStatsSummaryAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default);
     bool ShouldIgnoreContainer(DockerContainerInfo container);
-    Service MapContainerToService(DockerContainerInfo container);
+    Service MapContainerToService(DockerContainerInfo container, IEnumerable<string>? env = null);
 }
 
 public class DockerService : IDockerService
@@ -184,9 +184,20 @@ public class DockerService : IDockerService
         return false;
     }
 
-    private static string? ExtractDomainFromLabels(IReadOnlyDictionary<string, string> labels)
+    public static string? ExtractDomainFromLabels(IReadOnlyDictionary<string, string> labels, IEnumerable<string>? env = null)
     {
-        // 1. Traefik Router Host rule (örn: "Host(`app.example.com`)" veya "Host(`api.example.com`, `admin.example.com`)")
+        // 0. Corvus doğrudan etiketleri
+        if (labels.TryGetValue("corvus.url", out var cUrl) && !string.IsNullOrWhiteSpace(cUrl))
+        {
+            return cUrl.Trim();
+        }
+        if (labels.TryGetValue("corvus.domain", out var cDomain) && !string.IsNullOrWhiteSpace(cDomain))
+        {
+            var d = cDomain.Trim();
+            return d.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? d : $"https://{d}";
+        }
+
+        // 1. Traefik Router Host rule (örn: "Host(`app.example.com`)" veya "Host(`api.example.com`, `admin.example.com`)" veya "Host('app.example.com')")
         foreach (var kvp in labels)
         {
             if (kvp.Key.StartsWith("traefik.http.routers.", StringComparison.OrdinalIgnoreCase) &&
@@ -194,7 +205,7 @@ public class DockerService : IDockerService
             {
                 var match = System.Text.RegularExpressions.Regex.Match(
                     kvp.Value, 
-                    @"Host\s*\(\s*[`""](?<domain>[^`"",\s]+)[`""]", 
+                    @"Host\s*\(\s*[`'""]?(?<domain>[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})[`'""]?", 
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
                 if (match.Success)
@@ -206,32 +217,98 @@ public class DockerService : IDockerService
                     }
                 }
             }
+
+            if (kvp.Key.Equals("traefik.frontend.rule", StringComparison.OrdinalIgnoreCase))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    kvp.Value, 
+                    @"Host:\s*(?<domain>[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (match.Success)
+                {
+                    return $"https://{match.Groups["domain"].Value.Trim()}";
+                }
+            }
         }
 
-        // 2. Caddy etiketi (örn: caddy="example.com" veya caddy.reverse_proxy)
-        if (labels.TryGetValue("caddy", out var caddyHost) && !string.IsNullOrWhiteSpace(caddyHost))
+        // 2. Caddy etiketleri (örn: caddy="example.com" veya caddy_0="example.com" veya caddy.reverse_proxy)
+        foreach (var kvp in labels)
         {
-            string host = caddyHost.Trim().Split(' ', ',')[0];
+            if (kvp.Key.StartsWith("caddy", StringComparison.OrdinalIgnoreCase))
+            {
+                var val = kvp.Value.Trim().Split(' ', ',')[0].Trim('`', '"', '\'');
+                if (!string.IsNullOrWhiteSpace(val) && (val.Contains('.') || val.StartsWith("http", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return val.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? val : $"https://{val}";
+                }
+            }
+        }
+
+        // 3. Virtual Host & Let's Encrypt etiketleri (Nginx proxy / Docker-gen: VIRTUAL_HOST=app.example.com)
+        if (labels.TryGetValue("VIRTUAL_HOST", out var vHost) && !string.IsNullOrWhiteSpace(vHost))
+        {
+            string host = vHost.Trim().Split(',')[0].Trim();
+            if (!string.IsNullOrWhiteSpace(host))
+            {
+                return host.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? host : $"https://{host}";
+            }
+        }
+        if (labels.TryGetValue("LETSENCRYPT_HOST", out var leHost) && !string.IsNullOrWhiteSpace(leHost))
+        {
+            string host = leHost.Trim().Split(',')[0].Trim();
             if (!string.IsNullOrWhiteSpace(host))
             {
                 return host.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? host : $"https://{host}";
             }
         }
 
-        // 3. Virtual Host etiketi (Nginx proxy / Docker-gen: VIRTUAL_HOST=app.example.com)
-        if (labels.TryGetValue("VIRTUAL_HOST", out var vHost) && !string.IsNullOrWhiteSpace(vHost))
+        // 4. Coolify FQDN (coolify.fqdn=https://app.example.com)
+        if (labels.TryGetValue("coolify.fqdn", out var coolFqdn) && !string.IsNullOrWhiteSpace(coolFqdn))
         {
-            string host = vHost.Trim().Split(',')[0].Trim();
+            string host = coolFqdn.Trim().Split(',')[0].Trim();
             if (!string.IsNullOrWhiteSpace(host))
             {
-                return host.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? host : $"http://{host}";
+                return host.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? host : $"https://{host}";
+            }
+        }
+
+        // 5. Container Ortam Değişkenlerinden (Environment) otomatik tespit
+        if (env != null)
+        {
+            foreach (var envVar in env)
+            {
+                var eqIdx = envVar.IndexOf('=');
+                if (eqIdx <= 0) continue;
+                var key = envVar[..eqIdx].Trim();
+                var val = envVar[(eqIdx + 1)..].Trim();
+
+                if (string.IsNullOrWhiteSpace(val)) continue;
+
+                if (key.Equals("VIRTUAL_HOST", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("LETSENCRYPT_HOST", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("NEXT_PUBLIC_SITE_URL", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("SITE_URL", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("APP_URL", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("PUBLIC_URL", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("BASE_URL", StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals("CORVUS_URL", StringComparison.OrdinalIgnoreCase))
+                {
+                    string candidate = val.Split(' ', ',')[0].Trim('"', '\'');
+                    if (!string.IsNullOrWhiteSpace(candidate) && (candidate.Contains('.') || candidate.StartsWith("http", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return candidate.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? candidate : $"https://{candidate}";
+                    }
+                }
             }
         }
 
         return null;
     }
 
-    public Service MapContainerToService(DockerContainerInfo container)
+    public Service MapContainerToService(DockerContainerInfo container) => MapContainerToService(container, null);
+
+    public Service MapContainerToService(DockerContainerInfo container, IEnumerable<string>? env)
     {
         // Temiz isim çıkarma: "/web_app" -> "web_app"
         string rawName = container.Names?.FirstOrDefault() ?? container.Id[..12];
@@ -273,8 +350,8 @@ public class DockerService : IDockerService
         }
         else
         {
-            // Ters Proxy (Traefik, Caddy, VIRTUAL_HOST) etiketlerinden otomatik domain çıkarımı
-            url = ExtractDomainFromLabels(labels);
+            // Ters Proxy (Traefik, Caddy, VIRTUAL_HOST, Env) etiketlerinden otomatik domain çıkarımı
+            url = ExtractDomainFromLabels(labels, env);
 
             // Port bindings'den varsayılan URL türetme
             if (string.IsNullOrWhiteSpace(url))
@@ -303,6 +380,35 @@ public class DockerService : IDockerService
             _ => "unknown"
         };
 
+        string checkType;
+        if (labels.TryGetValue("corvus.check_type", out var lCheck) && !string.IsNullOrWhiteSpace(lCheck))
+        {
+            checkType = lCheck.ToLowerInvariant();
+        }
+        else if (!string.IsNullOrWhiteSpace(url))
+        {
+            checkType = "http";
+        }
+        else if (container.Ports?.Any(p => p.PublicPort.HasValue && p.PublicPort > 0) == true)
+        {
+            checkType = "tcp";
+        }
+        else
+        {
+            checkType = "docker";
+        }
+
+        int? port = null;
+        var firstPubPort = container.Ports?.FirstOrDefault(p => p.PublicPort.HasValue && p.PublicPort > 0);
+        if (firstPubPort != null)
+        {
+            port = firstPubPort.PublicPort;
+        }
+        else if (container.Ports?.Count > 0)
+        {
+            port = container.Ports[0].PrivatePort;
+        }
+
         return new Service
         {
             Id = $"docker_{container.Id[..Math.Min(12, container.Id.Length)]}",
@@ -315,6 +421,8 @@ public class DockerService : IDockerService
             Category = category,
             HealthCheckUrl = healthCheckUrl,
             Status = status,
+            CheckType = checkType,
+            Port = port,
             CreatedAt = DateTime.UtcNow.ToString("o"),
             UpdatedAt = DateTime.UtcNow.ToString("o")
         };

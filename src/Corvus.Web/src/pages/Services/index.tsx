@@ -3,6 +3,7 @@ import { api, type Service } from '../../api/client';
 import { useI18n } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 import { AddServiceModal } from './AddServiceModal';
+import { EditServiceModal } from './EditServiceModal';
 import { GroupSection } from '../../components/GroupSection';
 import { useEntityGrouping } from '../../utils/grouping';
 import { ServiceCard } from './ServiceCard';
@@ -15,6 +16,7 @@ export const ServicesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
   const [reordering, setReordering] = useState(false);
 
   const isMountedRef = React.useRef(true);
@@ -185,6 +187,7 @@ export const ServicesPage: React.FC = () => {
                   onDragEnd={handleDragEnd}
                   onMove={handleMove}
                   onDelete={handleDelete}
+                  onEdit={setEditingService}
                 />
               ))}
             </div>
@@ -198,6 +201,16 @@ export const ServicesPage: React.FC = () => {
         onSuccess={async () => {
           await loadServices();
           setShowAddModal(false);
+        }}
+      />
+
+      <EditServiceModal
+        isOpen={!!editingService}
+        service={editingService}
+        onClose={() => setEditingService(null)}
+        onSuccess={async () => {
+          await loadServices();
+          setEditingService(null);
         }}
       />
     </div>

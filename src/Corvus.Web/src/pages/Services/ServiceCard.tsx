@@ -1,5 +1,5 @@
 import React from 'react';
-import { Server, ShieldCheck, ArrowUp, ArrowDown, ExternalLink, Trash2 } from 'lucide-react';
+import { Server, ShieldCheck, ArrowUp, ArrowDown, ExternalLink, Trash2, Pencil } from 'lucide-react';
 import type { Service } from '../../types';
 import { StatusBadge } from '../../components/StatusBadge';
 import { formatServiceUrl } from '../../utils/url';
@@ -15,6 +15,7 @@ interface ServiceCardProps {
   onDragEnd: (e: React.DragEvent) => void;
   onMove: (currentIndex: number, direction: 'up' | 'down') => void;
   onDelete: (id: string, name: string) => void;
+  onEdit: (service: Service) => void;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -26,7 +27,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   onDragStart,
   onDragEnd,
   onMove,
-  onDelete
+  onDelete,
+  onEdit
 }) => {
   const { t } = useI18n();
 
@@ -131,6 +133,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
               <ExternalLink className="w-3 h-3" />
             </a>
           )}
+
+          <button
+            onClick={() => onEdit(service)}
+            className="p-1.5 text-[#9ca3af] hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+            title={t('common.edit')}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
 
           <button
             onClick={() => onDelete(service.id, service.name)}

@@ -20,6 +20,7 @@ public class DockerServiceTests
         public virtual Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default) =>
             Task.FromResult<ContainerStatsDto?>(new ContainerStatsDto(containerId, 12.5, 104857600, 1073741824, 9.77, 2048, 4096));
         public virtual Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default) => Task.FromResult(new List<string> { "log line 1", "log line 2" });
+        public virtual Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default) => Task.FromResult<DockerContainerInspectInfo?>(null);
     }
 
     [Fact]
@@ -256,6 +257,7 @@ public class DockerServiceTests
         public Task<DockerActionResult> UnpauseContainerAsync(string containerId, CancellationToken cancellationToken = default) => Task.FromResult(new DockerActionResult(false, "Unpause failed", 500));
         public Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default) => Task.FromResult<ContainerStatsDto?>(null);
         public Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default) => Task.FromResult(new List<string>());
+        public Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default) => Task.FromResult<DockerContainerInspectInfo?>(null);
     }
 
     [Fact]
@@ -325,5 +327,67 @@ public class DockerServiceTests
                 new() { Id = "c1", State = "running", Names = new List<string> { "/c1" } }
             });
         }
+    }
+
+    [Fact]
+    public void MapContainerToService_ExtractsDomainFromEnvironmentVariables()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+
+        var container = new DockerContainerInfo
+        {
+            Id = "burhanlife123456",
+            Names = new List<string> { "/burhanlife_web" },
+            State = "running",
+            Ports = new List<DockerPortInfo>
+            {
+                new DockerPortInfo { IP = "127.0.0.1", PrivatePort = 5010, PublicPort = 5010, Type = "tcp" }
+            }
+        };
+
+        var env = new List<string>
+        {
+            "ASPNETCORE_ENVIRONMENT=Production",
+            "NEXT_PUBLIC_SITE_URL=https://burhansahin.com.tr",
+            "PORT=5010"
+        };
+
+        var service = dockerService.MapContainerToService(container, env);
+
+        Assert.Equal("https://burhansahin.com.tr", service.Url);
+        Assert.Equal("http", service.CheckType);
+    }
+
+    [Fact]
+    public void MapContainerToService_SetsDockerCheckType_ForInternalAgentWithNoPorts()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+
+        var container = new DockerContainerInfo
+        {
+            Id = "beszel1234567890",
+            Names = new List<string> { "/internal-beszel-agent" },
+            State = "running",
+            Ports = new List<DockerPortInfo>() // No public ports
+        };
+
+        var service = dockerService.MapContainerToService(container);
+
+        Assert.Equal("internal-beszel-agent", service.Name);
+        Assert.Null(service.Url);
+        Assert.Equal("docker", service.CheckType);
+        Assert.Equal("healthy", service.Status);
+    }
+
+    [Fact]
+    public void ExtractDomainFromLabels_SupportsSingleQuotesAndMultipleRules()
+    {
+        var labels = new Dictionary<string, string>
+        {
+            ["traefik.http.routers.web.rule"] = "Host('burhanlife.com') || Host('www.burhanlife.com')"
+        };
+
+        var url = DockerService.ExtractDomainFromLabels(labels);
+        Assert.Equal("https://burhanlife.com", url);
     }
 }

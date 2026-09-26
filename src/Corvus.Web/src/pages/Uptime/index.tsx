@@ -137,6 +137,7 @@ export const UptimePage: React.FC = () => {
           services={services}
           selectedServiceId={selectedServiceId}
           onSelectService={setSelectedServiceId}
+          onRefreshServices={fetchServices}
         />
       )}
 

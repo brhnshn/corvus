@@ -68,6 +68,9 @@
   - Sekmeli yapılandırma: **Discord**, **Telegram**, **Ntfy / Gotify** ve **Özel Webhook** kanalları.
   - Özelleştirilebilir olay tetikleyicileri (`notify_service_events`) ve tek tıkla test bildirimi gönderme.
 - **⏱️ Genişletilmiş Uptime & SSL Takibi:**
+  - **Ters Vekil (Reverse Proxy) Otomatik Algılama:** Traefik kuralları (`Host(...)`), Caddy etiketleri, `VIRTUAL_HOST`, `LETSENCRYPT_HOST` ve konteyner ortam değişkenleri (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) taranarak yerel `localhost` yerine gerçek alan adlarını otomatik bağlama.
+  - **Konteyner ve Servis Uç Noktası Düzenleme:** Hem Servisler hem de Uptime ekranlarından açılan bağımsız modüler düzenleme penceresi ile erişim adresi, özel sağlık endpoint'i (`/api/health`), TCP portu veya Docker daemon kontrol türü tanımlama. Yapılandırmalar `service_overrides` tablosunda kalıcı olarak saklanır.
+  - **Dahili Konteynerler ve Agent'lar İçin Yerel Docker Uptime Takibi:** Web portu açmayan dahili servisler (örn. `internal-beszel-agent`) için Docker Engine API üzerinden konteyner çalışma/sağlık durumu denetimi (`checkType: 'docker'`); eksiksiz yeşil SLA barı ve kontrol kaydı.
   - **HTTP/HTTPS & TCP Port Ping:** Veritabanları, SSH veya oyun sunucuları gibi HTTP dışı servisler için soket seviyesinde bağlantı testi.
   - **SSL Sertifika Bitiş Süresi:** SSL kalan gün sayısını ve sertifika sağlayıcısını otomatik takip eder; bitime 14 gün kala uyarı üretir.
 - **💀 Dead Man's Snitch (Periyodik Push Monitörü):**
@@ -107,7 +110,7 @@ Corvus Mimarisi:
 │       ASP.NET Core Minimal API (.NET 9 Native AOT)     │
 ├───────────────────────────┬────────────────────────────┤
 │  Docker REST API Client   │  SQLite + Dapper.AOT       │
-│  (SocketsHttpHandler)     │  (DbUp Migrations 001-004) │
+│  (SocketsHttpHandler)     │  (DbUp Migrations 001-005) │
 ├───────────────────────────┴────────────────────────────┤
 │  Çekirdek Servisler:                                   │
 │  - DockerLogDemuxer (Sıfır bellek tahsisli log demux)  │

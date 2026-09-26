@@ -87,6 +87,59 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task DockerService_Update_PreservesUserOverridesAcrossBatchSync()
+    {
+        var repo = new ServicesRepository(_dbFactory);
+
+        // 1. Initial docker batch sync creates service with localhost URL
+        var dockerSvc = new Service
+        {
+            Id = "docker_burhanlife",
+            Source = "docker",
+            ContainerId = "container_hash_111",
+            Name = "burhanlife_web",
+            Url = "http://localhost:5010",
+            Status = "healthy",
+            CheckType = "http"
+        };
+
+        await repo.SyncDockerBatchAsync(new List<Service> { dockerSvc }, new List<string> { "container_hash_111" });
+
+        var initial = await repo.GetByIdAsync("docker_burhanlife");
+        Assert.NotNull(initial);
+        Assert.Equal("http://localhost:5010", initial.Url);
+
+        // 2. User edits service in UI to set real reverse proxy URL
+        var updateReq = new UpdateServiceRequest(
+            Name: "BurhanLife Production",
+            Description: "Production web portal",
+            Url: "https://burhanlife.com",
+            Icon: "🚀",
+            Category: "Production",
+            HealthCheckUrl: "https://burhanlife.com/health",
+            CheckType: "http",
+            Port: 443,
+            IsPublic: true
+        );
+
+        var updated = await repo.UpdateAsync("docker_burhanlife", updateReq);
+        Assert.NotNull(updated);
+        Assert.Equal("https://burhanlife.com", updated.Url);
+        Assert.Equal("https://burhanlife.com/health", updated.HealthCheckUrl);
+        Assert.Equal("BurhanLife Production", updated.Name);
+
+        // 3. Next discovery batch runs with dummy localhost URL
+        await repo.SyncDockerBatchAsync(new List<Service> { dockerSvc }, new List<string> { "container_hash_111" });
+
+        // 4. Overridden URL and healthcheck MUST be preserved!
+        var afterSync = await repo.GetByIdAsync("docker_burhanlife");
+        Assert.NotNull(afterSync);
+        Assert.Equal("https://burhanlife.com", afterSync.Url);
+        Assert.Equal("https://burhanlife.com/health", afterSync.HealthCheckUrl);
+        Assert.Equal("BurhanLife Production", afterSync.Name);
+    }
+
+    [Fact]
     public async Task PushMonitorRepository_Lifecycle_Works()
     {
         var repo = new PushMonitorRepository(_dbFactory);

@@ -59,7 +59,8 @@ corvus/
 │   │   │       ├── 001_init.sql
 │   │   │       ├── 002_add_users.sql
 │   │   │       ├── 003_roadmap_features.sql
-│   │   │       └── 004_performance_indexes.sql
+│   │   │       ├── 004_performance_indexes.sql
+│   │   │       └── 005_service_overrides_extended.sql
 │   │   ├── Models/                 # DTO'lar ve Veritabanı Varlıkları
 │   │   │   ├── Service.cs                    # Servis modeli (check_type, port, ssl, is_public, display_order)
 │   │   │   ├── ServiceOverride.cs            # Docker override modeli
@@ -133,7 +134,9 @@ corvus/
 │       │       │   └── index.tsx             # Şifresiz halka açık durum sayfası (/status)
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Servis launcher ve sürükle-bırak sıralama
-│       │       │   └── AddServiceModal.tsx   # Manuel servis ekleme modalı
+│       │       │   ├── ServiceCard.tsx       # Servis kartı ve düzenleme aksiyonu
+│       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı
+│       │       │   └── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL ve kontrol türü düzenleme modalı
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Ayarlar kabuğu ve sekme seçici
 │       │       │   ├── GeneralSettingsTab.tsx # Genel ayarlar, retention ve DB boyutu telemetrisi
@@ -150,11 +153,13 @@ corvus/
 │       │           ├── PingUptimeTab.tsx     # HTTP/TCP ping, gecikme ve SSL takibi
 │       │           ├── PushMonitorsTab.tsx   # Dead Man's Snitch cron izleme listesi
 │       │           ├── AddSnitchModal.tsx    # Push monitor oluşturma modalı
+│       │           ├── UptimeStatsCards.tsx  # KPI kartları ve uç nokta düzenleme tetikleyicisi
+│       │           ├── UptimeRecentChecks.tsx# Son Uptime kontrolleri listesi
 │       │           └── UptimeBar.tsx         # Geçmiş 90 günlük uptime çubuğu
 │       └── wwwroot/                # Üretime hazır derlenmiş arayüz paketi (Corvus.Api tarafından sunulur)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Paketi (85 Başarılı Test)
+│   └── Corvus.Api.Tests/           # xUnit Test Paketi (89 Başarılı Test)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Konteyner işlemleri, micro-cache ve batch stats testleri
 │       ├── DockerLogDemuxerTests.cs

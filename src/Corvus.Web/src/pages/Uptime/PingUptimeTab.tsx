@@ -6,17 +6,20 @@ import { UptimeBar } from './UptimeBar';
 import { UptimeServiceSelector } from './UptimeServiceSelector';
 import { UptimeStatsCards } from './UptimeStatsCards';
 import { UptimeRecentChecks } from './UptimeRecentChecks';
+import { EditServiceModal } from '../Services/EditServiceModal';
 
 interface PingUptimeTabProps {
   services: Service[];
   selectedServiceId: string;
   onSelectService: (id: string) => void;
+  onRefreshServices?: () => Promise<void>;
 }
 
 export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
   services,
   selectedServiceId,
-  onSelectService
+  onSelectService,
+  onRefreshServices
 }) => {
   const { t } = useI18n();
   const [range, setRange] = useState<'24h' | '7d' | '30d'>('7d');
@@ -24,6 +27,7 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
   const [loadingChecks, setLoadingChecks] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'down'>('all');
+  const [editingService, setEditingService] = useState<Service | null>(null);
 
   const selectedService = services.find((s) => s.id === selectedServiceId) || services[0];
 
@@ -130,7 +134,13 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
                   )}
                 </h2>
                 <span className="text-xs text-[#9ca3af] font-mono">
-                  {selectedService.checkType === 'tcp' ? 'TCP Kontrolü' : 'HTTP/S Kontrolü'}
+                  {selectedService.checkType === 'docker' || (selectedService.source === 'docker' && !selectedService.url && !selectedService.healthCheckUrl)
+                    ? 'Docker Daemon Kontrolü'
+                    : selectedService.checkType === 'tcp'
+                    ? 'TCP Kontrolü'
+                    : selectedService.checkType === 'none'
+                    ? 'Kontrol Devre Dışı'
+                    : 'HTTP/S Kontrolü'}
                 </span>
               </div>
             </div>
@@ -156,6 +166,7 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
             selectedService={selectedService}
             checks={checks}
             rangeLabel={rangeLabels[range]}
+            onEditService={setEditingService}
           />
 
           {/* SLA Timeline */}
@@ -177,6 +188,17 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
           <UptimeRecentChecks
             recentChecks={recentChecks}
             loadingChecks={loadingChecks}
+          />
+
+          <EditServiceModal
+            isOpen={!!editingService}
+            service={editingService}
+            onClose={() => setEditingService(null)}
+            onSuccess={async () => {
+              if (onRefreshServices) await onRefreshServices();
+              if (selectedService?.id) loadChecks(selectedService.id, range);
+              setEditingService(null);
+            }}
           />
         </div>
       )}

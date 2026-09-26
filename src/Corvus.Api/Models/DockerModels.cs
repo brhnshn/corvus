@@ -58,3 +58,48 @@ public class DockerVersionInfo
     [JsonPropertyName("Arch")]
     public string? Arch { get; set; }
 }
+
+public class DockerContainerInspectInfo
+{
+    [JsonPropertyName("Id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("Name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("Config")]
+    public DockerContainerConfig? Config { get; set; }
+
+    [JsonPropertyName("State")]
+    public DockerContainerState? State { get; set; }
+}
+
+public class DockerContainerConfig
+{
+    [JsonPropertyName("Env")]
+    public List<string>? Env { get; set; }
+
+    [JsonPropertyName("Labels")]
+    public Dictionary<string, string>? Labels { get; set; }
+}
+
+public class DockerContainerState
+{
+    [JsonPropertyName("Status")]
+    public string? Status { get; set; }
+
+    [JsonPropertyName("Running")]
+    public bool Running { get; set; }
+
+    [JsonPropertyName("ExitCode")]
+    public int ExitCode { get; set; }
+
+    [JsonPropertyName("Health")]
+    public DockerContainerHealth? Health { get; set; }
+}
+
+public class DockerContainerHealth
+{
+    [JsonPropertyName("Status")]
+    public string? Status { get; set; }
+}

@@ -68,6 +68,9 @@
   - Tabbed notification configuration: **Discord**, **Telegram**, **Ntfy / Gotify**, and **Generic Webhooks**.
   - Configurable notification triggers (`notify_service_events`) and one-click test notification dispatcher.
 - **⏱️ Extended Endpoint Uptime & SSL Tracking:**
+  - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.
+  - **Customizable Service Endpoints & Check Types:** Standalone modular modal accessible from both Services and Uptime pages to configure target URLs, custom health endpoints (`/api/health`), TCP ports, or native Docker daemon health checks. Preserved across restarts via `service_overrides`.
+  - **Native Docker Health Checks for Internal/Agent Containers:** Internal background services without exposed web ports (e.g. `internal-beszel-agent`) are monitored via direct Docker daemon state (`checkType: 'docker'`), providing real green SLA bars and audit trails.
   - **HTTP/HTTPS & TCP Port Ping:** Socket-level connection test for non-HTTP services (databases, SSH, game servers).
   - **SSL Certificate Expiration:** Auto-tracks SSL remaining days and issuer; triggers alert if expiration is within 14 days.
 - **💀 Dead Man's Snitch (Periodic Push Monitor):**
@@ -107,7 +110,7 @@ Corvus Architecture:
 │       ASP.NET Core Minimal API (.NET 9 Native AOT)     │
 ├───────────────────────────┬────────────────────────────┤
 │  Docker REST API Client   │  SQLite + Dapper.AOT       │
-│  (SocketsHttpHandler)     │  (DbUp Migrations 001-004) │
+│  (SocketsHttpHandler)     │  (DbUp Migrations 001-005) │
 ├───────────────────────────┴────────────────────────────┤
 │  Core Services:                                        │
 │  - DockerLogDemuxer (Zero-alloc multiplexed demuxer)   │
