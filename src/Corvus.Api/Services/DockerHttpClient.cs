@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -25,6 +26,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<DockerHttpClient> _logger;
+    private readonly ConcurrentDictionary<string, (long CpuTotal, long SystemCpu, DateTime Timestamp)> _cpuHistory = new(StringComparer.OrdinalIgnoreCase);
 
     public DockerHttpClient(ILogger<DockerHttpClient> logger, IConfiguration configuration)
     {
@@ -297,7 +299,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            string url = $"/containers/{Uri.EscapeDataString(containerId)}/stats?stream=false";
+            string url = $"/containers/{Uri.EscapeDataString(containerId)}/stats?stream=false&one-shot=true";
             var response = await _httpClient.GetAsync(url, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
@@ -330,7 +332,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
                 }
             }
 
-            // Pre-CPU Stats
+            // Pre-CPU Stats (Eğer Docker daemon precpu_stats sağlamışsa)
             long preCpuTotal = 0;
             long preSystemCpu = 0;
             if (root.TryGetProperty("precpu_stats", out var precpuStats))
@@ -346,11 +348,63 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
             }
 
             double cpuPercent = 0.0;
-            long cpuDelta = cpuTotal - preCpuTotal;
-            long systemDelta = systemCpu - preSystemCpu;
-            if (systemDelta > 0 && cpuDelta > 0)
+            // 1. Docker'ın kendisi precpu_stats sağladıysa doğrudan hesapla
+            if (preSystemCpu > 0 && systemCpu > preSystemCpu && cpuTotal >= preCpuTotal)
             {
+                long cpuDelta = cpuTotal - preCpuTotal;
+                long systemDelta = systemCpu - preSystemCpu;
                 cpuPercent = Math.Round(((double)cpuDelta / systemDelta) * onlineCpus * 100.0, 2);
+                _cpuHistory[containerId] = (cpuTotal, systemCpu, DateTime.UtcNow);
+            }
+            // 2. one-shot modunda önceki sliding delta hafızamızdan anında (0ms) hesapla
+            else if (_cpuHistory.TryGetValue(containerId, out var prev) && prev.SystemCpu > 0 && systemCpu > prev.SystemCpu && cpuTotal >= prev.CpuTotal)
+            {
+                long cpuDelta = cpuTotal - prev.CpuTotal;
+                long systemDelta = systemCpu - prev.SystemCpu;
+                cpuPercent = Math.Round(((double)cpuDelta / systemDelta) * onlineCpus * 100.0, 2);
+                _cpuHistory[containerId] = (cpuTotal, systemCpu, DateTime.UtcNow);
+            }
+            else
+            {
+                // 3. İlk kez karşılaşılan konteyner (Cold start):
+                // İlk örneği kaydet ve 100ms'lik mikro-aralıkla 2. örneği alarak CPU yüzdesini hemen hesapla (1000ms yerine 100ms)
+                _cpuHistory[containerId] = (cpuTotal, systemCpu, DateTime.UtcNow);
+                try
+                {
+                    await Task.Delay(100, cancellationToken);
+                    var secondResponse = await _httpClient.GetAsync(url, cancellationToken);
+                    if (secondResponse.IsSuccessStatusCode)
+                    {
+                        using var secondStream = await secondResponse.Content.ReadAsStreamAsync(cancellationToken);
+                        using var secondDoc = await JsonDocument.ParseAsync(secondStream, cancellationToken: cancellationToken);
+                        var secondRoot = secondDoc.RootElement;
+                        if (secondRoot.TryGetProperty("cpu_stats", out var secondCpuStats))
+                        {
+                            long secondCpuTotal = 0;
+                            long secondSystemCpu = 0;
+                            if (secondCpuStats.TryGetProperty("cpu_usage", out var secondUsage) && secondUsage.TryGetProperty("total_usage", out var stu))
+                            {
+                                secondCpuTotal = stu.GetInt64();
+                            }
+                            if (secondCpuStats.TryGetProperty("system_cpu_usage", out var sscu))
+                            {
+                                secondSystemCpu = sscu.GetInt64();
+                            }
+
+                            if (secondSystemCpu > systemCpu && secondCpuTotal >= cpuTotal)
+                            {
+                                long cDelta = secondCpuTotal - cpuTotal;
+                                long sDelta = secondSystemCpu - systemCpu;
+                                cpuPercent = Math.Round(((double)cDelta / sDelta) * onlineCpus * 100.0, 2);
+                                _cpuHistory[containerId] = (secondCpuTotal, secondSystemCpu, DateTime.UtcNow);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // İkinci mikro-örnek alınamazsa CPU %0 kalsın ama RAM/Net başarıyla dönsün
+                }
             }
 
             // Memory Stats
@@ -373,6 +427,19 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
                 {
                     if (prop.Value.TryGetProperty("rx_bytes", out var rx)) netRx += rx.GetInt64();
                     if (prop.Value.TryGetProperty("tx_bytes", out var tx)) netTx += tx.GetInt64();
+                }
+            }
+
+            // Bellek şişmesini önleme: Eğer _cpuHistory boyutu çok büyürse bayat kayıtları temizle
+            if (_cpuHistory.Count > 100)
+            {
+                var threshold = DateTime.UtcNow.AddMinutes(-5);
+                foreach (var kvp in _cpuHistory)
+                {
+                    if (kvp.Value.Timestamp < threshold)
+                    {
+                        _cpuHistory.TryRemove(kvp.Key, out _);
+                    }
                 }
             }
 

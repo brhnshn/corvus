@@ -53,6 +53,7 @@ export const ContainersPage: React.FC = () => {
         const data = await api.getContainers();
         if (!isMounted) return;
         setContainers(data);
+        setLoading(false);
 
         const runningContainers = data.filter(c => c.State.toLowerCase() === 'running');
         if (runningContainers.length === 0) return;

@@ -302,6 +302,19 @@ public class DockerServiceTests
         Assert.Same(first, second);
     }
 
+    [Fact]
+    public async Task GetContainerStats_CachesStatsWithinTtl()
+    {
+        var customClient = new CountingStatsDockerHttpClient();
+        var dockerService = new DockerService(customClient, NullLogger<DockerService>.Instance);
+
+        var first = await dockerService.GetContainerStatsAsync("c1");
+        var second = await dockerService.GetContainerStatsAsync("c1");
+
+        Assert.Equal(1, customClient.StatsCallCount);
+        Assert.Same(first, second);
+    }
+
     private class BatchFakeDockerHttpClient : FakeDockerHttpClient
     {
         public override Task<List<DockerContainerInfo>> ListContainersAsync(bool all = true, CancellationToken cancellationToken = default)
@@ -326,6 +339,17 @@ public class DockerServiceTests
             {
                 new() { Id = "c1", State = "running", Names = new List<string> { "/c1" } }
             });
+        }
+    }
+
+    private class CountingStatsDockerHttpClient : FakeDockerHttpClient
+    {
+        public int StatsCallCount { get; private set; }
+
+        public override Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default)
+        {
+            StatsCallCount++;
+            return Task.FromResult<ContainerStatsDto?>(new ContainerStatsDto(containerId, 5.0, 1000, 2000, 50.0, 10, 20));
         }
     }
 

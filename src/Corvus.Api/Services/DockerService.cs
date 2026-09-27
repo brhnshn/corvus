@@ -113,7 +113,7 @@ public class DockerService : IDockerService
         if (stats != null)
         {
             var now = DateTime.UtcNow;
-            _statsCache[containerId] = (now.AddSeconds(3), stats);
+            _statsCache[containerId] = (now.AddSeconds(8), stats);
 
             if (_statsCache.Count > 30)
             {
@@ -140,7 +140,7 @@ public class DockerService : IDockerService
 
         var parallelOptions = new ParallelOptions
         {
-            MaxDegreeOfParallelism = Math.Min(4, Math.Max(1, Environment.ProcessorCount)),
+            MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount * 4, 8, 32),
             CancellationToken = cancellationToken
         };
 

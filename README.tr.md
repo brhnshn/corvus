@@ -43,7 +43,7 @@
   - **Görsel Sıralama:** Servisleri yukarı/aşağı butonlarıyla kalıcı olarak sıralayabilme (`display_order`).
 - **🧠 Dahili In-Memory Micro-Cache & Elastik Bellek Mimarisi:**
   - 2.5 saniyelik sıfır-tahsisli dahili önbellekleme: Sekmeler arası hızlı geçişlerde Docker soket ve SQLite sorgu yükünü %90 azaltarak bellek sıçramalarını önler (<150 KB bellek maliyeti).
-  - N+1 yerine tek sorguda tüm çalışan konteynerleri toplayan toplu metrik uç noktası (`GET /api/containers/stats-summary`).
+  - N+1 yerine tek sorguda çalışan `one-shot=true` ve kayan pencere (sliding delta) CPU motorlu toplu metrik uç noktası (`GET /api/containers/stats-summary`), Docker'ın 1 saniyelik uykusunu kaldırarak 100ms altı anlık yanıt sağlar.
   - .NET 9 `System.GC.ConserveMemory=5` yapılandırması ve periyodik idle bellek sıkıştırmasıyla RAM'i boşta ~30-35 MB, aktif kullanımda 40-50 MB bandında tutar.
 - **🛡️ Gelişmiş 3 Durumlu Dayanıklılık ve Sağlık Motoru:**
   - `healthy` ➔ `degraded` ➔ `down` durum makinesi: Anlık ağ dalgalanmalarında panik false-alarmı üretmez; 3 ardışık başarısızlıktan sonra gerçek arıza alarmı üretir.

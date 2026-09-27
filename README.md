@@ -43,7 +43,7 @@
   - **Visual Reordering:** Drag & drop / up-down service ordering with persistent `display_order`.
 - **🧠 In-Memory Micro-Cache & Elastic Memory Architecture:**
   - 2.5-second zero-allocation in-memory cache: Eliminates 90% of redundant Docker socket and SQLite calls during rapid tab switching (<150 KB memory footprint).
-  - Batch container stats endpoint (`GET /api/containers/stats-summary`) gathering all active container metrics in a single HTTP request instead of N+1.
+  - Batch container stats endpoint (`GET /api/containers/stats-summary`) with `one-shot=true` and sliding CPU delta calculation, eliminating Docker Engine 1-second sampling sleep and delivering sub-100ms instant metrics.
   - .NET 9 `System.GC.ConserveMemory=5` runtime configuration and periodic post-retention memory compaction, keeping memory strictly between 30–45 MB.
 - **🛡️ Advanced 3-State Resilience & Health Engine:**
   - `healthy` ➔ `degraded` ➔ `down` state machine: Prevents panicky false alarms during transient network glitches; only raises alarms after 3 consecutive failures.
