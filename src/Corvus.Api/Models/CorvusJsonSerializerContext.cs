@@ -113,7 +113,8 @@ public record PublicStatusPageDto(
     List<PublicServiceDto> Services,
     string GeneratedAt,
     bool Enabled = true,
-    string? Message = null
+    string? Message = null,
+    List<ServiceIncidentDto>? Incidents = null
 );
 
 public record ServerEventDto(
@@ -223,6 +224,14 @@ public record NotificationResult(
 [JsonSerializable(typeof(DbStatsResponse))]
 [JsonSerializable(typeof(TestConnectionRequest))]
 [JsonSerializable(typeof(TestConnectionResponse))]
+[JsonSerializable(typeof(ServiceIncident))]
+[JsonSerializable(typeof(List<ServiceIncident>))]
+[JsonSerializable(typeof(CreateIncidentRequest))]
+[JsonSerializable(typeof(UpdateIncidentRequest))]
+[JsonSerializable(typeof(ServiceIncidentDto))]
+[JsonSerializable(typeof(List<ServiceIncidentDto>))]
+[JsonSerializable(typeof(DailyUptimeStat))]
+[JsonSerializable(typeof(List<DailyUptimeStat>))]
 [JsonSerializable(typeof(string))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {

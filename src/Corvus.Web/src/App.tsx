@@ -145,7 +145,7 @@ export const App: React.FC = () => {
     }
   }, [isStatusPath]);
 
-  // Server-Sent Events (SSE) — Canlı Veri Yayını Bağlantısı (Uptime Kuma Dayanıklılık Mimarisi)
+  // Server-Sent Events (SSE) — Canlı Veri Yayını Bağlantısı (Yüksek Dayanıklılık Mimarisi)
   // Ağ kopsa bile asla pes etmez; backoff ile dener, internet geri geldiğinde veya
   useEffect(() => {
     if (isStatusPath) return;

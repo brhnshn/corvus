@@ -26,6 +26,7 @@ builder.Services.AddScoped<IMetricsRepository, MetricsRepository>();
 builder.Services.AddScoped<IUptimeRepository, UptimeRepository>();
 builder.Services.AddScoped<IBackupRepository, BackupRepository>();
 builder.Services.AddScoped<IPushMonitorRepository, PushMonitorRepository>();
+builder.Services.AddScoped<IIncidentRepository, IncidentRepository>();
 builder.Services.AddSingleton<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
@@ -104,6 +105,7 @@ app.MapDashboardEndpoints();
 app.MapSettingsEndpoints();
 app.MapBackupEndpoints();
 app.MapStatusPageEndpoints();
+app.MapIncidentEndpoints();
 app.MapNotificationEndpoints();
 app.MapStreamEndpoints();
 

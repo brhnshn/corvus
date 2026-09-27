@@ -16,6 +16,7 @@ public class UptimeCheckerService : BackgroundService
     private readonly ConcurrentDictionary<string, int> _consecutiveFailures = new();
     private readonly ConcurrentDictionary<string, bool> _alertedDown = new();
     private readonly ConcurrentDictionary<string, DateTime> _lastCheckTimes = new();
+    private readonly ConcurrentDictionary<string, string> _previousStatus = new();
     private static readonly HttpRequestOptionsKey<SslInfoHolder> SslInfoKey = new("Corvus_SslInfo");
     private static readonly HttpRequestOptionsKey<bool> IgnoreTlsKey = new("Corvus_IgnoreTls");
     private readonly HttpClient _httpClient;
@@ -135,6 +136,17 @@ public class UptimeCheckerService : BackgroundService
                                 _logger.LogWarning("SSL sertifikası yakında bitiyor: Servis {ServiceName}, Kalan Gün: {Days}", s.Name, sslHolder.SslDays.Value);
                             }
                         }
+
+                        // Durum değişimi (transition) kontrolü:
+                        // Bir servisin durumu değiştiğinde (örn. up -> down, down -> up) veya status == "down" olduğunda check.IsTransition = true
+                        bool hasPrevious = _previousStatus.TryGetValue(s.Id, out var prevStatus);
+                        bool statusChanged = !hasPrevious || !string.Equals(prevStatus, check.Status, StringComparison.OrdinalIgnoreCase);
+
+                        if (statusChanged || check.Status == "down")
+                        {
+                            check.IsTransition = true;
+                        }
+                        _previousStatus[s.Id] = check.Status;
 
                         await uptimeRepo.InsertAsync(check);
 

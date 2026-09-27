@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { api, type Service, type PushMonitor } from '../../api/client';
-import { Activity, Radio } from 'lucide-react';
+import { Activity, Radio, Megaphone } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { PingUptimeTab } from './PingUptimeTab';
 import { PushMonitorsTab } from './PushMonitorsTab';
+import { IncidentsTab } from './IncidentsTab';
 
 export const UptimePage: React.FC = () => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<'uptime' | 'snitch'>('uptime');
+  const [activeTab, setActiveTab] = useState<'uptime' | 'snitch' | 'incidents'>('uptime');
 
   // Uptime Services state
   const [services, setServices] = useState<Service[]>([]);
@@ -129,6 +130,15 @@ export const UptimePage: React.FC = () => {
             <Radio className="w-3.5 h-3.5 text-indigo-400" />
             {t('uptime.tabPush')}
           </button>
+          <button
+            onClick={() => setActiveTab('incidents')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+              activeTab === 'incidents' ? 'bg-[#0f1117] text-white shadow-sm' : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+            }`}
+          >
+            <Megaphone className="w-3.5 h-3.5 text-indigo-400" />
+            {t('uptime.tabIncidents')}
+          </button>
         </div>
       </div>
 
@@ -150,6 +160,9 @@ export const UptimePage: React.FC = () => {
           onRefresh={fetchSnitches}
         />
       )}
+
+      {/* Tab 3: Incidents & Announcements */}
+      {activeTab === 'incidents' && <IncidentsTab />}
     </div>
   );
 };

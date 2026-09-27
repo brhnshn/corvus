@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Globe, Lock, Database, AlertCircle, Activity } from 'lucide-react';
+import React from 'react';
+import { Globe, Lock, Database, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
-import { api } from '../../api/client';
 import { LanguageSwitch } from '../../components/LanguageSwitch';
 
 interface GeneralSettingsTabProps {
@@ -26,25 +25,6 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
   setIsCustomDays
 }) => {
   const { t } = useI18n();
-  const [togglingStatusPage, setTogglingStatusPage] = useState(false);
-
-  const isStatusPageEnabled = settings['status_page_enabled'] === 'true';
-
-  const handleToggleStatusPage = async () => {
-    setTogglingStatusPage(true);
-    const newStatus = isStatusPageEnabled ? 'false' : 'true';
-    try {
-      await api.updateSetting('status_page_enabled', newStatus);
-      setSettings(prev => ({
-        ...prev,
-        status_page_enabled: newStatus
-      }));
-    } catch (err: unknown) {
-      alert(`Hata: ${err instanceof Error ? err.message : 'Error'}`);
-    } finally {
-      setTogglingStatusPage(false);
-    }
-  };
 
   return (
     <div className="p-4 sm:p-6 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] space-y-5">
@@ -87,32 +67,6 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
         </button>
       </div>
 
-      {/* Halka Açık Durum Sayfası (/status) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2a2e3f]/60">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#e5e7eb]">
-            <Activity className="w-4 h-4 text-[#d4d4d8]" />
-            <h2>{t('settings.statusPageTitle')}</h2>
-          </div>
-          <p className="text-xs text-[#9ca3af] max-w-lg leading-relaxed">
-            {t('settings.statusPageDesc')}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          disabled={togglingStatusPage}
-          onClick={handleToggleStatusPage}
-          className={`self-start sm:self-auto px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer shrink-0 ${
-            isStatusPageEnabled
-              ? 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 hover:bg-[#22c55e]/25'
-              : 'bg-[#ef4444]/15 text-[#ef4444] border border-[#ef4444]/30 hover:bg-[#ef4444]/25'
-          }`}
-        >
-          <span className={`w-2 h-2 rounded-full ${isStatusPageEnabled ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`} />
-          <span>{isStatusPageEnabled ? t('settings.statusPageOpenBtn') : t('settings.statusPageClosedBtn')}</span>
-        </button>
-      </div>
 
       {/* Veri Saklama Süresi */}
       <div className="space-y-3 pt-2">

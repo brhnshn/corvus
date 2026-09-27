@@ -8,4 +8,13 @@ public class UptimeCheck
     public string Status { get; set; } = "up"; // 'up' | 'down'
     public int? ResponseTimeMs { get; set; }
     public string? ErrorMessage { get; set; }
+    public bool IsTransition { get; set; }
 }
+
+public record DailyUptimeStat(
+    string ServiceId,
+    string Date,
+    int TotalChecks,
+    int UpChecks,
+    int? AvgResponseTimeMs
+);

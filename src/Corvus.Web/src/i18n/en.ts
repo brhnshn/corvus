@@ -218,6 +218,7 @@ export const en = {
     subtitle: 'HTTP/TCP ping checks and scheduled job monitors',
     tabPing: 'HTTP & TCP Ping',
     tabPush: 'Push Monitors',
+    tabIncidents: 'Incidents & Maintenance',
     noServices: 'No Services Monitored',
     noServicesDesc: 'Add services or run Docker containers to enable automated uptime monitoring.',
     statusCard: 'Status',
@@ -376,6 +377,12 @@ export const en = {
     statusHealthy: 'Operational',
     statusDegraded: 'Degraded',
     statusDown: 'Unavailable',
+    checksAgo: '{count} checks ago',
+    now: 'Now',
+    generalCategory: 'General',
+    allOperationalInGroup: 'All Operational',
+    issuesInGroup: '{count} services affected',
+    noData: 'No data',
     footerText: 'This status page is automatically updated by Corvus Monitoring every 30 seconds.'
   },
   logsModal: {
@@ -402,5 +409,44 @@ export const en = {
     hint: 'You can re-enable this anytime from the Settings page.',
     keepOpenBtn: 'Keep Registrations Open',
     disableBtn: 'Disable Registrations (Recommended)'
+  },
+  incidents: {
+    title: 'Incidents & Maintenance',
+    subtitle: 'Manage service disruptions, announcements, and scheduled maintenance',
+    newIncident: 'New Incident / Announcement',
+    editIncident: 'Edit Incident',
+    activeTab: 'Active & Announcements',
+    resolvedTab: 'Resolved',
+    noActiveIncidents: 'No active incidents or announcements.',
+    noResolvedIncidents: 'No resolved incidents recorded.',
+    incidentTitle: 'Incident Title *',
+    incidentTitlePlaceholder: 'e.g., Scheduled Database Maintenance',
+    incidentMessage: 'Message / Details *',
+    incidentMessagePlaceholder: 'Describe the incident or maintenance window...',
+    severity: 'Severity',
+    status: 'Status',
+    isPinned: 'Pin to Status Page',
+    isPinnedHelp: 'Show this announcement prominently at the top of the public status page',
+    resolve: 'Resolve',
+    confirmResolve: 'Are you sure you want to mark this incident as resolved?',
+    confirmDelete: 'Are you sure you want to delete this incident?',
+    createdAt: 'Reported',
+    resolvedAt: 'Resolved',
+    pinnedBadge: 'Pinned',
+    severities: {
+      info: 'Info',
+      warning: 'Degraded / Warning',
+      critical: 'Critical Outage',
+      maintenance: 'Maintenance'
+    },
+    statuses: {
+      investigating: 'Investigating',
+      identified: 'Identified',
+      monitoring: 'Monitoring',
+      resolved: 'Resolved'
+    },
+    saved: 'Incident saved successfully',
+    resolvedSuccess: 'Incident marked as resolved',
+    deletedSuccess: 'Incident deleted'
   }
 } as const;

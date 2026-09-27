@@ -24,6 +24,17 @@ public static class UptimeEndpoints
             return Results.Ok(checks);
         });
 
+        group.MapGet("/{id}/daily-stats", async (string id, int? days, IUptimeRepository repo) =>
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return Results.BadRequest("id parametresi gereklidir.");
+            }
+
+            var stats = await repo.GetDailyStatsAsync(id, days ?? 30);
+            return Results.Ok(stats);
+        });
+
         group.MapPost("/test-connection", async (TestConnectionRequest req) =>
         {
             var sw = Stopwatch.StartNew();

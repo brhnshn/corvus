@@ -519,6 +519,121 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
         Assert.Equal("down", fetchedStopped.Status);
     }
 
+    [Fact]
+    public async Task UptimeRepository_SmartRetentionAndRollup_WorksCorrectly()
+    {
+        var servicesRepo = new ServicesRepository(_dbFactory);
+        var uptimeRepo = new UptimeRepository(_dbFactory);
+
+        // 1. Create a service
+        var svc = await servicesRepo.CreateManualAsync(new CreateServiceRequest(
+            Name: "Rollup Test Service",
+            Description: "Testing smart retention and daily stats rollup",
+            Url: "https://rollup.test",
+            Icon: "📊",
+            Category: "Test",
+            HealthCheckUrl: null,
+            CheckType: "http",
+            Port: 443,
+            IsPublic: true
+        ));
+
+        string svcId = svc.Id;
+
+        // 2. Insert checks for yesterday (completed day) and today (uncompleted day)
+        var twoDaysAgo = DateTime.UtcNow.AddDays(-2);
+        string dateTwoDaysAgo = twoDaysAgo.ToString("yyyy-MM-dd");
+
+        await uptimeRepo.InsertAsync(new UptimeCheck
+        {
+            ServiceId = svcId,
+            CheckedAt = twoDaysAgo.ToString("o"),
+            Status = "up",
+            ResponseTimeMs = 40,
+            IsTransition = false
+        });
+
+        await uptimeRepo.InsertAsync(new UptimeCheck
+        {
+            ServiceId = svcId,
+            CheckedAt = twoDaysAgo.AddMinutes(10).ToString("o"),
+            Status = "down",
+            ResponseTimeMs = null,
+            IsTransition = true,
+            ErrorMessage = "Connection timeout"
+        });
+
+        await uptimeRepo.InsertAsync(new UptimeCheck
+        {
+            ServiceId = svcId,
+            CheckedAt = twoDaysAgo.AddMinutes(20).ToString("o"),
+            Status = "up",
+            ResponseTimeMs = 60,
+            IsTransition = true
+        });
+
+        // Today check (within 1 hour ago)
+        await uptimeRepo.InsertAsync(new UptimeCheck
+        {
+            ServiceId = svcId,
+            CheckedAt = DateTime.UtcNow.AddHours(-1).ToString("o"),
+            Status = "up",
+            ResponseTimeMs = 30,
+            IsTransition = false
+        });
+
+        // 3. Verify is_transition flag was persisted and can be queried
+        var checksBefore = await uptimeRepo.GetByServiceAsync(svcId, "7d");
+        Assert.Equal(4, checksBefore.Count);
+        Assert.False(checksBefore[0].IsTransition);
+        Assert.True(checksBefore[1].IsTransition);
+        Assert.True(checksBefore[2].IsTransition);
+        Assert.False(checksBefore[3].IsTransition);
+
+        // 4. Run AggregateDailyStatsAsync() -> Should summarize completed days (two days ago), but not today
+        await uptimeRepo.AggregateDailyStatsAsync();
+
+        var dailyStats = await uptimeRepo.GetDailyStatsAsync(svcId, 30);
+        Assert.Single(dailyStats);
+        var stat = dailyStats[0];
+        Assert.Equal(svcId, stat.ServiceId);
+        Assert.Equal(dateTwoDaysAgo, stat.Date);
+        Assert.Equal(3, stat.TotalChecks);
+        Assert.Equal(2, stat.UpChecks);
+        Assert.Equal(50, stat.AvgResponseTimeMs);
+
+        // 5. Run CleanupOldAsync(retentionDays: 30)
+        // - Checks older than 24h with is_transition = 0 should be deleted (Check 1 deleted).
+        // - Checks older than 24h with is_transition = 1 should be KEPT (Check 2 and Check 3 kept).
+        // - Checks within the last 24h should be KEPT (Check 4 kept).
+        await uptimeRepo.CleanupOldAsync(30);
+
+        var checksAfter24hCleanup = await uptimeRepo.GetByServiceAsync(svcId, "7d");
+        Assert.Equal(3, checksAfter24hCleanup.Count);
+        Assert.DoesNotContain(checksAfter24hCleanup, c => !c.IsTransition && c.CheckedAt.StartsWith(dateTwoDaysAgo));
+        Assert.Equal(2, checksAfter24hCleanup.Count(c => c.CheckedAt.StartsWith(dateTwoDaysAgo)));
+        Assert.Contains(checksAfter24hCleanup, c => c.Status == "down" && c.IsTransition);
+        Assert.Contains(checksAfter24hCleanup, c => c.Status == "up" && c.IsTransition);
+        Assert.Contains(checksAfter24hCleanup, c => !c.IsTransition);
+
+        // Daily stats must still be intact!
+        var dailyStatsAfterCleanup = await uptimeRepo.GetDailyStatsAsync(svcId, 30);
+        Assert.Single(dailyStatsAfterCleanup);
+        Assert.Equal(3, dailyStatsAfterCleanup[0].TotalChecks);
+
+        // 6. Run CleanupOldAsync(retentionDays: 1) -> Removes all checks older than 1 day (including transitions)
+        await uptimeRepo.CleanupOldAsync(1);
+
+        var checksAfterRetention = await uptimeRepo.GetByServiceAsync(svcId, "7d");
+        Assert.Single(checksAfterRetention);
+        Assert.Equal("up", checksAfterRetention[0].Status);
+
+        // Daily stats remain intact even after raw checks are wiped!
+        var dailyStatsPreserved = await uptimeRepo.GetDailyStatsAsync(svcId, 30);
+        Assert.Single(dailyStatsPreserved);
+        Assert.Equal(3, dailyStatsPreserved[0].TotalChecks);
+    }
+
     public void Dispose()
     {
         try

@@ -87,12 +87,24 @@ export interface PublicService {
   recentChecks: { id: number; status: string; responseTimeMs?: number; checkedAt: string }[];
 }
 
+export interface ServiceIncident {
+  id: string;
+  title: string;
+  message: string;
+  severity: 'info' | 'warning' | 'critical' | 'maintenance';
+  isPinned: boolean;
+  status: 'investigating' | 'identified' | 'monitoring' | 'resolved';
+  createdAt: string;
+  resolvedAt?: string | null;
+}
+
 export interface PublicStatusPage {
   systemStatus: 'all_operational' | 'some_degraded' | 'major_outage' | 'disabled' | 'no_services';
   services: PublicService[];
   generatedAt: string;
   enabled?: boolean;
   message?: string;
+  incidents?: ServiceIncident[];
 }
 
 export type PublicStatusResponse = PublicStatusPage;

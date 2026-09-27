@@ -44,6 +44,7 @@ public class RetentionCleanupService : BackgroundService
                 if (retentionDays > 0)
                 {
                     _logger.LogInformation("Eski metrik ve uptime kayıtları temizleniyor ({Days} gün)...", retentionDays);
+                    await uptimeRepo.AggregateDailyStatsAsync();
                     await metricsRepo.CleanupOldAsync(retentionDays);
                     await uptimeRepo.CleanupOldAsync(retentionDays);
 

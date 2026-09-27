@@ -220,6 +220,7 @@ export const tr: TranslationDictionary = {
     subtitle: 'HTTP/TCP ping kontrolleri ve zamanlanmış görev monitörleri',
     tabPing: 'HTTP & TCP Ping',
     tabPush: 'Push Monitörleri',
+    tabIncidents: 'Duyurular & Olaylar',
     noServices: 'İzlenecek Servis Bulunamadı',
     noServicesDesc: 'Uptime takibi yapabilmek için Servisler sayfasından yeni bir servis ekleyebilir veya Docker konteynerlerini başlatabilirsiniz.',
     statusCard: 'Durum',
@@ -378,6 +379,12 @@ export const tr: TranslationDictionary = {
     statusHealthy: 'Çalışıyor',
     statusDegraded: 'Kısmi',
     statusDown: 'Erişilemiyor',
+    checksAgo: '{count} kontrol önce',
+    now: 'Şimdi',
+    generalCategory: 'Genel',
+    allOperationalInGroup: 'Tümü Operasyonel',
+    issuesInGroup: '{count} serviste sorun var',
+    noData: 'Veri yok',
     footerText: 'Bu durum sayfası Corvus Monitoring tarafından 30 saniyede bir otomatik güncellenmektedir.'
   },
   logsModal: {
@@ -404,5 +411,44 @@ export const tr: TranslationDictionary = {
     hint: 'Bu ayarı dilediğiniz zaman Ayarlar sayfasından tekrar açabilir veya kapatabilirsiniz.',
     keepOpenBtn: 'Kayıtları Açık Tut',
     disableBtn: 'Kayıtları Kapat (Önerilen)'
+  },
+  incidents: {
+    title: 'Olay & Duyuru Yönetimi',
+    subtitle: 'Servis kesintilerini, duyuruları ve planlı bakımları yönetin',
+    newIncident: 'Yeni Olay / Duyuru',
+    editIncident: 'Olayı Düzenle',
+    activeTab: 'Aktif & Duyurular',
+    resolvedTab: 'Çözümlenenler',
+    noActiveIncidents: 'Aktif herhangi bir olay veya duyuru bulunmuyor.',
+    noResolvedIncidents: 'Kayıtlı çözülmüş olay bulunmuyor.',
+    incidentTitle: 'Olay Başlığı *',
+    incidentTitlePlaceholder: 'Örn: Planlı Veritabanı Bakımı',
+    incidentMessage: 'Açıklama / Mesaj *',
+    incidentMessagePlaceholder: 'Olay veya bakım detaylarını açıklayın...',
+    severity: 'Ciddiyet Seviyesi',
+    status: 'Durum',
+    isPinned: 'Durum Sayfasına Sabitle',
+    isPinnedHelp: 'Bu duyuruyu halka açık durum sayfasının en üstünde sabit olarak göster',
+    resolve: 'Çözümle',
+    confirmResolve: 'Bu olayı çözüldü olarak işaretlemek istediğinize emin misiniz?',
+    confirmDelete: 'Bu olayı silmek istediğinize emin misiniz?',
+    createdAt: 'Bildirilme',
+    resolvedAt: 'Çözümlenme',
+    pinnedBadge: 'Sabitli',
+    severities: {
+      info: 'Bilgilendirme',
+      warning: 'Performans / Uyarı',
+      critical: 'Kritik Kesinti',
+      maintenance: 'Planlı Bakım'
+    },
+    statuses: {
+      investigating: 'Araştırılıyor',
+      identified: 'Tespit Edildi',
+      monitoring: 'İzleniyor',
+      resolved: 'Çözüldü'
+    },
+    saved: 'Olay başarıyla kaydedildi',
+    resolvedSuccess: 'Olay çözüldü olarak işaretlendi',
+    deletedSuccess: 'Olay silindi'
   }
 };
