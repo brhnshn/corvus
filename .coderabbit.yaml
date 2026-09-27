@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+
+reviews:
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  path_instructions:
+    - path: "**"
+      instructions: |
+        - Clean Architecture & Modularity: Enforce strict modularity (Single Responsibility). Reject monolithic files. Forms, modals, tabs, API services, and utility functions must always reside in independent dedicated files.
+        - Brand Identity & Terminology: Maintain Corvus's original and independent product identity. Always use generic, standard engineering terminology (e.g., 'Advanced Uptime & SSL Tracking', 'System Telemetry', 'Container Lifecycle') in UI, logs, and feature descriptions. Acknowledge and credit any open-source inspirations ethically in documentation (Credits section).
+        - SemVer & Commit Discipline: Encourage fix:, perf:, refactor:, and docs: commits over premature minor bumps.
+    - path: "src/Corvus.Web/**"
+      instructions: |
+        - Modularity & Structure: Forms, modals, tabs, hooks, and API services must be kept in dedicated individual files under their respective directories. Reject monolithic components.
+        - Brand Terminology: Use standard, generic engineering terminology across UI labels, status messages, and logs.
+    - path: "src/Corvus.Api/**"
+      instructions: |
+        - Clean Architecture: Maintain clean separation among Endpoints, Services, Data (SQLite / Dapper.AOT), and Models.
+        - Performance & Native AOT: Adhere to Native AOT guidelines (zero reflection, source generators for JSON and Dapper).
+    - path: "tests/Corvus.Api.Tests/**"
+      instructions: |
+        - Test Standards: Ensure all new backend logic and endpoints are backed by unit/integration tests in tests/Corvus.Api.Tests.
