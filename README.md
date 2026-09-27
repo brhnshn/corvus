@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/logo.png" width="120" alt="Corvus Logo" />
+  <img src=".github/assets/banner.jpg" alt="Corvus Banner" width="100%" />
 </p>
 
 <h1 align="center">Corvus</h1>
@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-85_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-137_Passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="License" />
 </p>
@@ -54,6 +54,7 @@
   - **External Backup Push:** Easy integration for host backup tools (`restic`, `borg`, cron) with dynamic token generator and auto-configured `curl` snippets.
 - **🧹 Flexible Data Retention & Storage Telemetry:**
   - Configurable retention presets: 7d, 15d, 30d (recommended), 60d, 90d, 180d, 365d, or **Unlimited (0)**.
+  - **Intelligent 24-Hour Retention:** Automatically prunes routine non-state-changing pings older than 24 hours (`is_transition = 0`) while preserving transition audit records and populating 365-day lightweight daily summaries (`uptime_daily_stats`).
   - Informative disk-growth advisories when selecting Unlimited mode.
   - Real-time database disk footprint tracking (`GET /api/settings/db-stats`).
   - Dynamic background cleaner (`RetentionCleanupService`) with SQLite `PRAGMA optimize;`.
@@ -78,10 +79,13 @@
 - **💀 Dead Man's Snitch (Periodic Push Monitor):**
   - Monitor cron jobs and backup scripts (`borg`, `restic`, scripts).
   - Configurable expected interval (e.g. every 24h) and grace period; automatically alerts when overdue.
-- **🌐 Public Status Page (Disabled by Default & Opt-in):**
-  - Security & privacy-first: **disabled by default** (`status_page_enabled = false`); easily toggled on/off in Settings.
-  - Renders a clean, dark-themed "Status Page Disabled" card (`PublicStatusDisabled.tsx`) when inactive.
-  - **Strictly Opt-in:** Discovered Docker containers or manual services are never auto-published; only services explicitly marked with `is_public` appear on the public board.
+- **🌐 Public Status Page (Always Active & Strictly Opt-in):**
+  - **Direct Access (`/status`):** Active and accessible out of the box for public services without requiring administrative toggle activation.
+  - **Strictly Opt-in:** Discovered Docker containers and manual services are never auto-published; only services explicitly marked with both `is_public` and `is_uptime_enabled` appear on the public board.
+  - **Interactive 30-Check Latency Bars:** Mini status bars representing the last 30 checks with hover tooltips displaying check latency (ms), timestamp, and pass/fail status.
+  - **Collapsible Category Accordions:** Services organized by category with aggregate health status badges and collapse/expand controls.
+  - **System Incidents & Scheduled Maintenance Banners:** Real-time operational incident and scheduled maintenance notices (`service_incidents`) managed via the administrative Incidents tab.
+  - **Lightweight Yearly Rollup:** Backed by 365-day daily summaries (`uptime_daily_stats`), providing long-term SLA insights with minimal disk footprint.
 - **🛡️ Zero-Trust SSO & Reverse Proxy Auth:**
   - Auto-login support via trusted headers: `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`.
   - Built-in credentials authentication with configurable registration toggle.
@@ -192,7 +196,13 @@ labels:
 | `GET /api/dashboard/summary` | Consolidated KPI overview |
 | `GET /api/services` | Service catalogue with ordering and SSL info |
 | `PUT /api/services/reorder` | Update visual service ordering |
-| `GET /api/status-page` | Public unauthenticated system status summary |
+| `GET /api/status-page` | Public unauthenticated system status summary (services, 30-check sparklines & incidents) |
+| `GET /api/incidents` | List active and historical system incidents & maintenance notices |
+| `POST /api/incidents` | Create a new system incident or maintenance notice |
+| `PUT /api/incidents/{id}` | Update incident details, severity, or message |
+| `POST /api/incidents/{id}/resolve` | Mark an incident as resolved |
+| `DELETE /api/incidents/{id}` | Remove an incident record |
+| `GET /api/uptime/{id}/daily-stats` | 365-day daily uptime rollup statistics |
 | `GET /api/containers` | Docker containers list with state and ports |
 | `GET /api/containers/{id}/stats` | Live container CPU%, RAM, Net I/O |
 | `GET /api/containers/{id}/logs` | Snapshot container logs |

@@ -126,6 +126,32 @@ Individual endpoint audit log entries.
 | status | TEXT | `up` or `down` |
 | response_time_ms | INTEGER (nullable) | Latency in milliseconds |
 | error_message | TEXT (nullable) | Error diagnostics if unreachable |
+| is_transition | INTEGER | `1`: Check represents a status change event, `0`: Routine ping |
+
+### `uptime_daily_stats`
+Aggregated daily uptime statistics for 365-day SLA historical reporting.
+
+| Field | Type | Description |
+|---|---|---|
+| service_id | TEXT | Foreign key referencing `services.id` (Composite PK) |
+| date | TEXT | Calendar date (`YYYY-MM-DD`, Composite PK) |
+| total_checks | INTEGER | Total health checks performed on this date |
+| up_checks | INTEGER | Successful health checks count |
+| avg_response_time_ms | INTEGER (nullable) | Average check latency in milliseconds |
+
+### `service_incidents`
+System incident notices and scheduled maintenance advisories.
+
+| Field | Type | Description |
+|---|---|---|
+| id | TEXT (UUID) | Primary key |
+| title | TEXT | Incident or maintenance title |
+| message | TEXT | Detailed message content |
+| severity | TEXT | `info`, `warning`, `critical`, `maintenance` |
+| is_pinned | INTEGER | `1`: Pinned atop status page, `0`: Standard |
+| status | TEXT | `investigating`, `identified`, `monitoring`, `resolved` |
+| created_at | TEXT | Incident creation timestamp (ISO-8601) |
+| resolved_at | TEXT (nullable) | Incident resolution timestamp (ISO-8601) |
 
 ### `backup_events`
 Incoming push monitor heartbeat records.
@@ -155,7 +181,13 @@ Incoming push monitor heartbeat records.
 | `PUT /api/services/{id}` | Update service details or save an override for a Docker container |
 | `PUT /api/services/reorder` | Persist visual reordering of services |
 | `DELETE /api/services/{id}` | Delete a manual service or reset a Docker container override |
-| `GET /api/status-page` | **Unauthenticated:** Public status page summary |
+| `GET /api/status-page` | **Unauthenticated:** Public status page summary (services, 30-check `RecentChecks`, and active `Incidents`) |
+| `GET /api/incidents` | List active and historical incidents & maintenance notices |
+| `POST /api/incidents` | Create a new system incident or maintenance notice |
+| `PUT /api/incidents/{id}` | Update incident details, severity, status, or message |
+| `POST /api/incidents/{id}/resolve` | Mark an incident as resolved with timestamp |
+| `DELETE /api/incidents/{id}` | Remove an incident record |
+| `GET /api/uptime/{id}/daily-stats` | 365-day historical daily uptime rollup summary |
 | `GET /api/containers` | List Docker containers with status, ports, and labels |
 | `GET /api/containers/stats-summary` | **Batch Stats:** Stream CPU, RAM, and Network metrics for all running containers in a single request (eliminates N+1 socket calls) |
 | `GET /api/containers/{id}/stats` | Live per-container CPU%, RAM usage, and Network I/O metrics |
@@ -217,7 +249,7 @@ Incoming push monitor heartbeat records.
 | **System Metrics**| `/` | Telemetry graphs across 1h, 6h, 12h, 24h, 7d periods for CPU, RAM, Disk, and Network |
 | **Uptime & Snitch** | `/` | 3-state health monitoring, response latency charts, and Dead Man's Snitch cron/backup monitor tab |
 | **Settings** | `/` | Tabbed alert channel configuration (Discord, Telegram, Ntfy, Webhook), test notifications, dual-mode backup management (internal snapshot download via `VACUUM INTO` + external push integration), flexible data retention (7-365 days, Unlimited mode, risk warning), and real-time database disk usage telemetry |
-| **Public Status** | `/status` | **Unauthenticated:** Operational status banner, service uptime metrics, and SSL certificates |
+| **Public Status** | `/status` | **Unauthenticated:** Operational status banner, interactive 30-check latency sparklines, collapsible category groups, active maintenance and incident notices |
 
 ---
 
@@ -247,4 +279,7 @@ Incoming push monitor heartbeat records.
 - [x] Mobile-first 2-column compact KPI strip & active containers widget
 - [x] GitHub Releases API dynamic SemVer version update checker (`GET /api/version`)
 - [x] Advanced Uptime monitoring parameters (custom interval, timeout, retries, ignore TLS, status codes) and opt-in status page
-- [x] 119/119 passing xUnit test coverage
+- [x] Interactive 30-check latency status bars, collapsible category accordions, and real-time tooltips on Public Status
+- [x] System Incidents & Scheduled Maintenance management with public alert banners (`service_incidents`)
+- [x] Intelligent 24-hour retention (`is_transition`) and 365-day daily SLA rollup (`uptime_daily_stats`)
+- [x] 137/137 passing xUnit test coverage

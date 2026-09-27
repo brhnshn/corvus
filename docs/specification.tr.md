@@ -120,19 +120,45 @@ Her endpoint kontrolünün sonucu (zaman serisi).
 
 | Alan | Tip | Açıklama |
 |---|---|---|
-| id | INTEGER (autoincrement) | |
+| id | INTEGER (autoincrement) | Birincil anahtar |
 | service_id | TEXT | `services.id` referansı |
-| checked_at | DATETIME | |
+| checked_at | DATETIME | Kontrol zamanı |
 | status | TEXT | `up` / `down` |
-| response_time_ms | INTEGER (nullable) | Yanıt süresi |
-| error_message | TEXT (nullable) | |
+| response_time_ms | INTEGER (nullable) | Yanıt süresi (ms) |
+| error_message | TEXT (nullable) | Hata detayları |
+| is_transition | INTEGER | `1`: Durum değişim anı, `0`: Olağan kontrol |
+
+### `uptime_daily_stats`
+365 günlük SLA ve geçmiş raporlaması için günlük özetlenen uptime istatistikleri.
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| service_id | TEXT | `services.id` referansı (Kompozit PK) |
+| date | TEXT | Takvim günü (`YYYY-MM-DD`, Kompozit PK) |
+| total_checks | INTEGER | İlgili günde yapılan toplam kontrol sayısı |
+| up_checks | INTEGER | Başarılı kontrol sayısı |
+| avg_response_time_ms | INTEGER (nullable) | Ortalama yanıt süresi (ms) |
+
+### `service_incidents`
+Sistem arıza, araştırma, izleme ve planlı bakım duyuruları.
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| id | TEXT (UUID) | Birincil anahtar |
+| title | TEXT | Olay veya bakım başlığı |
+| message | TEXT | Ayrıntılı açıklama içeriği |
+| severity | TEXT | `info`, `warning`, `critical`, `maintenance` |
+| is_pinned | INTEGER | `1`: Durum sayfasının tepesine sabitlenmiş, `0`: Standart |
+| status | TEXT | `investigating`, `identified`, `monitoring`, `resolved` |
+| created_at | TEXT | Oluşturulma zaman damgası (ISO-8601) |
+| resolved_at | TEXT (nullable) | Çözümlenme zaman damgası (ISO-8601) |
 
 ### `backup_events`
 Push monitor üzerinden gelen son yedekleme sinyalleri.
 
 | Alan | Tip | Açıklama |
 |---|---|---|
-| id | INTEGER (autoincrement) | |
+| id | INTEGER (autoincrement) | Birincil anahtar |
 | token | TEXT | Bildiren job anahtarı |
 | received_at | DATETIME | |
 | status | TEXT | `success` / `failure` |
@@ -155,7 +181,13 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | `PUT /api/services/{id}` | Servisi günceller veya Docker servisi için override yazar |
 | `PUT /api/services/reorder` | Servislerin görsel sıralamasını kaydeder |
 | `DELETE /api/services/{id}` | Manuel servisi siler veya Docker override'ını kaldırır |
-| `GET /api/status-page` | **Şifresiz:** Halka açık durum sayfası için servis özetlerini döner |
+| `GET /api/status-page` | **Şifresiz:** Halka açık durum sayfası özeti (servisler, 30 kontrol `RecentChecks` ve aktif `Incidents`) |
+| `GET /api/incidents` | Aktif ve geçmiş sistem olayları / bakım duyurularını listeler |
+| `POST /api/incidents` | Yeni sistem olayı veya bakım duyurusu oluşturur |
+| `PUT /api/incidents/{id}` | Olay detaylarını, önem derecesini veya mesajını günceller |
+| `POST /api/incidents/{id}/resolve` | Olayı çözüldü olarak işaretler ve zaman damgası ekler |
+| `DELETE /api/incidents/{id}` | Olay kaydını siler |
+| `GET /api/uptime/{id}/daily-stats` | Bir servisin 365 günlük özet istatistiklerini getirir |
 | `GET /api/containers` | Docker container listesi (durum, portlar, etiketler) |
 | `GET /api/containers/stats-summary` | **Toplu Stats:** Tüm çalışan konteynerlerin CPU, RAM ve Ağ metriklerini tek HTTP akışında toplar (N+1 socket önleyici) |
 | `GET /api/containers/{id}/stats` | Anlık konteyner CPU%, bellek kullanımı ve ağ I/O istatistikleri |
@@ -217,7 +249,7 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | **Sistem Metrikleri**| `/` | 1h, 6h, 12h, 24h, 7d aralıklarında CPU, RAM, Disk ve Ağ I/O grafikleri |
 | **Uptime & Snitch** | `/` | 3 durumlu sağlık takibi, HTTP/TCP yanıt süreleri geçmişi ve Dead Man's Snitch periyodik cron/yedekleme izleme sekmesi |
 | **Ayarlar** | `/` | Sekmeli alarm yapılandırması (Discord, Telegram, Ntfy, Webhook), test bildirimleri, çift yönlü yedekleme (dahili `VACUUM INTO` indirme + harici curl entegrasyonu), esnek veri saklama (7-365 gün, Sınırsız mod, risk uyarısı) ve anlık veritabanı boyutu |
-| **Canlı Durum** | `/status` | **Şifresiz:** Tüm sistemler operasyonel banner'ı, servis uptime oranları, SSL günleri |
+| **Canlı Durum** | `/status` | **Şifresiz:** Tüm sistemler operasyonel banner'ı, son 30 kontrol etkileşimli durum çubukları, kategori akordeonları, aktif arıza ve planlı bakım duyuruları |
 
 ---
 
@@ -246,5 +278,8 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Gelişmiş 3 durumlu dayanıklılık motoru (`healthy` -> `degraded` -> `down`) & Docker loopback ağ geçidi çözümlemesi
 - [x] Mobil-öncelikli 2 sütunlu kompakt KPI şeridi & aktif konteynerler widget'ı
 - [x] GitHub Releases API dinamik SemVer sürüm denetleyicisi (`GET /api/version`)
-- [x] Gelişmiş Uptime izleme parametreleri (özel kontrol aralığı, timeout, retry, TLS yoksayma, durum kodları) ve varsayılan kapalı opt-in durum sayfası
-- [x] 119/119 xUnit birim ve entegrasyon testi doğrulaması
+- [x] Gelişmiş Uptime izleme parametreleri (özel kontrol aralığı, timeout, retry, TLS yoksayma, durum kodları) ve opt-in durum sayfası
+- [x] Halka Açık Durum Sayfasında son 30 kontrol durum çubukları, kategori akordeonları ve canlı gecikme tooltip'leri
+- [x] Sistem Olayları & Planlı Bakım Yönetimi ile durum sayfasında canlı uyarı afişleri (`service_incidents`)
+- [x] Akıllı 24 saatlik retention (`is_transition`) ve 365 günlük SLA özet agregasyonu (`uptime_daily_stats`)
+- [x] 137/137 xUnit birim ve entegrasyon testi doğrulaması

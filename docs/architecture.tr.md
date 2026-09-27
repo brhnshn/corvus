@@ -32,6 +32,7 @@ corvus/
 │   │   │   ├── BackupEndpoints.cs        # Tek tıkla SQLite VACUUM INTO anlık yedek indirme
 │   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /stats-summary (toplu stats), /logs/stream ve kontroller
 │   │   │   ├── DashboardEndpoints.cs     # 2.5s in-memory önbellekli Dashboard KPI özeti
+│   │   │   ├── IncidentEndpoints.cs      # Sistem olayları ve planlı bakım CRUD & yaşam döngüsü
 │   │   │   ├── MetricsEndpoints.cs       # Sistem donanım metrikleri zaman serisi
 │   │   │   ├── NotificationEndpoints.cs  # Çok kanallı alarm test uç noktası
 │   │   │   ├── PushEndpoints.cs          # Push webhooks ve Dead Man's Snitch (/push-monitors)
@@ -48,6 +49,7 @@ corvus/
 │   │   ├── Data/                  # Veri erişim katmanı (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000 ve PRAGMA optimizasyonları
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sıralı göç yöneticisi
+│   │   │   ├── IncidentRepository.cs         # Sistem olayları ve duyurular veri erişimi
 │   │   │   ├── ServicesRepository.cs         # Servis ve override sorguları
 │   │   │   ├── PushMonitorRepository.cs      # Dead Man's Snitch veri erişimi
 │   │   │   ├── UptimeRepository.cs           # Uptime geçmişi ve 5s önbellekli 24h yüzde agregasyonu
@@ -62,9 +64,12 @@ corvus/
 │   │   │       ├── 004_performance_indexes.sql
 │   │   │       ├── 005_service_overrides_extended.sql
 │   │   │       ├── 006_uptime_advanced_options.sql
-│   │   │       └── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing durum sıfırlama ve indeks
+│   │   │       ├── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing durum sıfırlama ve indeks
+│   │   │       ├── 008_service_incidents.sql     # Sistem olayları ve planlı bakım şeması
+│   │   │       └── 009_uptime_rollup_and_transition.sql # Uptime günlük özet ve durum geçiş takibi
 │   │   ├── Models/                 # DTO'lar ve Veritabanı Varlıkları
 │   │   │   ├── Service.cs                    # Servis modeli (check_type, port, ssl, is_public, display_order)
+│   │   │   ├── ServiceIncident.cs            # Sistem olay duyurusu modeli
 │   │   │   ├── ServiceOverride.cs            # Docker override modeli
 │   │   │   ├── PushMonitor.cs                # Dead Man's Snitch modeli
 │   │   │   ├── DockerModels.cs               # Docker API modelleri
@@ -136,7 +141,10 @@ corvus/
 │       │       │   └── ActiveContainersWidget.tsx # 2 sütunlu duyarlı aktif konteynerler kartı
 │       │       ├── PublicStatus/
 │       │       │   ├── index.tsx             # Şifresiz halka açık durum sayfası (/status)
-│       │       │   └── PublicStatusDisabled.tsx # Durum sayfası kapalıyken gösterilen minimalist kart
+│       │       │   ├── PublicStatusCategoryGroup.tsx # Kategori bazlı açılır/kapanır akordeon grupları
+│       │       │   ├── PublicStatusIncidentBanner.tsx # Canlı olay ve planlı bakım duyuru afişi
+│       │       │   ├── PublicStatusServiceBar.tsx # Son 30 denetim etkileşimli durum çubuğu
+│       │       │   └── PublicStatusServiceCard.tsx # Detaylı servis durum ve uptime kartı
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Servis launcher ve sürükle-bırak sıralama
 │       │       │   ├── ServiceCard.tsx       # Servis kartı ve düzenleme aksiyonu
@@ -158,6 +166,7 @@ corvus/
 │       │           ├── index.tsx             # Uptime kabuğu ve sekme seçici
 │       │           ├── PingUptimeTab.tsx     # HTTP/TCP ping, gecikme ve SSL takibi ana sekmesi
 │       │           ├── PushMonitorsTab.tsx   # Dead Man's Snitch cron izleme listesi
+│       │           ├── IncidentsTab.tsx      # Sistem olayları ve planlı bakım yönetim sekmesi
 │       │           ├── AddSnitchModal.tsx    # Push monitor oluşturma modalı
 │       │           ├── UptimeStatsCards.tsx  # KPI kartları ve uç nokta düzenleme tetikleyicisi
 │       │           ├── UptimeRecentChecks.tsx# Son Uptime kontrolleri listesi
@@ -165,11 +174,12 @@ corvus/
 │       │           └── components/           # Modüler Uptime alt bileşenleri
 │       │               ├── DiscoveredServicesSection.tsx # Keşfedilen izlenmeyen servisler havuzu
 │       │               ├── EnableUptimeModal.tsx          # Akıllı ön dolumlu canlı bağlantı test modalı
+│       │               ├── AddIncidentModal.tsx           # Olay ve planlı bakım oluşturma modalı
 │       │               └── DisableUptimeDialog.tsx        # Takipten çıkarma onay diyaloğu
 │       └── wwwroot/                # Üretime hazır derlenmiş arayüz paketi (Corvus.Api tarafından sunulur)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Paketi (123 Başarılı Test)
+│   └── Corvus.Api.Tests/           # xUnit Test Paketi (137 Başarılı Test)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Konteyner işlemleri, micro-cache ve batch stats testleri
 │       ├── DockerLogDemuxerTests.cs
@@ -260,6 +270,29 @@ Servis sağlığı kontrollerinde geçici ağ dalgalanmalarının yanlış alarm
 - **`degraded`:** İlk başarısızlık tespit edildi; sistem alarm üretmez, servisi sarı uyarı moduna alır.
 - **`down`:** 3 ardışık başarısızlık sonrasında servis kırmızıya döner ve yapılandırılmış bildirim kanallarına (Discord, Telegram, vb.) alarm fırlatılır.
 - **Loopback Ağ Çözümlemesi:** Docker içinde çalışan Corvus'un host üzerindeki servislere (`localhost`, `127.0.0.1`) erişebilmesi için varsayılan bridge ağ geçidi (`host.docker.internal`) otomatik çözümlenir.
+
+---
+
+## 🧹 Veri Saklama, Uptime Agregasyonu & Olay Yaşam Döngüsü Mimarisi
+
+### 1. Akıllı 24 Saatlik Retention Temizliği (`is_transition`)
+Yüksek sıklıkta yapılan sağlık denetimleri zamanla milyonlarca satır üretir. SQLite sorgularının mikrosaniye seviyesinde kalmasını sağlamak ve disk büyümesini engellerken denetim tutarlılığını korumak için:
+- Servis durumunun değişmediği rutin kontroller `is_transition = 0` bayrağıyla kaydedilir.
+- Servisin durumunun değiştiği tüm anlar (`up` ➔ `down` veya `down` ➔ `up`) `is_transition = 1` olarak işaretlenir.
+- `RetentionCleanupService` günde bir kez çalışır: 24 saatten eski ve durum değişimi içermeyen rutin kontroller (`is_transition = 0`) `idx_uptime_checks_cleanup` indeksi üzerinden anında temizlenir. Durum değişim anları (`is_transition = 1`) ise kullanıcının belirlediği `retention_days` süresince denetim amaçlı saklanır.
+
+### 2. 365 Günlük Günlük İstatistik Özeti (`uptime_daily_stats`)
+Eski ham kontroller silinmeden hemen önce, her servis için günlük istatistikler özetlenerek `uptime_daily_stats` tablosuna işlenir:
+- Her takvim günü (`date`) için servisin `total_checks`, `up_checks` ve `avg_response_time_ms` metrikleri hesaplanır.
+- 30 günlük, 90 günlük ve 365 günlük SLA ve Uptime oranları, devasa `uptime_checks` tablosu taranmadan doğrudan bu hafif özet tablosu üzerinden anlık hesaplanır.
+- 365 günden eski özet kayıtları temizlenerek, tam 1 yıllık SLA geçmişi yalnızca birkaç kilobaytlık bir alanda kalıcı olarak tutulur.
+
+### 3. Olay ve Duyuru Yaşam Döngüsü (`service_incidents`)
+Arıza, bakım veya altyapı güncellemelerinde kullanıcı iletişimi, otomatik sağlık kontrollerinden bağımsız yönetilir:
+- **Önem Seviyeleri (Severity):** `info`, `warning`, `critical`, `maintenance`.
+- **Durum Aşamaları (Status):** `investigating` ➔ `identified` ➔ `monitoring` ➔ `resolved`.
+- **Halka Açık Görünürlük:** Aktif ve sabitlenmiş (pinned) olaylar `GET /api/status-page` üzerinden servis edilir ve halka açık durum sayfasının en üstünde dikkat çekici canlı afişler (`PublicStatusIncidentBanner.tsx`) olarak sergilenir.
+- **Yönetici Kontrolü:** Uptime sayfasındaki Olaylar sekmesinden (`IncidentsTab.tsx`) olay oluşturulabilir (`AddIncidentModal.tsx`), durum aşamaları güncellenebilir ve tek tıkla çözümlenerek (`POST /api/incidents/{id}/resolve`) zaman damgasıyla (`resolved_at`) arşivlenir.
 
 ---
 

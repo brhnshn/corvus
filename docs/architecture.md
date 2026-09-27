@@ -32,6 +32,7 @@ corvus/
 │   │   │   ├── BackupEndpoints.cs        # One-click SQLite VACUUM INTO snapshot download
 │   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs, /logs/stream, and lifecycle controls
 │   │   │   ├── DashboardEndpoints.cs     # Dashboard aggregated KPI summary
+│   │   │   ├── IncidentEndpoints.cs      # Incident and maintenance announcement CRUD & lifecycle
 │   │   │   ├── MetricsEndpoints.cs       # Host system metrics time-series
 │   │   │   ├── NotificationEndpoints.cs  # Multi-channel alert test endpoint
 │   │   │   ├── PushEndpoints.cs          # Push webhooks and Dead Man's Snitch (/push-monitors)
@@ -48,6 +49,7 @@ corvus/
 │   │   ├── Data/                  # Persistence and data access layer (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000, and PRAGMA tuning
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sequential migration runner
+│   │   │   ├── IncidentRepository.cs         # Incident and maintenance notice data access
 │   │   │   ├── ServicesRepository.cs         # Service definition and override queries
 │   │   │   ├── PushMonitorRepository.cs      # Dead Man's Snitch data access
 │   │   │   ├── UptimeRepository.cs           # Uptime history data access
@@ -62,9 +64,12 @@ corvus/
 │   │   │       ├── 004_performance_indexes.sql
 │   │   │       ├── 005_service_overrides_extended.sql
 │   │   │       ├── 006_uptime_advanced_options.sql
-│   │   │       └── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing status reset and index
+│   │   │       ├── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing status reset and index
+│   │   │       ├── 008_service_incidents.sql     # Service incidents and maintenance announcements schema
+│   │   │       └── 009_uptime_rollup_and_transition.sql # Uptime daily rollup & transition state tracking
 │   │   ├── Models/                 # DTOs and Database Entities
 │   │   │   ├── Service.cs                    # Service entity (check_type, port, ssl, is_public, display_order)
+│   │   │   ├── ServiceIncident.cs            # Incident announcement entity
 │   │   │   ├── ServiceOverride.cs            # Docker label override model
 │   │   │   ├── PushMonitor.cs                # Dead Man's Snitch entity
 │   │   │   ├── DockerModels.cs               # Docker Engine API schemas
@@ -136,7 +141,10 @@ corvus/
 │       │       │   └── ActiveContainersWidget.tsx # 2-column responsive active containers card
 │       │       ├── PublicStatus/
 │       │       │   ├── index.tsx             # Unauthenticated status page (/status)
-│       │       │   └── PublicStatusDisabled.tsx # Clean minimalist card rendered when status page is disabled
+│       │       │   ├── PublicStatusCategoryGroup.tsx # Collapsible category accordion groups
+│       │       │   ├── PublicStatusIncidentBanner.tsx # Real-time incident and scheduled maintenance notice banner
+│       │       │   ├── PublicStatusServiceBar.tsx    # Interactive 30-check latency status bar
+│       │       │   └── PublicStatusServiceCard.tsx   # Detailed service status card with uptime metrics
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Service launcher and drag & drop reordering
 │       │       │   ├── ServiceCard.tsx       # Service card with edit modal trigger
@@ -145,7 +153,7 @@ corvus/
 │       │       │   └── AdvancedCheckOptions.tsx # Modular accordion for check interval, retries, TLS & status codes
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Settings shell and tab switcher
-│       │       │   ├── GeneralSettingsTab.tsx # General options, retention, DB telemetry & status page toggle
+│       │       │   ├── GeneralSettingsTab.tsx # General options, retention, and DB size telemetry
 │       │       │   ├── NotificationSettingsTab.tsx # Multi-channel alert configuration
 │       │       │   └── BackupSettingsTab.tsx # Dual-mode internal/external backup manager
 │       │       ├── SystemMetrics/
@@ -158,6 +166,7 @@ corvus/
 │       │           ├── index.tsx             # Uptime shell and tab selector
 │       │           ├── PingUptimeTab.tsx     # HTTP/TCP ping, latency, and SSL tracking main tab
 │       │           ├── PushMonitorsTab.tsx   # Dead Man's Snitch cron monitor list
+│       │           ├── IncidentsTab.tsx      # Incident and scheduled maintenance management tab
 │       │           ├── AddSnitchModal.tsx    # Modal for creating push monitors
 │       │           ├── UptimeStatsCards.tsx  # Target URL card and edit endpoint trigger
 │       │           ├── UptimeRecentChecks.tsx# Historical check list with status badges
@@ -165,11 +174,12 @@ corvus/
 │       │           └── components/           # Modular Uptime sub-components
 │       │               ├── DiscoveredServicesSection.tsx # Unmonitored discovered services pool
 │       │               ├── EnableUptimeModal.tsx          # Smart pre-filled live connection test modal
+│       │               ├── AddIncidentModal.tsx           # Modal for creating and publishing service incidents
 │       │               └── DisableUptimeDialog.tsx        # Opt-out confirmation dialog
 │       └── wwwroot/                # Production compiled bundle output (hosted by Corvus.Api)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Suite (123 Passing Tests)
+│   └── Corvus.Api.Tests/           # xUnit Test Suite (137 Passing Tests)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Container operations, micro-cache, and batch stats tests
 │       ├── DockerLogDemuxerTests.cs
@@ -260,6 +270,29 @@ To prevent false alarms from transient network latency or brief blips, Corvus ap
 - **`degraded`:** A first failure is detected; the monitor enters degraded status with a yellow warning indicator, suppressing alarm dispatches.
 - **`down`:** After 3 consecutive failures, the service transitions to down (red) and immediately dispatches alerts across configured notification webhooks (Discord, Telegram, Ntfy, Webhook).
 - **Loopback Gateway Resolution:** Corvus automatically resolves loopback targets (`localhost`, `127.0.0.1`) to the Docker bridge gateway (`host.docker.internal`) so checks run accurately from within containerized environments.
+
+---
+
+## 🧹 Data Retention, Uptime Aggregation & Incident Lifecycle
+
+### 1. Intelligent 24-Hour Retention (`is_transition`)
+High-frequency ping checks create voluminous time-series rows over time. To maintain microsecond SQLite query execution and a minimal disk footprint without sacrificing historical fidelity:
+- Routine checks where service status remains unchanged are recorded with `is_transition = 0`.
+- Whenever a service changes state (`up` ➔ `down` or `down` ➔ `up`), the check record is flagged with `is_transition = 1`.
+- `RetentionCleanupService` runs every 24 hours: routine checks older than 24 hours (`is_transition = 0`) are purged automatically via `idx_uptime_checks_cleanup`. State transition milestones (`is_transition = 1`) are retained up to the user-configured retention limit (`retention_days`).
+
+### 2. 365-Day Daily Statistics Rollup (`uptime_daily_stats`)
+Prior to pruning older raw checks, daily aggregates are calculated and persisted to `uptime_daily_stats`:
+- Aggregates `total_checks`, `up_checks`, and `avg_response_time_ms` per service per calendar day (`date`).
+- Enables instant rendering of historical uptime percentages across 30-day, 90-day, and 365-day periods without heavy table scans on `uptime_checks`.
+- Historical daily statistics older than 365 days are pruned, keeping a full year of SLA memory within mere kilobytes of storage.
+
+### 3. Incident & Maintenance Lifecycle (`service_incidents`)
+Public status communication during outages or maintenance is decoupled from raw automated health checks:
+- **Severity Levels:** `info`, `warning`, `critical`, `maintenance`.
+- **Status Workflow:** `investigating` ➔ `identified` ➔ `monitoring` ➔ `resolved`.
+- **Public Visibility:** Active and pinned incidents are exposed through `GET /api/status-page` and rendered in dynamic, real-time alert banners (`PublicStatusIncidentBanner.tsx`) atop the public board.
+- **Administrative Management:** Managed from the Uptime page's Incidents tab (`IncidentsTab.tsx`) with modal creation (`AddIncidentModal.tsx`), stage progression, and one-click resolution (`POST /api/incidents/{id}/resolve`).
 
 ---
 

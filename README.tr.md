@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/logo.png" width="120" alt="Corvus Logo" />
+  <img src=".github/assets/banner.jpg" alt="Corvus Banner" width="100%" />
 </p>
 
 <h1 align="center">Corvus</h1>
@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Testler-85_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-137_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
   <img src="https://img.shields.io/badge/Lisans-MIT-blue" alt="License" />
 </p>
@@ -54,6 +54,7 @@
   - **Harici Yedekleme Bildirimi:** Dinamik token oluşturucu ve otomatik yapılandırılmış `curl` şablonları ile host yedekleme araçları (`restic`, `borg`, cron) entegrasyonu.
 - **🧹 Esnek Veri Saklama Süresi & Disk Telemetrisi:**
   - Hazır saklama periyotları: 7 gün, 15 gün, 30 gün (önerilen), 60 gün, 90 gün, 180 gün, 365 gün veya **Sınırsız (0)**.
+  - **Akıllı 24 Saatlik Retention & 365 Günlük Özet:** 24 saatten eski durum değiştirmeyen olağan kontrolleri temizlerken (`is_transition = 0`), durum değişim anlarını (`is_transition = 1`) ve 365 günlük hafif yıllık özetleri (`uptime_daily_stats`) korur.
   - Sınırsız mod seçildiğinde disk büyümesi ve yedekleme süresi hakkında bilgilendirici akıllı uyarı.
   - SQLite dosya ve WAL boyutunu canlı takip etme (`GET /api/settings/db-stats`).
   - Veritabanı ayarını dinamik dinleyen ve temizlik sonrası `PRAGMA optimize;` çalıştıran `RetentionCleanupService`.
@@ -78,10 +79,13 @@
 - **💀 Dead Man's Snitch (Periyodik Push Monitörü):**
   - Cron görevlerini ve yedekleme script'lerini (`borg`, `restic`, bash) izleme.
   - Beklenen periyot (örn. 24 saatte bir) ve tolerans süresi tanımlayabilme; sinyal gelmediğinde otomatik alarm oluşturma.
-- **🌐 Genel Durum Sayfası (Public Status — Varsayılan Kapalı & Opt-in):**
-  - Sıfır-güven (zero-trust) ve gizlilik prensibiyle **varsayılan olarak kapalı** (`status_page_enabled = false`); Ayarlar ekranından tek tıkla yayına alınabilir veya yayından kaldırılabilir.
-  - Kapalıyken ziyaretçilere şık, koyu temalı "Durum Sayfası Devre Dışı" (`PublicStatusDisabled.tsx`) ekranı sunar.
-  - **Tamamen Opt-in (Seçmeli):** Servisler asla otomatik olarak durum sayfasına sızmaz; yalnızca kullanıcının açıkça `is_public` olarak işaretlediği servisler durum sayfasında listelenir.
+- **🌐 Genel Durum Sayfası (Public Status — Doğrudan Aktif & Kesinlikle Opt-in):**
+  - **Doğrudan Erişim (`/status`):** Genel ayarlardan açma/kapama toggle'ı gerekmeksizin halka açık servisler için her zaman hazırdır.
+  - **Kesinlikle Opt-in (Seçmeli):** Servisler asla otomatik olarak durum sayfasına sızmaz; yalnızca kullanıcının açıkça `is_public` ve `is_uptime_enabled` olarak işaretlediği servisler listelenir.
+  - **Son 30 Kontrolün Etkileşimli Durum Çubukları:** Her servis için yanıt süresi (ms), kontrol zamanı ve durum rozetlerini canlı tooltip'lerle sunan etkileşimli 30 denetim çubuğu (`RecentChecks`).
+  - **Kategori Bazlı Açılır/Kapanır Akordeon Grupları:** Servisleri kategorilerine göre düzenler, grup sağlık rozetleri ve toplu açma/kapama desteği sunar.
+  - **Sistem Duyuruları & Planlı Bakım Afişleri:** Yönetici paneli olay yönetim sekmesinden oluşturulan aktif arıza, araştırma ve planlı bakım duyurularını (`service_incidents`) ziyaretçilere anında duyurur.
+  - **Hafif Yıllık SLA Özeti:** 365 günlük günlük istatistik özeti tablosu (`uptime_daily_stats`) ile minimum disk alanıyla uzun vadeli SLA takibi sağlar.
 - **🛡️ Zero-Trust SSO & Ters Vekil (Reverse Proxy) Kimlik Doğrulama:**
   - Güvenilen proxy başlıkları ile otomatik giriş desteği: `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`.
   - Yerleşik kullanıcı adı/şifre doğrulaması ve kapatılabilir kayıt mekanizması.
@@ -192,7 +196,13 @@ labels:
 | `GET /api/dashboard/summary` | Konsolide KPI ve durum özeti |
 | `GET /api/services` | Servis kataloğu, sıralama ve SSL bilgileri |
 | `PUT /api/services/reorder` | Servislerin görsel sıralamasını kaydeder |
-| `GET /api/status-page` | Halka açık şifresiz sistem durum özeti |
+| `GET /api/status-page` | Halka açık şifresiz sistem durum özeti (servisler, 30 kontrol sparkline ve olaylar) |
+| `GET /api/incidents` | Aktif ve geçmiş sistem olayları / duyurularını listeler |
+| `POST /api/incidents` | Yeni olay veya planlı bakım duyurusu oluşturur |
+| `PUT /api/incidents/{id}` | Olay detaylarını günceller |
+| `POST /api/incidents/{id}/resolve` | Olayı çözüldü olarak işaretler |
+| `DELETE /api/incidents/{id}` | Olay kaydını siler |
+| `GET /api/uptime/{id}/daily-stats` | 365 günlük servis uptime özet istatistiklerini getirir |
 | `GET /api/containers` | Konteyner listesi, durumları ve portları |
 | `GET /api/containers/{id}/stats` | Anlık konteyner CPU%, RAM ve Net I/O verisi |
 | `GET /api/containers/{id}/logs` | Son konteyner log satırları |
