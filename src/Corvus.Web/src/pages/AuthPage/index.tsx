@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api, type AuthStatus } from '../../api/client';
-import { Lock, User, UserPlus, LogIn, AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { Lock, User, UserPlus, LogIn, AlertCircle, CheckCircle2, Info, Eye, EyeOff } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { LanguageSwitch } from '../../components/LanguageSwitch';
 
@@ -13,6 +13,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
   const { t } = useI18n();
   const isFirstSetup = !authStatus.hasUsers;
   const [isRegisterMode, setIsRegisterMode] = useState<boolean>(isFirstSetup);
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,8 +26,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
     setError(null);
     setSuccessMsg(null);
 
-    if (!username.trim() || !password) {
+    const cleanUser = username.trim();
+    if (!cleanUser || !password) {
       setError(t('auth.credentialsRequired'));
+      return;
+    }
+
+    if (cleanUser.length < 3) {
+      setError(t('auth.usernameTooShort'));
+      return;
+    }
+
+    if (password.length < 4) {
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
@@ -39,13 +51,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
 
     try {
       if (isRegisterMode) {
-        await api.register({ username: username.trim(), password });
+        await api.register({ username: cleanUser, password });
         setSuccessMsg(t('auth.registrationSuccess'));
         setTimeout(() => {
           onAuthSuccess(true);
         }, 600);
       } else {
-        await api.login({ username: username.trim(), password });
+        await api.login({ username: cleanUser, password });
         onAuthSuccess(false);
       }
     } catch (err: unknown) {
@@ -74,7 +86,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
           />
           <h1 className="text-2xl font-bold tracking-wider text-[#e5e7eb]">CORVUS</h1>
           <p className="text-xs text-[#9ca3af] tracking-widest font-mono uppercase mt-1">
-            {isFirstSetup ? t('auth.brandSubtitleSetup') : t('auth.brandSubtitleMain')}
+            {isFirstSetup && isRegisterMode ? t('auth.brandSubtitleSetup') : t('auth.brandSubtitleMain')}
           </p>
         </div>
 
@@ -136,6 +148,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
               <input
                 type="text"
                 required
+                autoFocus
+                autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={t('auth.usernamePlaceholder')}
@@ -153,13 +167,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
                 <Lock className="w-4 h-4" />
               </div>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] placeholder-[#9ca3af]/40 focus:outline-none focus:border-[#d4d4d8] transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] placeholder-[#9ca3af]/40 focus:outline-none focus:border-[#d4d4d8] transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#9ca3af] hover:text-[#e5e7eb] transition-colors focus:outline-none cursor-pointer"
+                tabIndex={-1}
+                aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -173,13 +197,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] placeholder-[#9ca3af]/40 focus:outline-none focus:border-[#d4d4d8] transition-colors"
+                  className="w-full pl-10 pr-10 py-2.5 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] placeholder-[#9ca3af]/40 focus:outline-none focus:border-[#d4d4d8] transition-colors"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#9ca3af] hover:text-[#e5e7eb] transition-colors focus:outline-none cursor-pointer"
+                  tabIndex={-1}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           )}
@@ -187,7 +221,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 bg-[#d4d4d8] hover:bg-[#e4e4e7] text-[#0f1117] font-semibold text-sm rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full mt-2 py-3 bg-[#d4d4d8] hover:bg-[#e4e4e7] text-[#0f1117] font-semibold text-sm rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <span className="inline-block w-4 h-4 border-2 border-[#0f1117] border-t-transparent rounded-full animate-spin" />
@@ -204,6 +238,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
             )}
           </button>
         </form>
+
+        {/* First Setup: Optional toggle to Login using ENV credentials */}
+        {isFirstSetup && (
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegisterMode(!isRegisterMode);
+                setError(null);
+              }}
+              className="text-xs text-[#9ca3af] hover:text-[#e5e7eb] transition-colors cursor-pointer underline decoration-dotted"
+            >
+              {isRegisterMode ? t('auth.envLoginSwitch') : t('auth.envRegisterSwitch')}
+            </button>
+          </div>
+        )}
 
         {/* Footer note */}
         {(isFirstSetup || !authStatus.registrationEnabled) && (

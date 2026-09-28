@@ -74,8 +74,16 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
                     var endpoint = new UnixDomainSocketEndPoint(socketPath);
                     var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
 
-                    await socket.ConnectAsync(endpoint, cancellationToken);
-                    return new NetworkStream(socket, ownsSocket: true);
+                    try
+                    {
+                        await socket.ConnectAsync(endpoint, cancellationToken);
+                        return new NetworkStream(socket, ownsSocket: true);
+                    }
+                    catch
+                    {
+                        socket.Dispose();
+                        throw;
+                    }
                 }
             }
         };

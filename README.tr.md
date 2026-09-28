@@ -88,9 +88,12 @@
   - **Kategori Bazlı Açılır/Kapanır Akordeon Grupları:** Servisleri kategorilerine göre düzenler, grup sağlık rozetleri ve toplu açma/kapama desteği sunar.
   - **Sistem Duyuruları & Planlı Bakım Afişleri:** Yönetici paneli olay yönetim sekmesinden oluşturulan aktif arıza, araştırma ve planlı bakım duyurularını (`service_incidents`) ziyaretçilere anında duyurur.
   - **Hafif Yıllık SLA Özeti:** 365 günlük günlük istatistik özeti tablosu (`uptime_daily_stats`) ile minimum disk alanıyla uzun vadeli SLA takibi sağlar.
-- **🛡️ Zero-Trust SSO & Ters Vekil (Reverse Proxy) Kimlik Doğrulama:**
-  - Güvenilen proxy başlıkları ile otomatik giriş desteği: `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`.
-  - Yerleşik kullanıcı adı/şifre doğrulaması ve kapatılabilir kayıt mekanizması.
+- **🛡️ Sertleştirilmiş Kimlik Doğrulama, Zero-Trust SSO & DoS Koruması:**
+  - **100k İterasyonlu PBKDF2 & Tuzlama:** 16-byte kriptografik rastgele tuz ve PBKDF2-HMAC-SHA256 parola hashleme; eski parolalar için şeffaf otomatik rehash desteği.
+  - **Brute-Force & CPU DoS Koruması:** 1 dakika içinde 5 başarısız denemede otomatik 1 dakikalık IP/kullanıcı bazlı geçici kilitleme (`HTTP 429`).
+  - **Ters Vekil (Reverse Proxy) Güvenliği:** `CORVUS_TRUST_PROXY_HEADERS` opt-in ve IP whitelist doğrulamasıyla sahte başlık (`Remote-User`, `Tailscale`, `Cloudflare Access`, `X-Forwarded-User`) spoofing engellemesi.
+  - **Sertleştirilmiş CORS:** Kimlik bilgisi içeren istekler yalnızca tanımlı `CORVUS_ALLOWED_ORIGINS` veya yerel geliştirme ortamına izin verir.
+  - **Modern Giriş Arayüzü:** Şifre göster/gizle ikonu, şifre yöneticisi (`autoComplete`) uyumu ve Docker `.env` hesabı alternatifi.
 - **📱 Mobil ve Tablet Uyumlu Komuta Merkezi:**
   - 2 kolonlu optimize KPI kartları, tam genişlikte Disk Durumu çubuğu ve yan yana 2 kolonlu konteyner paneli.
   - Slide-over drawer menüsü, sabit mobil üst başlık, duyarlı tablo ve kart görünümleri.

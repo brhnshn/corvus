@@ -519,7 +519,7 @@ public class UptimeCheckerService : BackgroundService
 
                 try
                 {
-                    var response = await _httpClient.SendAsync(request, cts.Token);
+                    using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     int code = (int)response.StatusCode;
                     bool isAccepted = StatusCodeMatcher.IsMatch(code, s.AcceptedStatusCodes);
                     if (isAccepted)

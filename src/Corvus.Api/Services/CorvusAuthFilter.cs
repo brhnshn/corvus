@@ -18,8 +18,8 @@ public class CorvusAuthFilter : IEndpointFilter
 
         var httpContext = context.HttpContext;
 
-        // 1. Zero-Trust SSO / Reverse Proxy Header Kontrolü (Tailscale, Cloudflare Access, Remote-User, X-Forwarded-User)
-        string? proxyUser = _auth.CheckProxyAuthHeader(httpContext.Request.Headers);
+        // 1. Zero-Trust SSO / Reverse Proxy Header Kontrolü (Güvenilir IP & Doğrulama Kontrolü)
+        string? proxyUser = _auth.CheckProxyAuthHeader(httpContext.Request.Headers, httpContext.Connection.RemoteIpAddress);
         if (!string.IsNullOrEmpty(proxyUser))
         {
             return await next(context);

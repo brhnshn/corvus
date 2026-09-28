@@ -107,14 +107,32 @@ public class SystemMetricsCollector : BackgroundService
             ramUsedMb = 1024;
         }
 
-        // Disk hesabı
+        // Disk hesabı (Linux kök dosya sistemi veya en büyük hazır disk)
         long diskUsedGb = 0;
         long diskTotalGb = 0;
 
         try
         {
-            var drive = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady && d.DriveType == DriveType.Fixed);
-            if (drive != null)
+            DriveInfo? drive = null;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                try
+                {
+                    var rootDrive = new DriveInfo("/");
+                    if (rootDrive.IsReady && rootDrive.TotalSize > 0)
+                    {
+                        drive = rootDrive;
+                    }
+                }
+                catch { }
+            }
+
+            drive ??= DriveInfo.GetDrives()
+                .Where(d => d.IsReady && d.TotalSize > 0)
+                .OrderByDescending(d => d.TotalSize)
+                .FirstOrDefault();
+
+            if (drive != null && drive.TotalSize > 0)
             {
                 diskTotalGb = drive.TotalSize / (1024 * 1024 * 1024);
                 diskUsedGb = (drive.TotalSize - drive.AvailableFreeSpace) / (1024 * 1024 * 1024);

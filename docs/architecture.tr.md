@@ -88,8 +88,8 @@ corvus/
 │   │       ├── DockerLogDemuxer.cs           # Multiplexed Docker stdout/stderr sıfır bellek tahsisli ayrıştırıcı
 │   │       ├── NotificationService.cs        # SSRF korumalı, çift dilli Discord, Telegram, Ntfy ve Webhook motoru
 │   │       ├── EventBroadcaster.cs           # Çok istemcili Channel Pub/Sub SSE olay yayıncısı
-│   │       ├── AuthService.cs                # Zero-Trust SSO proxy headers & SHA-256 session auth
-│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter kimlik doğrulama katmanı
+│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hash, brute-force rate limiter ve session auth
+│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter kimlik doğrulama katmanı (401 koruması)
 │   │       └── UpdateCheckerService.cs       # GitHub Releases API sürüm kontrol servisi
 │   │
 │   └── Corvus.Web/                 # Frontend — TypeScript + React 19 + Vite + Tailwind CSS v4

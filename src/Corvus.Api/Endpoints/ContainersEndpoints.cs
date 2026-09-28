@@ -96,32 +96,60 @@ public static class ContainersEndpoints
             context.Response.Headers.CacheControl = "no-cache";
             context.Response.Headers.Connection = "keep-alive";
 
+            async Task WriteSseLineAsync(string rawLine)
+            {
+                var subLines = rawLine.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+                foreach (var subLine in subLines)
+                {
+                    await context.Response.WriteAsync($"data: {subLine}\n", ct);
+                }
+                await context.Response.WriteAsync("\n", ct);
+            }
+
             int limit = tail.GetValueOrDefault(50);
             var initialLines = await docker.GetContainerLogsAsync(id, limit, ct);
+            var seenLines = new HashSet<string>(initialLines);
+
             foreach (var line in initialLines)
             {
-                await context.Response.WriteAsync($"data: {line}\n\n", ct);
+                await WriteSseLineAsync(line);
             }
             await context.Response.Body.FlushAsync(ct);
 
-            var lastSent = initialLines.LastOrDefault();
             while (!ct.IsCancellationRequested)
             {
                 try
                 {
                     await Task.Delay(2000, ct);
-                    var latest = await docker.GetContainerLogsAsync(id, 20, ct);
+                    var latest = await docker.GetContainerLogsAsync(id, 50, ct);
                     if (latest.Count > 0)
                     {
-                        int index = string.IsNullOrEmpty(lastSent) ? 0 : latest.LastIndexOf(lastSent) + 1;
-                        if (index < latest.Count)
+                        var newLines = new List<string>();
+                        foreach (var line in latest)
                         {
-                            for (int i = index; i < latest.Count; i++)
+                            if (seenLines.Add(line))
                             {
-                                await context.Response.WriteAsync($"data: {latest[i]}\n\n", ct);
-                                lastSent = latest[i];
+                                newLines.Add(line);
+                            }
+                        }
+
+                        if (newLines.Count > 0)
+                        {
+                            foreach (var line in newLines)
+                            {
+                                await WriteSseLineAsync(line);
                             }
                             await context.Response.Body.FlushAsync(ct);
+                        }
+
+                        // Bellek şişmesini engelle: 1000'i geçerse en son satırları koru
+                        if (seenLines.Count > 1000)
+                        {
+                            seenLines.Clear();
+                            foreach (var line in latest)
+                            {
+                                seenLines.Add(line);
+                            }
                         }
                     }
                 }

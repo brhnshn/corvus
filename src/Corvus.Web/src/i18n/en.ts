@@ -351,7 +351,13 @@ export const en = {
     regDisabledHint: 'New user registrations are currently disabled by administrator.',
     passwordsDontMatch: 'Passwords do not match.',
     credentialsRequired: 'Please enter username and password.',
-    registrationSuccess: 'Registration successful! Signing in...'
+    registrationSuccess: 'Registration successful! Signing in...',
+    usernameTooShort: 'Username must be at least 3 characters.',
+    passwordTooShort: 'Password must be at least 4 characters.',
+    showPassword: 'Show Password',
+    hidePassword: 'Hide Password',
+    envLoginSwitch: 'Sign in with preconfigured environment (ENV) account',
+    envRegisterSwitch: 'Switch back to initial admin registration'
   },
   publicStatus: {
     title: 'Corvus',

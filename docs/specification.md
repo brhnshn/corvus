@@ -230,10 +230,12 @@ Incoming push monitor heartbeat records.
 ## 6. Authentication and Zero-Trust SSO
 
 1. **Zero-Trust SSO / Reverse Proxy Support:**
-   - Automatically detects incoming trusted proxy headers (`Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`) to establish passwordless authenticated sessions.
-2. **Credential Authentication:**
-   - Secure SHA-256 hashed password storage with HTTP-only session cookies (`corvus_session`).
-   - The user registration modal can be toggled off after the initial admin account is created.
+   - Detects incoming proxy headers (`Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`) strictly gated behind `CORVUS_TRUST_PROXY_HEADERS=true` and trusted IP verification to prevent header spoofing.
+2. **Credential Authentication & Hardening:**
+   - 100,000-iteration PBKDF2-HMAC-SHA256 password hashing with 16-byte cryptographic random salt (CSPRNG); automatic transparent rehash migration for legacy SHA-256 accounts.
+   - Brute-force & CPU DoS protection: in-memory rate limiting blocks after 5 failed attempts in 1 minute with a 1-minute temporary lockout (`HTTP 429`).
+   - 256-bit cryptographically secure session token delivered via `HttpOnly`, `SameSite=Lax` cookie (`corvus_session`).
+   - User registration toggleable via UI or API after the initial admin account is created.
 3. **Optional Bypass:**
    - Set `CORVUS_AUTH_ENABLED=false` to run in completely unauthenticated internal homelab mode.
 
@@ -282,4 +284,4 @@ Incoming push monitor heartbeat records.
 - [x] Interactive 30-check latency status bars, collapsible category accordions, and real-time tooltips on Public Status
 - [x] System Incidents & Scheduled Maintenance management with public alert banners (`service_incidents`)
 - [x] Intelligent 24-hour retention (`is_transition`) and 365-day daily SLA rollup (`uptime_daily_stats`)
-- [x] 137/137 passing xUnit test coverage
+- [x] 142/142 passing xUnit test coverage

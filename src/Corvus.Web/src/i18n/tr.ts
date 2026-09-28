@@ -353,7 +353,13 @@ export const tr: TranslationDictionary = {
     regDisabledHint: 'Yeni kullanıcı kayıtları sistem yöneticisi tarafından kapatılmıştır.',
     passwordsDontMatch: 'Girdiğiniz şifreler birbiriyle eşleşmiyor.',
     credentialsRequired: 'Lütfen kullanıcı adı ve şifre giriniz.',
-    registrationSuccess: 'Kayıt başarılı! Oturum açılıyor...'
+    registrationSuccess: 'Kayıt başarılı! Oturum açılıyor...',
+    usernameTooShort: 'Kullanıcı adı en az 3 karakter olmalıdır.',
+    passwordTooShort: 'Şifre en az 4 karakter olmalıdır.',
+    showPassword: 'Şifreyi Göster',
+    hidePassword: 'Şifreyi Gizle',
+    envLoginSwitch: 'Önceden tanımlı ortam (ENV) hesabıyla giriş yap',
+    envRegisterSwitch: 'Yeni ilk yönetici hesabı oluşturma moduna dön'
   },
   publicStatus: {
     title: 'Corvus',

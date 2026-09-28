@@ -23,15 +23,16 @@ public static class SettingsEndpoints
             return Results.Ok(new GenericApiResponse(true, "Ayarlar kaydedildi."));
         });
 
-        group.MapGet("/settings/db-stats", (IConfiguration config) =>
+        group.MapGet("/settings/db-stats", (IDbConnectionFactory dbFactory) =>
         {
-            var dataDir = config["Database:DataDir"] ?? AppDomain.CurrentDomain.BaseDirectory;
-            var dbPath = Path.Combine(dataDir, "corvus.db");
-            var walPath = Path.Combine(dataDir, "corvus.db-wal");
+            var dbPath = dbFactory.DatabasePath;
+            var walPath = $"{dbPath}-wal";
+            var shmPath = $"{dbPath}-shm";
 
             long sizeBytes = File.Exists(dbPath) ? new FileInfo(dbPath).Length : 0;
             long walSizeBytes = File.Exists(walPath) ? new FileInfo(walPath).Length : 0;
-            long totalBytes = sizeBytes + walSizeBytes;
+            long shmSizeBytes = File.Exists(shmPath) ? new FileInfo(shmPath).Length : 0;
+            long totalBytes = sizeBytes + walSizeBytes + shmSizeBytes;
 
             string formatted = totalBytes switch
             {

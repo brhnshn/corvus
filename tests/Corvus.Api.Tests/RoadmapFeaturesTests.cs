@@ -98,8 +98,12 @@ public class RoadmapFeaturesTests
             [headerKey] = headerValue
         };
 
-        var authService = new AuthService(new FakeUserRepo(), new FakeSettingsRepo(), new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
-        string? result = authService.CheckProxyAuthHeader(headers);
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddInMemoryCollection(new[] { new KeyValuePair<string, string?>("Auth:TrustProxyHeaders", "true") })
+            .Build();
+
+        var authService = new AuthService(new FakeUserRepo(), new FakeSettingsRepo(), config);
+        string? result = authService.CheckProxyAuthHeader(headers, System.Net.IPAddress.Loopback);
 
         Assert.Equal(expectedUsername, result);
     }

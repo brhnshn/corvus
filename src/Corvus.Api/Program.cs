@@ -44,15 +44,33 @@ builder.Services.AddHostedService<SystemMetricsCollector>();
 builder.Services.AddHostedService<UptimeCheckerService>();
 builder.Services.AddHostedService<RetentionCleanupService>();
 
-// CORS (Geliştirme aşamasında frontend Vite dev server ile iletişim için)
+// CORS (Sertleştirilmiş Güvenlik: Geliştirme modu veya CORVUS_ALLOWED_ORIGINS ile kontrollü erişim)
+string? allowedOriginsEnv = Environment.GetEnvironmentVariable("CORVUS_ALLOWED_ORIGINS");
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyHeader()
-              .AllowAnyMethod()
-              .SetIsOriginAllowed(_ => true)
-              .AllowCredentials();
+        if (!string.IsNullOrWhiteSpace(allowedOriginsEnv))
+        {
+            var origins = allowedOriginsEnv.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            policy.WithOrigins(origins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else if (builder.Environment.IsDevelopment())
+        {
+            policy.AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .SetIsOriginAllowed(_ => true)
+                  .AllowCredentials();
+        }
+        else
+        {
+            // Üretimde rastgele origin'lere kimlikli (credentialed) erişim engellenir (Same-origin otomatik çalışır)
+            policy.AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
     });
 });
 

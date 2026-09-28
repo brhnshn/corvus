@@ -51,16 +51,17 @@ public static class BackupEndpoints
                 await repo.InsertAsync(evt);
                 broadcaster.Broadcast("push_received", $"{{\"token\":\"internal_corvus_db\",\"status\":\"success\"}}");
 
-                byte[] fileBytes = await File.ReadAllBytesAsync(tempFile);
                 string fileName = $"corvus-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.db";
-                return Results.File(fileBytes, "application/x-sqlite3", fileName);
+                var fileStream = new FileStream(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.DeleteOnClose);
+                return Results.File(fileStream, "application/x-sqlite3", fileName);
             }
-            finally
+            catch
             {
                 if (File.Exists(tempFile))
                 {
                     try { File.Delete(tempFile); } catch { }
                 }
+                throw;
             }
         });
 

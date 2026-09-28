@@ -88,8 +88,8 @@ corvus/
 │   │       ├── DockerLogDemuxer.cs           # Zero-alloc multiplexed Docker stdout/stderr demuxer
 │   │       ├── NotificationService.cs        # Bilingual multi-channel alert dispatcher (Discord, Telegram, Ntfy, Webhook)
 │   │       ├── EventBroadcaster.cs           # Bounded Channel SSE real-time event publisher
-│   │       ├── AuthService.cs                # Zero-Trust SSO proxy headers & SHA-256 session auth
-│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter authentication layer
+│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hashing, brute-force rate limiter & session auth
+│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter authentication layer (401 gate)
 │   │       └── UpdateCheckerService.cs       # GitHub Releases version checking
 │   │
 │   └── Corvus.Web/                 # Frontend — TypeScript + React 19 + Vite + Tailwind CSS v4

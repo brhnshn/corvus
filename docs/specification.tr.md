@@ -230,9 +230,11 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 ## 6. Kimlik Doğrulama ve Zero-Trust SSO
 
 1. **Zero-Trust SSO / Reverse Proxy Desteği:**
-   - Ters vekil sunucudan (Tailscale, Cloudflare Access, Authelia, Traefik) gelen `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User` veya `X-Forwarded-User` başlıkları otomatik algılanır; şifresiz oturum açılır.
+   - Ters vekil sunucudan (Tailscale, Cloudflare Access, Authelia, Traefik) gelen `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User` veya `X-Forwarded-User` başlıkları yalnızca `CORVUS_TRUST_PROXY_HEADERS=true` ve güvenilir IP doğrulamasından geçtikten sonra kabul edilir (başlık taklidi / spoofing koruması).
 2. **Kullanıcı Adı / Şifre Girişi:**
-   - SHA-256 hash'li yerleşik kimlik doğrulama ve oturum çerezi (`corvus_session`).
+   - 100.000 iterasyonlu PBKDF2-HMAC-SHA256 ve 16-byte kriptografik tuz (CSPRNG) ile şifreleme; legacy SHA-256 hesaplar için şeffaf otomatik rehash desteği.
+   - Kaba kuvvet (brute-force) ve CPU DoS engelleme: 1 dakika içinde 5 hatalı denemede 1 dakika geçici blokaj (`HTTP 429`).
+   - 256-bit rastgele oturum belirteci ve `HttpOnly`, `SameSite=Lax` oturum çerezi (`corvus_session`).
    - İlk kullanıcı oluşturulduktan sonra arayüzden yeni kayıtlar kapatılabilir.
 3. **Opsiyonel Kapatma:**
    - `CORVUS_AUTH_ENABLED=false` ile tamamen kimlik doğrulamasız çalıştırılabilir.
@@ -282,4 +284,4 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Halka Açık Durum Sayfasında son 30 kontrol durum çubukları, kategori akordeonları ve canlı gecikme tooltip'leri
 - [x] Sistem Olayları & Planlı Bakım Yönetimi ile durum sayfasında canlı uyarı afişleri (`service_incidents`)
 - [x] Akıllı 24 saatlik retention (`is_transition`) ve 365 günlük SLA özet agregasyonu (`uptime_daily_stats`)
-- [x] 137/137 xUnit birim ve entegrasyon testi doğrulaması
+- [x] 142/142 xUnit birim ve entegrasyon testi doğrulaması

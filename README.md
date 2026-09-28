@@ -88,9 +88,12 @@
   - **Collapsible Category Accordions:** Services organized by category with aggregate health status badges and collapse/expand controls.
   - **System Incidents & Scheduled Maintenance Banners:** Real-time operational incident and scheduled maintenance notices (`service_incidents`) managed via the administrative Incidents tab.
   - **Lightweight Yearly Rollup:** Backed by 365-day daily summaries (`uptime_daily_stats`), providing long-term SLA insights with minimal disk footprint.
-- **🛡️ Zero-Trust SSO & Reverse Proxy Auth:**
-  - Auto-login support via trusted headers: `Tailscale-User-Login`, `Cf-Access-Authenticated-User-Email`, `Remote-User`, `X-Forwarded-User`.
-  - Built-in credentials authentication with configurable registration toggle.
+- **🛡️ Hardened Authentication, Zero-Trust SSO & DoS Protection:**
+  - **100k Iteration PBKDF2 & Cryptographic Salting:** 16-byte cryptographic random salt with PBKDF2-HMAC-SHA256 password hashing; automatic transparent rehash migration for legacy accounts.
+  - **Brute-Force & CPU DoS Mitigation:** In-memory rate limiting blocks client IP/username after 5 failed attempts in 1 minute with a 1-minute temporary lockout (`HTTP 429`).
+  - **Hardened Reverse Proxy Headers:** Spoofing prevention for SSO headers (`Tailscale`, `Cloudflare Access`, `Remote-User`, `X-Forwarded-User`) via opt-in `CORVUS_TRUST_PROXY_HEADERS` and trusted IP verification.
+  - **Strict CORS Policy:** Credentialed cross-origin requests restricted to explicitly defined `CORVUS_ALLOWED_ORIGINS` or local development.
+  - **Modernized Auth Screen:** Reveal/hide password toggle, full password manager (`autoComplete`) support, and Docker `.env` initial login switch.
 - **📱 Responsive Mobile & Tablet First Command Center:**
   - 2-column KPI strip (Services, Containers, CPU, RAM), full-width disk progress card, and side-by-side active container cards.
   - Slide-over drawer navigation, sticky mobile header, and dual-mode responsive tables/cards.
