@@ -100,7 +100,8 @@
 - **🔄 Otomatik Semantik Sürüm & Güncelleme Kontrolü:**
   - GitHub Releases API ile dinamik sürüm karşılaştırması (`GET /api/version`) ve yeni sürüm çıktığında doğrudan bildirim.
 - **⚡ Yüksek Performans & Optimizasyon:**
-  - SQLite WAL modu, `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`.
+  - SQLite WAL modu, `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA cache_size = -2000;`.
+  - Çok iş parçacıklı bellek şişmesini engelleyen konteyner seviyesinde glibc arena sınırlaması (`MALLOC_ARENA_MAX=2`) ve akış tabanlı HTTP başlık okuması.
   - Zaman serisi telemetri tablolarında kompozit performans indeksleri (`004_performance_indexes.sql`).
   - `React.lazy` ve Vite `manualChunks` ile kod ayrıştırma (ilk paket boyutu <200 KB).
 

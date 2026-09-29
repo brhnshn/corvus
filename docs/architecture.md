@@ -81,7 +81,8 @@ corvus/
 │   │   │   ├── VersionInfo.cs                # Update checker DTO
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
 │   │   ├── Utils/                  # Helper utilities
-│   │   │   └── StatusCodeMatcher.cs          # HTTP status code pattern matcher (ranges and discrete codes)
+│   │   │   ├── StatusCodeMatcher.cs          # HTTP status code pattern matcher (ranges and discrete codes)
+│   │   │   └── NativeMemoryTrimmer.cs        # Platform-guarded libc malloc_trim native memory reclamation
 │   │   └── Services/                # Core domain business logic
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler direct socket client
 │   │       ├── DockerService.cs              # Container operations, stats, and label parsing
@@ -257,9 +258,12 @@ Corvus implements a multi-tier optimization architecture to sustain system memor
    - Rapid navigation between views reduces Docker socket calls and SQLite allocations by more than 90%.
 2. **Batch Stats Endpoint:**
    - Replaces N+1 parallel socket reads with a single consolidated stream via `GET /api/containers/stats-summary`, gathering resource stats for all running containers at once.
-3. **.NET 9 Elastic Memory Tuning (`System.GC.ConserveMemory=5`):**
+3. **.NET 9 Elastic Memory Tuning (`System.GC.ConserveMemory=5`) & Glibc Constraints:**
    - Configures the CLR to eagerly release idle virtual memory pages back to the Linux kernel (`madvise`) following traffic spikes.
-   - `RetentionCleanupService` performs an optimized Gen1 GC collection (`GC.Collect(1, GCCollectionMode.Optimized)`) after pruning expired records.
+   - Constrains Linux glibc multi-threaded memory allocation via `MALLOC_ARENA_MAX=2` and `MALLOC_TRIM_THRESHOLD_=131072` in the container environment to eliminate native heap fragmentation across background workers.
+   - HTTP health checks in `UptimeCheckerService` utilize `HttpCompletionOption.ResponseHeadersRead` and explicit socket lifecycle disposal (`using var response`) to avoid buffering remote response payloads into process memory.
+   - SQLite connection pool operates with `PRAGMA cache_size = -2000;` to enforce a 2MB page cache ceiling per connection.
+   - `RetentionCleanupService` performs an optimized Gen1 GC collection and triggers `NativeMemoryTrimmer.Trim()` (`malloc_trim(0)`) after pruning expired records to guarantee prompt native memory return to the host OS.
 
 ---
 

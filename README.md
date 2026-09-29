@@ -100,7 +100,8 @@
 - **🔄 Automated Semantic Version & Update Checker:**
   - Dynamic SemVer comparison against GitHub Releases API (`GET /api/version`) with one-click update notice banner.
 - **⚡ Performance & Optimization:**
-  - SQLite WAL mode with `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`.
+  - SQLite WAL mode with `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA cache_size = -2000;`.
+  - Container-level glibc arena constraints (`MALLOC_ARENA_MAX=2`) and zero-body streaming response reads to eliminate multi-threaded memory bloat.
   - Composite indexes on time-series telemetry tables (`004_performance_indexes.sql`).
   - Route code-splitting via `React.lazy` and Vite `manualChunks` (initial bundle <200 KB).
 

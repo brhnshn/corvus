@@ -1,4 +1,5 @@
 using Corvus.Api.Data;
+using Corvus.Api.Utils;
 
 namespace Corvus.Api.BackgroundServices;
 
@@ -68,6 +69,7 @@ public class RetentionCleanupService : BackgroundService
 
                     // Bellek optimizasyonu: Serbest kalan eski kayıt tamponlarını temizle
                     GC.Collect(1, GCCollectionMode.Optimized);
+                    NativeMemoryTrimmer.Trim();
                 }
                 else
                 {

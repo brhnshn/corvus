@@ -81,7 +81,8 @@ corvus/
 │   │   │   ├── VersionInfo.cs                # Dinamik GitHub SemVer sürüm DTO'su
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
 │   │   ├── Utils/                  # Yardımcı sınıflar
-│   │   │   └── StatusCodeMatcher.cs          # HTTP durum kodu (aralık ve tekil kod) ayrıştırıcı
+│   │   │   ├── StatusCodeMatcher.cs          # HTTP durum kodu (aralık ve tekil kod) ayrıştırıcı
+│   │   │   └── NativeMemoryTrimmer.cs        # Platform korumalı libc malloc_trim native bellek iade yardımcısı
 │   │   └── Services/                # Çekirdek iş mantığı servisleri
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler ile doğrudan Docker REST istemcisi
 │   │       ├── DockerService.cs              # 2.5s önbellekli konteyner işlemleri, toplu stats özeti ve etiket eşleme
@@ -257,9 +258,12 @@ Corvus, harici bir önbellek sunucusu (Redis vb.) çalıştırmadan sistem belle
    - Hızlı sayfa geçişlerinde Docker soketi ve SQLite üzerinde oluşan nesne tahsisatları (allocations) %90 oranında engellenir.
 2. **Toplu İstatistikler (Batch Stats Endpoint):**
    - Konteyner başına N+1 paralel `/stats` isteği yerine `GET /api/containers/stats-summary` ile çalışan tüm konteynerlerin metrikleri tek bir HTTP akışında toplanır.
-3. **.NET 9 Bellek Tasarruf Yapılandırması (`System.GC.ConserveMemory=5`):**
+3. **.NET 9 Bellek Tasarruf Yapılandırması (`System.GC.ConserveMemory=5`) ve Glibc Sınırlandırması:**
    - İstek dalgalanmaları bittiğinde boşta kalan sanal sayfaların Linux çekirdeğine (`madvise`) hızlıca iade edilmesi sağlanır.
-   - `RetentionCleanupService` eski kayıtları sildikten sonra `GC.Collect(1, GCCollectionMode.Optimized)` ile bellek sıkıştırması yapar.
+   - Konteyner ortamında `MALLOC_ARENA_MAX=2` ve `MALLOC_TRIM_THRESHOLD_=131072` ayarlarıyla çok iş parçacıklı glibc bellek arenası parçalanması (fragmentation) önlenir.
+   - `UptimeCheckerService` içerisindeki sağlık denetimlerinde `HttpCompletionOption.ResponseHeadersRead` ve anında `using` elden çıkarma mimarisi ile uzak servis yanıt gövdelerinin belleğe çekilmesi engellenir.
+   - SQLite bağlantı havuzu `PRAGMA cache_size = -2000;` ile bağlantı başına en fazla 2MB sayfa önbelleği ile sınırlandırılır.
+   - `RetentionCleanupService` eski kayıtları sildikten sonra `GC.Collect(1, GCCollectionMode.Optimized)` ve `NativeMemoryTrimmer.Trim()` (`malloc_trim(0)`) ile işletim sistemine native bellek iadesi yapar.
 
 ---
 

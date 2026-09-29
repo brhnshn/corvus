@@ -99,7 +99,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.GetAsync("/_ping", cancellationToken);
+            using var response = await _httpClient.GetAsync("/_ping", cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -113,7 +113,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.GetAsync("/version", cancellationToken);
+            using var response = await _httpClient.GetAsync("/version", cancellationToken);
             if (!response.IsSuccessStatusCode) return null;
 
             using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -131,7 +131,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         try
         {
             string url = $"/containers/json?all={(all ? "true" : "false")}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Docker containers API hata döndü: {StatusCode}", response.StatusCode);
@@ -153,7 +153,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.GetAsync($"/containers/{Uri.EscapeDataString(containerId)}/json", cancellationToken);
+            using var response = await _httpClient.GetAsync($"/containers/{Uri.EscapeDataString(containerId)}/json", cancellationToken);
             if (!response.IsSuccessStatusCode) return null;
 
             using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -192,7 +192,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/restart", null, cancellationToken);
+            using var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/restart", null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return new DockerActionResult(true, "Container yeniden başlatıldı.");
@@ -213,7 +213,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/start", null, cancellationToken);
+            using var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/start", null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return new DockerActionResult(true, "Container başlatıldı.");
@@ -239,7 +239,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/stop", null, cancellationToken);
+            using var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/stop", null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return new DockerActionResult(true, "Container durduruldu.");
@@ -265,7 +265,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/pause", null, cancellationToken);
+            using var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/pause", null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return new DockerActionResult(true, "Container duraklatıldı.");
@@ -286,7 +286,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/unpause", null, cancellationToken);
+            using var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/unpause", null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return new DockerActionResult(true, "Container devam ettirildi.");
@@ -308,7 +308,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         try
         {
             string url = $"/containers/{Uri.EscapeDataString(containerId)}/stats?stream=false&one-shot=true";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 return null;
@@ -380,7 +380,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
                 try
                 {
                     await Task.Delay(100, cancellationToken);
-                    var secondResponse = await _httpClient.GetAsync(url, cancellationToken);
+                    using var secondResponse = await _httpClient.GetAsync(url, cancellationToken);
                     if (secondResponse.IsSuccessStatusCode)
                     {
                         using var secondStream = await secondResponse.Content.ReadAsStreamAsync(cancellationToken);
@@ -473,7 +473,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         try
         {
             string url = $"/containers/{Uri.EscapeDataString(containerId)}/logs?stdout=true&stderr=true&timestamps=true&tail={tail}";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Docker container logs API hata döndü: {StatusCode}", response.StatusCode);

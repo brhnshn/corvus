@@ -37,6 +37,7 @@ ENV CORVUS_PORT=8090 \
     DOTNET_gcServer=0 \
     DOTNET_GCDynamicAdaptationMode=1 \
     DOTNET_GCConserveMemory=5 \
+    MALLOC_ARENA_MAX=2 \
     MALLOC_TRIM_THRESHOLD_=131072
 
 EXPOSE 8090
