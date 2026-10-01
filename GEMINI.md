@@ -18,4 +18,10 @@
 - **Araştırma Aşamasında Kod Değiştirme Yasağı:** Kullanıcı "araştır", "incele" dediğinde doğrudan koda girilmez. Önce bağımsız araştırma raporu ve plan sunulur.
 - **Onay Sonrası Paralel Ajanlar:** Plan onaylandıktan sonra görev, biri kodlayıcı (`coder_agent`), diğeri mimari ve test denetleyicisi (`reviewer_agent`) olan iki alt ajanın işbirliğiyle spec-first ve test-driven olarak yürütülür.
 
+## 📌 Yama Notu ve Değişiklik Günlüğü (Changelog) Zorunluluğu
+- **Yama Notu Olmadan Commit / Sürüm Yasaktır:** Projede yapılan her iyileştirme, hata düzeltmesi, optimizasyon veya yeni özellik için commit öncesinde mutlaka `CHANGELOG.md` ve `CHANGELOG.tr.md` güncellenmelidir.
+- **Standart Format (Keep a Changelog):** Değişiklikler; `Eklenenler (Added)`, `Değiştirilenler (Changed)`, `Düzeltilenler (Fixed)`, `Performans (Performance)` ve `Güvenlik (Security)` başlıkları altında, hem teknik terimleri hem de kullanıcıya dokunan faydayı içerecek şekilde açık ve anlaşılır biçimde belgelenir.
+- **Çift Dilli Senkronizasyon:** İngilizce (`CHANGELOG.md`) ve Türkçe (`CHANGELOG.tr.md`) eşzamanlı olarak güncel tutulur.
+
+
 
