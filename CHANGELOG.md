@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [1.5.17] - 2026-10-01
 
 ### 🚀 Added
-- **Automated GitHub Release Notes Extraction**: Integrated automated release notes extraction in CI/CD (`ci.yml`) that dynamically parses the latest Keep a Changelog section from `CHANGELOG.md` directly into GitHub Releases via `softprops/action-gh-release@v2`, ensuring all releases display rich markdown release notes.
+- **Dual-Track CI/CD & Controlled Release Pipeline**: Migrated release architecture to the industry-standard Dual-Track model: routine pushes to `main` now continuously build `latest` Docker images and deploy without inflating semantic version tags, while official releases (`release.yml`) are triggered deliberately via Git tags (`v*`) or manual workflow dispatch with automatic `CHANGELOG.md` extraction.
+- **Automated GitHub Release Notes Extraction**: Integrated automated release notes extraction that dynamically parses the latest Keep a Changelog section from `CHANGELOG.md` directly into GitHub Releases via `softprops/action-gh-release@v2`.
 
 ### ⚡ Performance
 - **SQLite In-Memory Buffer Shrink (`PRAGMA shrink_memory`)**: Integrated automated execution of SQLite's native `shrink_memory` pragma into `MemoryTrimmerBackgroundService` every 3 minutes, flushing dormant page caches, B-Tree allocations, and unmanaged C-heap lookaside buffers back to the system.

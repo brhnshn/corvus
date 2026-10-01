@@ -8,7 +8,8 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 ## [1.5.17] - 2026-10-01
 
 ### 🚀 Eklenenler (Added)
-- **Otomatik GitHub Sürüm Notları Çıkarımı**: CI/CD boru hattına (`ci.yml`) eklenen adımla `CHANGELOG.md` dosyasındaki en güncel sürüm bloğu otomatik olarak ayıklanıp `softprops/action-gh-release@v2` üzerinden GitHub Releases açıklamasına bağlandı; böylece tüm release tag'lerinde eksiksiz ve zengin Markdown yama notları görüntülenmesi sağlandı.
+- **Dual-Track (İkili Hat) CI/CD & Kontrollü Sürüm Mimarisi**: Sürüm enflasyonunu önlemek için endüstri standardı ikili hat modeline geçildi: `main` dalına yapılan rutin commit'ler artık sürüm numarasını şişirmeden doğrudan `latest` Docker imajını derleyip sunucuya anında deploy ederken; resmi sürümler (`release.yml`) yalnızca Git etiketleri (`v*`) veya GitHub Actions manuel tetikleme ile `CHANGELOG.md`'den zengin sürüm notlarını çekerek kontrollü olarak yayınlanır.
+- **Otomatik GitHub Sürüm Notları Çıkarımı**: `CHANGELOG.md` dosyasındaki en güncel sürüm bloğu otomatik ayıklanıp `softprops/action-gh-release@v2` üzerinden GitHub Releases açıklamasına bağlandı.
 
 ### ⚡ Performans (Performance)
 - **SQLite Bellek Kırpma (`PRAGMA shrink_memory`)**: `MemoryTrimmerBackgroundService` döngüsüne entegre edilen SQLite yerel `shrink_memory` komutu ile her 3 dakikada bir kullanılmayan sayfa önbellekleri, B-Tree tamponları ve unmanaged C heap lookaside tahsisleri işletim sistemine iade edildi.

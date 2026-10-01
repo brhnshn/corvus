@@ -1,4 +1,4 @@
-name: CI / Automated Release & Deploy
+name: CI & Continuous Deployment
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 jobs:
@@ -51,8 +51,8 @@ jobs:
         working-directory: src/Corvus.Web
         run: npm run build
 
-  release-and-deploy:
-    name: Semantic Release, Docker Build & Deploy
+  deploy-latest:
+    name: Build Latest Docker & Deploy
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-build]
     if: github.repository_owner == 'brhnshn' && github.ref == 'refs/heads/main'
@@ -62,84 +62,45 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine & Bump Semantic Tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: patch
-          release_branches: main
-          custom_release_rules: "feat:minor:Features,fix:patch:Bug Fixes,perf:patch:Performance,refactor:patch:Refactoring,docs:none,chore:none,style:none,test:none,ci:none"
-
-      - name: Extract Release Notes from CHANGELOG.md
-        if: steps.tag_version.outputs.new_tag != ''
+      - name: Determine Version
+        id: version_info
         run: |
-          python3 -c "
-          import re
-
-          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
-              text = f.read()
-
-          pattern = r'##\s*\[(.*?)\][^\n]*\n(.*?)(?=\n---\s*\n|\n##\s*\[|\Z)'
-          match = re.search(pattern, text, re.DOTALL)
-          notes = match.group(2).strip() if match else ''
-
-          if not notes:
-              notes = 'Routine bug fixes and maintenance improvements.'
-
-          notes += '\n\n---\n**Full Changelog**: https://github.com/brhnshn/corvus/blob/main/CHANGELOG.md'
-
-          with open('RELEASE_BODY.md', 'w', encoding='utf-8') as out:
-              out.write(notes)
-          "
-
-      - name: Create GitHub Release
-        if: steps.tag_version.outputs.new_tag != ''
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          name: Corvus ${{ steps.tag_version.outputs.new_tag }}
-          body_path: RELEASE_BODY.md
-          draft: false
-          prerelease: false
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.5.17")
+          CLEAN_VERSION="${LATEST_TAG#v}"
+          echo "version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
-        if: steps.tag_version.outputs.new_tag != ''
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        if: steps.tag_version.outputs.new_tag != ''
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
-        if: steps.tag_version.outputs.new_tag != ''
+      - name: Build and Push Docker Image (latest)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/brhnshn/corvus:${{ steps.tag_version.outputs.new_version }}
             ghcr.io/brhnshn/corvus:latest
+            ghcr.io/brhnshn/corvus:sha-${{ steps.version_info.outputs.short_sha }}
           build-args: |
-            APP_VERSION=${{ steps.tag_version.outputs.new_version }}
+            APP_VERSION=${{ steps.version_info.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Trigger Server Deploy
-        if: steps.tag_version.outputs.new_tag != ''
         run: |
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.DEPLOY_URL }}" \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '${{ secrets.DEPLOY_PAYLOAD }}')
-          echo "Deploy webhook triggered for ${{ steps.tag_version.outputs.new_tag }} (HTTP status: $HTTP_STATUS)"
+          echo "Deploy webhook triggered for latest (HTTP status: $HTTP_STATUS)"
           if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 400 ]; then
             echo "::error::Deploy webhook returned status $HTTP_STATUS"
             exit 1
