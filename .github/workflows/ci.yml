@@ -71,6 +71,28 @@ jobs:
           release_branches: main
           custom_release_rules: "feat:minor:Features,fix:patch:Bug Fixes,perf:patch:Performance,refactor:patch:Refactoring,docs:none,chore:none,style:none,test:none,ci:none"
 
+      - name: Extract Release Notes from CHANGELOG.md
+        if: steps.tag_version.outputs.new_tag != ''
+        run: |
+          python3 -c "
+          import re
+
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              text = f.read()
+
+          pattern = r'##\s*\[(.*?)\][^\n]*\n(.*?)(?=\n---\s*\n|\n##\s*\[|\Z)'
+          match = re.search(pattern, text, re.DOTALL)
+          notes = match.group(2).strip() if match else ''
+
+          if not notes:
+              notes = 'Routine bug fixes and maintenance improvements.'
+
+          notes += '\n\n---\n**Full Changelog**: https://github.com/brhnshn/corvus/blob/main/CHANGELOG.md'
+
+          with open('RELEASE_BODY.md', 'w', encoding='utf-8') as out:
+              out.write(notes)
+          "
+
       - name: Create GitHub Release
         if: steps.tag_version.outputs.new_tag != ''
         uses: softprops/action-gh-release@v2
@@ -79,7 +101,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag_version.outputs.new_tag }}
           name: Corvus ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
+          body_path: RELEASE_BODY.md
           draft: false
           prerelease: false
 

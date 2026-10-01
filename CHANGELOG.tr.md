@@ -5,7 +5,10 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 ---
 
-## [1.5.14] - 2026-10-01
+## [1.5.17] - 2026-10-01
+
+### 🚀 Eklenenler (Added)
+- **Otomatik GitHub Sürüm Notları Çıkarımı**: CI/CD boru hattına (`ci.yml`) eklenen adımla `CHANGELOG.md` dosyasındaki en güncel sürüm bloğu otomatik olarak ayıklanıp `softprops/action-gh-release@v2` üzerinden GitHub Releases açıklamasına bağlandı; böylece tüm release tag'lerinde eksiksiz ve zengin Markdown yama notları görüntülenmesi sağlandı.
 
 ### ⚡ Performans (Performance)
 - **SQLite Bellek Kırpma (`PRAGMA shrink_memory`)**: `MemoryTrimmerBackgroundService` döngüsüne entegre edilen SQLite yerel `shrink_memory` komutu ile her 3 dakikada bir kullanılmayan sayfa önbellekleri, B-Tree tamponları ve unmanaged C heap lookaside tahsisleri işletim sistemine iade edildi.
