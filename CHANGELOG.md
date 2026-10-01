@@ -5,16 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.5.18] - 2026-10-02
 
-### ⚡ Performance
+### Performance
 - **Elastic Memory Architecture (OOM Protection)**: Removed rigid `DOTNET_GCHeapHardLimit` and csproj hard limits to prevent sudden process crashes under load spikes, enabling the runtime to dynamically adapt to variable traffic while retaining aggressive page reclamation via `DOTNET_GCConserveMemory=9`.
 - **Gen 2 Non-Blocking Soft Trimming**: Upgraded periodic GC sweeps in `MemoryTrimmerBackgroundService` and `RetentionCleanupService` from `GC.Collect(1)` to `GC.Collect(2, GCCollectionMode.Optimized, blocking: false)`, ensuring promoted long-lived objects from background polling cycles are collected and uncommitted pages returned via `malloc_trim(0)`.
 - **In-Memory Service & Threshold Caching in UptimeChecker**: Replaced per-tick (5s) database polling with an in-memory cache for monitored services and alert threshold settings, eliminating redundant SQLite query allocations and DI scopes during steady-state.
 - **On-Demand Scope Allocation in ContainerDiscovery**: Injected singleton Docker dependencies into `ContainerDiscoveryService` and deferred DI scope instantiation exclusively to moments when a container state or URL fingerprint change is detected.
 
-### 💄 UI/UX
+### UI/UX
 - **Modern 2-Column Settings Dashboard**: Redesigned the Settings page to eliminate wide-screen empty space by introducing a responsive 2-column layout with tab pills (General & Security, Notifications, Backup) on the left and a sticky System Overview sidebar on the right featuring version status, SQLite database storage metrics, registration status, and instant quick-save controls.
 
-### 🛡️ Tests
+### Tests
 - Validated all 145 unit tests across the entire test suite (`Passed: 145, Failed: 0`).
 
 ---
