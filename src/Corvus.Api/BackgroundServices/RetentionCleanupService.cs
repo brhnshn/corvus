@@ -68,7 +68,7 @@ public class RetentionCleanupService : BackgroundService
                     _logger.LogInformation("Eski kayıtların temizliği tamamlandı.");
 
                     // Bellek optimizasyonu: Serbest kalan eski kayıt tamponlarını temizle
-                    GC.Collect(1, GCCollectionMode.Optimized);
+                    GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
                     NativeMemoryTrimmer.Trim();
                 }
                 else

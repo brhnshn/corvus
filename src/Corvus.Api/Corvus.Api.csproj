@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="9" />
-    <RuntimeHostConfigurationOption Include="System.GC.HeapHardLimit" Value="0x3000000" />
   </ItemGroup>
 
   <ItemGroup>

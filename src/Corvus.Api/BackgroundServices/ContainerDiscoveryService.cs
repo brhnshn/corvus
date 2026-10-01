@@ -9,13 +9,21 @@ public class ContainerDiscoveryService : BackgroundService
 {
     private readonly IServiceProvider _services;
     private readonly ILogger<ContainerDiscoveryService> _logger;
+    private readonly IDockerService _docker;
+    private readonly IDockerHttpClient? _dockerClient;
     private readonly ConcurrentDictionary<string, (string ImageId, List<string>? Env)> _inspectCache = new();
     private string _lastFingerprint = string.Empty;
 
-    public ContainerDiscoveryService(IServiceProvider services, ILogger<ContainerDiscoveryService> logger)
+    public ContainerDiscoveryService(
+        IServiceProvider services, 
+        ILogger<ContainerDiscoveryService> logger,
+        IDockerService docker,
+        IDockerHttpClient? dockerClient = null)
     {
         _services = services;
         _logger = logger;
+        _docker = docker;
+        _dockerClient = dockerClient;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -26,21 +34,16 @@ public class ContainerDiscoveryService : BackgroundService
         {
             try
             {
-                using var scope = _services.CreateScope();
-                var docker = scope.ServiceProvider.GetRequiredService<IDockerService>();
-                var dockerClient = scope.ServiceProvider.GetService<IDockerHttpClient>();
-                var repo = scope.ServiceProvider.GetRequiredService<IServicesRepository>();
-
-                bool isDockerUp = await docker.IsAvailableAsync(stoppingToken);
+                bool isDockerUp = await _docker.IsAvailableAsync(stoppingToken);
                 if (isDockerUp)
                 {
-                    var containers = await docker.GetContainersAsync(stoppingToken);
+                    var containers = await _docker.GetContainersAsync(stoppingToken);
                     var activeIds = new List<string>(containers.Count);
                     var batchServices = new List<Service>(containers.Count);
 
                     foreach (var c in containers)
                     {
-                        if (docker.ShouldIgnoreContainer(c))
+                        if (_docker.ShouldIgnoreContainer(c))
                         {
                             continue;
                         }
@@ -48,7 +51,7 @@ public class ContainerDiscoveryService : BackgroundService
                         activeIds.Add(c.Id);
 
                         List<string>? env = null;
-                        if (dockerClient != null && DockerService.ExtractDomainFromLabels(c.Labels ?? new Dictionary<string, string>()) == null)
+                        if (_dockerClient != null && DockerService.ExtractDomainFromLabels(c.Labels ?? new Dictionary<string, string>()) == null)
                         {
                             string currentImage = c.Image ?? string.Empty;
                             if (_inspectCache.TryGetValue(c.Id, out var cached) && cached.ImageId == currentImage)
@@ -59,7 +62,7 @@ public class ContainerDiscoveryService : BackgroundService
                             {
                                 try
                                 {
-                                    var inspect = await dockerClient.InspectContainerAsync(c.Id, stoppingToken);
+                                    var inspect = await _dockerClient.InspectContainerAsync(c.Id, stoppingToken);
                                     env = inspect?.Config?.Env;
                                     _inspectCache[c.Id] = (currentImage, env);
                                 }
@@ -67,7 +70,7 @@ public class ContainerDiscoveryService : BackgroundService
                             }
                         }
 
-                        batchServices.Add(docker.MapContainerToService(c, env));
+                        batchServices.Add(_docker.MapContainerToService(c, env));
                     }
 
                     // Artık mevcut olmayan container'ları önbellekten temizle
@@ -83,10 +86,12 @@ public class ContainerDiscoveryService : BackgroundService
                         }
                     }
 
-                    // Parmak izi kontrolü ile gereksiz DB write transaction'larını atla
+                    // Parmak izi kontrolü ile gereksiz DB write transaction'larını ve DI Scope tahsislerini atla
                     string currentFingerprint = ComputeFingerprint(batchServices, activeIds);
                     if (currentFingerprint != _lastFingerprint)
                     {
+                        using var scope = _services.CreateScope();
+                        var repo = scope.ServiceProvider.GetRequiredService<IServicesRepository>();
                         await repo.SyncDockerBatchAsync(batchServices, activeIds);
                         _lastFingerprint = currentFingerprint;
                     }

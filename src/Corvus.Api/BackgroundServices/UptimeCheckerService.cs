@@ -20,6 +20,14 @@ public class UptimeCheckerService : BackgroundService
     private static readonly HttpRequestOptionsKey<SslInfoHolder> SslInfoKey = new("Corvus_SslInfo");
     private static readonly HttpRequestOptionsKey<bool> IgnoreTlsKey = new("Corvus_IgnoreTls");
     private readonly HttpClient _httpClient;
+    private DateTime _lastServicesRefresh = DateTime.MinValue;
+    private List<Service> _cachedServices = [];
+    private DateTime _lastPushRefresh = DateTime.MinValue;
+    private List<PushMonitor> _cachedPushMonitors = [];
+    private DateTime _lastThresholdRefresh = DateTime.MinValue;
+    private int _cachedAlertThreshold = 2;
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(25);
+    private static readonly TimeSpan ThresholdCacheTtl = TimeSpan.FromMinutes(1);
 
     private class SslInfoHolder
     {
@@ -66,23 +74,46 @@ public class UptimeCheckerService : BackgroundService
         {
             try
             {
-                using var scope = _services.CreateScope();
-                var servicesRepo = scope.ServiceProvider.GetRequiredService<IServicesRepository>();
-                var uptimeRepo = scope.ServiceProvider.GetRequiredService<IUptimeRepository>();
-                var notifService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-                var pushRepo = scope.ServiceProvider.GetRequiredService<IPushMonitorRepository>();
-                var settingsRepo = scope.ServiceProvider.GetRequiredService<ISettingsRepository>();
+                var now = DateTime.UtcNow;
 
-                // Bildirim ve durum eşiği (varsayılan: 2 ardışık kontrol hatası)
-                int alertThreshold = 2;
-                var thresholdSetting = await settingsRepo.GetAsync("uptime_alert_threshold");
-                if (int.TryParse(thresholdSetting, out var parsedThreshold) && parsedThreshold >= 1)
+                // 1. Eşik ayarı önbelleği (Dakikada 1 kez yenilenir)
+                if ((now - _lastThresholdRefresh) >= ThresholdCacheTtl)
                 {
-                    alertThreshold = parsedThreshold;
+                    try
+                    {
+                        using var scope = _services.CreateScope();
+                        var settingsRepo = scope.ServiceProvider.GetRequiredService<ISettingsRepository>();
+                        var thresholdSetting = await settingsRepo.GetAsync("uptime_alert_threshold");
+                        if (int.TryParse(thresholdSetting, out var parsedThreshold) && parsedThreshold >= 1)
+                        {
+                            _cachedAlertThreshold = parsedThreshold;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Uptime alert threshold ayarı okunurken geçici hata.");
+                    }
+                    _lastThresholdRefresh = now;
+                }
+                int alertThreshold = _cachedAlertThreshold;
+
+                // 2. Servis listesi önbelleği (Her 5sn yerine 25sn periyotla taranarak DI ve GC tahsisleri %80 oranında düşürülür)
+                if ((now - _lastServicesRefresh) >= CacheTtl || _cachedServices.Count == 0)
+                {
+                    try
+                    {
+                        using var scope = _services.CreateScope();
+                        var servicesRepo = scope.ServiceProvider.GetRequiredService<IServicesRepository>();
+                        _cachedServices = await servicesRepo.GetAllAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Servis listesi önbelleği yenilenirken geçici hata.");
+                    }
+                    _lastServicesRefresh = now;
                 }
 
-                var allServices = await servicesRepo.GetAllAsync();
-                var now = DateTime.UtcNow;
+                var allServices = _cachedServices;
 
                 // SADECE Uptime takibi kullanıcı tarafından aktif edilmiş servisler denetlenir!
                 var servicesToCheck = allServices
@@ -105,6 +136,11 @@ public class UptimeCheckerService : BackgroundService
 
                 if (servicesToCheck.Count > 0)
                 {
+                    using var scope = _services.CreateScope();
+                    var servicesRepo = scope.ServiceProvider.GetRequiredService<IServicesRepository>();
+                    var uptimeRepo = scope.ServiceProvider.GetRequiredService<IUptimeRepository>();
+                    var notifService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
                     foreach (var s in servicesToCheck)
                     {
                         _lastCheckTimes[s.Id] = now;
@@ -167,6 +203,7 @@ public class UptimeCheckerService : BackgroundService
                                 }
 
                                 await servicesRepo.UpdateStatusAsync(s.Id, "down");
+                                s.Status = "down";
                                 _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"down\"}}");
                             }
                             else
@@ -174,6 +211,7 @@ public class UptimeCheckerService : BackgroundService
                                 // Henüz eşik aşılmadı -> Geçici aksaklık (PENDING / DEGRADED)
                                 _logger.LogInformation("Servis {Name} geçici hata verdi ({Failures}/{Threshold}). Durum 'degraded' olarak işaretlendi.", s.Name, failures, alertThreshold);
                                 await servicesRepo.UpdateStatusAsync(s.Id, "degraded");
+                                s.Status = "degraded";
                                 _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"degraded\"}}");
                             }
                         }
@@ -189,12 +227,28 @@ public class UptimeCheckerService : BackgroundService
 
                             _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"healthy\"}}");
                             await servicesRepo.UpdateStatusAsync(s.Id, "healthy");
+                            s.Status = "healthy";
                         }
                     }
                 }
 
-                // 1.5: Dead Man's Snitch — Beklenen Periyot Kontrolü
-                var pushMonitors = await pushRepo.GetAllAsync();
+                // 3. Dead Man's Snitch — Beklenen Periyot Kontrolü (Önbellekli okuma)
+                if ((now - _lastPushRefresh) >= CacheTtl)
+                {
+                    try
+                    {
+                        using var scope = _services.CreateScope();
+                        var pushRepo = scope.ServiceProvider.GetRequiredService<IPushMonitorRepository>();
+                        _cachedPushMonitors = await pushRepo.GetAllAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Push monitör listesi önbelleği yenilenirken geçici hata.");
+                    }
+                    _lastPushRefresh = now;
+                }
+
+                var pushMonitors = _cachedPushMonitors;
                 foreach (var pm in pushMonitors)
                 {
                     if (!string.IsNullOrEmpty(pm.LastSeenAt) && 
@@ -203,7 +257,12 @@ public class UptimeCheckerService : BackgroundService
                         var allowedTime = TimeSpan.FromMinutes(pm.ExpectedIntervalMinutes + pm.GracePeriodMinutes);
                         if (DateTime.UtcNow - lastSeen.ToUniversalTime() > allowedTime && pm.Status != "down")
                         {
+                            using var scope = _services.CreateScope();
+                            var pushRepo = scope.ServiceProvider.GetRequiredService<IPushMonitorRepository>();
+                            var notifService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
                             await pushRepo.UpdateStatusAsync(pm.Id, "down");
+                            pm.Status = "down";
                             _ = notifService.DispatchServiceAlertAsync(
                                 $"Dead Man's Snitch: {pm.Name}",
                                 $"Token: {pm.Token}",
