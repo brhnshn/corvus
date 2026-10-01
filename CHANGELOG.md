@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **In-Memory Service & Threshold Caching in UptimeChecker**: Replaced per-tick (5s) database polling with an in-memory cache for monitored services and alert threshold settings, eliminating redundant SQLite query allocations and DI scopes during steady-state.
 - **On-Demand Scope Allocation in ContainerDiscovery**: Injected singleton Docker dependencies into `ContainerDiscoveryService` and deferred DI scope instantiation exclusively to moments when a container state or URL fingerprint change is detected.
 
+### 💄 UI/UX
+- **Modern 2-Column Settings Dashboard**: Redesigned the Settings page to eliminate wide-screen empty space by introducing a responsive 2-column layout with tab pills (General & Security, Notifications, Backup) on the left and a sticky System Overview sidebar on the right featuring version status, SQLite database storage metrics, registration status, and instant quick-save controls.
+
 ### 🛡️ Tests
 - Validated all 145 unit tests across the entire test suite (`Passed: 145, Failed: 0`).
 
