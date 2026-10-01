@@ -35,10 +35,10 @@ ENV CORVUS_PORT=8090 \
     DOCKER_SOCKET=/var/run/docker.sock \
     CORVUS_VERSION=${APP_VERSION} \
     DOTNET_gcServer=0 \
-    DOTNET_GCDynamicAdaptationMode=1 \
-    DOTNET_GCConserveMemory=5 \
+    DOTNET_GCConserveMemory=9 \
+    DOTNET_GCHeapHardLimit=0x3000000 \
     MALLOC_ARENA_MAX=2 \
-    MALLOC_TRIM_THRESHOLD_=131072
+    MALLOC_TRIM_THRESHOLD_=65536
 
 EXPOSE 8090
 VOLUME ["/data"]

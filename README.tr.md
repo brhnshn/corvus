@@ -39,18 +39,28 @@
   - Harici kütüphane ek yükü olmayan (~1.2 KB), derleme anında tip korumalı (`DeepStringify`) yerli React 19 Context.
   - Varsayılan İngilizce (`en`), %100 eksiksiz Türkçe (`tr`) ve anında geçiş sağlayan dil seçici.
   - Arka plan bildirim kanallarının (Discord, Telegram, Ntfy, Webhook) seçili sistem diline göre otomatik senkronizasyonu.
-- **🚀 Çift Modlu Servis Başlatıcı:**
-  - **Otomatik Keşif:** Docker socket (`/var/run/docker.sock`) üzerinden doğrudan konteynerleri tespit eder ve etiketleri (`corvus.name`, `corvus.category`, `corvus.url` vb.) okur.
-  - **Manuel Servisler:** Harici URL'leri, yerel servisleri veya IoT uç noktalarını el ile tanımlayabilme.
-  - **Görsel Sıralama:** Servisleri yukarı/aşağı butonlarıyla kalıcı olarak sıralayabilme (`display_order`).
-- **🧠 Dahili In-Memory Micro-Cache & Elastik Bellek Mimarisi:**
+- **🧠 Dahili In-Memory Micro-Cache & Agresif Bellek Sıkıştırma (Memory Trimmer):**
   - 2.5 saniyelik sıfır-tahsisli dahili önbellekleme: Sekmeler arası hızlı geçişlerde Docker soket ve SQLite sorgu yükünü %90 azaltarak bellek sıçramalarını önler (<150 KB bellek maliyeti).
   - N+1 yerine tek sorguda çalışan `one-shot=true` ve kayan pencere (sliding delta) CPU motorlu toplu metrik uç noktası (`GET /api/containers/stats-summary`), Docker'ın 1 saniyelik uykusunu kaldırarak 100ms altı anlık yanıt sağlar.
-  - .NET 9 `System.GC.ConserveMemory=5` yapılandırması ve periyodik idle bellek sıkıştırmasıyla RAM'i boşta ~30-35 MB, aktif kullanımda 40-50 MB bandında tutar.
+  - **MemoryTrimmerBackgroundService:** Her 3 dakikada bir SQLite bağlantı havuzlarını temizler (`ClearAllPools`), Gen1 GC'yi tetikler ve Linux libc `malloc_trim(0)` ile serbest kalan bellek sayfalarını doğrudan işletim sistemine iade eder.
+  - .NET 9 `System.GC.ConserveMemory=9`, `DOTNET_GCHeapHardLimit=0x3000000` (48 MB tavan) ve `MALLOC_TRIM_THRESHOLD_=65536` yapılandırmasıyla RAM'i boşta ~25-35 MB bandında kilitler.
+- **🚀 Çift Modlu Servis Başlatıcı & Akıllı Konteyner Senkronizasyonu:**
+  - **Akıllı Otomatik Keşif:** Docker socket (`/var/run/docker.sock`) üzerinden konteynerleri tespit eder. `_inspectCache` ile değişmeyen konteyner ortam değişkenlerini önbelleğe alır; `ComputeFingerprint` algoritmasıyla durum değişmediğinde gereksiz SQLite yazma transaction'larını tamamen atlar.
+  - **Manuel Servisler:** Harici URL'leri, yerel servisleri veya IoT uç noktalarını el ile tanımlayabilme.
+  - **Görsel Sıralama:** Servisleri yukarı/aşağı butonlarıyla kalıcı olarak sıralayabilme (`display_order`).
 - **🛡️ Gelişmiş 3 Durumlu Dayanıklılık ve Sağlık Motoru:**
   - `healthy` ➔ `degraded` ➔ `down` durum makinesi: Anlık ağ dalgalanmalarında panik false-alarmı üretmez; 3 ardışık başarısızlıktan sonra gerçek arıza alarmı üretir.
   - `Parallel.ForEachAsync` ile onlarca servisi darboğazsız eşzamanlı denetler.
   - Konteyner loopback ağını otomatik çözümler (`host.docker.internal` / varsayılan bridge gateway yönlendirmesi).
+- **⏱️ Genişletilmiş Uptime, SSL & Web Filtreleme:**
+  - **Kullanıcı Kontrollü (Opt-in) Uptime & Canlı Bağlantı Testi:** Keşfedilen konteynerler havuzunda tek tıkla **"Yalnızca Web/Domain"** filtresiyle harici URL'si olan servisleri listeleme; dahili "Bağlantıyı Sına" (`POST /api/uptime/test-connection`) butonuyla anlık yanıt süresi ve HTTP/TCP durumunu test ederek onaylama.
+  - **Etkileşimli Yanıt Süresi Rozetleri:** Son kontrollerde yanıt sürelerini renkli eşiklerle (<200ms yeşil, 200-500ms sarı, >500ms kırmızı) anında görselleştirme.
+  - **Ters Vekil (Reverse Proxy) Otomatik Algılama:** Traefik kuralları (`Host(...)`), Caddy etiketleri, `VIRTUAL_HOST`, `LETSENCRYPT_HOST` ve konteyner ortam değişkenleri (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) taranarak yerel `localhost` yerine gerçek alan adlarını otomatik bağlama.
+  - **Gelişmiş Monitör Parametreleri (`AdvancedCheckOptions`):** Servis bazında bağımsız kontrol sıklığı (`check_interval`: 10s-300s), özel zaman aşımı (`timeout_seconds`), başarısızlık toleransı (`max_retries` / `retry_interval`), SSL hatalarını yoksayma (`ignore_tls`), kabul edilen HTTP durum kodları (`accepted_status_codes`, örn: `200-299, 401`) ve HTTP yöntemi (GET/POST/HEAD).
+  - **Dahili Konteynerler İçin Yerel Docker Uptime Takibi:** Web portu açmayan dahili servisler için doğrudan Docker Engine API üzerinden konteyner çalışma/sağlık durumu denetimi (`checkType: 'docker'`).
+- **🦅 Özgün Vektör Marka Kimliği (Hex Sentinel):**
+  - Docker konteyner altıgeni, Corvus **C** monogramı ve nöbetçi karga siluetini birleştiren saf geometrik logo kimliği.
+  - Sektör standartlarında çok katmanlı `favicon.ico`, modern tarayıcılar için saf vektör `favicon.svg`, PWA manifestosu ve kapsamlı marka kılavuzu (`docs/branding/BRAND_GUIDELINES.md`).
 - **💾 Çift Yönlü Yedekleme Yönetimi & Felaket Kurtarma:**
   - **Dahili Anlık Yedekleme İndirme:** Kilitlenmesiz, tutarlı SQLite `VACUUM INTO` veritabanı yedeğini tek tıkla indirme (`GET /api/backup/download`) ve Dashboard istatistiklerini SSE ile canlı güncelleme.
   - **Harici Yedekleme Bildirimi:** Dinamik token oluşturucu ve otomatik yapılandırılmış `curl` şablonları ile host yedekleme araçları (`restic`, `borg`, cron) entegrasyonu.

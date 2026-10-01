@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="symbol-title">
+  <title id="symbol-title">Corvus Symbol</title>
+  <rect width="256" height="256" fill="#0B0F17"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M 128 20
+    L 196 59.27
+    L 246 88.13
+    L 174 116
+    L 164 98.68
+    L 128 77.9
+    L 76 107.92
+    L 76 148.08
+    L 128 178.1
+    L 164 157.32
+    L 198 176.95
+    L 128 217.4
+    L 34 163.14
+    L 34 74.86 Z
+    M 148 62
+    L 168 73.55
+    L 148 82 Z"/>
+</svg>

@@ -22,7 +22,7 @@ Corvus, self-hosted sunucular için açık kaynak, düşük kaynak tüketimli, t
 
 **Genel kullanım prensibi:** Açık kaynak bir araç olarak belirli bir reverse proxy, orkestrasyon aracı veya VPN'e bağımlı olmamalı — kullanıcı bunları tercihine göre kullanır ya da kullanmaz, Corvus hiçbirini şart koşmaz. Ters vekil arkasında Zero-Trust SSO başlıklarını (`Tailscale`, `Cloudflare Access`, `Remote-User`, `X-Forwarded-User`) otomatik tanır.
 
-**Marka:** Corvus (Latince kuzgun) — "gözcü, yukarıdan izleyen" teması. Koyu tema, gümüş/platin accent, monochrome icon-only logo.
+**Marka Kimliği:** Corvus (Latince kuzgun) — "gözcü, yukarıdan izleyen" teması. "Hex Sentinel" kurumsal sembolü; Docker heksagonunu, Corvus 'C' monogramını ve tetikteki kuzgun gagasını/gözünü monokrom (siyah/beyaz/gece mavisi) endüstriyel estetikle birleştirir. Tüm SVG master dosyaları ve web ikonları `docs/branding/` altında standartlaştırılmıştır.
 
 ---
 
@@ -34,8 +34,8 @@ Corvus, self-hosted sunucular için açık kaynak, düşük kaynak tüketimli, t
 - Web framework: **ASP.NET Core Minimal API**
 - Derleme modu: **Native AOT** (Zero Reflection)
 - Docker erişimi: **Custom SocketsHttpHandler + System.Text.Json Source Generator** (Docker daemon REST API'sine Unix Socket ve Windows Named Pipe üzerinden doğrudan erişim, `GET /api/containers/stats-summary` toplu okuma akışı)
-- Bellek Mimarisi: **Sıfır Bağımlılıklı In-Memory Micro-Cache** (<150 KB heap; Docker soketi için 2.5s, Uptime 24s agregasyonları için 5s TTL), **.NET 9 Elastic Memory Tuning** (`System.GC.ConserveMemory=5`, `ServerGarbageCollection=false`), trafik bitiminde boşta kalan sayfaların çekirdeğe anında iadesi
-- Hedef RAM: <45 MB (Boşta ~30-38 MB, hızlı gezintide dahi mikro-önbellek sayesinde tavan sınırlı)
+- Bellek Mimarisi: **Sıfır Bağımlılıklı In-Memory Micro-Cache** (<150 KB heap; Docker soketi için 2.5s, Uptime 24s agregasyonları için 5s TTL), **.NET 9 Elastic Memory Tuning** (`DOTNET_GCConserveMemory=9`, `DOTNET_GCHeapHardLimit=0x3000000` / 48 MB limit, `MALLOC_TRIM_THRESHOLD_=65536`), periyodik native bellek temizleyici (`MemoryTrimmerBackgroundService`, 3 dakikada bir SQLite bağlantı havuzu tahliyesi, Gen 1 GC ve libc `malloc_trim(0)` ile native bellek iadesi), Container Discovery Fingerprinting (`ComputeFingerprint`) ve akıllı ortam değişkeni önbelleği (`_inspectCache`).
+- Hedef RAM: **<45 MB** (Boşta ~30-38 MB, yük altında bile 48 MB sınırıyla kilitli)
 
 ### Frontend
 - **TypeScript + React 19 + Vite**
@@ -275,13 +275,17 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Derleme anında tip korumalı çift dilli i18n sistemi (İngilizce varsayılan, Türkçe tam destek)
 - [x] Çift yönlü yedekleme yönetimi: Tek tıkla kilitlenmesiz SQLite anlık yedek indirme (`GET /api/backup/download`), SSE canlı Dashboard güncellemesi ve harici push entegrasyonu
 - [x] Esnek veri saklama süresi ve disk telemetrisi: Hazır periyotlar, Sınırsız mod, risk uyarısı, canlı DB boyutu ve dinamik `RetentionCleanupService`
-- [x] In-Memory Micro-Cache (<150 KB) & .NET 9 `System.GC.ConserveMemory=5` elastik bellek yönetimi (30–45 MB RAM)
+- [x] In-Memory Micro-Cache (<150 KB) & .NET 9 `DOTNET_GCConserveMemory=9` + `DOTNET_GCHeapHardLimit=0x3000000` (48 MB heap sınırı)
+- [x] Periyodik Native ve Yönetilen Bellek Temizleyici (`MemoryTrimmerBackgroundService`, libc `malloc_trim(0)` ve SQLite havuz tahliyesi)
+- [x] Akıllı Konteyner Keşfi Parmak İzi (`ComputeFingerprint`) ve ortam değişkenleri önbelleği (`_inspectCache`)
 - [x] Toplu İstatistikler (Batch Stats) Uç Noktası (`GET /api/containers/stats-summary`) ile N+1 soket çağrılarının kaldırılması
 - [x] Gelişmiş 3 durumlu dayanıklılık motoru (`healthy` -> `degraded` -> `down`) & Docker loopback ağ geçidi çözümlemesi
 - [x] Mobil-öncelikli 2 sütunlu kompakt KPI şeridi & aktif konteynerler widget'ı
 - [x] GitHub Releases API dinamik SemVer sürüm denetleyicisi (`GET /api/version`)
 - [x] Gelişmiş Uptime izleme parametreleri (özel kontrol aralığı, timeout, retry, TLS yoksayma, durum kodları) ve opt-in durum sayfası
+- [x] Uptime UI geliştirmeleri: Domain filtreleme (`domainOnlyWeb`) ve renk kodlu yanıt süresi rozetleri (<200ms yeşil, 200-500ms sarı, >500ms kırmızı)
 - [x] Halka Açık Durum Sayfasında son 30 kontrol durum çubukları, kategori akordeonları ve canlı gecikme tooltip'leri
 - [x] Sistem Olayları & Planlı Bakım Yönetimi ile durum sayfasında canlı uyarı afişleri (`service_incidents`)
 - [x] Akıllı 24 saatlik retention (`is_transition`) ve 365 günlük SLA özet agregasyonu (`uptime_daily_stats`)
-- [x] 142/142 xUnit birim ve entegrasyon testi doğrulaması
+- [x] "Hex Sentinel" profesyonel kurumsal kimlik, SVG master vektörleri ve web ikon seti (`docs/branding/`)
+- [x] 144/144 xUnit birim ve entegrasyon testi doğrulaması

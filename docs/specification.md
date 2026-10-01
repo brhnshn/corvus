@@ -22,7 +22,7 @@ Corvus is an open-source, ultra-low resource consumption service launcher and un
 
 **Interoperability Principle:** As an open-source tool, Corvus does not enforce specific reverse proxies, orchestrators, or VPNs. When deployed behind reverse proxies, it seamlessly detects Zero-Trust SSO authentication headers (`Tailscale`, `Cloudflare Access`, `Remote-User`, `X-Forwarded-User`).
 
-**Brand Identity:** Corvus (Latin for raven) — represents a watchful guardian observing from above. Dark theme, silver/platinum accents, monochrome icon-only aesthetic.
+**Brand Identity:** Corvus (Latin for raven) — represents a watchful guardian observing from above. The "Hex Sentinel" corporate mark unifies the Docker container hexagon, the Corvus 'C' monogram, and a vigilant raven beak/eye in a clean monochrome (black/white/dark navy) aesthetic. All master SVG assets and web icon sets are standardized under `docs/branding/`.
 
 ---
 
@@ -34,8 +34,8 @@ Corvus is an open-source, ultra-low resource consumption service launcher and un
 - Web Framework: **ASP.NET Core Minimal API**
 - Compilation Mode: **Native AOT** (Zero Reflection)
 - Docker Communication: **Custom SocketsHttpHandler + System.Text.Json Source Generation** (direct communication with the Docker daemon over Unix domain sockets or Windows named pipes, `GET /api/containers/stats-summary` batch streaming)
-- Memory Architecture: **Zero-Dependency In-Memory Micro-Cache** (<150 KB heap; 2.5s TTL for Docker socket, 5s TTL for Uptime 24h aggregations), **.NET 9 Elastic Memory Tuning** (`System.GC.ConserveMemory=5`, `ServerGarbageCollection=false`), releasing idle memory pages eagerly to the host OS upon traffic completion
-- Memory Footprint Target: <45 MB RAM (idle runtime measurements: ~30–38 MB, ceiling tightly capped during navigation)
+- Memory Architecture: **Zero-Dependency In-Memory Micro-Cache** (<150 KB heap; 2.5s TTL for Docker socket, 5s TTL for Uptime 24h aggregations), **.NET 9 Elastic Memory Tuning** (`DOTNET_GCConserveMemory=9`, `DOTNET_GCHeapHardLimit=0x3000000` / 48 MB heap cap, `MALLOC_TRIM_THRESHOLD_=65536`), periodic native memory trimmer (`MemoryTrimmerBackgroundService`, flushes SQLite connection pools every 3 minutes, runs Gen 1 GC, and triggers libc `malloc_trim(0)`), Container Discovery Fingerprinting (`ComputeFingerprint`), and container inspect cache (`_inspectCache`).
+- Memory Footprint Target: **<45 MB RAM** (idle runtime measurements: ~30–38 MB, ceiling strictly capped at 48 MB under load)
 
 ### Frontend
 - **TypeScript + React 19 + Vite**
@@ -275,13 +275,17 @@ Incoming push monitor heartbeat records.
 - [x] Full compile-time typed bilingual i18n system (English default, Turkish complete)
 - [x] Dual-mode backup management: One-click lock-free SQLite snapshot download (`GET /api/backup/download`) with SSE live Dashboard updates + external push integration
 - [x] Flexible data retention & disk telemetry: Presets, Unlimited mode with disk advisory, live DB size indicator, and dynamic `RetentionCleanupService`
-- [x] In-Memory Micro-Cache (<150 KB) & .NET 9 `System.GC.ConserveMemory=5` elastic memory management (30–45 MB RAM)
+- [x] In-Memory Micro-Cache (<150 KB) & .NET 9 `DOTNET_GCConserveMemory=9` + `DOTNET_GCHeapHardLimit=0x3000000` (48 MB heap cap)
+- [x] Scheduled Native & Managed Memory Trimming (`MemoryTrimmerBackgroundService`, libc `malloc_trim(0)` & SQLite pool flush)
+- [x] Smart Container Discovery Fingerprinting (`ComputeFingerprint`) & inspect cache (`_inspectCache`)
 - [x] Batch Stats Endpoint (`GET /api/containers/stats-summary`) eliminating N+1 socket calls
 - [x] Advanced 3-state resilience engine (`healthy` -> `degraded` -> `down`) & Docker loopback bridge gateway resolution
 - [x] Mobile-first 2-column compact KPI strip & active containers widget
 - [x] GitHub Releases API dynamic SemVer version update checker (`GET /api/version`)
 - [x] Advanced Uptime monitoring parameters (custom interval, timeout, retries, ignore TLS, status codes) and opt-in status page
+- [x] Uptime UI enhancements: Domain-only quick filter (`domainOnlyWeb`) and color-coded latency badges (<200ms green, 200-500ms amber, >500ms rose)
 - [x] Interactive 30-check latency status bars, collapsible category accordions, and real-time tooltips on Public Status
 - [x] System Incidents & Scheduled Maintenance management with public alert banners (`service_incidents`)
 - [x] Intelligent 24-hour retention (`is_transition`) and 365-day daily SLA rollup (`uptime_daily_stats`)
-- [x] 142/142 passing xUnit test coverage
+- [x] "Hex Sentinel" professional corporate identity, SVG master assets, and web icon set (`docs/branding/`)
+- [x] 144/144 passing xUnit test coverage

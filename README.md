@@ -39,18 +39,28 @@
   - Native React 19 Context with zero external library overhead (~1.2 KB) and compile-time type safety (`DeepStringify`).
   - English (`en`) as default, Turkish (`tr`) fully supported with one-click seamless switcher.
   - Outbound alerts (Discord, Telegram, Ntfy, Webhooks) synchronized to the configured system language.
-- **🚀 Dual-Mode Service Launcher:**
-  - **Automatic Discovery:** Detects Docker containers via direct Docker socket communication (`/var/run/docker.sock`), extracting Glance-style metadata (`corvus.name`, `corvus.category`, `corvus.url`, etc.).
-  - **Manual Services:** Add external URLs, bare-metal endpoints, IoT devices, or local services.
-  - **Visual Reordering:** Drag & drop / up-down service ordering with persistent `display_order`.
-- **🧠 In-Memory Micro-Cache & Elastic Memory Architecture:**
+- **🧠 In-Memory Micro-Cache & Aggressive Memory Compaction (Memory Trimmer):**
   - 2.5-second zero-allocation in-memory cache: Eliminates 90% of redundant Docker socket and SQLite calls during rapid tab switching (<150 KB memory footprint).
   - Batch container stats endpoint (`GET /api/containers/stats-summary`) with `one-shot=true` and sliding CPU delta calculation, eliminating Docker Engine 1-second sampling sleep and delivering sub-100ms instant metrics.
-  - .NET 9 `System.GC.ConserveMemory=5` runtime configuration and periodic post-retention memory compaction, keeping memory strictly between 30–45 MB.
+  - **MemoryTrimmerBackgroundService:** Periodically (every 3 min) flushes SQLite connection pools (`ClearAllPools`), invokes Gen1 GC, and calls Linux libc `malloc_trim(0)` to return freed memory pages directly to the operating system.
+  - .NET 9 `System.GC.ConserveMemory=9`, `DOTNET_GCHeapHardLimit=0x3000000` (48 MB ceiling), and `MALLOC_TRIM_THRESHOLD_=65536` locking idle RAM strictly between 25–35 MB.
+- **🚀 Dual-Mode Service Launcher & Smart Container Sync:**
+  - **Smart Automatic Discovery:** Discovers Docker containers via direct Docker socket communication (`/var/run/docker.sock`). Caches unchanged container environment variables via `_inspectCache` and skips redundant database write transactions using `ComputeFingerprint`.
+  - **Manual Services:** Add external URLs, bare-metal endpoints, IoT devices, or local services.
+  - **Visual Reordering:** Drag & drop / up-down service ordering with persistent `display_order`.
 - **🛡️ Advanced 3-State Resilience & Health Engine:**
   - `healthy` ➔ `degraded` ➔ `down` state machine: Prevents panicky false alarms during transient network glitches; only raises alarms after 3 consecutive failures.
   - Concurrent health probing powered by `Parallel.ForEachAsync` with bounded concurrency.
   - Automatic container loopback networking resolution (`host.docker.internal` / default bridge gateway routing).
+- **⏱️ Extended Endpoint Uptime, SSL & Web Filtering:**
+  - **User-Controlled (Opt-in) Uptime & Live Connection Testing:** One-click **"Web/Domain Only"** filter on discovered containers to isolate HTTP endpoints; verify reachability via instant "Test Connection" button (`POST /api/uptime/test-connection`) before opting in.
+  - **Interactive Latency Badges:** Color-coded response time badges in recent checks (<200ms green, 200-500ms amber, >500ms red).
+  - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.
+  - **Advanced Monitor Parameters (`AdvancedCheckOptions`):** Independent per-service check intervals (`check_interval`: 10s-300s), custom timeouts (`timeout_seconds`), failure tolerance (`max_retries` / `retry_interval`), ignore TLS errors (`ignore_tls`), accepted HTTP status codes (`accepted_status_codes`, e.g. `200-299, 401`), and HTTP method selection (GET/POST/HEAD).
+  - **Native Docker Health Checks for Internal Containers:** Internal background services without exposed web ports are monitored via direct Docker daemon state (`checkType: 'docker'`).
+- **🦅 Pure Vector Brand Identity (Hex Sentinel):**
+  - Crafted geometric logo fusing the Docker container hexagon, Corvus **C** monogram, and the vigilant raven sentinel.
+  - Multi-resolution `favicon.ico`, pure vector `favicon.svg`, mobile PWA manifest, and comprehensive brand guidelines (`docs/branding/BRAND_GUIDELINES.md`).
 - **💾 Dual-Mode Backup Management & Disaster Recovery:**
   - **Internal Snapshot Download:** One-click SQLite `VACUUM INTO` point-in-time database snapshot download (`GET /api/backup/download`), lock-free and instantly updating Dashboard stats via SSE.
   - **External Backup Push:** Easy integration for host backup tools (`restic`, `borg`, cron) with dynamic token generator and auto-configured `curl` snippets.

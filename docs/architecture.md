@@ -45,6 +45,7 @@ corvus/
 │   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periodic container discovery (10s)
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrics sampler (15s)
 │   │   │   ├── UptimeCheckerService.cs       # HTTP/TCP ping, SSL cert tracking, and Snitch checks (60s)
+│   │   │   ├── MemoryTrimmerBackgroundService.cs # Periodic native memory trimming and pool flush (3m)
 │   │   │   └── RetentionCleanupService.cs    # Dynamic retention data cleanup & PRAGMA optimize (24h)
 │   │   ├── Data/                  # Persistence and data access layer (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000, and PRAGMA tuning
@@ -180,10 +181,11 @@ corvus/
 │       └── wwwroot/                # Production compiled bundle output (hosted by Corvus.Api)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Suite (137 Passing Tests)
+│   └── Corvus.Api.Tests/           # xUnit Test Suite (144 Passing Tests)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Container operations, micro-cache, and batch stats tests
 │       ├── DockerLogDemuxerTests.cs
+│       ├── MemoryTrimmerTests.cs     # Native memory trimmer and GC optimization tests
 │       ├── NotificationServiceTests.cs
 │       ├── RoadmapFeaturesTests.cs
 │       ├── UpdateCheckerTests.cs
@@ -191,6 +193,10 @@ corvus/
 │       └── DatabaseMigrationAndRepositoryTests.cs
 │
 └── docs/                           # Technical specifications and architectural guides
+    ├── branding/                   # Hex Sentinel brand identity, SVG master assets, and web icons
+    │   ├── BRAND_GUIDELINES.md     # Logo guidelines, clear space, palette, and typography
+    │   ├── svg/                    # Scalable vector master files and lockups
+    │   └── web-icons/              # Favicon, apple-touch-icon, PWA icons, and manifest
     ├── architecture.md             # System architecture (English)
     ├── architecture.tr.md          # System architecture (Türkçe)
     ├── specification.md            # Technical specification (English)
@@ -248,7 +254,7 @@ sequenceDiagram
 
 ---
 
-## 🧠 Memory Resilience and In-Memory Micro-Cache
+## 🧠 Memory Resilience, Caching & In-Memory Optimizations
 
 Corvus implements a multi-tier optimization architecture to sustain system memory usage within **30–45 MB** without relying on an external cache server (such as Redis):
 
@@ -258,12 +264,19 @@ Corvus implements a multi-tier optimization architecture to sustain system memor
    - Rapid navigation between views reduces Docker socket calls and SQLite allocations by more than 90%.
 2. **Batch Stats Endpoint:**
    - Replaces N+1 parallel socket reads with a single consolidated stream via `GET /api/containers/stats-summary`, gathering resource stats for all running containers at once.
-3. **.NET 9 Elastic Memory Tuning (`System.GC.ConserveMemory=5`) & Glibc Constraints:**
-   - Configures the CLR to eagerly release idle virtual memory pages back to the Linux kernel (`madvise`) following traffic spikes.
-   - Constrains Linux glibc multi-threaded memory allocation via `MALLOC_ARENA_MAX=2` and `MALLOC_TRIM_THRESHOLD_=131072` in the container environment to eliminate native heap fragmentation across background workers.
+3. **Smart Container Discovery Fingerprinting & Inspect Cache:**
+   - `ContainerDiscoveryService` caches container environment variables by container ID and image ID (`_inspectCache`), preventing redundant Docker socket `inspect` calls on every polling cycle.
+   - `ComputeFingerprint` algorithm hashes active container status and URL strings. When no state change is detected, SQLite write transactions are skipped entirely, eliminating unnecessary disk I/O and log churn.
+4. **.NET 9 Elastic Memory Tuning & Hard GC Bounds:**
+   - `DOTNET_GCConserveMemory=9`: Enforces aggressive decommit of idle virtual memory pages back to the Linux kernel (`madvise`) immediately after traffic bursts subside.
+   - `DOTNET_GCHeapHardLimit=0x3000000`: Caps the managed GC heap at 48 MB, ensuring stable operation on constrained VPS instances.
+   - `MALLOC_ARENA_MAX=2` and `MALLOC_TRIM_THRESHOLD_=65536`: Restricts glibc multi-threaded memory allocation to prevent native heap fragmentation across background threads.
+5. **Scheduled Native & Managed Memory Trimming (`MemoryTrimmerBackgroundService`):**
+   - Runs automatically every 3 minutes: flushes pooled SQLite connections (`SqliteConnection.ClearAllPools()`), runs an optimized Gen 1 GC pass, and calls libc `malloc_trim(0)` to return unused native allocator pages directly to the host OS.
+   - `SystemMetricsCollector` reads `/proc/meminfo` via streaming `File.ReadLines()`, short-circuiting as soon as `MemTotal` and `MemAvailable` lines are parsed without loading the full file into memory.
+6. **Zero-Allocation HTTP Health Checks:**
    - HTTP health checks in `UptimeCheckerService` utilize `HttpCompletionOption.ResponseHeadersRead` and explicit socket lifecycle disposal (`using var response`) to avoid buffering remote response payloads into process memory.
    - SQLite connection pool operates with `PRAGMA cache_size = -2000;` to enforce a 2MB page cache ceiling per connection.
-   - `RetentionCleanupService` performs an optimized Gen1 GC collection and triggers `NativeMemoryTrimmer.Trim()` (`malloc_trim(0)`) after pruning expired records to guarantee prompt native memory return to the host OS.
 
 ---
 

@@ -23,10 +23,21 @@ corvus/
 ├── CONTRIBUTING.tr.md            # Katkı sağlama ve mimari kılavuzu (Türkçe)
 ├── LICENSE
 │
+├── docs/
+│   ├── architecture.md           # Sistem mimarisi (İngilizce)
+│   ├── architecture.tr.md        # Sistem mimarisi (Türkçe)
+│   ├── specification.md          # Teknik şartname (İngilizce)
+│   ├── specification.tr.md       # Teknik şartname (Türkçe)
+│   └── branding/                 # Vektör Marka Kimliği & Logo Kiti
+│       ├── BRAND_GUIDELINES.md   # Marka kullanım rehberi, renk kodları ve standartlar
+│       ├── svg/                  # Saf monokrom SVG logolar (sembol, yatay ve dikey lockup)
+│       ├── web-icons/            # favicon.ico, favicon.svg, PWA manifest ve mobil ikonlar
+│       └── png/                  # Yüksek çözünürlüklü şeffaf PNG çıktıları
+│
 ├── src/
 │   ├── Corvus.Api/                # Backend — ASP.NET Core Minimal API, .NET 9 Native AOT
-│   │   ├── Program.cs             # Uygulama girişi, DI ve Minimal API orkestrasyonu (113 satır)
-│   │   ├── Corvus.Api.csproj      # Native AOT, Dapper.AOT, System.GC.ConserveMemory=5
+│   │   ├── Program.cs             # Uygulama girişi, DI ve Minimal API orkestrasyonu
+│   │   ├── Corvus.Api.csproj      # Native AOT, Dapper.AOT, System.GC.ConserveMemory=9
 │   │   ├── Endpoints/             # Kaynak odaklı Minimal API uç noktaları (extension metodlar)
 │   │   │   ├── AuthEndpoints.cs          # Session auth, kayıt yönetimi ve Zero-Trust SSO
 │   │   │   ├── BackupEndpoints.cs        # Tek tıkla SQLite VACUUM INTO anlık yedek indirme
@@ -42,9 +53,10 @@ corvus/
 │   │   │   ├── StreamEndpoints.cs        # Canlı SSE olay akışı (/api/stream/events)
 │   │   │   └── UptimeEndpoints.cs        # Servis uptime denetim geçmişi
 │   │   ├── BackgroundServices/    # Arka plan çalışan iş parçacıkları
-│   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periyodik konteyner senkronizasyonu (10s)
-│   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrik toplayıcısı (15s)
+│   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periyodik konteyner senkronizasyonu (10s, fingerprint & inspect cache)
+│   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrik toplayıcısı (15s, streaming /proc/meminfo)
 │   │   │   ├── UptimeCheckerService.cs       # 3 durumlu HTTP/TCP ping, SSL ve Snitch denetimi (60s)
+│   │   │   ├── MemoryTrimmerBackgroundService.cs # 3dk periyotlu SQLite havuz temizliği, Gen1 GC ve malloc_trim(0) bellek sıkıştırması
 │   │   │   └── RetentionCleanupService.cs    # Dinamik veri saklama temizleyicisi, PRAGMA optimize & GC compact (24h)
 │   │   ├── Data/                  # Veri erişim katmanı (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000 ve PRAGMA optimizasyonları
@@ -180,10 +192,11 @@ corvus/
 │       └── wwwroot/                # Üretime hazır derlenmiş arayüz paketi (Corvus.Api tarafından sunulur)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Paketi (137 Başarılı Test)
+│   └── Corvus.Api.Tests/           # xUnit Test Paketi (144 Başarılı Test)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Konteyner işlemleri, micro-cache ve batch stats testleri
 │       ├── DockerLogDemuxerTests.cs
+│       ├── MemoryTrimmerTests.cs     # Native memory trimmer ve GC optimizasyon testleri
 │       ├── NotificationServiceTests.cs
 │       ├── RoadmapFeaturesTests.cs
 │       ├── UpdateCheckerTests.cs
@@ -191,6 +204,10 @@ corvus/
 │       └── DatabaseMigrationAndRepositoryTests.cs
 │
 └── docs/                           # Teknik şartnameler ve mimari kılavuzlar
+    ├── branding/                   # Hex Sentinel kurumsal kimlik, SVG master vektörleri ve web ikonları
+    │   ├── BRAND_GUIDELINES.md     # Logo kullanım kılavuzu, renk kodları ve tipografi
+    │   ├── svg/                    # Master vektör logolar ve yatay/dikey lockup'lar
+    │   └── web-icons/              # Favicon, apple-touch-icon, PWA ikonları ve manifest
     ├── architecture.md             # Sistem mimarisi (İngilizce)
     ├── architecture.tr.md          # Sistem mimarisi (Türkçe)
     ├── specification.md            # Teknik şartname (İngilizce)
@@ -248,7 +265,7 @@ sequenceDiagram
 
 ---
 
-## 🧠 Bellek Dayanıklılığı ve In-Memory Micro-Cache
+## 🧠 Bellek Dayanıklılığı, Caching ve In-Memory Optimizasyonları
 
 Corvus, harici bir önbellek sunucusu (Redis vb.) çalıştırmadan sistem belleğini **30–45 MB** bandında tutmak için çok katmanlı bir optimizasyon mimarisi uygular:
 
@@ -258,12 +275,19 @@ Corvus, harici bir önbellek sunucusu (Redis vb.) çalıştırmadan sistem belle
    - Hızlı sayfa geçişlerinde Docker soketi ve SQLite üzerinde oluşan nesne tahsisatları (allocations) %90 oranında engellenir.
 2. **Toplu İstatistikler (Batch Stats Endpoint):**
    - Konteyner başına N+1 paralel `/stats` isteği yerine `GET /api/containers/stats-summary` ile çalışan tüm konteynerlerin metrikleri tek bir HTTP akışında toplanır.
-3. **.NET 9 Bellek Tasarruf Yapılandırması (`System.GC.ConserveMemory=5`) ve Glibc Sınırlandırması:**
-   - İstek dalgalanmaları bittiğinde boşta kalan sanal sayfaların Linux çekirdeğine (`madvise`) hızlıca iade edilmesi sağlanır.
-   - Konteyner ortamında `MALLOC_ARENA_MAX=2` ve `MALLOC_TRIM_THRESHOLD_=131072` ayarlarıyla çok iş parçacıklı glibc bellek arenası parçalanması (fragmentation) önlenir.
+3. **Akıllı Konteyner Keşfi Parmak İzi (Fingerprinting) ve Inspect Önbelleği:**
+   - `ContainerDiscoveryService`, konteyner ID ve imaj ID bazlı ortam değişkenlerini önbelleğe alır (`_inspectCache`); her döngüde Docker soketine gereksiz `inspect` çağrıları yapılmasını önler.
+   - `ComputeFingerprint` algoritması ile konteyner durumları ve URL'leri hash'lenir. Durum değişmediğinde SQLite veritabanına yazma işlemleri tamamen atlanır; disk I/O ve log yıpranması önlenir.
+4. **.NET 9 Bellek Tasarruf Yapılandırması ve GC Sınırlandırması:**
+   - `DOTNET_GCConserveMemory=9`: İstek dalgalanmaları bittiğinde boşta kalan sanal sayfaların Linux çekirdeğine (`madvise`) agresif şekilde iade edilmesini sağlar.
+   - `DOTNET_GCHeapHardLimit=0x3000000`: Yönetilen GC öbeğini 48 MB ile sınırlandırarak küçük VPS'lerde bellek taşmasını engeller.
+   - `MALLOC_ARENA_MAX=2` ve `MALLOC_TRIM_THRESHOLD_=65536`: Çok iş parçacıklı glibc bellek parçalanmasını (fragmentation) önler.
+5. **Periyodik Native ve Yönetilen Bellek Temizleyici (`MemoryTrimmerBackgroundService`):**
+   - Her 3 dakikada bir otomatik çalışır; SQLite bağlantı havuzunu boşaltır (`SqliteConnection.ClearAllPools()`), Gen 1 GC optimizasyonu tetikler ve libc `malloc_trim(0)` çağırarak kullanılmayan native belleği işletim sistemine iade eder.
+   - `SystemMetricsCollector`, `/proc/meminfo` dosyasını belleğe tamamen yüklemek yerine `File.ReadLines()` ile akış halinde okur ve `MemTotal`/`MemAvailable` satırlarını bulduğu anda okumayı sonlandırır.
+6. **Sıfır Gövde Tahsisatlı Sağlık Denetimi:**
    - `UptimeCheckerService` içerisindeki sağlık denetimlerinde `HttpCompletionOption.ResponseHeadersRead` ve anında `using` elden çıkarma mimarisi ile uzak servis yanıt gövdelerinin belleğe çekilmesi engellenir.
    - SQLite bağlantı havuzu `PRAGMA cache_size = -2000;` ile bağlantı başına en fazla 2MB sayfa önbelleği ile sınırlandırılır.
-   - `RetentionCleanupService` eski kayıtları sildikten sonra `GC.Collect(1, GCCollectionMode.Optimized)` ve `NativeMemoryTrimmer.Trim()` (`malloc_trim(0)`) ile işletim sistemine native bellek iadesi yapar.
 
 ---
 

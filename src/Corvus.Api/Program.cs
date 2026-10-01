@@ -43,6 +43,7 @@ builder.Services.AddHostedService<ContainerDiscoveryService>();
 builder.Services.AddHostedService<SystemMetricsCollector>();
 builder.Services.AddHostedService<UptimeCheckerService>();
 builder.Services.AddHostedService<RetentionCleanupService>();
+builder.Services.AddHostedService<MemoryTrimmerBackgroundService>();
 
 // CORS (Sertleştirilmiş Güvenlik: Geliştirme modu veya CORVUS_ALLOWED_ORIGINS ile kontrollü erişim)
 string? allowedOriginsEnv = Environment.GetEnvironmentVariable("CORVUS_ALLOWED_ORIGINS");

@@ -69,11 +69,10 @@ public class SystemMetricsCollector : BackgroundService
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/proc/meminfo"))
             {
-                string[] lines = File.ReadAllLines("/proc/meminfo");
                 long memTotalKb = 0;
                 long memAvailKb = 0;
 
-                foreach (var line in lines)
+                foreach (var line in File.ReadLines("/proc/meminfo"))
                 {
                     if (line.StartsWith("MemTotal:"))
                     {
@@ -82,6 +81,11 @@ public class SystemMetricsCollector : BackgroundService
                     else if (line.StartsWith("MemAvailable:"))
                     {
                         memAvailKb = ParseMemInfoKb(line);
+                    }
+
+                    if (memTotalKb > 0 && memAvailKb > 0)
+                    {
+                        break;
                     }
                 }
 

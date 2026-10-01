@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Layers, Search, Server, Zap } from 'lucide-react';
+import { Layers, Search, Server, Zap, Globe } from 'lucide-react';
 import type { Service } from '../../../types';
+import { useI18n } from '../../../i18n';
 
 interface DiscoveredServicesSectionProps {
   unmonitoredServices: Service[];
@@ -11,10 +12,15 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
   unmonitoredServices,
   onEnableUptime
 }) => {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(true);
+  const [onlyWithDomain, setOnlyWithDomain] = useState(true);
 
-  const filtered = unmonitoredServices.filter((s) =>
+  const domainServices = unmonitoredServices.filter((s) => !!s.url && s.url.startsWith('http'));
+  const baseList = onlyWithDomain ? domainServices : unmonitoredServices;
+
+  const filtered = baseList.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     (s.category && s.category.toLowerCase().includes(search.toLowerCase())) ||
     (s.url && s.url.toLowerCase().includes(search.toLowerCase()))
@@ -34,28 +40,47 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
           </div>
           <div>
             <h3 className="text-sm font-bold text-[#e5e7eb] flex items-center gap-2">
-              <span>Keşfedilen Konteynerler</span>
+              <span>{t('uptime.discoveredContainers')}</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-normal">
                 {unmonitoredServices.length}
               </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                {domainServices.length} web
+              </span>
             </h3>
             <p className="text-xs text-[#9ca3af]">
-              Docker üzerinde çalışan ancak henüz Uptime takibine eklenmemiş servisler
+              {t('uptime.discoveredContainersDesc')}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Domain Only Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setOnlyWithDomain(!onlyWithDomain)}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer border ${
+              onlyWithDomain
+                ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40 shadow-sm'
+                : 'bg-[#1a1d29] text-[#9ca3af] border-[#2a2e3f] hover:text-[#e5e7eb]'
+            }`}
+            title="Yalnızca domain/web bağlantısı olanları göster"
+          >
+            <Globe className="w-3.5 h-3.5 text-indigo-400" />
+            <span>{t('uptime.domainOnlyWeb')}</span>
+          </button>
+
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Konteyner ara..."
+              placeholder={t('common.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-xs focus:outline-none focus:border-indigo-500 transition-colors w-44"
+              className="pl-8 pr-3 py-1.5 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-xs focus:outline-none focus:border-indigo-500 transition-colors w-40 sm:w-44"
             />
           </div>
+
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
@@ -70,8 +95,21 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
       {isOpen && (
         <div className="p-6">
           {filtered.length === 0 ? (
-            <div className="text-center py-8 text-xs text-[#9ca3af]">
-              Aramanızla eşleşen keşfedilmiş servis bulunamadı.
+            <div className="text-center py-8 text-xs text-[#9ca3af] space-y-2">
+              <p>
+                {onlyWithDomain && domainServices.length === 0
+                  ? t('uptime.noDiscoveredWithDomain')
+                  : 'Aramanızla eşleşen keşfedilmiş servis bulunamadı.'}
+              </p>
+              {onlyWithDomain && (
+                <button
+                  type="button"
+                  onClick={() => setOnlyWithDomain(false)}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium cursor-pointer"
+                >
+                  {t('uptime.clearFilter')}
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
