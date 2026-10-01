@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### UI/UX
 - **Modern 2-Column Settings Dashboard**: Redesigned the Settings page to eliminate wide-screen empty space by introducing a responsive 2-column layout with tab pills (General & Security, Notifications, Backup) on the left and a sticky System Overview sidebar on the right featuring version status, SQLite database storage metrics, registration status, and instant quick-save controls.
+- **High-Contrast Pure White Branding for Dark Themes**: Replaced dark/black logo and favicon assets with the official high-contrast pure white Hex Sentinel symbol (`corvus-white-512.png`, `corvus-white.svg`) across the Sidebar, Mobile Header, Login/Auth page, Public Status page, and browser tab favicons for maximum clarity on dark layouts.
 
 ### Tests
 - Validated all 145 unit tests across the entire test suite (`Passed: 145, Failed: 0`).
