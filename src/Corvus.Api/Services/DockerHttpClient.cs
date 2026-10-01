@@ -37,6 +37,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
 
         var handler = new SocketsHttpHandler
         {
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
             ConnectCallback = async (context, cancellationToken) =>
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

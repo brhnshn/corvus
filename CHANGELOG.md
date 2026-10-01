@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.5.14] - 2026-10-01
+
+### ⚡ Performance
+- **SQLite In-Memory Buffer Shrink (`PRAGMA shrink_memory`)**: Integrated automated execution of SQLite's native `shrink_memory` pragma into `MemoryTrimmerBackgroundService` every 3 minutes, flushing dormant page caches, B-Tree allocations, and unmanaged C-heap lookaside buffers back to the system.
+- **Non-Blocking WAL Checkpoint (`PRAGMA wal_checkpoint(PASSIVE)`)**: Periodic non-blocking passive checkpoints flush uncommitted write-ahead log frames into the main database without locking active readers or background ping writers, preventing WAL and shared memory map growth.
+- **Cross-Platform Working Set Trimming**: Extended `NativeMemoryTrimmer` with Windows OS support via `psapi.dll`'s `EmptyWorkingSet`, immediately releasing unreferenced physical RAM pages on Windows environments alongside Linux `malloc_trim(0)`.
+- **Idle Socket Pool Eviction**: Configured `PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1)` on `DockerHttpClient`'s `SocketsHttpHandler` to eagerly release dormant Unix domain socket and named pipe read/write buffers.
+
+### 🛡️ Tests
+- Elevated test suite to **145/145 Passing** by expanding `MemoryTrimmerTests` with database factory integration verification.
+
+---
+
 ## [1.5.13] - 2026-10-01
 
 ### 🚀 Added
