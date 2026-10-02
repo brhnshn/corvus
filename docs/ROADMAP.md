@@ -1,0 +1,117 @@
+# Corvus Engineering Roadmap
+
+This document outlines the structured, vertical-slice roadmap ("tracer bullet tickets") to advance Corvus toward enterprise-grade production reliability while strictly preserving its core identity: ultra-low memory footprint (30-50 MB RAM), lightning-fast performance, and zero bloat.
+
+---
+
+## Phase 1: Reliability, Identity & Auth Hardening
+
+### Ticket 1.1 — Persistent SQLite Session Store
+* **Blocked by:** None.
+* **Objective:** Prevent session logout when the container restarts or updates.
+* **Scope:**
+  - SQLite `sessions` table migration (`token`, `username`, `expires_at`, `created_at`).
+  - Transition `AuthService` from in-memory `ActiveSessions` dictionary to SQLite backing store.
+  - Automatic expiration and periodic pruning of stale sessions.
+* **Acceptance Criteria:** User sessions survive container restart; all auth unit tests pass.
+
+### Ticket 1.2 — User Management, RBAC & Password Change
+* **Blocked by:** Ticket 1.1
+* **Objective:** Allow administrators to update passwords, manage users, and assign `admin` vs `viewer` (read-only) roles.
+* **Scope:**
+  - `UserRepository` CRUD expansion (update password, list/delete users).
+  - Endpoints: `POST /api/auth/change-password`, `GET/POST/DELETE /api/users`.
+  - Settings page "Users & Roles" management tab.
+* **Acceptance Criteria:** Password change verified; `viewer` role blocked with 403 Forbidden on container mutating actions.
+
+---
+
+## Phase 2: Network & Advanced Monitoring Engine
+
+### Ticket 2.1 — Proactive SSL/TLS Expiry Alerting
+* **Blocked by:** None.
+* **Objective:** Send proactive alerts to notification channels when certificates are within 14 and 7 days of expiration.
+* **Scope:**
+  - `UptimeCheckerService` evaluation of certificate validity days and alert triggering.
+  - Dedicated notification template with days remaining and renewal guidance.
+  - UI warning badge on services with expiring certificates.
+* **Acceptance Criteria:** Alerts sent upon threshold breach; UI displays alert badge.
+
+### Ticket 2.2 — ICMP Ping Monitor
+* **Blocked by:** None.
+* **Objective:** Measure RTT latency and packet loss for bare network devices (routers, switches, gateways).
+* **Scope:**
+  - Linux non-privileged ICMP ping integration via .NET socket.
+  - Service model support for `CheckType = "ping"`.
+  - UI modal option for ICMP Ping monitors.
+* **Acceptance Criteria:** Ping check records latency and packet loss accurately.
+
+### Ticket 2.3 — HTTP Response Body (Keyword / Regex) Assertion
+* **Blocked by:** None.
+* **Objective:** Verify response payload contents even when endpoints return HTTP 200.
+* **Scope:**
+  - Add `expected_body` column to `Service` model.
+  - Streaming body assertion in `UptimeCheckerService`.
+  - UI input for "Expected Response Content (Optional)".
+* **Acceptance Criteria:** Service marked degraded/down when expected keyword is missing.
+
+---
+
+## Phase 3: Notification Channels & Alert Discipline
+
+### Ticket 3.1 — Email (SMTP) & Slack Channels
+* **Blocked by:** None.
+* **Objective:** Add standard enterprise notification channels.
+* **Scope:**
+  - SMTP client implementation in `NotificationService`.
+  - Slack Webhook payload formatting.
+  - Settings tab test and save controls.
+* **Acceptance Criteria:** Test notifications successfully delivered to SMTP and Slack.
+
+### Ticket 3.2 — Flapping Suppression & Alert Debounce
+* **Blocked by:** None.
+* **Objective:** Prevent alert spam when unstable networks cause rapid service status transitions.
+* **Scope:**
+  - Sliding-window state history per service.
+  - Automatic suppression when transitions exceed threshold in a 5-minute window.
+* **Acceptance Criteria:** Flapping simulation yields only initial failure and final stable recovery alerts.
+
+---
+
+## Phase 4: Advanced Docker & Container Operations
+
+### Ticket 4.1 — Web Container Exec Terminal
+* **Blocked by:** None.
+* **Objective:** Open interactive `sh`/`bash` terminal directly into containers from the browser.
+* **Scope:**
+  - Docker Exec bidirectional WebSocket streaming endpoint.
+  - Frontend `xterm.js` terminal integration.
+  - "Open Terminal" button on container details view.
+* **Acceptance Criteria:** Run commands (`ls`, `ps`) interactively via web terminal.
+
+### Ticket 4.2 — System Prune (Images & Volumes)
+* **Blocked by:** None.
+* **Objective:** One-click cleanup of dangling images and unused volumes to reclaim host disk space.
+* **Scope:**
+  - Docker `/images/prune` and `/volumes/prune` API endpoints.
+  - Containers page "System Cleanup" modal with confirmation and reclaimed byte reporting.
+* **Acceptance Criteria:** Disk space reclaimed and reported in UI.
+
+---
+
+## Phase 5: Telemetry, Downsampling & Organization
+
+### Ticket 5.1 — Metrics Downsampling (Hourly Rollups)
+* **Blocked by:** None.
+* **Objective:** Retain 1-year historical telemetry without database bloat by downsampling raw 15-second records past 7 days into hourly averages.
+* **Scope:**
+  - `system_metrics_hourly` rollup aggregation in `RetentionCleanupService`.
+  - Query dispatcher to read from rollup table for ranges > 7 days.
+* **Acceptance Criteria:** Smooth 30-day and 90-day charts without database size inflation.
+
+### Ticket 5.2 — Tags & Category Grouping
+* **Blocked by:** None.
+* **Objective:** Group and filter services and containers by environment tags (e.g. `Prod`, `Staging`, `DB`).
+* **Scope:**
+  - `tags` column in `services` table.
+  - Tag pills and filter bar in frontend dashboard.
