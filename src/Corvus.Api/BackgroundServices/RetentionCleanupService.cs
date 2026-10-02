@@ -26,6 +26,7 @@ public class RetentionCleanupService : BackgroundService
                 var settingsRepo = scope.ServiceProvider.GetRequiredService<ISettingsRepository>();
                 var metricsRepo = scope.ServiceProvider.GetRequiredService<IMetricsRepository>();
                 var uptimeRepo = scope.ServiceProvider.GetRequiredService<IUptimeRepository>();
+                var sessionRepo = scope.ServiceProvider.GetService<ISessionRepository>();
                 var dbFactory = scope.ServiceProvider.GetService<IDbConnectionFactory>();
 
                 // 1. Veritabanındaki ayarı oku (yoksa ortam değişkeni veya varsayılan 30)
@@ -48,6 +49,18 @@ public class RetentionCleanupService : BackgroundService
                     await uptimeRepo.AggregateDailyStatsAsync();
                     await metricsRepo.CleanupOldAsync(retentionDays);
                     await uptimeRepo.CleanupOldAsync(retentionDays);
+
+                    if (sessionRepo != null)
+                    {
+                        try
+                        {
+                            await sessionRepo.CleanupExpiredSessionsAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "Süresi dolmuş oturumlar temizlenirken geçici hata.");
+                        }
+                    }
 
                     // SQLite sorgu planlayıcısı istatistiklerini güncelle ve silinen kayıtların freelist alanını diske iade et (VACUUM)
                     if (dbFactory != null)

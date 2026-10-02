@@ -12,6 +12,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Sıfır Tahsisatlı /proc/meminfo Okuması**: `SystemMetricsCollector` içindeki dosya okuma mantığı erken çıkan `StreamReader` akışına dönüştürülerek gereksiz string koleksiyonu oluşturulması engellendi.
 
 ### Depolama & Veritabanı
+- **Kalıcı SQLite Oturum Yönetimi (Session Store)**: `user_sessions` şeması ve `ISessionRepository` hibrit write-through önbellek mimarisiyle `AuthService` katmanına entegre edildi. Bu sayede konteyner yeniden başladığında veya güncellendiğinde oturumun düşmesi engellendi; RAM üzerindeki mikrosaniye altı doğrulama hızı ve sıfır bellek tahsisatı korundu.
 - **Otomatik SQLite Freelist Temizliği (VACUUM)**: `RetentionCleanupService` günlük temizlik döngüsüne otomatik `VACUUM;` çağrısı eklendi. Silinen eski kayıtların bıraktığı boş alanların (freelist) diske iade edilmesi sağlandı ve veritabanı boyutu %60-70 oranında küçültüldü.
 - **WAL Dosyası Sıfırlama (TRUNCATE)**: `MemoryTrimmerBackgroundService` içindeki SQLite checkpoint çağrısı `PASSIVE` yerine `PRAGMA wal_checkpoint(TRUNCATE);` yapılarak WAL günlüğünün her 3 dakikada bir 0 byte'a çekilmesi sağlandı.
 - **Docker Log Rotasyon Sınırı**: `docker-compose.yml` dosyasına `max-size: 10m` ve `max-file: 3` kuralları eklenerek konteyner loglarının diskte kontrolsüz büyümesi engellendi.

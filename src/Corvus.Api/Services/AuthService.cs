@@ -28,6 +28,7 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepo;
     private readonly ISettingsRepository _settings;
+    private readonly ISessionRepository? _sessionRepo;
     private readonly bool _authEnabled;
     private readonly string _defaultUser;
     private readonly string _defaultPassHash;
@@ -41,10 +42,15 @@ public class AuthService : IAuthService
 
     public bool IsAuthEnabled => _authEnabled;
 
-    public AuthService(IUserRepository userRepo, ISettingsRepository settings, IConfiguration configuration)
+    public AuthService(
+        IUserRepository userRepo, 
+        ISettingsRepository settings, 
+        IConfiguration configuration,
+        ISessionRepository? sessionRepo = null)
     {
         _userRepo = userRepo;
         _settings = settings;
+        _sessionRepo = sessionRepo;
 
         string? envEnabled = Environment.GetEnvironmentVariable("CORVUS_AUTH_ENABLED");
         _authEnabled = envEnabled == null || !string.Equals(envEnabled, "false", StringComparison.OrdinalIgnoreCase);
@@ -168,7 +174,25 @@ public class AuthService : IAuthService
         byte[] bytes = new byte[32];
         RandomNumberGenerator.Fill(bytes);
         string token = Convert.ToHexString(bytes);
-        ActiveSessions[token] = new SessionItem(username, DateTime.UtcNow.AddDays(7));
+        var expiresAt = DateTime.UtcNow.AddDays(7);
+        ActiveSessions[token] = new SessionItem(username, expiresAt);
+
+        if (_sessionRepo != null)
+        {
+            try
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _sessionRepo.CreateSessionAsync(token, username, expiresAt);
+                    }
+                    catch { }
+                });
+            }
+            catch { }
+        }
+
         return token;
     }
 
@@ -177,15 +201,44 @@ public class AuthService : IAuthService
         if (!_authEnabled) return (true, "anonymous");
         if (string.IsNullOrWhiteSpace(token)) return (false, null);
 
+        var now = DateTime.UtcNow;
+
+        // 1. Fast-Path: In-memory cache kontrolü
         if (ActiveSessions.TryGetValue(token, out var session))
         {
-            if (DateTime.UtcNow < session.ExpiresAt)
+            if (now < session.ExpiresAt)
             {
                 return (true, session.Username);
             }
 
             // Süresi dolmuş oturumu bellekten temizle
             ActiveSessions.TryRemove(token, out _);
+            if (_sessionRepo != null)
+            {
+                _ = Task.Run(async () => { try { await _sessionRepo.DeleteSessionAsync(token); } catch { } });
+            }
+            return (false, null);
+        }
+
+        // 2. Durability Fallback: Konteyner yeniden başladıysa SQLite tablosundan doğrula ve RAM'i hydrate et
+        if (_sessionRepo != null)
+        {
+            try
+            {
+                var (exists, username, expiresAt) = _sessionRepo.GetSessionAsync(token).GetAwaiter().GetResult();
+                if (exists && username != null)
+                {
+                    if (now < expiresAt)
+                    {
+                        ActiveSessions[token] = new SessionItem(username, expiresAt);
+                        return (true, username);
+                    }
+
+                    // Süresi dolmuş oturumu SQLite'tan sil
+                    _ = Task.Run(async () => { try { await _sessionRepo.DeleteSessionAsync(token); } catch { } });
+                }
+            }
+            catch { }
         }
 
         return (false, null);
@@ -196,6 +249,10 @@ public class AuthService : IAuthService
         if (!string.IsNullOrWhiteSpace(token))
         {
             ActiveSessions.TryRemove(token, out _);
+            if (_sessionRepo != null)
+            {
+                _ = Task.Run(async () => { try { await _sessionRepo.DeleteSessionAsync(token); } catch { } });
+            }
         }
     }
 

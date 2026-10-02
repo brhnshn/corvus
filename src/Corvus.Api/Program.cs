@@ -29,6 +29,7 @@ builder.Services.AddScoped<IPushMonitorRepository, PushMonitorRepository>();
 builder.Services.AddScoped<IIncidentRepository, IncidentRepository>();
 builder.Services.AddSingleton<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
 
 builder.Services.AddSingleton<IDockerHttpClient, DockerHttpClient>();
 builder.Services.AddSingleton<IDockerService, DockerService>();

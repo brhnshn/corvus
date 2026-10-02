@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Zero-Allocation Meminfo Streaming**: Converted `/proc/meminfo` parsing in `SystemMetricsCollector` to early-exit `StreamReader` streaming, eliminating intermediary string collections.
 
 ### Storage & Database
+- **Persistent SQLite Session Store**: Implemented `user_sessions` schema and `ISessionRepository` with a hybrid write-through cache architecture in `AuthService`, ensuring authenticated user sessions survive container restarts and updates while preserving zero-allocation sub-microsecond in-memory validation speed.
 - **Automatic SQLite Freelist Reclamation (VACUUM)**: Integrated automated `VACUUM;` into `RetentionCleanupService` post-retention cleanup, forcing SQLite to release orphaned freelist pages directly back to the filesystem and shrinking fragmented database files by up to 60-70%.
 - **WAL Truncation Checkpoint**: Upgraded `MemoryTrimmerBackgroundService` SQLite checkpoint from `PASSIVE` to `PRAGMA wal_checkpoint(TRUNCATE);`, ensuring WAL transaction logs are reset to 0 bytes every 3 minutes.
 - **Docker Log Rotation Cap**: Configured `json-file` log limits (`max-size: 10m`, `max-file: 3`) in `docker-compose.yml` to prevent runaway host container log growth.
