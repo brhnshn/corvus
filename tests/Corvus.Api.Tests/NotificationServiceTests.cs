@@ -179,4 +179,145 @@ public class NotificationServiceTests
         Assert.Contains("14 days", body);
         Assert.Contains("16098851", body); // Amber embed rengi
     }
+
+    [Fact]
+    public void ParseEmailRecipients_WithDelimitedStrings_ParsesCorrectly()
+    {
+        string input = "devops@example.com, admin@domain.org; alert@test.io \n oncall@corvus.dev";
+        var result = NotificationService.ParseEmailRecipients(input);
+
+        Assert.Equal(4, result.Count);
+        Assert.Contains("devops@example.com", result);
+        Assert.Contains("admin@domain.org", result);
+        Assert.Contains("alert@test.io", result);
+        Assert.Contains("oncall@corvus.dev", result);
+    }
+
+    [Fact]
+    public void ParseEmailRecipients_WithJsonArray_ParsesAndDeduplicates()
+    {
+        string input = "[\"devops@example.com\", \"admin@domain.org\", \"DEVOPS@example.com\", \"not-an-email\"]";
+        var result = NotificationService.ParseEmailRecipients(input);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains("devops@example.com", result);
+        Assert.Contains("admin@domain.org", result);
+    }
+
+    [Fact]
+    public void ParseEmailRecipients_WithEmptyOrInvalid_ReturnsEmptyList()
+    {
+        Assert.Empty(NotificationService.ParseEmailRecipients(null));
+        Assert.Empty(NotificationService.ParseEmailRecipients(""));
+        Assert.Empty(NotificationService.ParseEmailRecipients("   "));
+        Assert.Empty(NotificationService.ParseEmailRecipients("invalid1 invalid2"));
+    }
+
+    [Fact]
+    public async Task TestChannelAsync_WithMissingSlackUrl_ReturnsFailure()
+    {
+        var service = new NotificationService(new FakeSettingsRepository(), new FakeHttpClientFactory(), NullLogger<NotificationService>.Instance);
+
+        var result = await service.TestChannelAsync("slack", webhookUrl: "", botToken: null, chatId: null);
+
+        Assert.False(result.Success);
+        Assert.Contains("Slack Webhook URL", result.Message);
+    }
+
+    [Fact]
+    public async Task TestChannelAsync_WithValidSlackUrl_SendsFormattedSlackPayload()
+    {
+        var repo = new FakeSettingsRepository();
+        var handler = new RecordingHttpMessageHandler();
+        var service = new NotificationService(repo, new MockHttpClientFactory(handler), NullLogger<NotificationService>.Instance);
+
+        var result = await service.TestChannelAsync("slack", webhookUrl: "https://hooks.slack.com/services/T00/B00/XXXX", botToken: null, chatId: null);
+
+        Assert.True(result.Success);
+        Assert.Single(handler.Requests);
+        var (_, body) = handler.Requests[0];
+        Assert.Contains("attachments", body);
+        Assert.Contains("#22c55e", body);
+        Assert.Contains("Corvus System Monitor", body);
+    }
+
+    [Fact]
+    public async Task TestChannelAsync_WithMissingSmtpConfig_ReturnsFailure()
+    {
+        var service = new NotificationService(new FakeSettingsRepository(), new FakeHttpClientFactory(), NullLogger<NotificationService>.Instance);
+
+        // Missing host
+        var res1 = await service.TestChannelAsync("email", webhookUrl: null, botToken: null, chatId: null, smtpHost: "");
+        Assert.False(res1.Success);
+        Assert.Contains("SMTP Host", res1.Message);
+
+        // Missing From
+        var res2 = await service.TestChannelAsync("email", webhookUrl: null, botToken: null, chatId: null, smtpHost: "smtp.example.com", smtpFrom: "");
+        Assert.False(res2.Success);
+        Assert.Contains("From", res2.Message);
+
+        // Missing To
+        var res3 = await service.TestChannelAsync("email", webhookUrl: null, botToken: null, chatId: null, smtpHost: "smtp.example.com", smtpFrom: "noreply@example.com", smtpTo: "");
+        Assert.False(res3.Success);
+        Assert.Contains("To", res3.Message);
+    }
+
+    [Fact]
+    public async Task DispatchFlappingAlertAsync_WhenDisabled_DoesNotSendAnyAlert()
+    {
+        var repo = new FakeSettingsRepository();
+        await repo.SetAsync("notify_flapping_events", "false");
+        await repo.SetAsync("notification_slack_enabled", "true");
+        await repo.SetAsync("notification_slack_webhook_url", "https://hooks.slack.com/services/T00/B00/XXXX");
+
+        var handler = new RecordingHttpMessageHandler();
+        var service = new NotificationService(repo, new MockHttpClientFactory(handler), NullLogger<NotificationService>.Instance);
+
+        await service.DispatchFlappingAlertAsync("Redis Cache", "https://redis.local", isRecovered: false, transitionCount: 5);
+
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
+    public async Task DispatchFlappingAlertAsync_WhenFlappingDetected_SendsWarningAlert()
+    {
+        var repo = new FakeSettingsRepository();
+        await repo.SetAsync("system_language", "tr");
+        await repo.SetAsync("notify_flapping_events", "true");
+        await repo.SetAsync("notification_slack_enabled", "true");
+        await repo.SetAsync("notification_slack_webhook_url", "https://hooks.slack.com/services/T00/B00/XXXX");
+
+        var handler = new RecordingHttpMessageHandler();
+        var service = new NotificationService(repo, new MockHttpClientFactory(handler), NullLogger<NotificationService>.Instance);
+
+        await service.DispatchFlappingAlertAsync("Auth Gateway", "https://auth.example.com", isRecovered: false, transitionCount: 4);
+
+        Assert.Single(handler.Requests);
+        var (_, body) = handler.Requests[0];
+        Assert.Contains("DALGALANMA", body);
+        Assert.Contains("Auth Gateway", body);
+        Assert.Contains("#f59e0b", body); // Amber warning color
+    }
+
+    [Fact]
+    public async Task DispatchFlappingAlertAsync_WhenFlappingRecovered_SendsSuccessAlert()
+    {
+        var repo = new FakeSettingsRepository();
+        await repo.SetAsync("system_language", "en");
+        await repo.SetAsync("notify_flapping_events", "true");
+        await repo.SetAsync("notification_slack_enabled", "true");
+        await repo.SetAsync("notification_slack_webhook_url", "https://hooks.slack.com/services/T00/B00/XXXX");
+
+        var handler = new RecordingHttpMessageHandler();
+        var service = new NotificationService(repo, new MockHttpClientFactory(handler), NullLogger<NotificationService>.Instance);
+
+        await service.DispatchFlappingAlertAsync("Auth Gateway", "https://auth.example.com", isRecovered: true, transitionCount: 0);
+
+        Assert.Single(handler.Requests);
+        var (_, body) = handler.Requests[0];
+        Assert.Contains("FLAPPING RESOLVED", body);
+        Assert.Contains("stabilized across consecutive checks", body);
+        Assert.Contains("#22c55e", body); // Green success color
+    }
 }
+

@@ -29,6 +29,11 @@ public class UptimeCheckerService : BackgroundService
     private List<PushMonitor> _cachedPushMonitors = [];
     private DateTime _lastThresholdRefresh = DateTime.MinValue;
     private int _cachedAlertThreshold = 2;
+    private readonly IFlappingDetector _flappingDetector;
+    private bool _cachedFlappingEnabled = true;
+    private int _cachedFlappingThreshold = 4;
+    private int _cachedFlappingWindowMinutes = 10;
+    private int _cachedFlappingRecoveryChecks = 3;
     private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(25);
     private static readonly TimeSpan ThresholdCacheTtl = TimeSpan.FromMinutes(1);
 
@@ -41,11 +46,13 @@ public class UptimeCheckerService : BackgroundService
     public UptimeCheckerService(
         IServiceProvider services, 
         ILogger<UptimeCheckerService> logger,
-        IEventBroadcaster eventBroadcaster)
+        IEventBroadcaster eventBroadcaster,
+        IFlappingDetector flappingDetector)
     {
         _services = services;
         _logger = logger;
         _eventBroadcaster = eventBroadcaster;
+        _flappingDetector = flappingDetector;
 
         var handler = new HttpClientHandler
         {
@@ -91,6 +98,18 @@ public class UptimeCheckerService : BackgroundService
                         {
                             _cachedAlertThreshold = parsedThreshold;
                         }
+
+                        var flapEnabledStr = await settingsRepo.GetAsync("flapping_protection_enabled");
+                        if (flapEnabledStr != null) _cachedFlappingEnabled = flapEnabledStr != "false";
+
+                        var flapThresholdStr = await settingsRepo.GetAsync("flapping_threshold");
+                        if (int.TryParse(flapThresholdStr, out var ft) && ft >= 2) _cachedFlappingThreshold = ft;
+
+                        var flapWindowStr = await settingsRepo.GetAsync("flapping_window_minutes");
+                        if (int.TryParse(flapWindowStr, out var fw) && fw >= 1) _cachedFlappingWindowMinutes = fw;
+
+                        var flapRecoveryStr = await settingsRepo.GetAsync("flapping_recovery_checks");
+                        if (int.TryParse(flapRecoveryStr, out var fr) && fr >= 1) _cachedFlappingRecoveryChecks = fr;
                     }
                     catch (Exception ex)
                     {
@@ -232,9 +251,28 @@ public class UptimeCheckerService : BackgroundService
                             // Eşik değerine ulaşıldıysa -> Kesin DOWN
                             if (failures >= alertThreshold)
                             {
-                                if (_alertedDown.TryAdd(s.Id, true))
+                                var flapDecision = _flappingDetector.Evaluate(
+                                    s.Id,
+                                    "down",
+                                    now,
+                                    _cachedFlappingEnabled,
+                                    _cachedFlappingThreshold,
+                                    TimeSpan.FromMinutes(_cachedFlappingWindowMinutes),
+                                    _cachedFlappingRecoveryChecks);
+
+                                if (flapDecision == FlappingDecision.FlappingStarted)
                                 {
-                                    _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: true, check.ErrorMessage, stoppingToken);
+                                    _logger.LogWarning("Servis {Name} için dalgalanma (flapping) tespit edildi! Bildirimler geçici olarak susturuldu.", s.Name);
+                                    int transitions = _flappingDetector.GetTransitionCount(s.Id, now, TimeSpan.FromMinutes(_cachedFlappingWindowMinutes));
+                                    _ = notifService.DispatchFlappingAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isRecovered: false, transitions, stoppingToken);
+                                    _alertedDown[s.Id] = true;
+                                }
+                                else if (flapDecision == FlappingDecision.Normal)
+                                {
+                                    if (_alertedDown.TryAdd(s.Id, true))
+                                    {
+                                        _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: true, check.ErrorMessage, stoppingToken);
+                                    }
                                 }
 
                                 await servicesRepo.UpdateStatusAsync(s.Id, "down");
@@ -254,10 +292,35 @@ public class UptimeCheckerService : BackgroundService
                         {
                             _consecutiveFailures[s.Id] = 0;
 
-                            // Önceden kesinti bildirimi gönderilmişse kurtarıldı bildirimi gönder
-                            if (_alertedDown.TryRemove(s.Id, out _))
+                            var flapDecision = _flappingDetector.Evaluate(
+                                s.Id,
+                                "up",
+                                now,
+                                _cachedFlappingEnabled,
+                                _cachedFlappingThreshold,
+                                TimeSpan.FromMinutes(_cachedFlappingWindowMinutes),
+                                _cachedFlappingRecoveryChecks);
+
+                            if (flapDecision == FlappingDecision.FlappingRecovered)
                             {
-                                _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: false, null, stoppingToken);
+                                _logger.LogInformation("Servis {Name} dalgalanma (flapping) modundan çıktı ve kararlı duruma ulaştı.", s.Name);
+                                _ = notifService.DispatchFlappingAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isRecovered: true, 0, stoppingToken);
+                                _alertedDown.TryRemove(s.Id, out _);
+                            }
+                            else if (flapDecision == FlappingDecision.FlappingStarted)
+                            {
+                                _logger.LogWarning("Servis {Name} için dalgalanma (flapping) tespit edildi! Bildirimler geçici olarak susturuldu.", s.Name);
+                                int transitions = _flappingDetector.GetTransitionCount(s.Id, now, TimeSpan.FromMinutes(_cachedFlappingWindowMinutes));
+                                _ = notifService.DispatchFlappingAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isRecovered: false, transitions, stoppingToken);
+                                _alertedDown[s.Id] = true;
+                            }
+                            else if (flapDecision == FlappingDecision.Normal)
+                            {
+                                // Önceden kesinti bildirimi gönderilmişse kurtarıldı bildirimi gönder
+                                if (_alertedDown.TryRemove(s.Id, out _))
+                                {
+                                    _ = notifService.DispatchServiceAlertAsync(s.Name, targetUrl ?? $"Port:{s.Port}", isDown: false, null, stoppingToken);
+                                }
                             }
 
                             _eventBroadcaster.Broadcast("service_status_changed", $"{{\"id\":\"{s.Id}\",\"status\":\"healthy\"}}");
@@ -705,11 +768,21 @@ public class UptimeCheckerService : BackgroundService
                     using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     int code = (int)response.StatusCode;
                     bool isAccepted = StatusCodeMatcher.IsMatch(code, s.AcceptedStatusCodes);
-                    if (isAccepted)
+                    if (!isAccepted)
                     {
-                        return (true, null);
+                        return (false, $"HTTP {code}");
                     }
-                    return (false, $"HTTP {code}");
+
+                    if (!string.IsNullOrWhiteSpace(s.ExpectedBody))
+                    {
+                        var (bodyOk, bodyError) = await HttpBodyValidator.ValidateAsync(response.Content, s.ExpectedBody, cts.Token);
+                        if (!bodyOk)
+                        {
+                            return (false, bodyError);
+                        }
+                    }
+
+                    return (true, null);
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {

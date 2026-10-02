@@ -25,6 +25,7 @@ export interface Service {
   ignoreTls?: boolean;
   acceptedStatusCodes?: string;
   httpMethod?: string;
+  expectedBody?: string;
 }
 
 export interface TestConnectionRequest {
@@ -33,6 +34,7 @@ export interface TestConnectionRequest {
   port?: number;
   timeoutSeconds?: number;
   ignoreTls?: boolean;
+  expectedBody?: string;
 }
 
 export interface TestConnectionResponse {
@@ -178,4 +180,27 @@ export interface DbStatsResponse {
   dbSizeBytes: number;
   walSizeBytes: number;
   formattedSize: string;
+}
+
+export interface DockerPruneRequest {
+  pruneContainers?: boolean;
+  pruneImages?: boolean;
+  pruneAllImages?: boolean;
+  pruneVolumes?: boolean;
+  pruneNetworks?: boolean;
+  pruneBuildCache?: boolean;
+}
+
+export interface DockerPruneResult {
+  success: boolean;
+  totalSpaceReclaimed: number;
+  containersSpaceReclaimed: number;
+  containersDeletedCount: number;
+  imagesSpaceReclaimed: number;
+  imagesDeletedCount: number;
+  volumesSpaceReclaimed: number;
+  volumesDeletedCount: number;
+  networksDeletedCount: number;
+  buildCacheSpaceReclaimed: number;
+  errorMessage?: string;
 }

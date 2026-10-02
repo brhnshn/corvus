@@ -42,12 +42,16 @@ public class RetentionCleanupService : BackgroundService
                     if (int.TryParse(envRetention, out int envVal)) retentionDays = envVal;
                 }
 
+                // Saatlik metrik ve günlük uptime agregasyonlarını her döngüde çalıştır (Sınırsız modda bile uzun vadeli grafikler akıcı kalsın)
+                await uptimeRepo.AggregateDailyStatsAsync();
+                await metricsRepo.AggregateHourlyMetricsAsync();
+
                 // 2. 0 veya negatif ise Sınırsız mod — temizleme yapma
                 if (retentionDays > 0)
                 {
                     _logger.LogInformation("Eski metrik ve uptime kayıtları temizleniyor ({Days} gün)...", retentionDays);
-                    await uptimeRepo.AggregateDailyStatsAsync();
-                    await metricsRepo.CleanupOldAsync(retentionDays);
+                    await metricsRepo.CleanupOldRawMetricsAsync(7);
+                    await metricsRepo.CleanupOldHourlyMetricsAsync(Math.Max(retentionDays, 365));
                     await uptimeRepo.CleanupOldAsync(retentionDays);
 
                     if (sessionRepo != null)

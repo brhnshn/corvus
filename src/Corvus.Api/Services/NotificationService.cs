@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
 using Corvus.Api.Data;
@@ -10,7 +11,21 @@ public interface INotificationService
 {
     Task DispatchServiceAlertAsync(string serviceName, string? url, bool isDown, string? errorMessage, CancellationToken ct = default);
     Task DispatchSslExpiryAlertAsync(string serviceName, string? url, int daysRemaining, string? issuer, CancellationToken ct = default);
-    Task<NotificationResult> TestChannelAsync(string channel, string? webhookUrl, string? botToken, string? chatId, CancellationToken ct = default);
+    Task DispatchFlappingAlertAsync(string serviceName, string? url, bool isRecovered, int transitionCount, CancellationToken ct = default);
+    Task<NotificationResult> TestChannelAsync(
+        string channel, 
+        string? webhookUrl, 
+        string? botToken, 
+        string? chatId,
+        string? smtpHost = null,
+        int? smtpPort = null,
+        string? smtpUser = null,
+        string? smtpPass = null,
+        string? smtpFrom = null,
+        string? smtpFromName = null,
+        string? smtpTo = null,
+        bool? smtpTls = null,
+        CancellationToken ct = default);
 }
 
 public class NotificationService : INotificationService
@@ -82,6 +97,19 @@ public class NotificationService : INotificationService
             tasks.Add(SendGenericWebhookAsync(wUrl, isDown ? "service_down" : "service_up", title, message, ct));
         }
 
+        // Slack
+        if (settings.TryGetValue("notification_slack_enabled", out var slEnabled) && slEnabled == "true" &&
+            settings.TryGetValue("notification_slack_webhook_url", out var slUrl) && !string.IsNullOrWhiteSpace(slUrl))
+        {
+            tasks.Add(SendSlackAsync(slUrl, title, message, isDown ? "#ef4444" : "#22c55e", ct));
+        }
+
+        // Email (SMTP)
+        if (settings.TryGetValue("notification_email_enabled", out var eEnabled) && eEnabled == "true")
+        {
+            tasks.Add(SendSmtpEmailFromSettingsAsync(settings, title, message, isDown ? "#ef4444" : "#22c55e", ct));
+        }
+
         if (tasks.Count > 0)
         {
             await Task.WhenAll(tasks);
@@ -137,6 +165,94 @@ public class NotificationService : INotificationService
             settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
         {
             tasks.Add(SendGenericWebhookAsync(wUrl, "ssl_expiry", title, message, ct));
+        }
+
+        // Slack
+        if (settings.TryGetValue("notification_slack_enabled", out var slEnabled) && slEnabled == "true" &&
+            settings.TryGetValue("notification_slack_webhook_url", out var slUrl) && !string.IsNullOrWhiteSpace(slUrl))
+        {
+            tasks.Add(SendSlackAsync(slUrl, title, message, isCritical ? "#ef4444" : "#f59e0b", ct));
+        }
+
+        // Email (SMTP)
+        if (settings.TryGetValue("notification_email_enabled", out var eEnabled) && eEnabled == "true")
+        {
+            tasks.Add(SendSmtpEmailFromSettingsAsync(settings, title, message, isCritical ? "#ef4444" : "#f59e0b", ct));
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+        }
+    }
+
+    public async Task DispatchFlappingAlertAsync(string serviceName, string? url, bool isRecovered, int transitionCount, CancellationToken ct = default)
+    {
+        var settings = await _settings.GetAllAsync();
+        if (settings.TryGetValue("notify_flapping_events", out var nfe) && nfe == "false")
+        {
+            return;
+        }
+
+        bool isTr = settings.TryGetValue("system_language", out var lang) && lang?.ToLowerInvariant() == "tr";
+
+        string title = isRecovered
+            ? (isTr ? $"[DALGALANMA SONA ERDİ] {serviceName}" : $"[FLAPPING RESOLVED] {serviceName}")
+            : (isTr ? $"[DALGALANMA TESPİT EDİLDİ] {serviceName}" : $"[FLAPPING DETECTED] {serviceName}");
+
+        string message = isRecovered
+            ? (isTr
+                ? $"Servis ardışık başarılı kontroller vererek kararlı duruma ulaştı.\nBildirim susturması kaldırıldı, normal izleme devrede.\nServis: {serviceName}\nURL: {url ?? "Belirtilmedi"}\nZaman: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC"
+                : $"Service stabilized across consecutive checks.\nNotification suppression lifted; normal monitoring resumed.\nService: {serviceName}\nURL: {url ?? "Not specified"}\nTime: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC")
+            : (isTr
+                ? $"Servis kısa süre içinde {transitionCount} kez durum değiştirdi (UP/DOWN).\nAğ dalgalanması veya yeniden başlama döngüsü tespit edildi.\nBildirimler servis kararlı hale gelene kadar geçici olarak durduruldu.\nServis: {serviceName}\nURL: {url ?? "Belirtilmedi"}\nZaman: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC"
+                : $"Service changed status {transitionCount} times in a short window (UP/DOWN).\nNetwork instability or crash loop detected.\nNotifications are temporarily suppressed until service stabilizes.\nService: {serviceName}\nURL: {url ?? "Not specified"}\nTime: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+
+        string badgeColor = isRecovered ? "#22c55e" : "#f59e0b";
+        int discordColor = isRecovered ? 5763719 : 16098851;
+
+        var tasks = new List<Task>();
+
+        // Discord
+        if (settings.TryGetValue("notification_discord_enabled", out var dEnabled) && dEnabled == "true" &&
+            settings.TryGetValue("notification_discord_webhook_url", out var dUrl) && !string.IsNullOrWhiteSpace(dUrl))
+        {
+            tasks.Add(SendDiscordAsync(dUrl, title, message, discordColor, ct));
+        }
+
+        // Telegram
+        if (settings.TryGetValue("notification_telegram_enabled", out var tEnabled) && tEnabled == "true" &&
+            settings.TryGetValue("notification_telegram_bot_token", out var tToken) && !string.IsNullOrWhiteSpace(tToken) &&
+            settings.TryGetValue("notification_telegram_chat_id", out var tChat) && !string.IsNullOrWhiteSpace(tChat))
+        {
+            tasks.Add(SendTelegramAsync(tToken, tChat, title, message, ct));
+        }
+
+        // Ntfy
+        if (settings.TryGetValue("notification_ntfy_enabled", out var nEnabled) && nEnabled == "true" &&
+            settings.TryGetValue("notification_ntfy_url", out var nUrl) && !string.IsNullOrWhiteSpace(nUrl))
+        {
+            tasks.Add(SendNtfyAsync(nUrl, title, message, isDown: !isRecovered, ct));
+        }
+
+        // Generic Webhook
+        if (settings.TryGetValue("notification_webhook_enabled", out var wEnabled) && wEnabled == "true" &&
+            settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
+        {
+            tasks.Add(SendGenericWebhookAsync(wUrl, isRecovered ? "flapping_resolved" : "flapping_detected", title, message, ct));
+        }
+
+        // Slack
+        if (settings.TryGetValue("notification_slack_enabled", out var slEnabled) && slEnabled == "true" &&
+            settings.TryGetValue("notification_slack_webhook_url", out var slUrl) && !string.IsNullOrWhiteSpace(slUrl))
+        {
+            tasks.Add(SendSlackAsync(slUrl, title, message, badgeColor, ct));
+        }
+
+        // Email (SMTP)
+        if (settings.TryGetValue("notification_email_enabled", out var eEnabled) && eEnabled == "true")
+        {
+            tasks.Add(SendSmtpEmailFromSettingsAsync(settings, title, message, badgeColor, ct));
         }
 
         if (tasks.Count > 0)
@@ -198,7 +314,20 @@ public class NotificationService : INotificationService
         return true;
     }
 
-    public async Task<NotificationResult> TestChannelAsync(string channel, string? webhookUrl, string? botToken, string? chatId, CancellationToken ct = default)
+    public async Task<NotificationResult> TestChannelAsync(
+        string channel, 
+        string? webhookUrl, 
+        string? botToken, 
+        string? chatId,
+        string? smtpHost = null,
+        int? smtpPort = null,
+        string? smtpUser = null,
+        string? smtpPass = null,
+        string? smtpFrom = null,
+        string? smtpFromName = null,
+        string? smtpTo = null,
+        bool? smtpTls = null,
+        CancellationToken ct = default)
     {
         var settings = await _settings.GetAllAsync();
         bool isTr = settings.TryGetValue("system_language", out var lang) && lang?.ToLowerInvariant() == "tr";
@@ -219,6 +348,14 @@ public class NotificationService : INotificationService
                         return new NotificationResult(false, discordErr!);
                     await SendDiscordAsync(webhookUrl!, title, message, isDown: false, ct);
                     return new NotificationResult(true, isTr ? "Discord test bildirimi başarıyla gönderildi." : "Discord test notification sent successfully.");
+
+                case "slack":
+                    if (string.IsNullOrWhiteSpace(webhookUrl))
+                        return new NotificationResult(false, isTr ? "Slack Webhook URL boş olamaz." : "Slack Webhook URL cannot be empty.");
+                    if (!ValidateWebhookUrl(webhookUrl, isTr, out var slackErr))
+                        return new NotificationResult(false, slackErr!);
+                    await SendSlackAsync(webhookUrl!, title, message, "#22c55e", ct);
+                    return new NotificationResult(true, isTr ? "Slack test bildirimi başarıyla gönderildi." : "Slack test notification sent successfully.");
 
                 case "telegram":
                     if (string.IsNullOrWhiteSpace(botToken) || string.IsNullOrWhiteSpace(chatId))
@@ -241,6 +378,31 @@ public class NotificationService : INotificationService
                         return new NotificationResult(false, hookErr!);
                     await SendGenericWebhookAsync(webhookUrl!, "test", title, message, ct);
                     return new NotificationResult(true, isTr ? "Generic Webhook test çağrısı başarıyla yapıldı." : "Generic Webhook test call executed successfully.");
+
+                case "email":
+                case "smtp":
+                    string host = !string.IsNullOrWhiteSpace(smtpHost) ? smtpHost : settings.GetValueOrDefault("smtp_host", "");
+                    int port = smtpPort ?? (int.TryParse(settings.GetValueOrDefault("smtp_port", "587"), out var p) ? p : 587);
+                    string user = smtpUser ?? settings.GetValueOrDefault("smtp_user", "");
+                    string pass = smtpPass ?? settings.GetValueOrDefault("smtp_pass", "");
+                    string from = !string.IsNullOrWhiteSpace(smtpFrom) ? smtpFrom : settings.GetValueOrDefault("smtp_from", "");
+                    string fromName = smtpFromName ?? settings.GetValueOrDefault("smtp_from_name", "Corvus Monitor");
+                    string to = !string.IsNullOrWhiteSpace(smtpTo) ? smtpTo : settings.GetValueOrDefault("smtp_to", "");
+                    bool enableSsl = smtpTls ?? (settings.GetValueOrDefault("smtp_tls", "true") == "true");
+
+                    if (string.IsNullOrWhiteSpace(host))
+                        return new NotificationResult(false, isTr ? "SMTP Sunucusu (Host) boş olamaz." : "SMTP Host cannot be empty.");
+                    if (string.IsNullOrWhiteSpace(from))
+                        return new NotificationResult(false, isTr ? "Gönderen E-Posta adresi (From) boş olamaz." : "Sender Email (From) cannot be empty.");
+                    if (string.IsNullOrWhiteSpace(to))
+                        return new NotificationResult(false, isTr ? "En az bir alıcı e-posta adresi (To) belirtilmelidir." : "At least one recipient email (To) must be specified.");
+
+                    var recipientList = ParseEmailRecipients(to);
+                    if (recipientList.Count == 0)
+                        return new NotificationResult(false, isTr ? "Geçerli bir alıcı e-posta adresi bulunamadı." : "No valid recipient email address found.");
+
+                    await SendSmtpEmailAsync(host, port, enableSsl, user, pass, from, fromName, recipientList, title, message, "#22c55e", ct);
+                    return new NotificationResult(true, isTr ? $"Test e-postası başarıyla gönderildi ({recipientList.Count} alıcı)." : $"Test email sent successfully ({recipientList.Count} recipients).");
 
                 default:
                     return new NotificationResult(false, isTr ? $"Desteklenmeyen bildirim kanalı: {channel}" : $"Unsupported notification channel: {channel}");
@@ -399,5 +561,201 @@ public class NotificationService : INotificationService
         {
             _logger.LogError(ex, "Generic webhook çağrısı başarısız oldu.");
         }
+    }
+
+    private async Task SendSlackAsync(string webhookUrl, string title, string message, string color, CancellationToken ct)
+    {
+        if (!ValidateWebhookUrl(webhookUrl, isTr: false, out var err))
+        {
+            _logger.LogWarning("Slack bildirim gönderimi engellendi: {Error}", err);
+            return;
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(8);
+
+            long unixNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string json = $$"""
+            {
+              "text": {{JsonSerializer.Serialize(title, CorvusJsonSerializerContext.Default.String)}},
+              "attachments": [
+                {
+                  "color": {{JsonSerializer.Serialize(color, CorvusJsonSerializerContext.Default.String)}},
+                  "title": {{JsonSerializer.Serialize(title, CorvusJsonSerializerContext.Default.String)}},
+                  "text": {{JsonSerializer.Serialize(message, CorvusJsonSerializerContext.Default.String)}},
+                  "footer": "Corvus System Monitor",
+                  "ts": {{unixNow}}
+                }
+              ]
+            }
+            """;
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var res = await client.PostAsync(webhookUrl, content, ct);
+            if (!res.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Slack webhook hata döndü: {StatusCode}", res.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Slack webhook gönderilemedi.");
+        }
+    }
+
+    private async Task SendSmtpEmailFromSettingsAsync(Dictionary<string, string> settings, string title, string message, string badgeColor, CancellationToken ct)
+    {
+        try
+        {
+            string host = settings.GetValueOrDefault("smtp_host", "");
+            if (string.IsNullOrWhiteSpace(host)) return;
+
+            int port = int.TryParse(settings.GetValueOrDefault("smtp_port", "587"), out var p) ? p : 587;
+            string user = settings.GetValueOrDefault("smtp_user", "");
+            string pass = settings.GetValueOrDefault("smtp_pass", "");
+            string from = settings.GetValueOrDefault("smtp_from", "");
+            if (string.IsNullOrWhiteSpace(from)) return;
+
+            string fromName = settings.GetValueOrDefault("smtp_from_name", "Corvus Monitor");
+            string to = settings.GetValueOrDefault("smtp_to", "");
+            if (string.IsNullOrWhiteSpace(to)) return;
+
+            bool enableSsl = settings.GetValueOrDefault("smtp_tls", "true") == "true";
+
+            var recipientList = ParseEmailRecipients(to);
+            if (recipientList.Count == 0) return;
+
+            await SendSmtpEmailAsync(host, port, enableSsl, user, pass, from, fromName, recipientList, title, message, badgeColor, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ayarlardan SMTP e-posta gönderimi başarısız.");
+        }
+    }
+
+    private async Task SendSmtpEmailAsync(
+        string host,
+        int port,
+        bool enableSsl,
+        string? user,
+        string? pass,
+        string fromEmail,
+        string? fromName,
+        List<string> toEmails,
+        string subject,
+        string bodyMessage,
+        string badgeColor,
+        CancellationToken ct)
+    {
+        try
+        {
+            using var client = new SmtpClient(host, port)
+            {
+                EnableSsl = enableSsl,
+                Timeout = 12000
+            };
+
+            if (!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(pass))
+            {
+                client.Credentials = new NetworkCredential(user, pass);
+            }
+
+            var fromAddress = !string.IsNullOrWhiteSpace(fromName)
+                ? new MailAddress(fromEmail, fromName, Encoding.UTF8)
+                : new MailAddress(fromEmail);
+
+            string htmlBody = BuildEmailHtml(subject, bodyMessage, badgeColor);
+
+            using var mail = new MailMessage
+            {
+                From = fromAddress,
+                Subject = subject,
+                SubjectEncoding = Encoding.UTF8,
+                Body = htmlBody,
+                BodyEncoding = Encoding.UTF8,
+                IsBodyHtml = true
+            };
+
+            foreach (var to in toEmails)
+            {
+                mail.To.Add(to);
+            }
+
+            await client.SendMailAsync(mail, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "SMTP e-postası gönderilemedi ({Host}:{Port}).", host, port);
+            throw;
+        }
+    }
+
+    private static string BuildEmailHtml(string title, string message, string badgeColor)
+    {
+        string encodedTitle = WebUtility.HtmlEncode(title);
+        string encodedMessage = WebUtility.HtmlEncode(message).Replace("\n", "<br/>");
+
+        var sb = new StringBuilder();
+        sb.AppendLine("<!DOCTYPE html><html><head><meta charset=\"utf-8\">");
+        sb.AppendLine("<style>");
+        sb.AppendLine("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0d13; color: #e5e7eb; margin: 0; padding: 24px; }");
+        sb.AppendLine(".container { max-width: 600px; margin: 0 auto; background-color: #141721; border: 1px solid #2a2e3f; border-radius: 12px; overflow: hidden; }");
+        sb.AppendLine(".header { background-color: #1a1d29; padding: 20px 24px; border-bottom: 1px solid #2a2e3f; }");
+        sb.AppendLine(".header h1 { margin: 0; font-size: 16px; color: #fff; font-weight: 600; }");
+        sb.AppendLine(".content { padding: 24px; }");
+        sb.Append(".badge { display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; background-color: ").Append(badgeColor).Append("22; color: ").Append(badgeColor).Append("; border: 1px solid ").Append(badgeColor).AppendLine("44; margin-bottom: 16px; }");
+        sb.AppendLine(".msg { font-size: 13px; line-height: 1.6; color: #d1d5db; font-family: monospace; background: #0f1117; padding: 14px; border-radius: 8px; border: 1px solid #2a2e3f; }");
+        sb.AppendLine(".footer { padding: 16px 24px; background-color: #0f1117; border-top: 1px solid #2a2e3f; font-size: 11px; color: #6b7280; text-align: center; }");
+        sb.AppendLine("</style></head><body>");
+        sb.AppendLine("<div class=\"container\">");
+        sb.AppendLine("  <div class=\"header\"><h1>Corvus Monitoring System</h1></div>");
+        sb.AppendLine("  <div class=\"content\">");
+        sb.Append("    <div class=\"badge\">").Append(encodedTitle).AppendLine("</div>");
+        sb.Append("    <div class=\"msg\">").Append(encodedMessage).AppendLine("</div>");
+        sb.AppendLine("  </div>");
+        sb.AppendLine("  <div class=\"footer\">Bu e-posta Corvus Monitoring tarafından otomatik olarak gönderilmiştir.</div>");
+        sb.AppendLine("</div></body></html>");
+        return sb.ToString();
+    }
+
+    public static List<string> ParseEmailRecipients(string? input)
+    {
+        var list = new List<string>();
+        if (string.IsNullOrWhiteSpace(input)) return list;
+
+        string trimmed = input.Trim();
+        if (trimmed.StartsWith('[') && trimmed.EndsWith(']'))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize(trimmed, CorvusJsonSerializerContext.Default.ListString);
+                if (parsed != null)
+                {
+                    foreach (var email in parsed)
+                    {
+                        var e = email?.Trim();
+                        if (!string.IsNullOrWhiteSpace(e) && e.Contains('@') && !list.Contains(e, StringComparer.OrdinalIgnoreCase))
+                        {
+                            list.Add(e);
+                        }
+                    }
+                    if (list.Count > 0) return list;
+                }
+            }
+            catch { }
+        }
+
+        var parts = trimmed.Split(new[] { ',', ';', ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var p in parts)
+        {
+            if (p.Contains('@') && !list.Contains(p, StringComparer.OrdinalIgnoreCase))
+            {
+                list.Add(p);
+            }
+        }
+
+        return list;
     }
 }

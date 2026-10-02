@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Corvus.Api.Utils;
 
 namespace Corvus.Api.Endpoints;
 
@@ -166,6 +167,20 @@ public static class UptimeEndpoints
 
                     int statusCode = (int)response.StatusCode;
                     bool isOk = statusCode >= 200 && statusCode < 400;
+
+                    if (isOk && !string.IsNullOrWhiteSpace(req.ExpectedBody))
+                    {
+                        var (bodyOk, bodyError) = await HttpBodyValidator.ValidateAsync(response.Content, req.ExpectedBody, cts.Token);
+                        if (!bodyOk)
+                        {
+                            return Results.Ok(new TestConnectionResponse(
+                                false,
+                                statusCode,
+                                sw.ElapsedMilliseconds,
+                                $"HTTP {statusCode} yanıtı alındı fakat {bodyError}"
+                            ));
+                        }
+                    }
 
                     return Results.Ok(new TestConnectionResponse(
                         isOk,

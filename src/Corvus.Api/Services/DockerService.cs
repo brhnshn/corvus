@@ -16,6 +16,10 @@ public interface IDockerService
     Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default);
     Task<Dictionary<string, ContainerStatsDto>> GetActiveContainersStatsSummaryAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default);
+    Task<string?> CreateExecInstanceAsync(string containerId, string shell = "/bin/sh", CancellationToken cancellationToken = default);
+    Task<Stream> StartExecStreamAsync(string execId, CancellationToken cancellationToken = default);
+    Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default);
+    Task<DockerPruneResult> ExecuteSystemPruneAsync(DockerPruneRequest request, CancellationToken cancellationToken = default);
     bool ShouldIgnoreContainer(DockerContainerInfo container);
     Service MapContainerToService(DockerContainerInfo container, IEnumerable<string>? env = null);
 }
@@ -446,5 +450,93 @@ public class DockerService : IDockerService
             return "Mail";
 
         return "General";
+    }
+
+    public Task<string?> CreateExecInstanceAsync(string containerId, string shell = "/bin/sh", CancellationToken cancellationToken = default) =>
+        _client.CreateExecInstanceAsync(containerId, shell, cancellationToken);
+
+    public Task<Stream> StartExecStreamAsync(string execId, CancellationToken cancellationToken = default) =>
+        _client.StartExecStreamAsync(execId, cancellationToken);
+
+    public Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default) =>
+        _client.ResizeExecAsync(execId, width, height, cancellationToken);
+
+    public async Task<DockerPruneResult> ExecuteSystemPruneAsync(DockerPruneRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = new DockerPruneResult { Success = true };
+
+        try
+        {
+            // 1. Containers prune
+            if (request.PruneContainers)
+            {
+                var cRes = await _client.PruneContainersAsync(cancellationToken);
+                if (cRes != null)
+                {
+                    result.ContainersDeletedCount = cRes.ContainersDeleted?.Count ?? 0;
+                    result.ContainersSpaceReclaimed = cRes.SpaceReclaimed;
+                    result.TotalSpaceReclaimed += cRes.SpaceReclaimed;
+                }
+            }
+
+            // 2. Images prune
+            if (request.PruneImages)
+            {
+                var iRes = await _client.PruneImagesAsync(request.PruneAllImages, cancellationToken);
+                if (iRes != null)
+                {
+                    result.ImagesDeletedCount = iRes.ImagesDeleted?.Count ?? 0;
+                    result.ImagesSpaceReclaimed = iRes.SpaceReclaimed;
+                    result.TotalSpaceReclaimed += iRes.SpaceReclaimed;
+                }
+            }
+
+            // 3. Volumes prune
+            if (request.PruneVolumes)
+            {
+                var vRes = await _client.PruneVolumesAsync(cancellationToken);
+                if (vRes != null)
+                {
+                    result.VolumesDeletedCount = vRes.VolumesDeleted?.Count ?? 0;
+                    result.VolumesSpaceReclaimed = vRes.SpaceReclaimed;
+                    result.TotalSpaceReclaimed += vRes.SpaceReclaimed;
+                }
+            }
+
+            // 4. Networks prune
+            if (request.PruneNetworks)
+            {
+                var nRes = await _client.PruneNetworksAsync(cancellationToken);
+                if (nRes != null)
+                {
+                    result.NetworksDeletedCount = nRes.NetworksDeleted?.Count ?? 0;
+                }
+            }
+
+            // 5. Build cache prune
+            if (request.PruneBuildCache)
+            {
+                var bRes = await _client.PruneBuildCacheAsync(cancellationToken);
+                if (bRes != null)
+                {
+                    result.BuildCacheSpaceReclaimed = bRes.SpaceReclaimed;
+                    result.TotalSpaceReclaimed += bRes.SpaceReclaimed;
+                }
+            }
+
+            // Prune sonrası yerel container önbelleğini temizle
+            lock (_containersLock)
+            {
+                _cachedContainers = (DateTime.MinValue, new List<DockerContainerInfo>());
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "System prune sırasında beklenmeyen hata");
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+        }
+
+        return result;
     }
 }

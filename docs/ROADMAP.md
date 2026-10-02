@@ -55,68 +55,84 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Full bilingual (TR & EN) localization and xUnit unit test suite (`PingCheckerTests.cs`).
 * **Acceptance Criteria:** ICMP ping records latency correctly; unit tests pass (169/169 tests passing).
 
-### Ticket 2.3 — HTTP Response Body (Keyword / Regex) Assertion
+### Ticket 2.3 — HTTP Response Body (Keyword / Regex) Assertion [Completed]
 * **Blocked by:** None.
-* **Objective:** Verify response payload contents even when endpoints return HTTP 200.
+* **Objective:** Verify response payload contents (keyword or Regex) even when endpoints return HTTP 200, strictly maintaining zero-allocation and a 64 KB memory cap.
 * **Scope:**
-  - Add `expected_body` column to `Service` model.
-  - Streaming body assertion in `UptimeCheckerService`.
-  - UI input for "Expected Response Content (Optional)".
-* **Acceptance Criteria:** Service marked degraded/down when expected keyword is missing.
+  - SQLite migration `011_expected_body.sql` adding `expected_body` column to `services` and `service_overrides`.
+  - Stream-based `HttpBodyValidator` utility leveraging `ArrayPool<byte>`, 64 KB scan cap, and 200ms ReDoS-safe Regex matching with keyword fallback.
+  - Integration with `UptimeCheckerService` asynchronous probing and `/api/uptime/test-connection` endpoint.
+  - UI options in `AdvancedCheckOptions.tsx`, `AddServiceModal.tsx`, and `EditServiceModal.tsx` for "Expected Response Content".
+  - Full bilingual (TR & EN) localization and xUnit unit test suite (`HttpBodyValidatorTests.cs`).
+* **Acceptance Criteria:** Service marked down when keyword or regex is missing; unit tests pass (184/184 tests passing).
 
 ---
 
 ## Phase 3: Notification Channels & Alert Discipline
 
-### Ticket 3.1 — Email (SMTP) & Slack Channels
+### Ticket 3.1 — Email (SMTP) & Slack Channels ✅ (Completed)
 * **Blocked by:** None.
-* **Objective:** Add standard enterprise notification channels.
+* **Objective:** Enable standard ready-to-use SMTP email providers (Gmail, Outlook, Resend, Brevo, AWS SES, cPanel) and Slack Incoming Webhook channels with interactive recipient pill tagging and instant test delivery.
 * **Scope:**
-  - SMTP client implementation in `NotificationService`.
-  - Slack Webhook payload formatting.
-  - Settings tab test and save controls.
-* **Acceptance Criteria:** Test notifications successfully delivered to SMTP and Slack.
+  - `NotificationService` built-in SMTP (`System.Net.Mail`, TLS, custom sender name, responsive dark HTML email template) and Slack Webhook (`attachments`, status color coding).
+  - Native AOT source-generated JSON serialization (`CorvusJsonSerializerContext`).
+  - Frontend interactive `EmailRecipientInput` (pill tags, regex validation, deduplication, bulk paste parsing).
+  - Modular `SlackChannelPanel.tsx` and `EmailChannelPanel.tsx` components integrated into `NotificationSettingsTab.tsx`.
+  - Comprehensive unit testing suite (190/190 passing tests).
+* **Acceptance Criteria:** Test notifications successfully delivered to SMTP and Slack; clean frontend and backend builds.
 
-### Ticket 3.2 — Flapping Suppression & Alert Debounce
+### Ticket 3.2 — Flapping Suppression & Alert Debounce ✅ (Completed)
 * **Blocked by:** None.
-* **Objective:** Prevent alert spam when unstable networks cause rapid service status transitions.
+* **Objective:** Prevent notification floods and alert fatigue when network instability or crash-loops cause services to oscillate between UP and DOWN.
 * **Scope:**
-  - Sliding-window state history per service.
-  - Automatic suppression when transitions exceed threshold in a 5-minute window.
-* **Acceptance Criteria:** Flapping simulation yields only initial failure and final stable recovery alerts.
+  - Decoupled `IFlappingDetector` and `FlappingDetector` service: Thread-safe sliding window timestamp tracking with zero unnecessary allocations.
+  - Integration with `UptimeCheckerService`: Emits a single `[FLAPPING DETECTED]` warning when transitions cross the threshold and suppresses subsequent notifications.
+  - Recovery threshold: Declares stability and emits a single `[FLAPPING RESOLVED]` alert after N consecutive checks in a stable state.
+  - Multi-channel delivery via `NotificationService.DispatchFlappingAlertAsync` with status color coding (Amber / Green) across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks.
+  - Settings UI controls with modular `FlappingProtectionCard.tsx` and `NotificationEventFilters.tsx` (threshold, window, recovery checks).
+  - xUnit test suite (`FlappingDetectorTests.cs` and `NotificationServiceTests.cs`, 200/200 passing tests).
+* **Acceptance Criteria:** Flapping simulation yields only initial alert, flapping warning, and final stable recovery notification; 200/200 tests passing.
 
 ---
 
 ## Phase 4: Advanced Docker & Container Operations
 
-### Ticket 4.1 — Web Container Exec Terminal
+### Ticket 4.1 — Web Container Exec Terminal [COMPLETED]
 * **Blocked by:** None.
 * **Objective:** Open interactive `sh`/`bash` terminal directly into containers from the browser.
 * **Scope:**
-  - Docker Exec bidirectional WebSocket streaming endpoint.
-  - Frontend `xterm.js` terminal integration.
-  - "Open Terminal" button on container details view.
-* **Acceptance Criteria:** Run commands (`ls`, `ps`) interactively via web terminal.
+  - Docker Exec API integration (POST `/containers/{id}/exec`, HTTP 1.1 Upgrade to `/exec/{id}/start`, and `/exec/{id}/resize`).
+  - High-performance ASP.NET Core Native AOT WebSocket proxy endpoint `GET /api/containers/{id}/terminal` (zero-allocation with `ArrayPool<byte>`, 8 KB static buffer footprint, immediate garbage-free cleanup on disconnect).
+  - RBAC protection: Exec terminal restricted strictly to `admin` role (`[RequireAdmin]`, 403 Forbidden).
+  - Modular frontend component `ContainerTerminalModal.tsx` built with `@xterm/xterm` & `@xterm/addon-fit` (VT100/ANSI rendering, fullscreen support, shell selector `/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`, real-time PTY resizing).
+  - Action button in `ContainerActionButtons.tsx` (only enabled/visible for running containers and admin users).
+* **Acceptance Criteria:** Run commands (`ls`, `ps`, `top`) interactively via web terminal; unit tests pass (203/203 green tests).
 
-### Ticket 4.2 — System Prune (Images & Volumes)
+### Ticket 4.2 — System Prune (Images & Volumes) [COMPLETED]
 * **Blocked by:** None.
-* **Objective:** One-click cleanup of dangling images and unused volumes to reclaim host disk space.
+* **Objective:** One-click cleanup of dangling images, stopped containers, orphan networks, and unused volumes to reclaim host disk space.
 * **Scope:**
-  - Docker `/images/prune` and `/volumes/prune` API endpoints.
-  - Containers page "System Cleanup" modal with confirmation and reclaimed byte reporting.
-* **Acceptance Criteria:** Disk space reclaimed and reported in UI.
+  - Docker Engine Prune API integration (`/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune`, `/build/prune`).
+  - Native AOT compliant `POST /api/containers/prune` endpoint with `[RequireAdmin]` authorization filter.
+  - Modular frontend component `SystemPruneModal.tsx` (safe defaults: volumes unselected by default with persistent data warning banner; granular category breakdown with reclaimed storage reporting).
+  - "System Cleanup" button on Containers page header (`Trash2` icon, privileged to admin users).
+* **Acceptance Criteria:** Reclaimed disk space accurately measured and reported in UI (`1.42 GB reclaimed`); unit test suite green (206/206 passing tests).
 
 ---
 
 ## Phase 5: Telemetry, Downsampling & Organization
 
-### Ticket 5.1 — Metrics Downsampling (Hourly Rollups)
+### Ticket 5.1 — Metrics Downsampling (Hourly Rollups) [COMPLETED]
 * **Blocked by:** None.
 * **Objective:** Retain 1-year historical telemetry without database bloat by downsampling raw 15-second records past 7 days into hourly averages.
 * **Scope:**
-  - `system_metrics_hourly` rollup aggregation in `RetentionCleanupService`.
-  - Query dispatcher to read from rollup table for ranges > 7 days.
-* **Acceptance Criteria:** Smooth 30-day and 90-day charts without database size inflation.
+  - `system_metrics_hourly` rollup aggregation in `RetentionCleanupService` and `MetricsRepository`.
+  - Migration `012_metrics_hourly_rollup.sql` creating indexed table with UNIQUE constraint on `recorded_at`.
+  - Intelligent query dispatcher supporting `30d`, `90d`, and `1y` time ranges via SQLite CTEs seamlessly combining rollups with recent unaggregated metrics.
+  - Automated dual retention policy: 7 days retention for high-frequency 15-second raw metrics and 365 days retention for hourly rollups.
+  - Interactive UI range selectors (`30d`, `90d`, `1y`) with dynamic multi-day date-time formatting in `SystemMetricsPage`.
+  - Comprehensive unit test suite (`MetricsRepositoryTests.cs`, 211/211 passing tests).
+* **Acceptance Criteria:** Smooth 30-day, 90-day, and 1-year charts without database size inflation; all unit tests green (211/211 passing tests).
 
 ### Ticket 5.2 — Tags & Category Grouping
 * **Blocked by:** None.

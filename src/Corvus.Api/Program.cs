@@ -36,6 +36,7 @@ builder.Services.AddSingleton<IDockerService, DockerService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<CorvusAuthFilter>();
 builder.Services.AddSingleton<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IFlappingDetector, FlappingDetector>();
 builder.Services.AddSingleton<IEventBroadcaster, EventBroadcaster>();
 builder.Services.AddSingleton<IUpdateCheckerService, UpdateCheckerService>();
 
@@ -94,6 +95,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors();
+app.UseWebSockets();
 
 // Statik Dosyalar (Frontend SPA çıktısı için optimize önbellekleme)
 app.UseDefaultFiles();

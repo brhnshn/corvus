@@ -85,9 +85,18 @@ export const SettingsPage: React.FC = () => {
         channel,
         webhookUrl: channel === 'discord' ? settings['notification_discord_webhook_url']
                   : channel === 'ntfy' ? settings['notification_ntfy_url']
+                  : channel === 'slack' ? settings['notification_slack_webhook_url']
                   : settings['notification_webhook_url'],
         botToken: settings['notification_telegram_bot_token'],
-        chatId: settings['notification_telegram_chat_id']
+        chatId: settings['notification_telegram_chat_id'],
+        smtpHost: settings['smtp_host'] || settings['notification_smtp_host'],
+        smtpPort: (settings['smtp_port'] || settings['notification_smtp_port']) ? parseInt(settings['smtp_port'] || settings['notification_smtp_port'], 10) : undefined,
+        smtpUser: settings['smtp_user'] || settings['notification_smtp_user'],
+        smtpPass: settings['smtp_pass'] || settings['notification_smtp_pass'],
+        smtpFrom: settings['smtp_from'] || settings['notification_smtp_from'],
+        smtpFromName: settings['smtp_from_name'] || settings['notification_smtp_from_name'],
+        smtpTo: settings['smtp_to'] || settings['notification_smtp_to'],
+        smtpTls: (settings['smtp_tls'] ?? settings['notification_smtp_tls']) !== 'false'
       });
       setTestResult({ channel, success: res.success, message: res.message });
     } catch (err: unknown) {
@@ -153,7 +162,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Üst Başlık & Hızlı Kaydet Butonu */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2a2e3f]/60">
         <div>

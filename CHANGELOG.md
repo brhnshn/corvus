@@ -5,20 +5,55 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.5.19] - 2026-10-02
 
+### Telemetry, Downsampling & Metrics Rollup (Phase 5 - Ticket 5.1)
+- **Time-Series Metrics Downsampling (Hourly Rollups)**: Built an automated downsampling and compaction pipeline for system metrics, aggregating 15-second raw metrics (`system_metrics`) into hourly summary records (`system_metrics_hourly`).
+- **Dual Retention Strategy**: Retains high-resolution 15-second telemetry for 7 days to preserve recent debugging granularity, while maintaining 365 days of hourly rollups. Automatically purges raw records past 7 days and hourly rollups past 365 days in `RetentionCleanupService` alongside SQLite vacuuming.
+- **Unified Long-Range Query Engine**: Extended `GetRecentAsync` to support `30d`, `90d`, and `1y` (365d) time horizons. Uses an optimized SQLite CTE to read from indexed hourly rollups while on-the-fly bundling any unaggregated recent hours, delivering instant sub-second chart rendering with zero data gaps.
+- **Frontend Time Horizons & Formatting**: Added `30d`, `90d`, and `1y` range filters to the System Metrics page (`SystemMetrics/index.tsx`) with dynamic date formatting and multi-day responsive tooltips.
+- **Comprehensive Verification Suite**: Added 5 dedicated unit tests in `MetricsRepositoryTests.cs` verifying hourly aggregation idempotency, dual retention cleanups, and multi-range downsampling queries (all 211 tests green).
+
+### Container Management, Web Terminal & System Prune (Phase 4 - Tickets 4.1 & 4.2)
+- **Docker Image, Volume & System Prune (Ticket 4.2)**: Integrated a one-click host disk space reclamation engine communicating directly with Docker daemon prune endpoints (`/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune`, `/build/prune`).
+- **Safe Defaults & Volume Data Protection**: Safeguarded against persistent data loss by keeping `Volumes` unselected by default, rendering an amber warning callout when selected. Offers granular image cleanup toggling between "Only dangling images" and "All unused images".
+- **Modular Cleanup Interface (`SystemPruneModal.tsx`)**: Engineered an interactive cleanup dialog featuring animated execution progress and an itemized breakdown card grid detailing reclaimed bytes per category (Images, Containers, Volumes, Networks, Build Cache) along with formatted aggregate savings (`1.42 GB reclaimed`).
+- **Native AOT & RBAC Endpoint**: Protected `POST /api/containers/prune` under `[RequireAdmin]` filter (403 Forbidden for viewers) and registered source-generated serialization models in `CorvusJsonSerializerContext`.
+- **Container Web Terminal (Exec Shell - Ticket 4.1)**: Introduced interactive, browser-based shell access (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) directly into running Docker containers without installing external daemons or agents.
+- **Zero-Allocation WebSocket Proxy**: Built a high-throughput proxy endpoint `GET /api/containers/{id}/terminal` bridging browser WebSockets and hijacked Docker TTY streams. Employs `ArrayPool<byte>` static 8 KB buffer renting with zero GC allocations; upon terminal closure or tab navigation, the Docker exec PID is immediately killed, rented memory returned, and system RAM restored to baseline (30-50 MB).
+- **Dynamic PTY Resizing (Control Frames)**: Automatically synchronizes terminal rows and columns with container pseudo-terminals on window resize and fullscreen toggle via JSON control frames (`{type: "resize", cols, rows}`) routed to Docker's `/exec/{id}/resize` API.
+- **RBAC Security Guard**: Locked down container exec operations strictly to authenticated `admin` users via `[RequireAdmin]` endpoint filter (403 Forbidden for viewer accounts).
+- **Modular Terminal Component (`ContainerTerminalModal.tsx`)**: Engineered with `@xterm/xterm` and `@xterm/addon-fit`, featuring Corvus dark theme styling, VT100/ANSI color support, fullscreen mode, clear screen, reconnect actions, and live shell switcher.
+- **Action Buttons & Log Separation**: Differentiated log viewing with `ScrollText` icon from interactive terminal with `SquareTerminal` icon on `ContainerActionButtons.tsx`, active exclusively for running containers and privileged admins.
+
 ### Security & User Management (RBAC)
 - **Role-Based Access Control (RBAC)**: Enforced `admin` vs `viewer` role privileges via `CorvusAuthFilter` and `RequireAdminAttribute`. `viewer` users are restricted to read-only access; mutating service/container actions, system settings updates, and backup downloads are guarded with 403 Forbidden.
 - **User Management & Password Change**: Introduced SQLite `UserRepository` CRUD endpoints (`/api/users`), self-service password updates (`/api/auth/change-password`), and instant revocation of all active sessions upon user deletion (`DeleteSessionsByUsernameAsync`).
 - **Modular Profile & User Management Page**: Replaced the monolithic modal with a dedicated, modular page (`/profile`). Segmented into independent components for self-service password updates (`ProfileSecurityTab.tsx`) and administrator user management (`ProfileUsersTab.tsx`, `AddUserModal.tsx`). Restored design palette consistency by replacing inconsistent purple tones with Corvus's standard Indigo system.
 
 ### Network & Monitoring Engine
+- **HTTP Response Body (Keyword & Regex) Assertion**: Added payload content verification to ensure services returning HTTP 200 are genuinely healthy by asserting presence of specified keywords (`"status":"healthy"`, `status=ok`, etc.) or regular expression patterns.
+- **Zero-Allocation 64 KB Memory Cap**: Instead of reading unbounded HTTP payloads into heap memory, `HttpBodyValidator` scans streams up to a strict 64 KB limit backed by `ArrayPool<byte>` buffers, guarded by a 200ms Regex evaluation timeout against ReDoS vulnerabilities.
 - **ICMP Ping Monitor**: Integrated asynchronous non-blocking ICMP echo requests via `System.Net.NetworkInformation.Ping` to track packet latency (RTT) and reachability for bare devices, routers, and gateways without requiring HTTP ports. Added ICMP Ping options to Add/Edit modals, instant connectivity diagnostics on `/api/uptime/test-connection`, and cyan `ICMP PING` badges.
 - **Proactive SSL/TLS Expiry Alerts**: Implemented proactive alerting dispatched to Discord (color-coded embed), Telegram, Ntfy (lock/warning priority), and Generic Webhook at 14 days and 7 days prior to certificate expiration.
 - **Smart Debounce & Anti-Spam Defense**: Built level-based (14d warning vs 7d critical) daily deduplication memory into `UptimeCheckerService`; automatically resets state upon certificate renewal.
 - **Service Card SSL Badges**: Added pulsing red `ShieldAlert` badge for $\le 7$ days and amber badge for $\le 14$ days on Service cards and status views.
 - **Notification Event Filter**: Added `notify_ssl_expiry` toggle to Notification Settings.
 
+### Notification Channels & Alert Discipline (Phase 3 - Tickets 3.1 & 3.2)
+- **Flapping Suppression & Alert Debounce (Ticket 3.2)**: Built an intelligent alerting filter to protect on-call teams against notification floods and alert fatigue when services oscillate rapidly between UP and DOWN.
+- **Sliding-Window State History (`FlappingDetector`)**: Decoupled `IFlappingDetector` service maintaining sliding-window transition timestamps per service with zero redundant allocations. Emits an initial `[FLAPPING DETECTED]` alert and suppresses intermediate notifications until the service reaches stability.
+- **Stability Detection & Recovery Notification**: Lifts alert suppression and emits a single `[FLAPPING RESOLVED]` notification once a service maintains steady consecutive checks (default: 3 checks).
+- **Modular Settings Card (`FlappingProtectionCard.tsx`)**: Added a dedicated settings card to configure transition threshold, sliding window duration, and recovery check count, complete with `notify_flapping_events` trigger control.
+- **Email (SMTP) Notification Channel (Ticket 3.1)**: Built-in alerting engine delivering instant service down, up, and SSL alerts via standard SMTP servers (Gmail, Outlook, Resend, Brevo, AWS SES, cPanel, etc.). Includes custom From Name, port, STARTTLS support, and a responsive dark-mode HTML template.
+- **Pills / Tags Multi-Recipient Input (`EmailRecipientInput`)**: Designed a modern interactive chip/pill recipient management component. Features Enter/comma addition, `x` and Backspace deletion, regex email format validation, duplicate prevention, and clipboard multi-paste parsing.
+- **Slack Incoming Webhook Channel (Ticket 3.1)**: Integrated direct alerting to Slack channels with attachments layout and color-coded status indicators (Red: Down, Green: Up/Test, Amber: SSL/Flapping Alert).
+- **Instant Test Actions & Native AOT Trimming Safety**: Integrated instant "Test Channel" triggers in Settings. Maintained zero external email dependencies using built-in `System.Net.Mail` without heavy third-party packages, preserving strict 30-50 MB RAM footprint and Native AOT source generation (`CorvusJsonSerializerContext`).
+
+### Bug Fixes & UX Alignment
+- **HTTP/2 SSE Protocol Error Resolved**: Fixed Chromium `net::ERR_HTTP2_PROTOCOL_ERROR` on `/api/stream/events` by removing the forbidden `Connection: keep-alive` header under HTTP/2 and HTTP/3 (RFC 7540 §8.1.2.2). Added `X-Accel-Buffering: no` and silent handling of client disconnect `IOException`s.
+- **Settings Page Alignment & Layout Consistency**: Removed restrictive `max-w-4xl mx-auto` centering from the Settings page, restoring uniform full-width, left-aligned layout matching Dashboard, Services, Containers, and System Metrics pages.
+
 ### UI/UX & Responsive Experience
-- **Settings Page Streamlining & De-duplication**: Removed the redundant 4-column sticky sidebar (duplicate database metrics, registration status, and static text), consolidating the settings into a modern, unified `max-w-4xl` layout that fits comfortably on screen without vertical bloat. Eliminated dual save buttons and integrated version diagnostics directly into a compact header badge.
+- **Settings Page Streamlining & De-duplication**: Removed the redundant 4-column sticky sidebar (duplicate database metrics, registration status, and static text), consolidating the settings into a modern, unified layout that fits comfortably on screen without vertical bloat. Eliminated dual save buttons and integrated version diagnostics directly into a compact header badge.
 - **Resilient 401 Session Interceptor**: Centralized HTTP 401 handling across the frontend via a `corvus_unauthorized` window event; automatically prompts the user back to the authentication screen when sessions expire rather than emitting unhandled rejections.
 - **Mobile Layout Streamlining**: Eliminated the redundant top header, hamburger menu, and drawer on mobile screens (`< lg`), maximizing screen estate and routing all navigation exclusively through the floating glass `BottomNav`.
 - **Profile Tab in Bottom Bar**: Added dedicated profile navigation directly to mobile bottom bar for quick one-tap account access.
@@ -39,7 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Docker Log Rotation Cap**: Configured `json-file` log limits (`max-size: 10m`, `max-file: 3`) in `docker-compose.yml` to prevent runaway host container log growth.
 
 ### Tests
-- Validated all 169 unit tests across the entire test suite (`Passed: 169, Failed: 0`).
+- Validated all 206 unit tests across the entire test suite (`Passed: 206, Failed: 0`).
 
 ---
 

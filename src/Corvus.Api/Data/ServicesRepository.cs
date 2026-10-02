@@ -55,6 +55,7 @@ public class ServicesRepository : IServicesRepository
         int? ignore_tls,
         string? accepted_status_codes,
         string? http_method,
+        string? expected_body,
         string? OverrideName,
         string? OverrideDescription,
         string? OverrideUrl,
@@ -71,7 +72,8 @@ public class ServicesRepository : IServicesRepository
         int? OverrideTimeoutSeconds,
         int? OverrideIgnoreTls,
         string? OverrideAcceptedStatusCodes,
-        string? OverrideHttpMethod
+        string? OverrideHttpMethod,
+        string? OverrideExpectedBody
     );
 
     private static Service MapRowToService(ServiceDbRow r) => new Service
@@ -101,13 +103,14 @@ public class ServicesRepository : IServicesRepository
         TimeoutSeconds = r.OverrideTimeoutSeconds ?? r.timeout_seconds ?? 5,
         IgnoreTls = (r.OverrideIgnoreTls ?? r.ignore_tls ?? 0) == 1,
         AcceptedStatusCodes = r.OverrideAcceptedStatusCodes ?? r.accepted_status_codes ?? "200-299",
-        HttpMethod = r.OverrideHttpMethod ?? r.http_method ?? "GET"
+        HttpMethod = r.OverrideHttpMethod ?? r.http_method ?? "GET",
+        ExpectedBody = r.OverrideExpectedBody ?? r.expected_body
     };
 
     private const string BaseSelectSql = @"
         SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
                s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.is_uptime_enabled, s.display_order,
-               s.check_interval, s.max_retries, s.retry_interval, s.timeout_seconds, s.ignore_tls, s.accepted_status_codes, s.http_method,
+               s.check_interval, s.max_retries, s.retry_interval, s.timeout_seconds, s.ignore_tls, s.accepted_status_codes, s.http_method, s.expected_body,
                o.name AS OverrideName, 
                o.description AS OverrideDescription, 
                o.url AS OverrideUrl, 
@@ -124,7 +127,8 @@ public class ServicesRepository : IServicesRepository
                o.timeout_seconds AS OverrideTimeoutSeconds,
                o.ignore_tls AS OverrideIgnoreTls,
                o.accepted_status_codes AS OverrideAcceptedStatusCodes,
-               o.http_method AS OverrideHttpMethod
+               o.http_method AS OverrideHttpMethod,
+               o.expected_body AS OverrideExpectedBody
         FROM services s
         LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))";
 
@@ -185,12 +189,13 @@ public class ServicesRepository : IServicesRepository
             TimeoutSeconds = request.TimeoutSeconds ?? 5,
             IgnoreTls = request.IgnoreTls ?? false,
             AcceptedStatusCodes = request.AcceptedStatusCodes ?? "200-299",
-            HttpMethod = request.HttpMethod ?? "GET"
+            HttpMethod = request.HttpMethod ?? "GET",
+            ExpectedBody = request.ExpectedBody
         };
 
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)";
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body)
+            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @ExpectedBody)";
 
         await conn.ExecuteAsync(sql, new {
             service.Id,
@@ -216,7 +221,8 @@ public class ServicesRepository : IServicesRepository
             service.TimeoutSeconds,
             IgnoreTlsInt = service.IgnoreTls ? 1 : 0,
             service.AcceptedStatusCodes,
-            service.HttpMethod
+            service.HttpMethod,
+            service.ExpectedBody
         });
         return service;
     }
@@ -239,6 +245,7 @@ public class ServicesRepository : IServicesRepository
         int ignoreTlsInt = (request.IgnoreTls ?? existing.IgnoreTls) ? 1 : 0;
         string acceptedStatusCodes = request.AcceptedStatusCodes ?? existing.AcceptedStatusCodes ?? "200-299";
         string httpMethod = request.HttpMethod ?? existing.HttpMethod ?? "GET";
+        string? expectedBody = request.ExpectedBody ?? existing.ExpectedBody;
 
         var sql = @"
             UPDATE services 
@@ -247,7 +254,8 @@ public class ServicesRepository : IServicesRepository
                 check_type = @checkType, port = @port, is_public = @isPublicInt, is_uptime_enabled = @isUptimeEnabledInt,
                 check_interval = @checkInterval, max_retries = @maxRetries, retry_interval = @retryInterval,
                 timeout_seconds = @timeoutSeconds, ignore_tls = @ignoreTlsInt,
-                accepted_status_codes = @acceptedStatusCodes, http_method = @httpMethod
+                accepted_status_codes = @acceptedStatusCodes, http_method = @httpMethod,
+                expected_body = @expectedBody
             WHERE id = @id";
 
         await conn.ExecuteAsync(sql, new { 
@@ -269,6 +277,7 @@ public class ServicesRepository : IServicesRepository
             ignoreTlsInt,
             acceptedStatusCodes,
             httpMethod,
+            expectedBody,
             id 
         });
 
@@ -276,8 +285,8 @@ public class ServicesRepository : IServicesRepository
         {
             string overrideKey = !string.IsNullOrEmpty(existing.ContainerId) ? existing.ContainerId : id;
             var overrideSql = @"
-                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, is_uptime_enabled, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @isUptimeEnabledInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod)
+                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, is_uptime_enabled, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body)
+                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @isUptimeEnabledInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod, @expectedBody)
                 ON CONFLICT(container_id) DO UPDATE SET
                     service_id = excluded.service_id,
                     name = excluded.name,
@@ -296,7 +305,8 @@ public class ServicesRepository : IServicesRepository
                     timeout_seconds = excluded.timeout_seconds,
                     ignore_tls = excluded.ignore_tls,
                     accepted_status_codes = excluded.accepted_status_codes,
-                    http_method = excluded.http_method";
+                    http_method = excluded.http_method,
+                    expected_body = excluded.expected_body";
 
             await conn.ExecuteAsync(overrideSql, new { 
                 overrideKey, 
@@ -309,7 +319,7 @@ public class ServicesRepository : IServicesRepository
                 request.HealthCheckUrl, 
                 checkType, 
                 port, 
-                isPublicInt,
+                isPublicInt, 
                 isUptimeEnabledInt,
                 checkInterval,
                 maxRetries,
@@ -317,7 +327,8 @@ public class ServicesRepository : IServicesRepository
                 timeoutSeconds,
                 ignoreTlsInt,
                 acceptedStatusCodes,
-                httpMethod
+                httpMethod,
+                expectedBody
             });
         }
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { 
-  Terminal, 
+  ScrollText,
+  SquareTerminal, 
   Play, 
   Square, 
   Pause, 
@@ -19,6 +20,8 @@ interface ContainerActionButtonsProps {
   actionInProgress: { id: string; action: string } | null;
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenLogs: (id: string, name: string) => void;
+  onOpenTerminal?: (id: string, name: string) => void;
+  isAdmin?: boolean;
 }
 
 export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
@@ -28,7 +31,9 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
   isPaused,
   actionInProgress,
   onAction,
-  onOpenLogs
+  onOpenLogs,
+  onOpenTerminal,
+  isAdmin = true
 }) => {
   const { t } = useI18n();
   const isCurrentBusy = actionInProgress?.id === container.Id;
@@ -43,8 +48,24 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
         className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
         title={t('containers.inspectLogs')}
       >
-        <Terminal className="w-3.5 h-3.5" />
+        <ScrollText className="w-3.5 h-3.5" />
       </button>
+
+      {/* Web Terminal (Exec Shell) button - only when container is running */}
+      {isRunning && onOpenTerminal && (
+        <button
+          onClick={() => onOpenTerminal(container.Id, cleanName)}
+          disabled={isCurrentBusy || !isAdmin}
+          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+            isAdmin 
+              ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300' 
+              : 'border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af]/40 cursor-not-allowed opacity-50'
+          }`}
+          title={isAdmin ? t('containers.terminal') : t('containers.terminalAdminOnly')}
+        >
+          <SquareTerminal className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       {/* Start / Pause / Resume / Stop buttons */}
       {!isRunning ? (

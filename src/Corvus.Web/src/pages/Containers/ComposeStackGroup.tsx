@@ -19,6 +19,8 @@ interface ComposeStackGroupProps {
   actionInProgress: { id: string; action: string } | null;
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenLogs: (id: string, name: string) => void;
+  onOpenTerminal?: (id: string, name: string) => void;
+  isAdmin?: boolean;
 }
 
 export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
@@ -36,7 +38,9 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
   statsMap,
   actionInProgress,
   onAction,
-  onOpenLogs
+  onOpenLogs,
+  onOpenTerminal,
+  isAdmin = true
 }) => {
   return (
     <div className="space-y-4">
@@ -62,6 +66,8 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
               actionInProgress={actionInProgress}
               onAction={onAction}
               onOpenLogs={onOpenLogs}
+              onOpenTerminal={onOpenTerminal}
+              isAdmin={isAdmin}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
               draggingId={draggingId}

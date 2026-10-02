@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using System.IO.Pipes;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using Corvus.Api.Models;
 
@@ -20,73 +22,33 @@ public interface IDockerHttpClient
     Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default);
     Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default);
     Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default);
+    Task<string?> CreateExecInstanceAsync(string containerId, string shell = "/bin/sh", CancellationToken cancellationToken = default);
+    Task<Stream> StartExecStreamAsync(string execId, CancellationToken cancellationToken = default);
+    Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default);
+    Task<DockerContainersPruneResponse?> PruneContainersAsync(CancellationToken cancellationToken = default);
+    Task<DockerImagesPruneResponse?> PruneImagesAsync(bool all = false, CancellationToken cancellationToken = default);
+    Task<DockerVolumesPruneResponse?> PruneVolumesAsync(CancellationToken cancellationToken = default);
+    Task<DockerNetworksPruneResponse?> PruneNetworksAsync(CancellationToken cancellationToken = default);
+    Task<DockerBuildCachePruneResponse?> PruneBuildCacheAsync(CancellationToken cancellationToken = default);
 }
 
 public class DockerHttpClient : IDockerHttpClient, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<DockerHttpClient> _logger;
+    private readonly string? _dockerSocketEnv;
     private readonly ConcurrentDictionary<string, (long CpuTotal, long SystemCpu, DateTime Timestamp)> _cpuHistory = new(StringComparer.OrdinalIgnoreCase);
 
     public DockerHttpClient(ILogger<DockerHttpClient> logger, IConfiguration configuration)
     {
         _logger = logger;
-
-        string? dockerSocketEnv = Environment.GetEnvironmentVariable("DOCKER_SOCKET")
-                                  ?? configuration["Docker:SocketPath"];
+        _dockerSocketEnv = Environment.GetEnvironmentVariable("DOCKER_SOCKET")
+                           ?? configuration["Docker:SocketPath"];
 
         var handler = new SocketsHttpHandler
         {
             PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
-            ConnectCallback = async (context, cancellationToken) =>
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    string[] candidatePipes = ["dockerDesktopLinuxEngine", "docker_engine"];
-                    foreach (var pipeName in candidatePipes)
-                    {
-                        try
-                        {
-                            var pipe = new NamedPipeClientStream(
-                                serverName: ".",
-                                pipeName: pipeName,
-                                direction: PipeDirection.InOut,
-                                options: PipeOptions.Asynchronous);
-
-                            using var connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-                            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, connectCts.Token);
-                            await pipe.ConnectAsync(linkedCts.Token);
-                            return pipe;
-                        }
-                        catch
-                        {
-                            // sonraki pipe adayını dene
-                        }
-                    }
-
-                    throw new InvalidOperationException("Hiçbir Windows Docker named pipe'ına bağlanılamadı.");
-                }
-                else
-                {
-                    string socketPath = !string.IsNullOrWhiteSpace(dockerSocketEnv) 
-                        ? dockerSocketEnv 
-                        : "/var/run/docker.sock";
-
-                    var endpoint = new UnixDomainSocketEndPoint(socketPath);
-                    var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-
-                    try
-                    {
-                        await socket.ConnectAsync(endpoint, cancellationToken);
-                        return new NetworkStream(socket, ownsSocket: true);
-                    }
-                    catch
-                    {
-                        socket.Dispose();
-                        throw;
-                    }
-                }
-            }
+            ConnectCallback = async (context, cancellationToken) => await CreateRawDockerStreamAsync(cancellationToken)
         };
 
         _httpClient = new HttpClient(handler)
@@ -94,6 +56,56 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
             BaseAddress = new Uri("http://localhost"),
             Timeout = TimeSpan.FromSeconds(15)
         };
+    }
+
+    private async Task<Stream> CreateRawDockerStreamAsync(CancellationToken cancellationToken)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            string[] candidatePipes = ["dockerDesktopLinuxEngine", "docker_engine"];
+            foreach (var pipeName in candidatePipes)
+            {
+                try
+                {
+                    var pipe = new NamedPipeClientStream(
+                        serverName: ".",
+                        pipeName: pipeName,
+                        direction: PipeDirection.InOut,
+                        options: PipeOptions.Asynchronous);
+
+                    using var connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, connectCts.Token);
+                    await pipe.ConnectAsync(linkedCts.Token);
+                    return pipe;
+                }
+                catch
+                {
+                    // sonraki pipe adayını dene
+                }
+            }
+
+            throw new InvalidOperationException("Hiçbir Windows Docker named pipe'ına bağlanılamadı.");
+        }
+        else
+        {
+            string socketPath = !string.IsNullOrWhiteSpace(_dockerSocketEnv) 
+                ? _dockerSocketEnv 
+                : "/var/run/docker.sock";
+
+            var endpoint = new UnixDomainSocketEndPoint(socketPath);
+            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+
+            try
+            {
+                await socket.ConnectAsync(endpoint, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
     }
 
     public async Task<bool> PingAsync(CancellationToken cancellationToken = default)
@@ -488,6 +500,201 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         {
             _logger.LogError(ex, "Container logları alınamadı: {ContainerId}", containerId);
             return new List<string>();
+        }
+    }
+
+    public async Task<string?> CreateExecInstanceAsync(string containerId, string shell = "/bin/sh", CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string jsonBody = $$"""
+            {
+              "AttachStdin": true,
+              "AttachStdout": true,
+              "AttachStderr": true,
+              "Tty": true,
+              "Cmd": [{{JsonSerializer.Serialize(shell, CorvusJsonSerializerContext.Default.String)}}]
+            }
+            """;
+
+            using var content = new StringContent(jsonBody, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+            using var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/exec", content, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string err = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogWarning("Docker exec instance oluşturulamadı: {StatusCode} - {Error}", response.StatusCode, err);
+                return null;
+            }
+
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var res = await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerExecCreateResponse, cancellationToken);
+            return res?.Id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker exec instance oluşturulurken hata: {ContainerId}", containerId);
+            return null;
+        }
+    }
+
+    public async Task<Stream> StartExecStreamAsync(string execId, CancellationToken cancellationToken = default)
+    {
+        var rawStream = await CreateRawDockerStreamAsync(cancellationToken);
+
+        string request = $"POST /exec/{Uri.EscapeDataString(execId)}/start HTTP/1.1\r\n" +
+                         "Host: localhost\r\n" +
+                         "User-Agent: Corvus\r\n" +
+                         "Content-Type: application/json\r\n" +
+                         "Connection: Upgrade\r\n" +
+                         "Upgrade: tcp\r\n" +
+                         "Content-Length: 28\r\n\r\n" +
+                         "{\"Detach\":false,\"Tty\":true}";
+
+        byte[] requestBytes = Encoding.UTF8.GetBytes(request);
+        await rawStream.WriteAsync(requestBytes, cancellationToken);
+        await rawStream.FlushAsync(cancellationToken);
+
+        // Docker'dan dönen HTTP yanıt başlığını oku (\r\n\r\n görene kadar)
+        int matched = 0;
+        byte[] matchSequence = "\r\n\r\n"u8.ToArray();
+        byte[] singleByte = new byte[1];
+
+        while (matched < matchSequence.Length)
+        {
+            int read = await rawStream.ReadAsync(singleByte, 0, 1, cancellationToken);
+            if (read == 0)
+            {
+                rawStream.Dispose();
+                throw new InvalidOperationException("Docker daemon exec bağlantısını erken kapattı.");
+            }
+
+            if (singleByte[0] == matchSequence[matched])
+            {
+                matched++;
+            }
+            else
+            {
+                matched = singleByte[0] == matchSequence[0] ? 1 : 0;
+            }
+        }
+
+        return rawStream;
+    }
+
+    public async Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync($"/exec/{Uri.EscapeDataString(execId)}/resize?h={height}&w={width}", null, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Docker exec resize isteği başarısız oldu: {ExecId}", execId);
+            return false;
+        }
+    }
+
+    public async Task<DockerContainersPruneResponse?> PruneContainersAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("/containers/prune", null, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Docker containers/prune başarısız: {StatusCode}", response.StatusCode);
+                return null;
+            }
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerContainersPruneResponse, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker containers prune sırasında hata");
+            return null;
+        }
+    }
+
+    public async Task<DockerImagesPruneResponse?> PruneImagesAsync(bool all = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string filters = all ? "{\"dangling\":[\"false\"]}" : "{\"dangling\":[\"true\"]}";
+            using var response = await _httpClient.PostAsync($"/images/prune?filters={Uri.EscapeDataString(filters)}", null, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Docker images/prune başarısız: {StatusCode}", response.StatusCode);
+                return null;
+            }
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerImagesPruneResponse, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker images prune sırasında hata");
+            return null;
+        }
+    }
+
+    public async Task<DockerVolumesPruneResponse?> PruneVolumesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("/volumes/prune", null, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Docker volumes/prune başarısız: {StatusCode}", response.StatusCode);
+                return null;
+            }
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerVolumesPruneResponse, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker volumes prune sırasında hata");
+            return null;
+        }
+    }
+
+    public async Task<DockerNetworksPruneResponse?> PruneNetworksAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("/networks/prune", null, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Docker networks/prune başarısız: {StatusCode}", response.StatusCode);
+                return null;
+            }
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerNetworksPruneResponse, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker networks prune sırasında hata");
+            return null;
+        }
+    }
+
+    public async Task<DockerBuildCachePruneResponse?> PruneBuildCacheAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync("/build/prune", null, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Bazı eski Docker daemon'ları build/prune desteklemeyebilir (404/501), bu durumda sessizce geç
+                _logger.LogDebug("Docker build/prune desteklenmiyor veya başarısız: {StatusCode}", response.StatusCode);
+                return null;
+            }
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerBuildCachePruneResponse, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Docker build cache prune sırasında hata");
+            return null;
         }
     }
 

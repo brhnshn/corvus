@@ -12,7 +12,14 @@ public static class StreamEndpoints
         {
             context.Response.Headers.ContentType = "text/event-stream";
             context.Response.Headers.CacheControl = "no-cache";
-            context.Response.Headers.Connection = "keep-alive";
+            context.Response.Headers["X-Accel-Buffering"] = "no";
+
+            // HTTP/2 ve HTTP/3 spesifikasyonlarına (RFC 7540 Section 8.1.2.2) göre Connection başlığı YASAKTIR.
+            // Sunucu HTTP/2 üzerinden Connection başlığı dönerse tarayıcılar net::ERR_HTTP2_PROTOCOL_ERROR fırlatır.
+            if (context.Request.Protocol.StartsWith("HTTP/1", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.Headers.Connection = "keep-alive";
+            }
 
             var writeLock = new SemaphoreSlim(1, 1);
 
@@ -23,6 +30,10 @@ public static class StreamEndpoints
                 {
                     await context.Response.WriteAsync(data, token);
                     await context.Response.Body.FlushAsync(token);
+                }
+                catch (IOException)
+                {
+                    // İstemci bağlantıyı kestiğinde (RST_STREAM / socket closed) sessizce sonlan
                 }
                 finally
                 {

@@ -11,6 +11,8 @@ interface ContainerListProps {
   actionInProgress: { id: string; action: string } | null;
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenLogs: (id: string, name: string) => void;
+  onOpenTerminal?: (id: string, name: string) => void;
+  isAdmin?: boolean;
   onDragStart?: (e: React.DragEvent, id: string) => void;
   onDragEnd?: () => void;
   draggingId?: string | null;
@@ -22,6 +24,8 @@ export const ContainerList: React.FC<ContainerListProps> = ({
   actionInProgress,
   onAction,
   onOpenLogs,
+  onOpenTerminal,
+  isAdmin = true,
   onDragStart,
   onDragEnd,
   draggingId
@@ -84,6 +88,8 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                   actionInProgress={actionInProgress}
                   onAction={onAction}
                   onOpenLogs={onOpenLogs}
+                  onOpenTerminal={onOpenTerminal}
+                  isAdmin={isAdmin}
                 />
               </div>
             </div>
@@ -162,6 +168,8 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                         actionInProgress={actionInProgress}
                         onAction={onAction}
                         onOpenLogs={onOpenLogs}
+                        onOpenTerminal={onOpenTerminal}
+                        isAdmin={isAdmin}
                       />
                     </td>
                   </tr>

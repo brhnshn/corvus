@@ -18,6 +18,8 @@ export interface AdvancedCheckOptionsProps {
   onChangeAcceptedStatusCodes: (val: string) => void;
   httpMethod: string;
   onChangeHttpMethod: (val: string) => void;
+  expectedBody?: string;
+  onChangeExpectedBody?: (val: string) => void;
 }
 
 export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
@@ -36,6 +38,8 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
   onChangeAcceptedStatusCodes,
   httpMethod,
   onChangeHttpMethod,
+  expectedBody = '',
+  onChangeExpectedBody,
 }) => {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
@@ -162,6 +166,20 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                   />
                   <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.acceptedStatusCodesHelp')}</p>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                  {t('services.expectedBodyLabel')}
+                </label>
+                <input
+                  type="text"
+                  placeholder={t('services.expectedBodyPlaceholder')}
+                  value={expectedBody}
+                  onChange={(e) => onChangeExpectedBody?.(e.target.value)}
+                  className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                />
+                <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.expectedBodyHelp')}</p>
               </div>
 
               <div>

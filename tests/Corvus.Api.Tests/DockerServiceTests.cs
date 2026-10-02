@@ -21,6 +21,19 @@ public class DockerServiceTests
             Task.FromResult<ContainerStatsDto?>(new ContainerStatsDto(containerId, 12.5, 104857600, 1073741824, 9.77, 2048, 4096));
         public virtual Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default) => Task.FromResult(new List<string> { "log line 1", "log line 2" });
         public virtual Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default) => Task.FromResult<DockerContainerInspectInfo?>(null);
+        public virtual Task<string?> CreateExecInstanceAsync(string containerId, string shell = "/bin/sh", CancellationToken cancellationToken = default) => Task.FromResult<string?>("exec_test_id");
+        public virtual Task<Stream> StartExecStreamAsync(string execId, CancellationToken cancellationToken = default) => Task.FromResult<Stream>(new MemoryStream());
+        public virtual Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public virtual Task<DockerContainersPruneResponse?> PruneContainersAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerContainersPruneResponse?>(new DockerContainersPruneResponse { ContainersDeleted = new List<string> { "c1", "c2" }, SpaceReclaimed = 50000000 });
+        public virtual Task<DockerImagesPruneResponse?> PruneImagesAsync(bool all = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerImagesPruneResponse?>(new DockerImagesPruneResponse { ImagesDeleted = new List<System.Text.Json.JsonElement>(), SpaceReclaimed = 150000000 });
+        public virtual Task<DockerVolumesPruneResponse?> PruneVolumesAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerVolumesPruneResponse?>(new DockerVolumesPruneResponse { VolumesDeleted = new List<string> { "vol1" }, SpaceReclaimed = 80000000 });
+        public virtual Task<DockerNetworksPruneResponse?> PruneNetworksAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerNetworksPruneResponse?>(new DockerNetworksPruneResponse { NetworksDeleted = new List<string> { "net1" } });
+        public virtual Task<DockerBuildCachePruneResponse?> PruneBuildCacheAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerBuildCachePruneResponse?>(new DockerBuildCachePruneResponse { SpaceReclaimed = 20000000 });
     }
 
     [Fact]
@@ -258,6 +271,14 @@ public class DockerServiceTests
         public Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default) => Task.FromResult<ContainerStatsDto?>(null);
         public Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default) => Task.FromResult(new List<string>());
         public Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default) => Task.FromResult<DockerContainerInspectInfo?>(null);
+        public Task<string?> CreateExecInstanceAsync(string containerId, string shell = "/bin/sh", CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+        public Task<Stream> StartExecStreamAsync(string execId, CancellationToken cancellationToken = default) => Task.FromException<Stream>(new InvalidOperationException("Exec start failed"));
+        public Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<DockerContainersPruneResponse?> PruneContainersAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerContainersPruneResponse?>(null);
+        public Task<DockerImagesPruneResponse?> PruneImagesAsync(bool all = false, CancellationToken cancellationToken = default) => Task.FromResult<DockerImagesPruneResponse?>(null);
+        public Task<DockerVolumesPruneResponse?> PruneVolumesAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerVolumesPruneResponse?>(null);
+        public Task<DockerNetworksPruneResponse?> PruneNetworksAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerNetworksPruneResponse?>(null);
+        public Task<DockerBuildCachePruneResponse?> PruneBuildCacheAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerBuildCachePruneResponse?>(null);
     }
 
     [Fact]
@@ -413,5 +434,92 @@ public class DockerServiceTests
 
         var url = DockerService.ExtractDomainFromLabels(labels);
         Assert.Equal("https://burhanlife.com", url);
+    }
+
+    [Fact]
+    public async Task CreateExecInstanceAsync_DelegatesToClient()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var execId = await dockerService.CreateExecInstanceAsync("container_1", "/bin/bash");
+        Assert.Equal("exec_test_id", execId);
+    }
+
+    [Fact]
+    public async Task StartExecStreamAsync_ReturnsStreamSuccessfully()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        using var stream = await dockerService.StartExecStreamAsync("exec_test_id");
+        Assert.NotNull(stream);
+    }
+
+    [Fact]
+    public async Task ResizeExecAsync_DelegatesToClient()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var result = await dockerService.ResizeExecAsync("exec_test_id", 120, 40);
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task ExecuteSystemPruneAsync_CalculatesReclaimedSpaceAndCountsCorrectly()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var req = new DockerPruneRequest
+        {
+            PruneContainers = true,
+            PruneImages = true,
+            PruneVolumes = true,
+            PruneNetworks = true,
+            PruneBuildCache = true
+        };
+
+        var result = await dockerService.ExecuteSystemPruneAsync(req);
+
+        Assert.True(result.Success);
+        Assert.Equal(300000000, result.TotalSpaceReclaimed);
+        Assert.Equal(50000000, result.ContainersSpaceReclaimed);
+        Assert.Equal(2, result.ContainersDeletedCount);
+        Assert.Equal(150000000, result.ImagesSpaceReclaimed);
+        Assert.Equal(80000000, result.VolumesSpaceReclaimed);
+        Assert.Equal(1, result.VolumesDeletedCount);
+        Assert.Equal(1, result.NetworksDeletedCount);
+        Assert.Equal(20000000, result.BuildCacheSpaceReclaimed);
+    }
+
+    [Fact]
+    public async Task ExecuteSystemPruneAsync_RespectsFlags()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var req = new DockerPruneRequest
+        {
+            PruneContainers = true,
+            PruneImages = true,
+            PruneVolumes = false,
+            PruneNetworks = false,
+            PruneBuildCache = false
+        };
+
+        var result = await dockerService.ExecuteSystemPruneAsync(req);
+
+        Assert.True(result.Success);
+        Assert.Equal(200000000, result.TotalSpaceReclaimed);
+        Assert.Equal(0, result.VolumesSpaceReclaimed);
+        Assert.Equal(0, result.VolumesDeletedCount);
+        Assert.Equal(0, result.NetworksDeletedCount);
+        Assert.Equal(0, result.BuildCacheSpaceReclaimed);
+    }
+
+    [Fact]
+    public async Task ExecuteSystemPruneAsync_HandlesFailingClientGracefully()
+    {
+        var dockerService = new DockerService(new FailingDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var req = new DockerPruneRequest();
+
+        var result = await dockerService.ExecuteSystemPruneAsync(req);
+
+        Assert.True(result.Success);
+        Assert.Equal(0, result.TotalSpaceReclaimed);
+        Assert.Equal(0, result.ContainersDeletedCount);
+        Assert.Equal(0, result.ImagesDeletedCount);
     }
 }

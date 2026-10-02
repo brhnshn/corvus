@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Corvus.Api.Models;
@@ -102,4 +103,106 @@ public class DockerContainerHealth
 {
     [JsonPropertyName("Status")]
     public string? Status { get; set; }
+}
+
+public class DockerExecCreateResponse
+{
+    [JsonPropertyName("Id")]
+    public string? Id { get; set; }
+}
+
+public class DockerPruneRequest
+{
+    [JsonPropertyName("pruneContainers")]
+    public bool PruneContainers { get; set; } = true;
+
+    [JsonPropertyName("pruneImages")]
+    public bool PruneImages { get; set; } = true;
+
+    [JsonPropertyName("pruneAllImages")]
+    public bool PruneAllImages { get; set; } = false;
+
+    [JsonPropertyName("pruneVolumes")]
+    public bool PruneVolumes { get; set; } = false;
+
+    [JsonPropertyName("pruneNetworks")]
+    public bool PruneNetworks { get; set; } = true;
+
+    [JsonPropertyName("pruneBuildCache")]
+    public bool PruneBuildCache { get; set; } = true;
+}
+
+public class DockerPruneResult
+{
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+
+    [JsonPropertyName("totalSpaceReclaimed")]
+    public long TotalSpaceReclaimed { get; set; }
+
+    [JsonPropertyName("containersSpaceReclaimed")]
+    public long ContainersSpaceReclaimed { get; set; }
+
+    [JsonPropertyName("containersDeletedCount")]
+    public int ContainersDeletedCount { get; set; }
+
+    [JsonPropertyName("imagesSpaceReclaimed")]
+    public long ImagesSpaceReclaimed { get; set; }
+
+    [JsonPropertyName("imagesDeletedCount")]
+    public int ImagesDeletedCount { get; set; }
+
+    [JsonPropertyName("volumesSpaceReclaimed")]
+    public long VolumesSpaceReclaimed { get; set; }
+
+    [JsonPropertyName("volumesDeletedCount")]
+    public int VolumesDeletedCount { get; set; }
+
+    [JsonPropertyName("networksDeletedCount")]
+    public int NetworksDeletedCount { get; set; }
+
+    [JsonPropertyName("buildCacheSpaceReclaimed")]
+    public long BuildCacheSpaceReclaimed { get; set; }
+
+    [JsonPropertyName("errorMessage")]
+    public string? ErrorMessage { get; set; }
+}
+
+public class DockerContainersPruneResponse
+{
+    [JsonPropertyName("ContainersDeleted")]
+    public List<string>? ContainersDeleted { get; set; }
+
+    [JsonPropertyName("SpaceReclaimed")]
+    public long SpaceReclaimed { get; set; }
+}
+
+public class DockerImagesPruneResponse
+{
+    [JsonPropertyName("ImagesDeleted")]
+    public List<JsonElement>? ImagesDeleted { get; set; }
+
+    [JsonPropertyName("SpaceReclaimed")]
+    public long SpaceReclaimed { get; set; }
+}
+
+public class DockerVolumesPruneResponse
+{
+    [JsonPropertyName("VolumesDeleted")]
+    public List<string>? VolumesDeleted { get; set; }
+
+    [JsonPropertyName("SpaceReclaimed")]
+    public long SpaceReclaimed { get; set; }
+}
+
+public class DockerNetworksPruneResponse
+{
+    [JsonPropertyName("NetworksDeleted")]
+    public List<string>? NetworksDeleted { get; set; }
+}
+
+public class DockerBuildCachePruneResponse
+{
+    [JsonPropertyName("SpaceReclaimed")]
+    public long SpaceReclaimed { get; set; }
 }

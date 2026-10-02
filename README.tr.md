@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Testler-169_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-211_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -81,16 +81,24 @@
   - Sınırsız mod seçildiğinde disk büyümesi ve yedekleme süresi hakkında bilgilendirici akıllı uyarı.
   - SQLite dosya ve WAL boyutunu canlı takip etme (`GET /api/settings/db-stats`).
   - Veritabanı ayarını dinamik dinleyen ve temizlik sonrası `PRAGMA optimize;` çalıştıran `RetentionCleanupService`.
-- **🪵 Gerçek Zamanlı Konteyner Log Akışı:**
+- **🪵 Gerçek Zamanlı Konteyner Log Akışı & Web Terminali (Exec Shell):**
+  - **Tarayıcı İçi Web Terminali (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`):** Ekstra ajan veya arka plan süreci kurmadan çalışan Docker konteynerlerine doğrudan interaktif kabuk erişimi (`ArrayPool<byte>` ile sıfır bellek tahsisatlı, 8 KB sabit tamponlu WebSocket proxy).
+  - JSON kontrol çerçeveleriyle dinamik TTY boyutlandırma, `@xterm/xterm` ile tam ANSI renk desteği ve yetkisiz erişime karşı sıkı RBAC koruması (`[RequireAdmin]`, 403 Forbidden).
   - Docker stdout/stderr akışları için sıfır bellek ayırmalı (zero-alloc) ayrıştırıcı (`DockerLogDemuxer.cs`).
   - Koyu temalı terminal modalı, anahtar kelime filtreleme ve otomatik kaydırma ile Server-Sent Events (`/api/containers/{id}/logs/stream`) akışı.
-- **⚡ Konteyner İstatistikleri & Yaşam Döngüsü:**
+- **⚡ Konteyner İstatistikleri, Yaşam Döngüsü & Sistem Temizliği (System Prune):**
   - Docker Stats API ile canlı konteyner başına CPU %, Bellek ve Ağ I/O takibi.
   - Yaşam döngüsü aksiyonları: Onay modalları ile **Start**, **Stop**, **Pause**, **Unpause** ve **Restart**.
   - **Compose Stack Gruplaması:** Düz liste ile katlanabilir Docker Compose projeleri (`com.docker.compose.project`) arasında tek tıkla geçiş.
-- **🔔 Çok Kanallı Alarm Motoru:**
-  - Sekmeli yapılandırma: **Discord**, **Telegram**, **Ntfy / Gotify** ve **Özel Webhook** kanalları.
-  - Özelleştirilebilir olay tetikleyicileri (`notify_service_events`) ve tek tıkla test bildirimi gönderme.
+  - **Tek Tıkla Sistem Temizliği (System Prune):** Dangling/kullanılmayan imajları, durdurulmuş konteynerleri, yetim ağları ve kullanılmayan hacimleri kalıcı veri koruma uyarılarıyla temizleyerek kazanılan disk alanını döküm kartlarında görüntüleme.
+- **🔔 Çok Kanallı Alarm Motoru & Dalgalanma (Flapping) Koruması:**
+  - Sekmeli yapılandırma: **Discord**, **Telegram**, **E-posta (SMTP)**, **Slack Webhook**, **Ntfy / Gotify** ve **Özel Webhook** kanalları.
+  - **Akıllı Dalgalanma Engelleme (`IFlappingDetector`):** Hızlı durum değişimlerinde alarm kirliliğini ve yorgunluğunu önler; tek bir Dalgalanma Uyarısı (Amber) ve Kararlılık/Kurtarma (Yeşil) bildirimi gönderir.
+  - Çip/etiket tabanlı çoklu alıcı e-posta girişi (`EmailRecipientInput`), regex e-posta doğrulaması ve panodan toplu yapıştırma desteği.
+- **📉 Zaman Serisi Seyreltme & Tarihsel Özetler (Hourly Rollup):**
+  - 15 saniyelik ham metriklerin (`system_metrics`) saatlik ortalama özet kayıtlarına (`system_metrics_hourly`) otomatik dönüştürülmesi.
+  - İkili veri saklama stratejisi: Yüksek çözünürlüklü ham veriler 7 gün saklanırken saatlik özetler 365 gün boyunca tutulur.
+  - Veri boşluğu oluşturmayan birleşik SQLite CTE sorguları ile `30 Gün`, `90 Gün` ve `1 Yıl` zaman aralıklarında milisaniyelik akıcı grafikler.
 - **⏱️ Genişletilmiş Uptime & SSL Takibi:**
   - **Kullanıcı Kontrollü (Opt-in) Uptime & Canlı Bağlantı Testi:** Docker'dan keşfedilen konteynerler kontrolsüzce pinglenmez; Uptime ekranında keşfedilenler havuzunda listelenir. Kullanıcı hedef adresi ve kontrol türünü belirler, dahili "Bağlantıyı Sına" (`POST /api/uptime/test-connection`) butonuyla anlık yanıt süresi ve HTTP/TCP durumunu test ederek onaylar.
   - **Ters Vekil (Reverse Proxy) Otomatik Algılama:** Traefik kuralları (`Host(...)`), Caddy etiketleri, `VIRTUAL_HOST`, `LETSENCRYPT_HOST` ve konteyner ortam değişkenleri (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) taranarak yerel `localhost` yerine gerçek alan adlarını otomatik bağlama.

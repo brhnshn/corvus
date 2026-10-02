@@ -21,4 +21,5 @@ public class ServiceOverride
     public bool? IgnoreTls { get; set; }
     public string? AcceptedStatusCodes { get; set; }
     public string? HttpMethod { get; set; }
+    public string? ExpectedBody { get; set; }
 }

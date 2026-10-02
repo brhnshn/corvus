@@ -55,67 +55,84 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - TR/EN çift dilli sözlük desteği ve xUnit birim testleri (`PingCheckerTests.cs`).
 * **Kabul Kriteri:** IP adresine ping atılarak RTT yanıt süresinin kaydedilmesi, unit testlerin geçmesi (169/169 test geçti).
 
-### Bilet 2.3 — HTTP Yanıt Gövdesi (Keyword / Regex) Doğrulaması
+### Bilet 2.3 — HTTP Yanıt Gövdesi (Keyword / Regex) Doğrulaması [Tamamlandı]
 * **Önkoşul:** Yok.
-* **Amaç:** HTTP 200 dönse bile yanıt gövdesinde beklenen kelimenin (`"status":"healthy"`) bulunup bulunmadığını kontrol etmek.
+* **Amaç:** HTTP 200 dönse bile yanıt gövdesinde beklenen kelimenin (`"status":"healthy"`) veya Regex deseninin bulunup bulunmadığını sıfır gereksiz bellek tahsisatıyla kontrol etmek.
 * **Kapsam:**
-  - `Service` modeline `expected_body` kolonu.
-  - `UptimeCheckerService` HTTP kontrolünde yanıt gövdesinin Stream üzerinden kontrol edilmesi.
-  - UI servis ekleme/düzenleme formuna "Beklenen Yanıt İçeriği (Opsiyonel)" alanı.
-* **Kabul Kriteri:** Kelime bulunamadığında servisin `degraded` veya `down` durumuna geçmesi.
+  - SQLite `011_expected_body.sql` migration'ı ile `services` ve `service_overrides` tablolarına `expected_body` kolonu.
+  - `HttpBodyValidator` yardımcı modülü: `ArrayPool<byte>` bellek havuzu, 64 KB bellek tavanı, 200ms ReDoS zaman aşımı korumalı Regex desteği ve düz kelime araması.
+  - `UptimeCheckerService` asenkron HTTP denetiminde ve `/api/uptime/test-connection` endpoint'inde gövde doğrulama desteği.
+  - UI `AdvancedCheckOptions.tsx`, `AddServiceModal.tsx` ve `EditServiceModal.tsx` bileşenlerinde "Beklenen Yanıt İçeriği" alanı (sadece HTTP/HTTPS modunda aktif).
+  - TR/EN çift dilli sözlük desteği ve xUnit birim testleri (`HttpBodyValidatorTests.cs`).
+* **Kabul Kriteri:** Kelime veya Regex bulunamadığında servisin `down` durumuna geçmesi, 184/184 birim testin yeşil olması.
 
 ---
 
 ## Faz 3: Bildirim Kanalları & Alarm Disiplini
 
-### Bilet 3.1 — E-Posta (SMTP) & Slack Bildirim Kanalları
+### Bilet 3.1 — E-Posta (SMTP) & Slack Bildirim Kanalları ✅ (Tamamlandı)
 * **Önkoşul:** Yok.
-* **Amaç:** En yaygın iki kurumsal bildirim kanalını Corvus'a kazandırmak.
+* **Amaç:** Standart hazır SMTP sunucuları (Gmail, Outlook, Resend, Brevo, AWS SES vb.) ve Slack Incoming Webhook bildirimlerini modern etiket/hap (pills) arayüzü ve anlık test yeteneğiyle sisteme kazandırmak.
 * **Kapsam:**
-  - `NotificationService` içine SMTP (host, port, user, pass, tls) ve Slack Webhook implementasyonu.
-  - Ayarlar sayfasında SMTP ve Slack yapılandırma ve test butonları.
-* **Kabul Kriteri:** Test butonuna basıldığında başarılı e-posta ve Slack bildirimi iletilmesi.
+  - `NotificationService` içine SMTP (`System.Net.Mail`, TLS, özel gönderen, koyu tema HTML şablonu) ve Slack Webhook (`attachments`, durum renk kodları) entegrasyonu.
+  - Native AOT uyumlu JSON serialization (`CorvusJsonSerializerContext`).
+  - Frontend `EmailRecipientInput` (pills/tags, regex doğrulama, duplicate koruması, panodan çoklu yapıştırma desteği).
+  - Modüler `SlackChannelPanel.tsx` ve `EmailChannelPanel.tsx` bileşenleri ile `NotificationSettingsTab.tsx` entegrasyonu.
+  - xUnit birim testleri (190/190 yeşil test).
+* **Kabul Kriteri:** SMTP ve Slack test butonlarıyla başarılı bildirim iletimi, hatasız derleme ve test doğrulaması.
 
-### Bilet 3.2 — Flapping (Dalgalanma) Koruması & Alarm Debounce
+### Bilet 3.2 — Flapping (Dalgalanma) Koruması & Alarm Debounce ✅ (Tamamlandı)
 * **Önkoşul:** Yok.
-* **Amaç:** Ağ dalgalanmasında 1 dakika içinde 10 kez düşüp kalkan servislerin kanalları spamlemesini önlemek.
+* **Amaç:** Ağ dalgalanmasında veya crash-loop durumlarında kısa sürede peş peşe düşüp kalkan servislerin bildirim kanallarını spamlemesini önlemek.
 * **Kapsam:**
-  - Servis bazlı kayan pencere (sliding window) durum hafızası.
-  - Belirli süre içinde X adetten fazla durum değişiminde bildirimleri geçici olarak bastırma (suppress).
-* **Kabul Kriteri:** Yapay flapping testinde peş peşe 10 durum değişiminde yalnızca ilk ve son stabil durum bildiriminin gitmesi.
+  - Bağımsız `IFlappingDetector` ve `FlappingDetector` servisi: Kayan pencere (sliding window) zaman damgası hafızası, sıfır gereksiz bellek tahsisatı ve thread-safe durum takibi.
+  - `UptimeCheckerService` entegrasyonu: Eşik aşıldığında tekil `[DALGALANMA TESPİT EDİLDİ]` alarmı iletildikten sonra ara bildirimlerin susturulması (suppress).
+  - Kararlılık eşiği sağlandığında (N ardışık başarılı kontrol) tekil `[DALGALANMA SONA ERDİ]` kurtarma bildirimi.
+  - `NotificationService.DispatchFlappingAlertAsync` ile 6 kanala (Discord, Telegram, Slack, SMTP, Ntfy, Webhook) amber/yeşil renk kodlu bildirim iletimi.
+  - Ayarlar sayfasında modüler `FlappingProtectionCard.tsx` ve `NotificationEventFilters.tsx` yapılandırması (eşik, kayan pencere, kararlılık kontrolü).
+  - xUnit birim testleri (`FlappingDetectorTests.cs` ve `NotificationServiceTests.cs`, 200/200 yeşil test).
+* **Kabul Kriteri:** Yapay flapping testinde peş peşe 10 durum değişiminde yalnızca ilk ve son stabil durum bildiriminin gitmesi, 200/200 testin yeşil olması.
 
 ---
 
 ## Faz 4: Gelişmiş Docker & Konteyner Yönetimi
 
-### Bilet 4.1 — Konteyner İçi Web Terminali (Exec Shell)
+### Bilet 4.1 — Konteyner İçi Web Terminali (Exec Shell) [TAMAMLANDI]
 * **Önkoşul:** Yok.
 * **Amaç:** Tarayıcı üzerinden konteyner içine `sh`/`bash` terminali açabilmek.
 * **Kapsam:**
-  - Docker Exec API entegrasyonu (WebSocket üzerinden çift yönlü stdin/stdout akışı).
-  - Frontend `xterm.js` terminal bileşeni entegrasyonu.
-  - Konteyner detay sayfasında "Terminal Aç" butonu.
-* **Kabul Kriteri:** Tarayıcıdan konteyner içerisinde `ls`, `ps` komutlarının çalıştırılabilmesi.
+  - Docker Exec API entegrasyonu (POST `/containers/{id}/exec`, HTTP 1.1 Upgrade ile `/exec/{id}/start` ve `/exec/{id}/resize`).
+  - ASP.NET Core Native AOT uyumlu `GET /api/containers/{id}/terminal` WebSocket proxy (`ArrayPool<byte>` ile sıfır bellek ayırma, 8 KB sabit tampon, oturum kapandığında otomatik RAM iadesi).
+  - RBAC güvenliği: Terminal yalnızca `admin` rolüne açık (`[RequireAdmin]`, 403 Forbidden koruması).
+  - Frontend `@xterm/xterm` ve `@xterm/addon-fit` ile `ContainerTerminalModal.tsx` modüler bileşeni (tam ekran desteği, ANSI renkler, shell seçimi `/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`, dinamik TTY boyutlandırma).
+  - Konteyner aksiyon çubuğunda (`ContainerActionButtons.tsx`) log butonu yanında sadece çalışan (`running`) konteynerlerde aktif Web Terminali ikonu.
+* **Kabul Kriteri:** Tarayıcıdan konteyner içerisinde `ls`, `ps`, `top` gibi komutların gecikmesiz çalıştırılabilmesi; xUnit testlerinin yeşil olması (203/203 birim test).
 
-### Bilet 4.2 — İmaj ve Hacim Temizliği (System Prune)
+### Bilet 4.2 — İmaj ve Hacim Temizliği (System Prune) [TAMAMLANDI]
 * **Önkoşul:** Yok.
-* **Amaç:** Sunucuda disk alanı tüketen dangling imaj ve kullanılmayan hacimleri arayüzden tek tıkla temizlemek.
+* **Amaç:** Sunucuda disk alanı tüketen dangling imaj, durdurulmuş konteyner, yetim ağ ve kullanılmayan hacimleri arayüzden tek tıkla temizlemek.
 * **Kapsam:**
-  - Docker `/images/prune` ve `/volumes/prune` API uç noktası.
-  - Konteynerler sayfasında "Sistem Temizliği" butonu ve onay diyaloğu.
-* **Kabul Kriteri:** Prune çağrısıyla serbest bırakılan disk alanının arayüzde gösterilmesi.
+  - Docker Engine Prune API entegrasyonu (`/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune`, `/build/prune`).
+  - Native AOT uyumlu `POST /api/containers/prune` uç noktası ve `[RequireAdmin]` rol koruması.
+  - Modüler `SystemPruneModal.tsx` bileşeni (güvenli varsayılanlar: hacimler varsayılan kapalı ve sarı veri kaybı uyarı şeritli; dangling vs tüm imaj seçimi; silinen kaynakların kategori döküm kartları).
+  - Konteynerler sayfası başlığında "Sistem Temizliği" butonu (`Trash2` ikonu, sadece admin durumunda aktif).
+* **Kabul Kriteri:** Prune çağrısıyla serbest bırakılan disk alanının arayüzde doğru formatta gösterilmesi (`1.42 GB serbest bırakıldı`), xUnit testlerinin yeşil olması (206/206 birim test).
 
 ---
 
 ## Faz 5: Telemetri, Seyreltme & Organizasyon
 
-### Bilet 5.1 — Zaman Serisi Seyreltme (Downsampling / Rollup)
+### Bilet 5.1 — Zaman Serisi Seyreltme (Downsampling / Rollup) [TAMAMLANDI]
 * **Önkoşul:** Yok.
-* **Amaç:** 7 günden eski 15 saniyelik metrikleri saatlik ortalamalara dönüştürerek veritabanını şişirmeden 1 yıllık geçmiş sunmak.
+* **Amaç:** 7 günden eski 15 saniyelik ham metrikleri saatlik ortalamalara dönüştürerek veritabanını şişirmeden 1 yıllık akıcı geçmiş sunmak.
 * **Kapsam:**
-  - `RetentionCleanupService` öncesinde saatlik ortalama tablosuna aktarım (`system_metrics_hourly`).
-  - Grafik uç noktasında 7 günden eski tarihler için hourly tablosundan okuma.
-* **Kabul Kriteri:** 30 günlük grafiğin veritabanı boyutu artmadan pürüzsüz çizilmesi.
+  - Veritabanı şema güncellemesi (`012_metrics_hourly_rollup.sql`) ile indeksli `system_metrics_hourly` tablosu.
+  - `RetentionCleanupService` ve `MetricsRepository` içinde saatlik agregasyon (`AggregateHourlyMetricsAsync`).
+  - İkili saklama stratejisi: 15 saniyelik ham veriler 7 gün saklanıp silinirken, saatlik özetler 365 gün boyunca tutulur.
+  - Uzun vadeli grafikler (`30d`, `90d`, `1y`) için SQLite CTE ile saatlik tablodan okuyan ve henüz özetlenmemiş en güncel saatleri kesintisiz birleştiren sorgu motoru.
+  - Kullanıcı arayüzünde (`SystemMetrics/index.tsx`) 30 Gün, 90 Gün ve 1 Yıl filtreleme butonları ile dinamik tarih etiketleri.
+  - Kapsamlı xUnit test paketi (`MetricsRepositoryTests.cs`, 211/211 yeşil test).
+* **Kabul Kriteri:** 30 günlük, 90 günlük ve 1 yıllık grafiklerin veritabanı şişmeden milisaniyeler içinde akıcı çizilmesi; tüm birim testlerin geçmesi (211/211 yeşil test).
 
 ### Bilet 5.2 — Servis & Konteyner Etiketleme / Gruplama (Tags)
 * **Önkoşul:** Yok.

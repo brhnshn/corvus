@@ -30,7 +30,8 @@ public record CreateServiceRequest(
     int? TimeoutSeconds = 5,
     bool? IgnoreTls = false,
     string? AcceptedStatusCodes = "200-299",
-    string? HttpMethod = "GET"
+    string? HttpMethod = "GET",
+    string? ExpectedBody = null
 );
 
 public record UpdateServiceRequest(
@@ -50,7 +51,8 @@ public record UpdateServiceRequest(
     int? TimeoutSeconds = null,
     bool? IgnoreTls = null,
     string? AcceptedStatusCodes = null,
-    string? HttpMethod = null
+    string? HttpMethod = null,
+    string? ExpectedBody = null
 );
 
 public record TestConnectionRequest(
@@ -58,7 +60,8 @@ public record TestConnectionRequest(
     string? Url = null,
     int? Port = null,
     int? TimeoutSeconds = 5,
-    bool? IgnoreTls = true
+    bool? IgnoreTls = true,
+    string? ExpectedBody = null
 );
 
 public record TestConnectionResponse(
@@ -182,9 +185,17 @@ public record ContainerLogsDto(
 
 public record TestNotificationRequest(
     string Channel,
-    string? WebhookUrl,
-    string? BotToken,
-    string? ChatId
+    string? WebhookUrl = null,
+    string? BotToken = null,
+    string? ChatId = null,
+    string? SmtpHost = null,
+    int? SmtpPort = null,
+    string? SmtpUser = null,
+    string? SmtpPass = null,
+    string? SmtpFrom = null,
+    string? SmtpFromName = null,
+    string? SmtpTo = null,
+    bool? SmtpTls = null
 );
 
 public record NotificationResult(
@@ -256,6 +267,15 @@ public record NotificationResult(
 [JsonSerializable(typeof(DailyUptimeStat))]
 [JsonSerializable(typeof(List<DailyUptimeStat>))]
 [JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(List<string>))]
+[JsonSerializable(typeof(DockerExecCreateResponse))]
+[JsonSerializable(typeof(DockerPruneRequest))]
+[JsonSerializable(typeof(DockerPruneResult))]
+[JsonSerializable(typeof(DockerContainersPruneResponse))]
+[JsonSerializable(typeof(DockerImagesPruneResponse))]
+[JsonSerializable(typeof(DockerVolumesPruneResponse))]
+[JsonSerializable(typeof(DockerNetworksPruneResponse))]
+[JsonSerializable(typeof(DockerBuildCachePruneResponse))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }

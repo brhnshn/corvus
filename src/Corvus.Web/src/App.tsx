@@ -335,6 +335,8 @@ export const App: React.FC = () => {
     );
   }
 
+  const isAdmin = !authStatus?.authEnabled || authStatus?.role === 'admin';
+
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
@@ -342,7 +344,7 @@ export const App: React.FC = () => {
       case 'services':
         return <ServicesPage />;
       case 'containers':
-        return <ContainersPage />;
+        return <ContainersPage isAdmin={isAdmin} />;
       case 'metrics':
         return <SystemMetricsPage />;
       case 'uptime':

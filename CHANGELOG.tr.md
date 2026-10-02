@@ -5,20 +5,55 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 ## [1.5.19] - 2026-10-02
 
+### Telemetri, Seyreltme & Metrik Özeti (Faz 5 - Bilet 5.1)
+- **Zaman Serisi Metrik Seyreltme (Saatlik Rollup)**: 15 saniyelik ham sistem kaynak metriklerini (`system_metrics`) saatlik ortalama özet kayıtlarına (`system_metrics_hourly`) dönüştüren otomatik seyreltme hattı geliştirildi.
+- **İkili Veri Saklama (Dual Retention) Stratejisi**: Yakın geçmişteki detaylı hata ayıklamayı korumak için 15 saniyelik yüksek çözünürlüklü kayıtlar 7 gün saklanıp temizlenirken, saatlik özetler 365 gün boyunca tutulur. `RetentionCleanupService` döngüsünde 7 günden eski ham veriler ve 365 günden eski saatlik özetler düzenli olarak temizlenir.
+- **Birleşik Uzun Vadeli Sorgu Motoru**: `GetRecentAsync` uç noktası `30d`, `90d` ve `1y` (365 gün) zaman aralıklarını destekleyecek şekilde genişletildi. Optimize edilmiş SQLite CTE ile saatlik tablodan okuma yapılırken henüz özetlenmemiş en son saatler anlık olarak birleştirilerek veri boşluğu olmadan milisaniyeler içinde grafik üretilir.
+- **Arayüz Zaman Aralıkları & Dinamik Etiketler**: Sistem Metrikleri sayfasında (`SystemMetrics/index.tsx`) `30 Gün`, `90 Gün` ve `1 Yıl` filtreleme butonları eklendi; çok günlük ve aylık görünümler için duyarlı tarih formatları entegre edildi.
+- **Kapsamlı Test Paketi**: Saatlik agregasyon idempotency, ikili temizlik politikası ve seyreltilmiş sorguları doğrulayan 5 yeni birim test (`MetricsRepositoryTests.cs`) eklendi (tüm 211 test yeşil).
+
+### Konteyner Yönetimi, Web Terminali & Sistem Temizliği (Faz 4 - Bilet 4.1 & 4.2)
+- **İmaj, Hacim ve Sistem Temizliği (System Prune - Bilet 4.2)**: Docker daemon üzerinde disk alanı tüketen dangling/kullanılmayan imajları, durdurulmuş geçici konteynerleri, yetim ağları ve kullanılmayan hacimleri arayüzden tek tıkla temizleme motoru geliştirildi.
+- **Güvenli Temizlik Mimarisi & Hacim Koruması**: Veritabanı ve kalıcı durum kaybını önlemek için `Volumes` seçeneği varsayılan olarak kapalı tutuldu ve seçildiğinde görsel sarı uyarı şeridi sağlandı. İmajlar için "Sadece askıda kalanlar (dangling)" ile "Kullanılmayan tüm imajlar" ayrımı sunuldu.
+- **Modüler Temizlik Modalı (`SystemPruneModal.tsx`)**: Temizlik öncesi onay diyaloğu, temizlik esnasında animasyonlu ilerleme durumu ve tamamlandığında kurtarılan toplam disk alanını (`1.42 GB serbest bırakıldı`) kategori bazlı rozetlerle döküm halinde gösteren arayüz bileşeni geliştirildi.
+- **Native AOT & RBAC Uç Noktası**: `POST /api/containers/prune` uç noktası `[RequireAdmin]` ile güvenceye alındı; `DockerPruneRequest`, `DockerPruneResult` ve prune yanıt tipleri `CorvusJsonSerializerContext` içine kaynak üreticili olarak kaydedildi.
+- **Konteyner İçi Web Terminali (Exec Shell - Bilet 4.1)**: Tarayıcı üzerinden doğrudan çalışan Docker konteynerlerinin içine interaktif kabuk (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) açabilen yüksek performanslı Web Terminali geliştirildi.
+- **Sıfır Bellek Tahsisatlı (Zero-Allocation) WebSocket Proxy**: `GET /api/containers/{id}/terminal` uç noktasında .NET WebSockets ve Docker Engine HTTP 1.1 Upgrade TTY stream'i arasında çift yönlü veri akışı `ArrayPool<byte>` (8 KB sabit tampon) ile sağlandı. İstemci ayrıldığında veya sekme kapandığında Docker exec PID süreci anında sonlandırılır, kiralanan bellekler iade edilir ve Corvus RAM tüketimi taban seviyesine (30-50 MB) döner.
+- **Dinamik PTY Boyutlandırma (Resize Frame)**: Terminal boyutu veya tarayıcı penceresi değiştiğinde `{type: "resize", cols, rows}` kontrol mesajları üzerinden Docker `/exec/{id}/resize` uç noktası tetiklenerek satır ve sütun uyumu anlık olarak eşitlenir.
+- **RBAC Güvenlik Koruması**: Konteyner terminali yetkisiz erişimlere karşı `[RequireAdmin]` ile zırhlanarak yalnızca `admin` rolüne açıldı (Gözlemci/Viewer için 403 Forbidden koruması).
+- **Modüler Terminal Arayüzü (`ContainerTerminalModal.tsx`)**: `@xterm/xterm` ve `@xterm/addon-fit` kütüphaneleriyle Corvus koyu temasına tam uyumlu, tam ekran destekli, VT100/ANSI renk paletli, ekran temizleme, yeniden bağlanma ve anlık kabuk değiştirme özelliklerine sahip modern terminal modalı eklendi.
+- **Aksiyon Butonları & Log Ayrımı**: Konteyner aksiyon çubuğunda (`ContainerActionButtons.tsx`) log butonu `ScrollText` ikonuna dönüştürüldü; yanına sadece çalışan konteynerlerde ve yönetici oturumunda aktif olan `SquareTerminal` ikonlu Web Terminali butonu entegre edildi.
+
 ### Güvenlik & Kullanıcı Yönetimi (RBAC)
 - **Rol Tabanlı Yetkilendirme (RBAC)**: `admin` ve `viewer` rolleri `CorvusAuthFilter` ve `RequireAdminAttribute` ile koruma altına alındı. `viewer` rolündeki kullanıcıların salt okuma yapması sağlandı; servis ekleme/silme, konteyner aksiyonları, sistem ayarları ve yedekleme indirme uç noktaları yetkisiz erişimlere kapatıldı (403 Forbidden).
 - **Kullanıcı Yönetimi & Şifre Değiştirme**: SQLite `UserRepository` CRUD uç noktaları (`/api/users`), şifre güncelleme (`/api/auth/change-password`), ve kullanıcı silindiğinde ilişkili aktif oturumların anında düşürülmesi (`DeleteSessionsByUsernameAsync`) sağlandı.
 - **Modüler Profil & Kullanıcı Yönetimi Sayfası**: Kullanıcı ayarları modal yapısından çıkarılarak bağımsız, modüler bir sayfaya (`/profile`) dönüştürüldü. Kendi parolasını değiştirme (`ProfileSecurityTab.tsx`) ve yöneticiler için kullanıcı listesi/ekleme/silme (`ProfileUsersTab.tsx`, `AddUserModal.tsx`) bileşenlerine ayrıştırıldı. Tasarım renkleri Corvus'un resmi Indigo paletine çekildi, mor renk kirliliği giderildi.
 
 ### Ağ & İzleme Motoru
+- **HTTP Yanıt Gövdesi (Keyword & Regex) Doğrulaması**: HTTP durum kodu 200 dönse dahi uygulamanın gerçekte sağlıklı olup olmadığını teyit etmek için yanıt gövdesinde anahtar kelime (`"status":"healthy"`, `status=ok` vb.) veya Regex deseni arayan denetim motoru entegre edildi.
+- **Sıfır Tahsisatlı 64 KB Bellek Tavanı**: Tüm yanıt gövdesini belleğe alıp OOM riski oluşturmak yerine, `ArrayPool<byte>` bellek havuzu ve `HttpBodyValidator` ile akış en fazla 64 KB taranacak şekilde sınırlandırıldı. ReDoS saldırılarına karşı 200ms Regex zaman aşımı koruması sağlandı.
 - **ICMP Ping Monitörü**: HTTP portu bulunmayan fiziksel sunucu, gateway ve router'ların paket gecikmesini (RTT) ve erişilebilirliğini `System.Net.NetworkInformation.Ping` ile asenkron izleyen denetleyici entegre edildi. Servis ekleme/düzenleme modallarında ICMP Ping seçeneği, `/api/uptime/test-connection` üzerinde anlık ping testi, ve arayüzde cyan `ICMP PING` rozetleri sağlandı.
 - **Proaktif SSL/TLS Bitiş Alarmı**: Sertifika süresi bitimine 14 ve 7 gün kala Discord (renk kodlu embed), Telegram, Ntfy ve Webhook kanallarına otomatik erken uyarı bildirim motoru entegre edildi.
 - **Akıllı Debounce & Anti-Spam Koruması**: `UptimeCheckerService` içine kademeli (14g uyarı, 7g kritik) günlük durum hafızası eklendi; sertifika yenilendiğinde alarm durumu otomatik sıfırlanır hale getirildi.
 - **Servis Kartı SSL Rozeti**: 7 günden az kalan sertifikalarda yanıp sönen kırmızı `ShieldAlert`, 14 günden az kalanlarda amber uyarı rozetleri eklendi.
 - **Bildirim Filtresi**: Ayarlar paneline `notify_ssl_expiry` açma/kapama seçeneği eklendi.
 
+### Bildirim Kanalları & Alarm Disiplini (Faz 3 - Bilet 3.1 & 3.2)
+- **Flapping (Dalgalanma) Koruması & Alarm Debounce (Bilet 3.2)**: Ağ dalgalanmaları veya crash-loop döngülerinde kısa sürede peş peşe düşüp kalkan servislerin bildirim kanallarını spamlemesini önleyen akıllı alarm filtresi geliştirildi.
+- **Kayan Pencere (Sliding Window) Hafızası (`FlappingDetector`)**: Bağımsız ve thread-safe `IFlappingDetector` servisi ile servis başına durum geçiş zaman damgaları kayan pencerede izlenir. Eşik (varsayılan: 10 dakikada 4 geçiş) aşıldığında tek bir `[DALGALANMA TESPİT EDİLDİ]` alarmı gönderilerek ara bildirimler geçici olarak susturulur.
+- **Kararlılık Tespiti & Kurtarma Bildirimi**: Servis belirlenen sayıda (varsayılan: 3 ardışık kontrol) stabil UP/DOWN durumu sunduğunda flapping modu sonlandırılır ve kanallara tekil `[DALGALANMA SONA ERDİ]` kararlılık bildirimi iletilerek normal izleme tekrar devreye alınır.
+- **Modüler Yapılandırma Kartı (`FlappingProtectionCard.tsx`)**: Ayarlar sayfasında bildirimler sekmesine geçiş eşiği, kayan pencere süresi ve kararlılık kontrol sayısını yöneten modern, modüler yapılandırma bileşeni eklendi; tetikleyici filtresine `notify_flapping_events` seçeneği bağlandı.
+- **E-Posta (SMTP) Bildirim Kanalı (Bilet 3.1)**: Standart SMTP sunucuları (Gmail, Outlook, Resend, Brevo, AWS SES, cPanel vb.) üzerinden anında durum alarmları ileten bildirim motoru geliştirildi. Özel gönderen adı (`From Name`), port, TLS/SSL desteği ve modern koyu temalı HTML e-posta şablonu sağlandı.
+- **Etiket / Hap (Pills) Tabanlı Çoklu Alıcı Girişi (`EmailRecipientInput`)**: Alıcı e-postalarının ham metin kutusu yerine modern çipler/haplar halinde yönetilmesini sağlayan arayüz bileşeni geliştirildi. Enter ve virgül tuşlarıyla ekleme, `x` butonu ve Backspace ile silme, Regex doğrulama, mükerrer önleme ve panodan çoklu yapıştırma (ayrıştırma) desteği eklendi.
+- **Slack Incoming Webhook Kanalı (Bilet 3.1)**: Slack kanallarına anında durum bildirimleri gönderen entegrasyon eklendi. Slack attachments mimarisi ve durum renk kodlamaları (Kırmızı: Down, Yeşil: Up/Test, Amber: SSL/Flapping Uyarısı) ile zengin formatlı mesaj iletimi sağlandı.
+- **Anlık Test Butonları & Native AOT Uyumu**: Ayarlar sayfasında her iki kanal için anlık "Test Et" butonları entegre edildi. `System.Net.Mail` kullanılarak harici kütüphane bağımlılığı olmadan 30-50 MB RAM disiplini ve Native AOT JSON kaynak üreticisi (`CorvusJsonSerializerContext`) tam uyumu korundu.
+
+### Hata Düzeltmeleri & UX İyileştirmeleri
+- **HTTP/2 SSE Protokol Hatası Düzeltildi**: `/api/stream/events` uç noktasında HTTP/2 ve HTTP/3 bağlantılarında RFC 7540 standardına aykırı olan `Connection: keep-alive` başlığının Chromium tarayıcılarda `net::ERR_HTTP2_PROTOCOL_ERROR` hatası fırlatması engellendi. Başlık HTTP/1.x ile sınırlandırıldı; `X-Accel-Buffering: no` eklendi ve istemci erken kapattığında fırlatılan `IOException` sessizce bertaraf edildi.
+- **Ayarlar Sayfası Hizalama & Genişlik Dengesi**: Ayarlar sayfasındaki `max-w-4xl mx-auto` sınırlaması kaldırılarak Dashboard, Servisler, Konteynerler ve Sistem Metrikleri sayfalarıyla aynı tam genişlik ve sol hizalama standardına getirildi; sekmeler arası geçişteki zıplama hissi giderildi.
+
 ### Kullanıcı Deneyimi & Tasarım (UI/UX)
-- **Ayarlar Sayfası UX Sadeleştirmesi**: Sağdaki mükerrer 4 kolonluk yapışkan sidebar (çift veritabanı boyutu, mükerrer kullanıcı kayıt durumu ve statik metinler) tamamen kaldırılarak sayfa tekil, modern ve ekrana tam oturan `max-w-4xl` mimarisine kavuşturuldu. Çift kaydet butonu ikilemesi giderildi; sürüm durumu başlık yanına şık ve kompakt bir rozet olarak taşındı.
+- **Ayarlar Sayfası UX Sadeleştirmesi**: Sağdaki mükerrer 4 kolonluk yapışkan sidebar (çift veritabanı boyutu, mükerrer kullanıcı kayıt durumu ve statik metinler) tamamen kaldırılarak sayfa tekil ve modern bir mimariye kavuşturuldu. Çift kaydet butonu ikilemesi giderildi; sürüm durumu başlık yanına şık ve kompakt bir rozet olarak taşındı.
 - **Güvenli Oturum Düşüş Yönetimi (401 Interceptor)**: API katmanında oturum süresi dolduğunda (`401 Unauthorized`) fırlatılan işlenmemiş hatalar `corvus_unauthorized` olayıyla merkezi olarak yakalanarak kullanıcının anında oturum açma ekranına yönlendirilmesi sağlandı; `api.getSettings()` yakalama bloklarıyla donatıldı.
 - **Mobil Arayüz Sadeleştirmesi**: Alt bar (`BottomNav`) aktifken mobilde ekran alanı daraltan üst header, hamburger menü ve kayan drawer layout'u tamamen kaldırıldı; parmak ucu erişimi için Profil & Kullanıcı sekmesi doğrudan alt bara entegre edildi.
 - **Rol Metin Standardı**: Türkçe dil dosyasında hem yönetici hem admin yazan ikili gösterim (`Yönetici (Admin)`) giderilerek sade `Yönetici` ve `Gözlemci` terminolojisi sağlandı.
@@ -38,7 +73,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Docker Log Rotasyon Sınırı**: `docker-compose.yml` dosyasına `max-size: 10m` ve `max-file: 3` kuralları eklenerek konteyner loglarının diskte kontrolsüz büyümesi engellendi.
 
 ### Testler
-- Tüm 169 birim testi sıfır hatayla başarıyla tamamlandı (`Passed: 169, Failed: 0`).
+- Tüm 206 birim testi sıfır hatayla başarıyla tamamlandı (`Passed: 206, Failed: 0`).
 
 ---
 

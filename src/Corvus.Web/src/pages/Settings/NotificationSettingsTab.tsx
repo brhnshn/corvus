@@ -5,9 +5,12 @@ import { DiscordChannelPanel } from './notifications/DiscordChannelPanel';
 import { TelegramChannelPanel } from './notifications/TelegramChannelPanel';
 import { NtfyChannelPanel } from './notifications/NtfyChannelPanel';
 import { WebhookChannelPanel } from './notifications/WebhookChannelPanel';
+import { SlackChannelPanel } from './notifications/SlackChannelPanel';
+import { EmailChannelPanel } from './notifications/EmailChannelPanel';
 import { NotificationEventFilters } from './notifications/NotificationEventFilters';
+import { FlappingProtectionCard } from './notifications/FlappingProtectionCard';
 
-export type ChannelType = 'discord' | 'telegram' | 'ntfy' | 'webhook';
+export type ChannelType = 'discord' | 'telegram' | 'ntfy' | 'slack' | 'email' | 'webhook';
 
 interface NotificationSettingsTabProps {
   settings: Record<string, string>;
@@ -33,6 +36,8 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
   const channels: { id: ChannelType; name: string; enabled: boolean }[] = [
     { id: 'discord', name: t('settings.channelTabDiscord'), enabled: settings['notification_discord_enabled'] === 'true' },
     { id: 'telegram', name: t('settings.channelTabTelegram'), enabled: settings['notification_telegram_enabled'] === 'true' },
+    { id: 'slack', name: t('settings.channelTabSlack'), enabled: settings['notification_slack_enabled'] === 'true' },
+    { id: 'email', name: t('settings.channelTabEmail'), enabled: settings['notification_email_enabled'] === 'true' },
     { id: 'ntfy', name: t('settings.channelTabNtfy'), enabled: settings['notification_ntfy_enabled'] === 'true' },
     { id: 'webhook', name: t('settings.channelTabWebhook'), enabled: settings['notification_webhook_enabled'] === 'true' },
   ];
@@ -50,7 +55,7 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
       </div>
 
       {/* Kanal Sekmeleri */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0f1117] p-1.5 rounded-xl border border-[#2a2e3f]">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-[#0f1117] p-1.5 rounded-xl border border-[#2a2e3f]">
         {channels.map((ch) => (
           <button
             key={ch.id}
@@ -105,6 +110,24 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
           />
         )}
 
+        {activeChannel === 'slack' && (
+          <SlackChannelPanel
+            settings={settings}
+            setSettings={setSettings}
+            testingChannel={testingChannel}
+            onTestNotification={onTestNotification}
+          />
+        )}
+
+        {activeChannel === 'email' && (
+          <EmailChannelPanel
+            settings={settings}
+            setSettings={setSettings}
+            testingChannel={testingChannel}
+            onTestNotification={onTestNotification}
+          />
+        )}
+
         {activeChannel === 'ntfy' && (
           <NtfyChannelPanel
             settings={settings}
@@ -126,6 +149,12 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
 
       {/* Bildirim Olay Filtreleri (Tetikleyiciler) */}
       <NotificationEventFilters
+        settings={settings}
+        setSettings={setSettings}
+      />
+
+      {/* Flapping (Dalgalanma) Koruması & Alarm Debounce */}
+      <FlappingProtectionCard
         settings={settings}
         setSettings={setSettings}
       />

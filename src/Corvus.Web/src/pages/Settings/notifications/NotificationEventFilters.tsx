@@ -19,7 +19,7 @@ export const NotificationEventFilters: React.FC<NotificationEventFiltersProps> =
         <p className="text-[11px] text-[#9ca3af]">{t('settings.eventsDesc')}</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
         <label className="flex items-center gap-2 p-2.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] cursor-pointer text-xs text-[#e5e7eb] hover:border-[#3f4458] transition-colors">
           <input
             type="checkbox"
@@ -38,6 +38,16 @@ export const NotificationEventFilters: React.FC<NotificationEventFiltersProps> =
             className="w-4 h-4 rounded accent-[#d4d4d8] cursor-pointer"
           />
           <span>{t('settings.eventSslExpiry')}</span>
+        </label>
+
+        <label className="flex items-center gap-2 p-2.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] cursor-pointer text-xs text-[#e5e7eb] hover:border-[#3f4458] transition-colors">
+          <input
+            type="checkbox"
+            checked={settings['notify_flapping_events'] !== 'false'}
+            onChange={(e) => setSettings({ ...settings, notify_flapping_events: e.target.checked ? 'true' : 'false' })}
+            className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
+          />
+          <span>{t('settings.eventFlapping')}</span>
         </label>
 
         <label className="flex items-center gap-2 p-2.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] cursor-pointer text-xs text-[#e5e7eb] hover:border-[#3f4458] transition-colors">

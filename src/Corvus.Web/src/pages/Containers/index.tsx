@@ -1,19 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { api, type DockerContainer, type ContainerStats } from '../../api/client';
-import { RefreshCw, Boxes, Layers, List } from 'lucide-react';
+import { RefreshCw, Boxes, Layers, List, Trash2 } from 'lucide-react';
 import { ContainerList } from './ContainerList';
 import { ComposeStackGroup } from './ComposeStackGroup';
 import { ContainerLogsModal } from './ContainerLogsModal';
+import { ContainerTerminalModal } from './ContainerTerminalModal';
+import { SystemPruneModal } from './SystemPruneModal';
 import { useI18n } from '../../i18n';
 import { useEntityGrouping, deriveSmartGroup } from '../../utils/grouping';
 
-export const ContainersPage: React.FC = () => {
+interface ContainersPageProps {
+  isAdmin?: boolean;
+}
+
+export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }) => {
   const { t } = useI18n();
   const [containers, setContainers] = useState<DockerContainer[]>([]);
   const [statsMap, setStatsMap] = useState<Record<string, ContainerStats>>({});
   const [loading, setLoading] = useState(true);
   const [actionInProgress, setActionInProgress] = useState<{ id: string; action: string } | null>(null);
   const [selectedLogsContainer, setSelectedLogsContainer] = useState<{ id: string; name: string } | null>(null);
+  const [selectedTerminalContainer, setSelectedTerminalContainer] = useState<{ id: string; name: string } | null>(null);
+  const [showPruneModal, setShowPruneModal] = useState(false);
   
   // Görünüm Modu: Düz Liste vs Gruplanmış Görünüm (Compose & Akıllı Gruplar)
   const [viewMode, setViewMode] = useState<'flat' | 'compose'>('compose');
@@ -200,6 +208,17 @@ export const ContainersPage: React.FC = () => {
             </button>
           </div>
 
+          {isAdmin && (
+            <button
+              onClick={() => setShowPruneModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors cursor-pointer"
+              title={t('containers.systemPrune')}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t('containers.systemPrune')}</span>
+            </button>
+          )}
+
           <button
             onClick={loadContainers}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#2a2e3f] bg-[#1a1d29] text-xs font-medium text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors cursor-pointer"
@@ -233,6 +252,8 @@ export const ContainersPage: React.FC = () => {
           actionInProgress={actionInProgress}
           onAction={handleAction}
           onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
+          onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -254,6 +275,8 @@ export const ContainersPage: React.FC = () => {
           actionInProgress={actionInProgress}
           onAction={handleAction}
           onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
+          onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -263,6 +286,23 @@ export const ContainersPage: React.FC = () => {
           containerId={selectedLogsContainer.id}
           containerName={selectedLogsContainer.name}
           onClose={() => setSelectedLogsContainer(null)}
+        />
+      )}
+
+      {/* Canlı Web Terminal (Exec) Modalı */}
+      {selectedTerminalContainer && (
+        <ContainerTerminalModal
+          containerId={selectedTerminalContainer.id}
+          containerName={selectedTerminalContainer.name}
+          onClose={() => setSelectedTerminalContainer(null)}
+        />
+      )}
+
+      {/* Docker Sistem ve Disk Temizliği Modalı */}
+      {showPruneModal && (
+        <SystemPruneModal
+          onClose={() => setShowPruneModal(false)}
+          onSuccess={() => loadContainers()}
         />
       )}
     </div>

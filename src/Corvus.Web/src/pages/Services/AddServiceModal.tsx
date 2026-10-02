@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { api } from '../../api/client';
+import { AdvancedCheckOptions } from './AdvancedCheckOptions';
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -19,6 +20,14 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
   const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'ping'>('http');
   const [formPort, setFormPort] = useState<number | ''>('');
   const [formIsPublic, setFormIsPublic] = useState(true);
+  const [formCheckInterval, setFormCheckInterval] = useState<number | ''>(60);
+  const [formTimeoutSeconds, setFormTimeoutSeconds] = useState<number | ''>(5);
+  const [formMaxRetries, setFormMaxRetries] = useState<number | ''>(1);
+  const [formRetryInterval, setFormRetryInterval] = useState<number | ''>(30);
+  const [formIgnoreTls, setFormIgnoreTls] = useState(false);
+  const [formAcceptedStatusCodes, setFormAcceptedStatusCodes] = useState('200-299');
+  const [formHttpMethod, setFormHttpMethod] = useState('GET');
+  const [formExpectedBody, setFormExpectedBody] = useState('');
   const [saving, setSaving] = useState(false);
 
   if (!isOpen) return null;
@@ -47,7 +56,15 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
         healthCheckUrl: finalHealth || undefined,
         checkType: formCheckType,
         port: formPort !== '' ? Number(formPort) : undefined,
-        isPublic: formIsPublic
+        isPublic: formIsPublic,
+        checkInterval: formCheckInterval !== '' ? Number(formCheckInterval) : 60,
+        timeoutSeconds: formTimeoutSeconds !== '' ? Number(formTimeoutSeconds) : 5,
+        maxRetries: formMaxRetries !== '' ? Number(formMaxRetries) : 1,
+        retryInterval: formRetryInterval !== '' ? Number(formRetryInterval) : 30,
+        ignoreTls: formIgnoreTls,
+        acceptedStatusCodes: formAcceptedStatusCodes.trim() || '200-299',
+        httpMethod: formHttpMethod || 'GET',
+        expectedBody: formExpectedBody.trim() || undefined,
       });
       // Formu sıfırla ve kapat
       setFormName('');
@@ -58,6 +75,14 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
       setFormCheckType('http');
       setFormPort('');
       setFormIsPublic(true);
+      setFormCheckInterval(60);
+      setFormTimeoutSeconds(5);
+      setFormMaxRetries(1);
+      setFormRetryInterval(30);
+      setFormIgnoreTls(false);
+      setFormAcceptedStatusCodes('200-299');
+      setFormHttpMethod('GET');
+      setFormExpectedBody('');
       onClose();
       await onSuccess();
     } catch (err) {
@@ -204,6 +229,26 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
               />
             </div>
           )}
+
+          <AdvancedCheckOptions
+            checkType={formCheckType}
+            checkInterval={formCheckInterval}
+            onChangeCheckInterval={setFormCheckInterval}
+            timeoutSeconds={formTimeoutSeconds}
+            onChangeTimeoutSeconds={setFormTimeoutSeconds}
+            maxRetries={formMaxRetries}
+            onChangeMaxRetries={setFormMaxRetries}
+            retryInterval={formRetryInterval}
+            onChangeRetryInterval={setFormRetryInterval}
+            ignoreTls={formIgnoreTls}
+            onChangeIgnoreTls={setFormIgnoreTls}
+            acceptedStatusCodes={formAcceptedStatusCodes}
+            onChangeAcceptedStatusCodes={setFormAcceptedStatusCodes}
+            httpMethod={formHttpMethod}
+            onChangeHttpMethod={setFormHttpMethod}
+            expectedBody={formExpectedBody}
+            onChangeExpectedBody={setFormExpectedBody}
+          />
 
           <div className="pt-2">
             <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">

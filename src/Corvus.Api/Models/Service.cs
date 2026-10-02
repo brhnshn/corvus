@@ -30,4 +30,5 @@ public class Service
     public bool IgnoreTls { get; set; } = false;
     public string? AcceptedStatusCodes { get; set; } = "200-299";
     public string? HttpMethod { get; set; } = "GET";
+    public string? ExpectedBody { get; set; }
 }

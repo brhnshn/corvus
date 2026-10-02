@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-169_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-211_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -81,16 +81,24 @@
   - Informative disk-growth advisories when selecting Unlimited mode.
   - Real-time database disk footprint tracking (`GET /api/settings/db-stats`).
   - Dynamic background cleaner (`RetentionCleanupService`) with SQLite `PRAGMA optimize;`.
-- **🪵 Real-Time Container Log Streaming:**
+- **🪵 Real-Time Container Log Streaming & Web Terminal (Exec Shell):**
+  - **In-Browser Web Terminal (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`):** Interactive shell access directly into running containers via zero-allocation ASP.NET Core Native AOT WebSocket proxy (`ArrayPool<byte>`, 8 KB static buffer footprint).
+  - Dynamic PTY resizing via JSON control frames, ANSI/VT100 rendering with `@xterm/xterm`, and strict RBAC protection (`[RequireAdmin]`, 403 Forbidden).
   - Zero-allocation multiplexed demuxer (`DockerLogDemuxer.cs`) for Docker stdout/stderr streams.
   - Real-time Server-Sent Events (`/api/containers/{id}/logs/stream`) with dark monospace terminal modal, keyword filtering, and auto-scroll.
-- **⚡ Container Stats & Lifecycle Controls:**
+- **⚡ Container Stats, Lifecycle Controls & System Prune:**
   - Live per-container CPU %, Memory (usage/limit), and Net I/O (Rx/Tx) via Docker Stats API.
   - Lifecycle actions: **Start**, **Stop**, **Pause**, **Unpause**, and **Restart** with confirmation modals.
   - **Compose Stack Grouping:** Toggle between flat list and collapsible Docker Compose projects (`com.docker.compose.project`).
-- **🔔 Multi-Channel Alerting Engine:**
-  - Tabbed notification configuration: **Discord**, **Telegram**, **Ntfy / Gotify**, and **Generic Webhooks**.
-  - Configurable notification triggers (`notify_service_events`) and one-click test notification dispatcher.
+  - **One-Click System Prune:** Clean dangling/unused images, stopped containers, orphan networks, and unused volumes with persistent data safeguards and detailed disk reclamation statistics.
+- **🔔 Multi-Channel Alerting Engine & Flapping Protection:**
+  - Tabbed notification configuration: **Discord**, **Telegram**, **Email (SMTP)**, **Slack Webhooks**, **Ntfy / Gotify**, and **Generic Webhooks**.
+  - **Intelligent Flapping Suppression (`IFlappingDetector`):** Sliding-window transition tracking suppresses alert spam during intermittent flapping, dispatching single warning (Amber) and resolved (Green) notifications.
+  - Interactive multi-recipient chip input (`EmailRecipientInput`) with regex validation and clipboard parsing.
+- **📉 Time-Series Downsampling & Historical Rollups:**
+  - Automatic downsampling of 15-second raw metrics (`system_metrics`) into hourly summary records (`system_metrics_hourly`).
+  - Dual retention policy: 7 days retention for high-frequency raw telemetry, 365 days retention for hourly rollups.
+  - High-performance unified queries powering `30d`, `90d`, and `1y` time-series views with zero chart gaps.
 - **⏱️ Extended Endpoint Uptime & SSL Tracking:**
   - **User-Controlled (Opt-in) Uptime & Live Connection Testing:** Containers discovered from Docker are not blindly polled; they reside cleanly in an unmonitored pool on the Uptime page. Users configure target endpoints, verify reachability via an instant "Test Connection" button (`POST /api/uptime/test-connection`), and explicitly opt in.
   - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.

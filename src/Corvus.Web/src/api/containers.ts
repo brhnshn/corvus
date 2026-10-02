@@ -60,5 +60,15 @@ export const containersApi = {
   },
 
   getContainerLogs: (id: string, tail = 100) => 
-    fetchJson<{ containerId: string; lines: string[] }>(`/containers/${id}/logs?tail=${tail}`)
+    fetchJson<{ containerId: string; lines: string[] }>(`/containers/${id}/logs?tail=${tail}`),
+
+  systemPrune: async (options: import('../types').DockerPruneRequest) => {
+    const res = await fetchJson<import('../types').DockerPruneResult>('/containers/prune', {
+      method: 'POST',
+      body: JSON.stringify(options)
+    });
+    invalidateCache('/containers');
+    invalidateCache('/dashboard');
+    return res;
+  }
 };

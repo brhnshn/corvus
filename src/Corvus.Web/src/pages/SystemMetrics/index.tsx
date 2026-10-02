@@ -51,14 +51,19 @@ export const SystemMetricsPage: React.FC = () => {
     { id: '6h', label: t('metrics.range6h') },
     { id: '12h', label: t('metrics.range12h') },
     { id: '24h', label: t('metrics.range24h') },
-    { id: '7d', label: t('metrics.range7d') }
+    { id: '7d', label: t('metrics.range7d') },
+    { id: '30d', label: t('metrics.range30d') },
+    { id: '90d', label: t('metrics.range90d') },
+    { id: '1y', label: t('metrics.range1y') }
   ];
 
-  const isMultiDay = range === '24h' || range === '7d';
+  const isMultiDay = range === '24h' || range === '7d' || range === '30d' || range === '90d' || range === '1y';
 
   const chartData = metrics.map((m) => {
     const d = new Date(m.recordedAt);
-    const time = isMultiDay
+    const time = (range === '90d' || range === '1y')
+      ? d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+      : isMultiDay
       ? `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
       : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 

@@ -27,7 +27,20 @@ export const settingsApi = {
 
   getVersion: () => fetchCachedJson<VersionInfo>('/version', undefined, 300000),
 
-  testNotification: (data: { channel: string; webhookUrl?: string; botToken?: string; chatId?: string }) => 
+  testNotification: (data: { 
+    channel: string; 
+    webhookUrl?: string; 
+    botToken?: string; 
+    chatId?: string;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpUser?: string;
+    smtpPass?: string;
+    smtpFrom?: string;
+    smtpFromName?: string;
+    smtpTo?: string;
+    smtpTls?: boolean;
+  }) => 
     fetchJson<{ success: boolean; message: string }>('/notifications/test', {
       method: 'POST',
       body: JSON.stringify(data)

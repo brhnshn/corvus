@@ -1,3 +1,9 @@
+using System;
+using System.Buffers;
+using System.Net.Sockets;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
 
@@ -64,6 +70,12 @@ public static class ContainersEndpoints
                 : Results.Json(new GenericApiResponse(false, result.Message ?? "Container devam ettirilemedi."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
+        }).RequireAdmin();
+
+        group.MapPost("/prune", async (DockerPruneRequest request, IDockerService docker, CancellationToken ct) =>
+        {
+            var result = await docker.ExecuteSystemPruneAsync(request, ct);
+            return Results.Json(result, CorvusJsonSerializerContext.Default.DockerPruneResult);
         }).RequireAdmin();
 
         group.MapGet("/stats-summary", async (IDockerService docker, CancellationToken ct) =>
@@ -159,5 +171,148 @@ public static class ContainersEndpoints
                 }
             }
         });
+
+        group.MapGet("/{id}/terminal", async (
+            string id, 
+            HttpContext context, 
+            IDockerService docker, 
+            ILoggerFactory loggerFactory) =>
+        {
+            var logger = loggerFactory.CreateLogger("ContainerTerminal");
+
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                return Results.BadRequest("WebSocket isteği bekleniyor.");
+            }
+
+            string shell = context.Request.Query["shell"].ToString();
+            if (string.IsNullOrWhiteSpace(shell) || (shell != "/bin/sh" && shell != "/bin/bash"))
+            {
+                shell = "/bin/sh";
+            }
+
+            using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+            string? execId = await docker.CreateExecInstanceAsync(id, shell, context.RequestAborted);
+            if (string.IsNullOrWhiteSpace(execId))
+            {
+                byte[] errBytes = Encoding.UTF8.GetBytes($"\r\n\x1b[31m[Hata] Konteyner içinde '{shell}' kabuğu başlatılamadı.\x1b[0m\r\n");
+                await webSocket.SendAsync(errBytes, WebSocketMessageType.Text, true, CancellationToken.None);
+                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Exec failed", CancellationToken.None);
+                return Results.Empty;
+            }
+
+            Stream dockerStream;
+            try
+            {
+                dockerStream = await docker.StartExecStreamAsync(execId, context.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Docker exec stream başlatılamadı: {ContainerId}", id);
+                byte[] errBytes = Encoding.UTF8.GetBytes($"\r\n\x1b[31m[Hata] Docker TTY stream başlatılamadı: {ex.Message}\x1b[0m\r\n");
+                await webSocket.SendAsync(errBytes, WebSocketMessageType.Text, true, CancellationToken.None);
+                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Stream failed", CancellationToken.None);
+                return Results.Empty;
+            }
+
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
+            using (dockerStream)
+            {
+                var ct = linkedCts.Token;
+
+                // Docker -> WebSocket pompası
+                var dockerToWsTask = Task.Run(async () =>
+                {
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+                    try
+                    {
+                        while (!ct.IsCancellationRequested && webSocket.State == WebSocketState.Open)
+                        {
+                            int bytesRead = await dockerStream.ReadAsync(buffer, 0, buffer.Length, ct);
+                            if (bytesRead == 0) break;
+
+                            await webSocket.SendAsync(
+                                new ArraySegment<byte>(buffer, 0, bytesRead),
+                                WebSocketMessageType.Binary,
+                                endOfMessage: true,
+                                ct);
+                        }
+                    }
+                    catch (OperationCanceledException) { }
+                    catch (Exception ex) when (ex is IOException or SocketException or WebSocketException) { }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        linkedCts.Cancel();
+                    }
+                }, ct);
+
+                // WebSocket -> Docker pompası (ve resize mesajları)
+                var wsToDockerTask = Task.Run(async () =>
+                {
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+                    try
+                    {
+                        while (!ct.IsCancellationRequested && webSocket.State == WebSocketState.Open)
+                        {
+                            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                            if (result.MessageType == WebSocketMessageType.Close)
+                            {
+                                break;
+                            }
+
+                            if (result.Count > 0)
+                            {
+                                // Terminal resize kontrolü: {"type":"resize","cols":80,"rows":24}
+                                if (result.MessageType == WebSocketMessageType.Text && 
+                                    buffer[0] == (byte)'{' && 
+                                    Encoding.UTF8.GetString(buffer, 0, result.Count).Contains("\"resize\""))
+                                {
+                                    try
+                                    {
+                                        var jsonStr = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                                        using var doc = JsonDocument.Parse(jsonStr);
+                                        if (doc.RootElement.TryGetProperty("cols", out var colsProp) &&
+                                            doc.RootElement.TryGetProperty("rows", out var rowsProp))
+                                        {
+                                            int cols = colsProp.GetInt32();
+                                            int rows = rowsProp.GetInt32();
+                                            _ = docker.ResizeExecAsync(execId, cols, rows, ct);
+                                        }
+                                    }
+                                    catch { }
+                                }
+                                else
+                                {
+                                    await dockerStream.WriteAsync(buffer, 0, result.Count, ct);
+                                    await dockerStream.FlushAsync(ct);
+                                }
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException) { }
+                    catch (Exception ex) when (ex is IOException or SocketException or WebSocketException) { }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        linkedCts.Cancel();
+                    }
+                }, ct);
+
+                await Task.WhenAny(dockerToWsTask, wsToDockerTask);
+
+                try
+                {
+                    if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
+                    {
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Session ended", CancellationToken.None);
+                    }
+                }
+                catch { }
+
+                return Results.Empty;
+            }
+        }).RequireAdmin();
     }
 }

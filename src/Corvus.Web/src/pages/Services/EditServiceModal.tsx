@@ -34,6 +34,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [formIgnoreTls, setFormIgnoreTls] = useState(false);
   const [formAcceptedStatusCodes, setFormAcceptedStatusCodes] = useState('200-299');
   const [formHttpMethod, setFormHttpMethod] = useState('GET');
+  const [formExpectedBody, setFormExpectedBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -55,6 +56,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setFormIgnoreTls(service.ignoreTls === true);
       setFormAcceptedStatusCodes(service.acceptedStatusCodes || '200-299');
       setFormHttpMethod(service.httpMethod || 'GET');
+      setFormExpectedBody(service.expectedBody || '');
       setErrorMsg(null);
     }
   }, [service]);
@@ -106,7 +108,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         retryInterval: formRetryInterval !== '' ? Number(formRetryInterval) : 30,
         ignoreTls: formIgnoreTls,
         acceptedStatusCodes: formAcceptedStatusCodes.trim() || '200-299',
-        httpMethod: formHttpMethod || 'GET'
+        httpMethod: formHttpMethod || 'GET',
+        expectedBody: formExpectedBody.trim() || undefined
       });
 
       onClose();
@@ -399,6 +402,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             onChangeAcceptedStatusCodes={setFormAcceptedStatusCodes}
             httpMethod={formHttpMethod}
             onChangeHttpMethod={setFormHttpMethod}
+            expectedBody={formExpectedBody}
+            onChangeExpectedBody={setFormExpectedBody}
           />
 
           {/* Genel Durum Sayfası Görünürlüğü */}
