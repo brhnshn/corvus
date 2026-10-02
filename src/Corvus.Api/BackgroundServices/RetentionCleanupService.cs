@@ -49,19 +49,19 @@ public class RetentionCleanupService : BackgroundService
                     await metricsRepo.CleanupOldAsync(retentionDays);
                     await uptimeRepo.CleanupOldAsync(retentionDays);
 
-                    // SQLite sorgu planlayıcısı istatistiklerini güncelle
+                    // SQLite sorgu planlayıcısı istatistiklerini güncelle ve silinen kayıtların freelist alanını diske iade et (VACUUM)
                     if (dbFactory != null)
                     {
                         try
                         {
                             using var conn = dbFactory.CreateConnection();
                             using var cmd = conn.CreateCommand();
-                            cmd.CommandText = "PRAGMA optimize;";
+                            cmd.CommandText = "PRAGMA optimize; VACUUM;";
                             cmd.ExecuteNonQuery();
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // Optimize hata verse bile ana akışı kesme
+                            _logger.LogDebug(ex, "SQLite optimize veya VACUUM sırasında geçici durum.");
                         }
                     }
 

@@ -12,6 +12,11 @@ services:
       - CORVUS_AUTH_ENABLED=true
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       # Docker socket mount:
       # Use '/var/run/docker.sock:/var/run/docker.sock:ro' for read-only monitoring.

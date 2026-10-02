@@ -40,7 +40,7 @@ public class MemoryTrimmerBackgroundService : BackgroundService
                     {
                         using var conn = _dbConnectionFactory.CreateConnection();
                         using var cmd = conn.CreateCommand();
-                        cmd.CommandText = "PRAGMA wal_checkpoint(PASSIVE); PRAGMA shrink_memory;";
+                        cmd.CommandText = "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA shrink_memory;";
                         cmd.ExecuteNonQuery();
                     }
                     catch (Exception ex)

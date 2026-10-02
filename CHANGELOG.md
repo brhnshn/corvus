@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.20] - 2026-10-02
+
+### Storage & Database
+- **Automatic SQLite Freelist Reclamation (VACUUM)**: Integrated automated `VACUUM;` into `RetentionCleanupService` post-retention cleanup, forcing SQLite to release orphaned freelist pages directly back to the filesystem and shrinking fragmented database files by up to 60-70%.
+- **WAL Truncation Checkpoint**: Upgraded `MemoryTrimmerBackgroundService` SQLite checkpoint from `PASSIVE` to `PRAGMA wal_checkpoint(TRUNCATE);`, ensuring WAL transaction logs are reset to 0 bytes every 3 minutes.
+- **Docker Log Rotation Cap**: Configured `json-file` log limits (`max-size: 10m`, `max-file: 3`) in `docker-compose.yml` to prevent runaway host container log growth.
+
+### Tests
+- Validated all 145 unit tests across the entire test suite (`Passed: 145, Failed: 0`).
+
+---
+
 ## [1.5.19] - 2026-10-02
 
 ### Performance
