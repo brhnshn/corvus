@@ -41,24 +41,24 @@ corvus/
 │   │   ├── Endpoints/             # Kaynak odaklı Minimal API uç noktaları (extension metodlar)
 │   │   │   ├── AuthEndpoints.cs          # Session auth, kayıt yönetimi ve Zero-Trust SSO
 │   │   │   ├── BackupEndpoints.cs        # Tek tıkla SQLite VACUUM INTO anlık yedek indirme
-│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /stats-summary (toplu stats), /logs/stream ve kontroller
+│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, kontroller, Web Terminali (/terminal) ve Sistem Temizliği (/prune)
 │   │   │   ├── DashboardEndpoints.cs     # 2.5s in-memory önbellekli Dashboard KPI özeti
 │   │   │   ├── IncidentEndpoints.cs      # Sistem olayları ve planlı bakım CRUD & yaşam döngüsü
-│   │   │   ├── MetricsEndpoints.cs       # Sistem donanım metrikleri zaman serisi
-│   │   │   ├── NotificationEndpoints.cs  # Çok kanallı alarm test uç noktası
+│   │   │   ├── MetricsEndpoints.cs       # Sistem donanım metrikleri zaman serisi (1h-1y)
+│   │   │   ├── NotificationEndpoints.cs  # Çok kanallı alarm test uç noktası (Discord, Telegram, SMTP, Slack, Ntfy, Webhook)
 │   │   │   ├── PushEndpoints.cs          # Push webhooks ve Dead Man's Snitch (/push-monitors)
 │   │   │   ├── ServicesEndpoints.cs      # Servis CRUD ve /reorder
 │   │   │   ├── SettingsEndpoints.cs      # Dinamik ayarlar (RequireAdmin), sürüm kontrolü (/version) ve DB disk telemetrisi
 │   │   │   ├── StatusPageEndpoints.cs    # Şifresiz halka açık durum özeti (/api/status-page)
 │   │   │   ├── StreamEndpoints.cs        # Canlı SSE olay akışı (/api/stream/events)
-│   │   │   ├── UptimeEndpoints.cs        # Servis uptime denetim geçmişi ve ICMP ping testi
+│   │   │   ├── UptimeEndpoints.cs        # Servis uptime denetim geçmişi, HTTP gövde doğrulaması ve ICMP ping testi
 │   │   │   └── UserEndpoints.cs          # Yönetici RBAC kullanıcı yönetimi CRUD uç noktaları (/api/users)
 │   │   ├── BackgroundServices/    # Arka plan çalışan iş parçacıkları
 │   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periyodik konteyner senkronizasyonu (10s, fingerprint & inspect cache)
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrik toplayıcısı (15s, streaming /proc/meminfo)
-│   │   │   ├── UptimeCheckerService.cs       # 3 durumlu HTTP/TCP/Ping, proaktif SSL erken uyarısı ve Snitch denetimi
+│   │   │   ├── UptimeCheckerService.cs       # 3 durumlu HTTP/TCP/Ping, gövde denetimi, proaktif SSL erken uyarısı ve Snitch denetimi
 │   │   │   ├── MemoryTrimmerBackgroundService.cs # 3dk periyotlu SQLite havuz temizliği, PRAGMA wal_checkpoint(TRUNCATE), Gen2 agresif sıkıştırma ve malloc_trim(0)
-│   │   │   └── RetentionCleanupService.cs    # Dinamik veri saklama temizleyicisi, SQLite otomatik VACUUM freelist iadesi & GC compact (24h)
+│   │   │   └── RetentionCleanupService.cs    # Dinamik veri saklama temizleyicisi, saatlik metrik rollup (system_metrics_hourly), ikili saklama (7g ham / 365g saatlik), SQLite otomatik VACUUM freelist iadesi & GC compact (24h)
 │   │   ├── Data/                  # Veri erişim katmanı (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000 ve PRAGMA optimizasyonları
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sıralı göç yöneticisi
@@ -66,7 +66,7 @@ corvus/
 │   │   │   ├── ServicesRepository.cs         # Servis ve override sorguları
 │   │   │   ├── PushMonitorRepository.cs      # Dead Man's Snitch veri erişimi
 │   │   │   ├── UptimeRepository.cs           # Uptime geçmişi ve 5s önbellekli 24h yüzde agregasyonu
-│   │   │   ├── MetricsRepository.cs          # Host metrikleri
+│   │   │   ├── MetricsRepository.cs          # Host metrikleri, saatlik özet agregasyonu ve seyreltilmiş CTE sorguları
 │   │   │   ├── BackupRepository.cs           # Push backup logları
 │   │   │   ├── UserRepository.cs             # Kullanıcı hesapları ve parola hashleme
 │   │   │   ├── SessionRepository.cs          # Kalıcı SQLite oturum deposu (user_sessions tablosu)
@@ -81,13 +81,15 @@ corvus/
 │   │   │       ├── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing durum sıfırlama ve indeks
 │   │   │       ├── 008_service_incidents.sql     # Sistem olayları ve planlı bakım şeması
 │   │   │       ├── 009_uptime_rollup_and_transition.sql # Uptime günlük özet ve durum geçiş takibi
-│   │   │       └── 010_user_sessions.sql         # Kalıcı kullanıcı oturumları tablosu
+│   │   │       ├── 010_user_sessions.sql         # Kalıcı kullanıcı oturumları tablosu
+│   │   │       ├── 011_expected_body.sql         # HTTP yanıt gövdesi kelime ve Regex doğrulama şeması
+│   │   │       └── 012_metrics_hourly_rollup.sql # Saatlik telemetri özet tablosu ve indeksleri
 │   │   ├── Models/                 # DTO'lar ve Veritabanı Varlıkları
-│   │   │   ├── Service.cs                    # Servis modeli (check_type: http, tcp, ping, port, ssl, is_public, display_order)
+│   │   │   ├── Service.cs                    # Servis modeli (check_type: http, tcp, ping, port, ssl, expected_body, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Sistem olay duyurusu modeli
 │   │   │   ├── ServiceOverride.cs            # Docker override modeli
 │   │   │   ├── PushMonitor.cs                # Dead Man's Snitch modeli
-│   │   │   ├── DockerModels.cs               # Docker API modelleri
+│   │   │   ├── DockerModels.cs               # Docker API modelleri, prune istek/yanıtları, exec yeniden boyutlandırma çerçeveleri
 │   │   │   ├── DockerActionResult.cs         # Konteyner işlem sonucu yanıtı
 │   │   │   ├── SystemMetric.cs               # Host donanım metrik modeli
 │   │   │   ├── UptimeCheck.cs                # Uptime denetim kayıt modeli
@@ -97,12 +99,15 @@ corvus/
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
 │   │   ├── Utils/                  # Yardımcı sınıflar
 │   │   │   ├── StatusCodeMatcher.cs          # HTTP durum kodu (aralık ve tekil kod) ayrıştırıcı
-│   │   │   └── NativeMemoryTrimmer.cs        # Platform korumalı libc malloc_trim native bellek iade yardımcısı
+│   │   │   ├── NativeMemoryTrimmer.cs        # Platform korumalı libc malloc_trim native bellek iade yardımcısı
+│   │   │   └── HttpBodyValidator.cs          # Sıfır bellek ayırmalı 64 KB sınırlı akış ve ReDoS korumalı gövde doğrulayıcı
 │   │   └── Services/                # Çekirdek iş mantığı servisleri
-│   │       ├── DockerHttpClient.cs           # SocketsHttpHandler ile doğrudan Docker REST istemcisi
-│   │       ├── DockerService.cs              # 2.5s önbellekli konteyner işlemleri, toplu stats özeti ve etiket eşleme
+│   │       ├── DockerHttpClient.cs           # SocketsHttpHandler ile doğrudan Docker REST istemcisi (exec, prune, stats, logs)
+│   │       ├── DockerService.cs              # 2.5s önbellekli konteyner işlemleri, sistem temizliği (prune), toplu stats özeti ve etiket eşleme
 │   │       ├── DockerLogDemuxer.cs           # Multiplexed Docker stdout/stderr sıfır bellek tahsisli ayrıştırıcı
-│   │       ├── NotificationService.cs        # SSRF korumalı, çift dilli Discord, Telegram, Ntfy ve Webhook motoru
+│   │       ├── IFlappingDetector.cs          # Kayan pencereli dalgalanma (flapping) algılama arayüzü
+│   │       ├── FlappingDetector.cs           # Bellek içi durum geçiş takipçisi ve alarm susturma motoru
+│   │       ├── NotificationService.cs        # SSRF korumalı, çift dilli Discord, Telegram, SMTP E-posta, Slack, Ntfy ve Webhook motoru
 │   │       ├── EventBroadcaster.cs           # Çok istemcili Channel Pub/Sub SSE olay yayıncısı
 │   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hash, kalıcı SQLite session store, RBAC ve kullanıcı yönetimi
 │   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter kimlik doğrulama & RBAC katmanı (admin/viewer koruması)
@@ -139,6 +144,7 @@ corvus/
 │       │   │   ├── BottomNav.tsx             # Mobil Cam Altbar — 7 sekmeli buzlu cam gezinti çubuğu
 │       │   │   ├── StatusBadge.tsx           # Sağlık durumu rozeti (healthy, degraded, down)
 │       │   │   ├── LanguageSwitch.tsx        # Kompakt ve tam modlu arayüz dil değiştirici
+│       │   │   ├── EmailRecipientInput.tsx   # Etiket/çip tabanlı çoklu e-posta alıcı giriş bileşeni
 │       │   │   └── RegistrationPromptModal.tsx # İlk yönetici kayıt yönlendirme modalı
 │       │   └── pages/              # Modüler özellik bazlı sayfa klasörleri
 │       │       ├── AuthPage/
@@ -148,8 +154,10 @@ corvus/
 │       │       │   ├── ContainerList.tsx     # Duyarlı mobil kartlar ve masaüstü tablo görünümü
 │       │       │   ├── ComposeStackGroup.tsx # Docker Compose stack projeleri için akordiyon bileşeni
 │       │       │   ├── ContainerStatsBadges.tsx # CPU, RAM ve Ağ canlı rozetleri
-│       │       │   ├── ContainerActionButtons.tsx # Yaşam döngüsü butonları ve yükleniyor durumları
-│       │       │   └── ContainerLogsModal.tsx   # Canlı konteyner log terminali modalı
+│       │       │   ├── ContainerActionButtons.tsx # Yaşam döngüsü butonları, log ve terminal tetikleyicisi
+│       │       │   ├── ContainerLogsModal.tsx   # Canlı konteyner log terminali modalı
+│       │       │   ├── ContainerTerminalModal.tsx # Tarayıcı içi interaktif web terminali (@xterm/xterm, shell seçici, PTY resize)
+│       │       │   └── SystemPruneModal.tsx     # Tek tıkla disk alanı temizliği (imaj, konteyner, hacim, ağ, derleme önbelleği)
 │       │       ├── Dashboard/
 │       │       │   ├── index.tsx             # Konsolide KPI özeti ve çalışan servisler
 │       │       │   ├── SystemPulseHero.tsx   # Canlı durum nabzı, ağ I/O ve güncelleme kontrol kartı
@@ -170,16 +178,21 @@ corvus/
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Servis launcher ve sürükle-bırak sıralama
 │       │       │   ├── ServiceCard.tsx       # Servis kartı (HTTP, TCP, PING, Docker rozetleri)
-│       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı (ICMP Ping seçeneğiyle)
+│       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı (ICMP Ping ve gövde doğrulama seçeneğiyle)
 │       │       │   ├── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL ve kontrol türü düzenleme modalı
-│       │       │   └── AdvancedCheckOptions.tsx # Bağımsız gelişmiş kontrol parametreleri akordiyonu
+│       │       │   └── AdvancedCheckOptions.tsx # Bağımsız gelişmiş kontrol parametreleri akordiyonu (zaman aşımı, TLS, gövde, kodlar)
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Tek kolonlu (max-w-4xl) modern ayarlar kabuğu ve başlık sürüm rozeti
 │       │       │   ├── GeneralSettingsTab.tsx # Genel ayarlar, retention ve DB boyutu telemetrisi
-│       │       │   ├── NotificationSettingsTab.tsx # Çok kanallı alarm yapılandırması
-│       │       │   └── BackupSettingsTab.tsx # Çift yönlü dahili/harici yedekleme yöneticisi
+│       │       │   ├── NotificationSettingsTab.tsx # Çok kanallı alarm yapılandırması (Discord, Telegram, SMTP, Slack, Ntfy, Webhook)
+│       │       │   ├── BackupSettingsTab.tsx # Çift yönlü dahili/harici yedekleme yöneticisi
+│       │       │   └── notifications/        # Modüler bildirim kanalı panelleri
+│       │       │       ├── EmailChannelPanel.tsx       # SMTP sunucu, port, TLS, gönderen adı ve çoklu alıcı yönetimi
+│       │       │       ├── SlackChannelPanel.tsx       # Slack gelen webhook URL ve kanal test tetikleyicisi
+│       │       │       ├── FlappingProtectionCard.tsx  # Dalgalanma eşiği, kayan pencere ve kararlılık kontrol ayarları
+│       │       │       └── NotificationEventFilters.tsx # Olay bazlı bildirim filtreleri (down, up, ssl, flapping)
 │       │       ├── SystemMetrics/
-│       │       │   ├── index.tsx             # Zaman serisi telemetri kabuğu ve periyot filtresi
+│       │       │   ├── index.tsx             # Zaman serisi telemetri kabuğu ve periyot filtresi (1h, 6h, 12h, 24h, 7d, 30d, 90d, 1y)
 │       │       │   ├── SystemKpiCards.tsx    # Canlı donanım kullanım kartları
 │       │       │   ├── CpuMetricsChart.tsx   # CPU yükü alan grafiği
 │       │       │   ├── RamMetricsChart.tsx   # Bellek kullanımı alan grafiği
@@ -201,12 +214,15 @@ corvus/
 │       └── wwwroot/                # Üretime hazır derlenmiş arayüz paketi (Corvus.Api tarafından sunulur)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Paketi (144 Başarılı Test)
+│   └── Corvus.Api.Tests/           # xUnit Test Paketi (211 Başarılı Test)
 │       ├── AuthServiceTests.cs
-│       ├── DockerServiceTests.cs     # Konteyner işlemleri, micro-cache ve batch stats testleri
+│       ├── DockerServiceTests.cs     # Konteyner işlemleri, sistem temizliği, micro-cache ve batch stats testleri
 │       ├── DockerLogDemuxerTests.cs
+│       ├── FlappingDetectorTests.cs  # Kayan pencere durum takibi ve dalgalanma alarm susturma testleri
+│       ├── HttpBodyValidatorTests.cs # Sıfır bellek tahsisli gövde arama ve ReDoS zaman aşımı testleri
 │       ├── MemoryTrimmerTests.cs     # Native memory trimmer ve GC optimizasyon testleri
-│       ├── NotificationServiceTests.cs
+│       ├── MetricsRepositoryTests.cs # Saatlik agregasyon, çift aşamalı retention ve seyreltme sorgu testleri
+│       ├── NotificationServiceTests.cs # Çok kanallı bildirim testleri (Discord, Telegram, SMTP, Slack, Ntfy, Webhook)
 │       ├── RoadmapFeaturesTests.cs
 │       ├── UpdateCheckerTests.cs
 │       ├── StatusCodeMatcherTests.cs
@@ -324,12 +340,56 @@ Eski ham kontroller silinmeden hemen önce, her servis için günlük istatistik
 - 30 günlük, 90 günlük ve 365 günlük SLA ve Uptime oranları, devasa `uptime_checks` tablosu taranmadan doğrudan bu hafif özet tablosu üzerinden anlık hesaplanır.
 - 365 günden eski özet kayıtları temizlenerek, tam 1 yıllık SLA geçmişi yalnızca birkaç kilobaytlık bir alanda kalıcı olarak tutulur.
 
-### 3. Olay ve Duyuru Yaşam Döngüsü (`service_incidents`)
-Arıza, bakım veya altyapı güncellemelerinde kullanıcı iletişimi, otomatik sağlık kontrollerinden bağımsız yönetilir:
-- **Önem Seviyeleri (Severity):** `info`, `warning`, `critical`, `maintenance`.
-- **Durum Aşamaları (Status):** `investigating` ➔ `identified` ➔ `monitoring` ➔ `resolved`.
-- **Halka Açık Görünürlük:** Aktif ve sabitlenmiş (pinned) olaylar `GET /api/status-page` üzerinden servis edilir ve halka açık durum sayfasının en üstünde dikkat çekici canlı afişler (`PublicStatusIncidentBanner.tsx`) olarak sergilenir.
-- **Yönetici Kontrolü:** Uptime sayfasındaki Olaylar sekmesinden (`IncidentsTab.tsx`) olay oluşturulabilir (`AddIncidentModal.tsx`), durum aşamaları güncellenebilir ve tek tıkla çözümlenerek (`POST /api/incidents/{id}/resolve`) zaman damgasıyla (`resolved_at`) arşivlenir.
+### 4. Zaman Serisi Telemetri Seyreltme & Saatlik Özetler (`system_metrics_hourly`)
+15 saniyelik ham sistem kaynak metrikleri zamanla yüz binlerce satıra ulaşır. Corvus, çift aşamalı bir seyreltme (downsampling) politikası uygular:
+- **7 Günlük Yüksek Çözünürlüklü Ham Saklama:** Tam 15 saniyelik detaylı kayıtlar (`system_metrics`), yakın geçmişteki hata ayıklama ve anlık analizler için 7 gün boyunca saklanır.
+- **Otomatik Saatlik Agregasyon (`AggregateHourlyMetricsAsync`):** Tamamlanmış geçmiş saatler `RetentionCleanupService` ve `MetricsRepository` tarafından matematiksel idempotency ile ortalama CPU, RAM, Disk, Ağ I/O ve pik kapasiteler hesaplanarak `system_metrics_hourly` tablosuna aktarılır.
+- **365 Günlük Özet Saklama:** Saatlik özetler 365 gün (veya belirlenen retention süresi) boyunca korunur.
+- **Birleşik Sorgu Dağıtıcısı:** Uzun vadeli aralıklar (`30d`, `90d`, `1y`) için `GetRecentAsync`, indeksli saatlik özetler ile henüz özetlenmemiş en son saatleri anında birleştiren optimize bir SQLite CTE çalıştırarak grafiklerin milisaniyeler içinde sıfır veri boşluğuyla çizilmesini sağlar.
+
+---
+
+## 💻 Tarayıcı İçi Konteyner Web Terminali & Sistem Temizliği Mimarisi
+
+### 1. Sıfır Bellek Tahsisatlı (Zero-Allocation) WebSocket Exec Proxy (`/terminal`)
+- **Doğrudan Kabuk Erişimi:** Kullanıcılar tarayıcı üzerinden doğrudan çalışan Docker konteynerlerinin içine interaktif kabuk (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) başlatabilir.
+- **Çift Yönlü Proxy:** ASP.NET Core Native AOT arka ucu, Docker daemon ile HTTP 1.1 Upgrade bağlantısı (`/exec/{id}/start`) kurar ve bunu istemci WebSocket'ine sıfır kopya ile köprüler.
+- **Sıfır GC Yükü:** `ArrayPool<byte>.Shared` üzerinden kiralanan 8 KB'lık sabit tamponlar kullanılır; yoğun terminal oturumlarında bile heap üzerinde çöp bellek tahsisatı yapılmaz.
+- **Anında Kaynak İadesi:** İstemci ayrıldığında veya modal kapandığında Docker exec süreci derhal öldürülür, kiralanan bellekler iade edilir ve Corvus RAM tüketimi taban seviyesine (~30 MB) döner.
+- **Dinamik PTY Boyutlandırma:** İstemci `{type: "resize", cols, rows}` kontrol mesajları gönderir; bu mesajlar doğrudan Docker `/exec/{id}/resize` API çağrılarına dönüştürülür.
+- **RBAC Güvenliği:** Terminal erişimi `[RequireAdmin]` ile korunur (Gözlemci/Viewer rolleri için 403 Forbidden).
+
+### 2. Docker Sistem Temizliği & Disk Kurtarma (`/prune`)
+- **Doğrudan Daemon Orkestrasyonu:** `/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune` ve `/build/prune` uç noktaları üzerinden kapsamlı temizlik yürütür.
+- **Kalıcı Veri Koruması:** `Volumes` seçeneği varsayılan olarak kapalı tutulur ve seçildiğinde belirgin bir sarı uyarı şeridi sergilenir. Dangling vs tüm kullanılmayan imaj seçimi sunulur.
+- **Ayrıntılı Tasarruf Denetimi:** Kategorilere göre (İmajlar, Konteynerler, Hacimler, Ağlar, Derleme Önbelleği) kurtarılan baytları listeler ve toplam geri kazanımı raporlar (`1.42 GB serbest bırakıldı`).
+
+---
+
+## 🔕 Akıllı Dalgalanma Engelleme & Alarm Susturma (`FlappingDetector`)
+
+### 1. Kayan Pencere Durum Takibi
+Kısa süre içinde sürekli `up` ve `down` arasında gidip gelen servisler operasyon ekiplerinde alarm yorgunluğuna ve bildirim kirliliğine yol açar. Corvus, bellek içi `IFlappingDetector` motorunu sunar:
+- Servisin durum değişim zaman damgalarını yapılandırılabilir kayan bir pencerede (varsayılan: 5 dakika) izler.
+- **Susturma Eşiği:** Değişim sayısı eşiğe (varsayılan: 4 değişim) ulaştığında servis dalgalanma (flapping) durumuna geçer. Corvus tek bir Sarı uyarı bildirimi (`[DALGALANMA TESPİT EDİLDİ]`) gönderir ve ara durum bildirimlerini tamamen susturur.
+- **Kararlılık ve Kurtarma:** Servis belirlenen sayıda ardışık başarılı kontrol (varsayılan: 3 kontrol) sağladığında susturma kaldırılır ve tek bir Yeşil kurtarma bildirimi (`[DALGALANMA SONA ERDİ]`) iletilir.
+- **Sıfır Bellek Sızıntısı:** Bellek içi geçiş geçmişi düzenli olarak budanarak uzun çalışma sürelerinde RAM şişmesi engellenir.
+
+### 2. Çok Kanallı Alarm Dağıtıcısı (`NotificationService`)
+- Dışa aktarılan alarmlar **Discord** (renkli zengin embed), **Telegram** (MarkdownV2), **E-posta (SMTP)** (responsive koyu mod HTML şablonu ve çoklu alıcı), **Slack** (renk vurgulu attachment'lar), **Ntfy / Gotify** (özel etiketler ve öncelik seviyeleri) ve **Özel Webhook** kanallarını destekler.
+
+---
+
+## 🔍 HTTP Yanıt Gövdesi Doğrulama Motoru (`HttpBodyValidator`)
+
+### 1. Yük İçeriği Denetimi
+HTTP 200 dönen servisler arka planda veritabanı bağlantı hatası veya uygulama arıza sayfası veriyor olabilir. Corvus derin yük doğrulaması sunar:
+- **Anahtar Kelime Eşleme:** Belirli anahtar kelimelerin (`"status":"healthy"`, `"database":"connected"`) varlığını doğrular.
+- **Regex Desen Eşleme:** Derlenmiş düzenli ifadelerle karmaşık durum yanıtlarını denetler.
+
+### 2. Sıfır Bellek Tahsisli 64 KB Sınırı & ReDoS Koruması
+- Yanıt gövdesini sınırsızca belleğe çekmek yerine `HttpBodyValidator`, `ArrayPool<byte>` tamponları üzerinden en fazla 64 KB'a kadar akış okuması yapar.
+- Regex değerlendirmeleri, Regular Expression Denial of Service (ReDoS) açıklarını önlemek için katı bir 200ms zaman aşımı ile sınırlandırılmıştır.
 
 ---
 

@@ -48,9 +48,10 @@ Corvus, self-hosted sunucular için açık kaynak, düşük kaynak tüketimli, t
 - İletişim: REST + **Server-Sent Events (SSE)** üzerinden anlık durum yayını (`corvus_event` pub/sub kanalları)
 
 ### Veri katmanı
+### Veri katmanı
 - **SQLite (Microsoft.Data.Sqlite) + Dapper (Dapper.AOT)**: WAL modu, `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`, `PRAGMA cache_size = -64000;` ve periyodik `PRAGMA optimize;`
-- **DbUp**: SQL-first sıralı migration yönetimi (`001_init.sql` - `010_user_sessions.sql`)
-- Zaman serisi tablolarında kompozit performans indeksleri (`system_metrics(recorded_at)`, `uptime_checks(service_id, checked_at)`)
+- **DbUp**: SQL-first sıralı migration yönetimi (`001_init.sql` - `012_metrics_hourly_rollup.sql`)
+- Zaman serisi tablolarında kompozit performans indeksleri (`system_metrics(recorded_at)`, `system_metrics_hourly(recorded_at)`, `uptime_checks(service_id, checked_at)`)
 - **Yedekleme ve Saklama Motoru**: Kilitlenmesiz SQLite anlık görüntü indirme (`VACUUM INTO`), gerçek zamanlı veritabanı disk boyutu telemetrisi (`GET /api/settings/db-stats`), Sınırsız mod destekli dinamik retention temizleyicisi, günlük otomatik `VACUUM;` freelist temizliği
 
 ---
@@ -74,6 +75,8 @@ Otomatik algılanan veya manuel eklenen tüm servisler (launcher + durum takibi 
 | status | TEXT | `healthy` / `degraded` / `down` / `unknown` |
 | check_type | TEXT | `http`, `tcp`, `docker` veya `ping` (ICMP ping) |
 | port | INTEGER (nullable) | TCP port numarası |
+| expected_body | TEXT (nullable) | Yanıt gövdesinde aranan içerik veya desen |
+| expected_body_type | TEXT (nullable) | Gövde doğrulama tipi: `contains` (alt metin) veya `regex` |
 | ssl_expiry_days | INTEGER (nullable) | Kalan SSL sertifika günü |
 | ssl_issuer | TEXT (nullable) | Sertifikayı veren kurum |
 | is_public | INTEGER | `1`: Halka açık durum sayfasında görünür (yalnızca `is_uptime_enabled = 1` iken), `0`: gizli |
@@ -88,6 +91,7 @@ Docker'dan otomatik algılanan bir container için kullanıcının panel üzerin
 |---|---|---|
 | container_id | TEXT | Birincil anahtar, `services.container_id` ile eşleşir |
 | name, description, url, icon, category | TEXT (nullable) | Override edilen alanlar |
+| expected_body, expected_body_type | TEXT (nullable) | Yanıt gövdesi arama doğrulama ayarları |
 | is_uptime_enabled | INTEGER (nullable) | Uptime takip tercihi override'ı |
 
 ### `push_monitors` (Dead Man's Snitch)
@@ -105,7 +109,7 @@ Periyodik cron veya yedekleme scriptlerinin zamanında çalışıp çalışmadı
 | created_at | DATETIME | |
 
 ### `system_metrics`
-Host düzeyinde periyodik ölçümler (zaman serisi).
+Host düzeyinde periyodik 15 saniyelik ham ölçümler (7 gün saklanır).
 
 | Alan | Tip | Açıklama |
 |---|---|---|
@@ -115,6 +119,18 @@ Host düzeyinde periyodik ölçümler (zaman serisi).
 | ram_used_mb, ram_total_mb | INTEGER | |
 | disk_used_gb, disk_total_gb | INTEGER | |
 | network_rx_bytes, network_tx_bytes | INTEGER | |
+
+### `system_metrics_hourly`
+Saatlik seyreltilmiş özet ölçümler (365 günlük akıcı SLA ve geçmiş raporlaması).
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| id | INTEGER (autoincrement) | Birincil anahtar |
+| recorded_at | TEXT (UNIQUE) | ISO-8601 saat dilimi (`YYYY-MM-DDTHH:00:00Z`) |
+| cpu_percent | REAL | Saatlik ortalama CPU kullanımı |
+| ram_used_mb, ram_total_mb | REAL | Saatlik ortalama kullanılan RAM ve pik kapasite |
+| disk_used_gb, disk_total_gb | REAL | Saatlik ortalama kullanılan disk ve pik kapasite |
+| network_rx_bytes, network_tx_bytes | INTEGER | Saatlik ortalama ağ transferi |
 
 ### `uptime_checks`
 Her endpoint kontrolünün sonucu (zaman serisi).
@@ -195,6 +211,8 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | `GET /api/containers/{id}/stats` | Auth | Anlık konteyner CPU%, bellek kullanımı ve ağ I/O istatistikleri |
 | `GET /api/containers/{id}/logs` | Auth | Son 100 konteyner log satırını döner |
 | `GET /api/containers/{id}/logs/stream` | Auth | **SSE:** Gerçek zamanlı canlı konteyner log akışı |
+| `GET /api/containers/{id}/terminal` | Admin | **WebSocket Proxy:** Sıfır bellek tahsisli tarayıcı içi konteyner terminali (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) |
+| `POST /api/containers/prune` | Admin | **Sistem Temizliği:** Disk alanı temizliği (imajlar, konteynerler, hacimler, ağlar, derleme önbelleği) |
 | `POST /api/containers/{id}/start` | Admin | Konteyneri başlatır |
 | `POST /api/containers/{id}/stop` | Admin | Konteyneri durdurur |
 | `POST /api/containers/{id}/pause` | Admin | Konteyneri duraklatır |
@@ -205,14 +223,14 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | `PUT /api/push-monitors/{id}` | Admin | Push monitörünü günceller |
 | `DELETE /api/push-monitors/{id}` | Admin | Push monitörünü siler |
 | `POST /api/push/{token}` | Herkese Açık | Cron veya yedekleme sinyalini alır, snitch durumunu günceller |
-| `GET /api/metrics/system` | Auth | Sistem kaynakları zaman serisi (`?range=1h\|24h\|7d`) |
+| `GET /api/metrics/system` | Auth | Sistem kaynakları zaman serisi (`?range=1h\|6h\|12h\|24h\|7d\|30d\|90d\|1y`) |
 | `GET /api/uptime` | Auth | Servis uptime geçmişi (`?service_id=...&range=7d`) |
 | `POST /api/uptime/test-connection` | Auth | **Canlı Bağlantı Sınama:** HTTP/HTTPS, TCP veya ICMP Ping hedefine anlık ping atar; yanıt süresi (ms) döner |
 | `GET /api/settings` | Auth | Sistem yapılandırma ayarlarını döner |
 | `PUT /api/settings` | Admin | Sistem ayarlarını günceller |
 | `GET /api/settings/db-stats` | Auth | Veritabanı ve WAL disk kullanım boyutunu döner |
 | `GET /api/backup/download` | Admin | SQLite `VACUUM INTO` veritabanı yedeğini anlık indirir |
-| `POST /api/notifications/test` | Admin | Alarm kanallarını (Discord, Telegram, Ntfy, Webhook) test eder |
+| `POST /api/notifications/test` | Admin | Alarm kanallarını (Discord, Telegram, SMTP E-posta, Slack, Ntfy, Webhook) test eder |
 | `GET /api/version` | Auth | GitHub Releases API üzerinden güncel Corvus sürümünü ve güncelleme durumunu sorgular |
 | `GET /api/stream/events` | Auth | **SSE:** Servis durumu ve sistem olaylarının anlık yayını |
 | `GET /api/auth/status` | Herkese Açık | Oturum durumu, rol ve Zero-Trust SSO başlık denetimi |
@@ -232,10 +250,11 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 |---|---|---|
 | `ContainerDiscoveryService` | 10 sn | Docker socket'ten container listesini senkronize eder. Keşfedilen yeni konteynerler `is_uptime_enabled = 0` olarak başlatılır; Docker running olduğu sürece durumları `healthy` senkronize edilir |
 | `SystemMetricsCollector` | 15 sn | Host CPU/RAM/disk/network ölçer, `system_metrics` tablosuna yazar |
-| `UptimeCheckerService` | 5 sn (tick) / 60 sn | HTTP/TCP ve ICMP ping denetimleri, proaktif SSL erken uyarıları (14g ve 7g), durum geçiş takibi (`healthy` -> `degraded` -> `down`) ve Snitch denetimi |
+| `UptimeCheckerService` | 5 sn (tick) / 60 sn | HTTP/TCP ve ICMP ping denetimleri, gövde içeriği doğrulaması, proaktif SSL erken uyarıları (14g ve 7g), durum geçiş takibi (`healthy` -> `degraded` -> `down`) ve Snitch denetimi |
 | `UpdateCheckerService` | 24 saat | GitHub Releases API'sini sorgulayarak yeni sürüm kontrolü yapar, güncelleme bildirimlerini önbelleğe alır |
 | `MemoryTrimmerBackgroundService` | 3 dakika | SQLite havuz temizliği, `PRAGMA wal_checkpoint(TRUNCATE);` ile WAL sıfırlama, Gen 2 agresif GC sıkıştırması ve libc `malloc_trim(0)` |
-| `RetentionCleanupService` | Günde 1 kez | Eski telemetrileri temizler, `VACUUM;` ile freelist alanlarını işletim sistemine iade eder ve Gen 2 GC sıkıştırması uygular |
+| `RetentionCleanupService` | Günde 1 kez | Saatlik metrik agregasyonu (`system_metrics_hourly`), ikili veri saklama temizliği (7g ham / 365g saatlik), `VACUUM;` ile freelist alanlarını işletim sistemine iade etme ve Gen 2 GC sıkıştırması |
+| `FlappingDetector` | Sürekli (RAM içi) | Kayan pencereli durum geçiş takibi. Kısa süreli dalgalanmaları tespit eder, bildirim kirliliğini susturur ve Sarı uyarı ile Yeşil toparlanma bildirimi üretir |
 
 ---
 
@@ -260,11 +279,11 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | Sayfa | URL | Özellikler |
 |---|---|---|
 | **Dashboard** | `/` | Mobil-öncelikli 2 sütunlu KPI şeridi, tam genişlikte Disk barı, canlı sistem nabzı, GitHub sürüm rozeti ve aktif konteynerler widget'ı |
-| **Servisler** | `/services` | Servis kartları, durum rozetleri, TCP/ICMP PING port göstergeleri, SSL kalan gün rozeti, yukarı/aşağı sıralama butonları |
-| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, Start/Stop/Pause/Restart aksiyonları, Compose Stack akordeon gruplaması, canlı log terminali |
-| **Sistem Metrikleri**| `/metrics` | 1h, 6h, 12h, 24h, 7d aralıklarında CPU, RAM, Disk ve Ağ I/O grafikleri |
-| **Uptime & Snitch** | `/uptime` | 3 durumlu sağlık takibi, HTTP/TCP/Ping yanıt süreleri geçmişi ve Dead Man's Snitch periyodik cron/yedekleme izleme sekmesi |
-| **Ayarlar** | `/settings` | Tek kolonlu (`max-w-4xl`) ferah düzen, başlık sürüm rozeti, sekmeli alarm yapılandırması (Discord, Telegram, Ntfy, Webhook), çift yönlü yedekleme ve esnek veri saklama |
+| **Servisler** | `/services` | Servis kartları, durum rozetleri, TCP/ICMP PING port göstergeleri, HTTP gövde doğrulaması, SSL kalan gün rozeti, yukarı/aşağı sıralama butonları |
+| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, Start/Stop/Pause/Restart aksiyonları, Compose Stack akordeon gruplaması, canlı log terminali, **İnteraktif Web Terminali (`ContainerTerminalModal`)** ve **Sistem Temizliği (`SystemPruneModal`)** |
+| **Uptime & Snitch** | `/uptime` | 3 durumlu sağlık takibi, HTTP/TCP/Ping yanıt süreleri geçmişi, proaktif SSL alarmları, Dead Man's Snitch ve sistem olayları / planlı bakım duyuru sekmesi |
+| **Sistem Metrikleri**| `/metrics` | **1h, 6h, 12h, 24h, 7d, 30d, 90d ve 1y** aralıklarında saatlik rollup destekli CPU, RAM, Disk ve Ağ I/O grafikleri |
+| **Ayarlar** | `/settings` | Tek kolonlu (`max-w-4xl`) ferah düzen, başlık sürüm rozeti, sekmeli alarm yapılandırması (**Discord, Telegram, SMTP E-posta, Slack Webhook, Ntfy, Webhook**), çift yönlü yedekleme, **Dalgalanma Koruması** ve esnek veri saklama |
 | **Profil & Kullanıcılar** | `/profile` | Parola değiştirme, 2FA güvenlik ayarları ve yöneticiler için kullanıcı ekleme/silme ve rol atama paneli |
 | **Canlı Durum** | `/status` | **Şifresiz:** Tüm sistemler operasyonel banner'ı, son 30 kontrol etkileşimli durum çubukları, kategori akordeonları, aktif arıza ve planlı bakım duyuruları |
 | **Mobil Cam Altbar** | *Global* | Tablet ve mobilde 7 sekmeli buzlu cam (frosted glass) alt gezinti çubuğu (`BottomNav.tsx`) |
@@ -274,9 +293,14 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 ## 8. Tamamlanan Yol Haritası Adımları
 
 - [x] Native AOT + Docker.DotNet doğrulama ve custom SocketsHttpHandler istemcisi
-- [x] Dapper + Dapper.AOT + Microsoft.Data.Sqlite + DbUp veri katmanı (001-010)
+- [x] Dapper + Dapper.AOT + Microsoft.Data.Sqlite + DbUp veri katmanı (001-012)
 - [x] Docker socket multiplexed log demuxer ve canlı log akışı
-- [x] Çok kanallı alarm motoru (Discord, Telegram, Ntfy, Webhook) ve dil senkronizasyonu
+- [x] Konteyner İçi Web Terminali (Exec Shell, WebSocket Proxy & `@xterm/xterm`)
+- [x] Docker İmaj ve Sistem Temizliği (System Prune)
+- [x] Çok kanallı alarm motoru (Discord, Telegram, SMTP E-posta, Slack, Ntfy, Webhook)
+- [x] Dalgalanma (Flapping) Engelleme ve Alarm Yorgunluğu Koruması
+- [x] Zaman Serisi Seyreltme (Hourly Rollup & 30d/90d/1y Grafikleri)
+- [x] HTTP Yanıt Gövdesi (Kelime & Regex) Doğrulaması
 - [x] Konteyner başına canlı kaynak kullanımı (Docker Stats: CPU, RAM, Net I/O)
 - [x] Genişletilmiş Uptime: TCP Port Ping, ICMP Ping ve SSL Sertifika erken uyarıları
 - [x] Dead Man's Snitch: Beklenen periyotlu push monitörü ve otomatik gecikme alarmları

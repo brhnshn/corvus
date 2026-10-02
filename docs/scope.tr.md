@@ -37,7 +37,9 @@ Corvus, belirli bir kişinin veya kurulumun paneli değildir. Açık kaynak bir 
 | Orkestrasyon | Coolify / Portainer | Doğrudan standart Docker socket (`/var/run/docker.sock`) okur, harici araca bağımlı değildir. |
 | Ağ / VPN | Tailscale | Özel ağ gerektirmez; yerel ağ, WireGuard veya açık internet üzerinde eşit kararlılıkla çalışır. |
 | Backup / Cron Bildirimi | `/opt/scripts/backup.sh` | **Dead Man's Snitch** push altyapısı (`/api/push/{token}`). Beklenen periyot ve tolerans süresi aşıldığında otomatik alarm üretir. |
-| Alarm ve Bildirim | — | Çok kanallı yerleşik bildirim motoru: Discord, Telegram, Ntfy/Gotify ve Generic Webhook. |
+| Alarm ve Bildirim | — | Çok kanallı yerleşik bildirim motoru: Discord, Telegram, SMTP E-posta, Slack Webhook, Ntfy/Gotify ve Generic Webhook; akıllı dalgalanma (flapping) koruması. |
+| Konteyner Terminali & Temizlik | — | Tarayıcı üzerinden sıfır tahsisatlı Web Terminali (`/api/containers/{id}/terminal`) ve tek tıkla sistem temizliği (`/api/containers/prune`). |
+| Telemetri Seyreltme | — | Çift aşamalı veri saklama (7g ham, 365g saatlik rollup) ile hafif veritabanı ve akıcı 30g/90g/1y zaman serisi grafikleri. |
 | Canlı İletişim | — | Server-Sent Events (SSE) ile `/api/stream/events` ve gerçek zamanlı konteyner log akışı (`/api/containers/{id}/logs/stream`). |
 
 ---

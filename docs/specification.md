@@ -48,9 +48,10 @@ Corvus is an open-source, ultra-low resource consumption service launcher and un
 - Real-Time Communication: REST + **Server-Sent Events (SSE)** for live status broadcasts (`corvus_event` pub/sub channels)
 
 ### Persistence Layer
+### Persistence Layer
 - **SQLite (Microsoft.Data.Sqlite) + Dapper (Dapper.AOT)**: WAL mode with `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`, `PRAGMA cache_size = -64000;` and periodic `PRAGMA optimize;`
-- **DbUp**: Sequential SQL-first schema migrations (`001_init.sql` through `010_user_sessions.sql`)
-- Composite indexes on `system_metrics(recorded_at)` and `uptime_checks(service_id, checked_at)`
+- **DbUp**: Sequential SQL-first schema migrations (`001_init.sql` through `012_metrics_hourly_rollup.sql`)
+- Composite indexes on `system_metrics(recorded_at)`, `system_metrics_hourly(recorded_at)`, and `uptime_checks(service_id, checked_at)`
 - **Backup & Retention Engine**: Point-in-time lock-free SQLite snapshot downloads (`VACUUM INTO`), live database disk usage telemetry (`GET /api/settings/db-stats`), dynamic background retention cleaner with Unlimited mode, automated `VACUUM;` freelist reclamation
 
 ---
@@ -74,6 +75,8 @@ Unified table for auto-discovered and manually registered services.
 | status | TEXT | `healthy` / `degraded` / `down` / `unknown` |
 | check_type | TEXT | `http`, `tcp`, `docker`, or `ping` (ICMP ping) |
 | port | INTEGER (nullable) | TCP port number |
+| expected_body | TEXT (nullable) | Expected response body payload content or pattern |
+| expected_body_type | TEXT (nullable) | Body validation type: `contains` (substring) or `regex` |
 | ssl_expiry_days | INTEGER (nullable) | Remaining SSL certificate validity days |
 | ssl_issuer | TEXT (nullable) | SSL issuing authority |
 | is_public | INTEGER | `1`: Visible on public status page (only when `is_uptime_enabled = 1`), `0`: private |
@@ -88,6 +91,7 @@ User customization overrides for auto-discovered Docker containers.
 |---|---|---|
 | container_id | TEXT | Primary key matching `services.container_id` |
 | name, description, url, icon, category | TEXT (nullable) | User-overridden fields |
+| expected_body, expected_body_type | TEXT (nullable) | Expected response body assertions |
 | is_uptime_enabled | INTEGER (nullable) | Opt-in uptime tracking preference override |
 
 ### `push_monitors` (Dead Man's Snitch)
@@ -105,7 +109,7 @@ Monitors periodic cron jobs and backup scripts to ensure timely execution.
 | created_at | DATETIME | Creation timestamp |
 
 ### `system_metrics`
-Host telemetry time-series samples.
+Host telemetry time-series samples (15-second resolution, retained for 7 days).
 
 | Field | Type | Description |
 |---|---|---|
@@ -115,6 +119,18 @@ Host telemetry time-series samples.
 | ram_used_mb, ram_total_mb | INTEGER | System RAM usage |
 | disk_used_gb, disk_total_gb | INTEGER | Primary disk usage |
 | network_rx_bytes, network_tx_bytes | INTEGER | Network throughput |
+
+### `system_metrics_hourly`
+Hourly aggregated time-series samples (downsampled rollups for 365-day SLA & historical reporting).
+
+| Field | Type | Description |
+|---|---|---|
+| id | INTEGER (autoincrement) | Primary key |
+| recorded_at | TEXT (UNIQUE) | ISO-8601 hourly bucket (`YYYY-MM-DDTHH:00:00Z`) |
+| cpu_percent | REAL | Average hourly CPU usage |
+| ram_used_mb, ram_total_mb | REAL | Average hourly RAM used and peak capacity |
+| disk_used_gb, disk_total_gb | REAL | Average hourly disk used and peak capacity |
+| network_rx_bytes, network_tx_bytes | INTEGER | Average hourly network throughput |
 
 ### `uptime_checks`
 Individual endpoint audit log entries.
@@ -195,6 +211,8 @@ Incoming push monitor heartbeat records.
 | `GET /api/containers/{id}/stats` | Auth | Live per-container CPU%, RAM usage, and Network I/O metrics |
 | `GET /api/containers/{id}/logs` | Auth | Snapshot of the last 100 log lines |
 | `GET /api/containers/{id}/logs/stream` | Auth | **SSE:** Live real-time container log stream |
+| `GET /api/containers/{id}/terminal` | Admin | **WebSocket Proxy:** Interactive zero-allocation container exec terminal (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) |
+| `POST /api/containers/prune` | Admin | **System Prune:** Host disk space cleanup (images, containers, volumes, networks, build cache) |
 | `POST /api/containers/{id}/start` | Admin | Start container |
 | `POST /api/containers/{id}/stop` | Admin | Stop container |
 | `POST /api/containers/{id}/pause` | Admin | Pause container |
@@ -205,14 +223,14 @@ Incoming push monitor heartbeat records.
 | `PUT /api/push-monitors/{id}` | Admin | Update push monitor interval or settings |
 | `DELETE /api/push-monitors/{id}` | Admin | Delete a push monitor |
 | `POST /api/push/{token}` | Public | Push webhook ping for cron and backup jobs |
-| `GET /api/metrics/system` | Auth | System resource time-series (`?range=1h\|24h\|7d`) |
+| `GET /api/metrics/system` | Auth | System resource time-series (`?range=1h\|6h\|12h\|24h\|7d\|30d\|90d\|1y`) |
 | `GET /api/uptime` | Auth | Service uptime history (`?service_id=...&range=7d`) |
 | `POST /api/uptime/test-connection` | Auth | **Live Connection Testing:** Performs instant HTTP/HTTPS, TCP or ICMP Ping test; returns latency (ms) |
 | `GET /api/settings` | Auth | Get current application settings |
 | `PUT /api/settings` | Admin | Update application settings |
 | `GET /api/settings/db-stats` | Auth | Retrieve database and WAL storage disk size metrics |
 | `GET /api/backup/download` | Admin | Download point-in-time SQLite `VACUUM INTO` snapshot |
-| `POST /api/notifications/test` | Admin | Test dispatch alerts (Discord, Telegram, Ntfy, Webhook) |
+| `POST /api/notifications/test` | Admin | Test dispatch alerts (Discord, Telegram, SMTP Email, Slack, Ntfy, Webhook) |
 | `GET /api/version` | Auth | Queries GitHub Releases API for current Corvus version and update availability |
 | `GET /api/stream/events` | Auth | **SSE:** Real-time stream of service state changes and events |
 | `GET /api/auth/status` | Public | Current session state, role, and Zero-Trust SSO header detection |
@@ -226,16 +244,17 @@ Incoming push monitor heartbeat records.
 
 ---
 
-## 5. Background Services
+## 5. Background Services & Observability Engines
 
 | Service | Interval | Function |
 |---|---|---|
 | `ContainerDiscoveryService` | 10 sec | Synchronizes container state from the Docker socket. Newly discovered containers initialize with `is_uptime_enabled = 0`; runtime state directly maps to `healthy` as long as Docker reports running |
 | `SystemMetricsCollector` | 15 sec | Samples host CPU, RAM, disk, and network stats into `system_metrics` |
-| `UptimeCheckerService` | 5 sec (tick) / 60 sec | HTTP/TCP and ICMP ping checks, proactive SSL early warnings (14d warning, 7d critical) with daily debounce memory, 3-state finite state machine (`healthy` -> `degraded` -> `down`), and Snitch checks |
+| `UptimeCheckerService` | 5 sec (tick) / 60 sec | HTTP/TCP and ICMP ping checks, body payload assertions, proactive SSL early warnings (14d warning, 7d critical) with daily debounce memory, 3-state finite state machine (`healthy` -> `degraded` -> `down`), and Snitch checks |
 | `UpdateCheckerService` | 24 hours | Checks GitHub Releases API for updates and caches release notifications |
 | `MemoryTrimmerBackgroundService` | 3 min | Flushes SQLite connection pools, resets WAL logs with `PRAGMA wal_checkpoint(TRUNCATE);`, aggressive Gen 2 compaction, and libc `malloc_trim(0)` |
-| `RetentionCleanupService` | Once daily | Prunes aged time-series records, performs automatic `VACUUM;` to reclaim freelist storage back to host OS, and runs compacting Gen 2 GC sweeps |
+| `RetentionCleanupService` | Once daily | Performs hourly metric rollup aggregation (`system_metrics_hourly`), enforces dual-stage retention (7d raw / 365d hourly rollup), runs automatic `VACUUM;` to reclaim freelist storage back to host OS, and runs compacting Gen 2 GC sweeps |
+| `FlappingDetector` | Continuous (in-memory) | Sliding-window state transition tracker. Detects flapping oscillations, suppresses intermediate alerts, and dispatches Amber warning and Green recovery alerts |
 
 ---
 
@@ -260,13 +279,13 @@ Incoming push monitor heartbeat records.
 | Page | URL | Features |
 |---|---|---|
 | **Dashboard** | `/` | Mobile-first 2-column KPI strip, full-width Disk bar, live system pulse hero, GitHub update checker badge, and active containers widget |
-| **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, SSL expiration badge, and reordering controls |
-| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, Start/Stop/Pause/Restart actions, Compose stack accordion grouping, live log terminal |
-| **System Metrics**| `/metrics` | Telemetry graphs across 1h, 6h, 12h, 24h, 7d periods for CPU, RAM, Disk, and Network |
-| **Uptime & Snitch** | `/uptime` | 3-state health monitoring, HTTP/TCP/ICMP latency history, and Dead Man's Snitch cron/backup monitor tab |
-| **Settings** | `/settings` | Single-column (`max-w-4xl`) streamlined settings shell, compact version status badge, multi-channel alerts (Discord, Telegram, Ntfy, Webhook), dual-mode backup, and flexible retention |
-| **Profile & Users** | `/profile` | Self-service password updates, 2FA settings, and administrator user provisioning/role management |
-| **Public Status** | `/status` | **Unauthenticated:** Operational status banner, interactive 30-check latency sparklines, collapsible category groups, active maintenance and incident notices |
+| **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, expected body assertion, SSL expiration badge, and reordering controls |
+| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, Start/Stop/Pause/Restart actions, Compose stack accordion grouping, live log terminal, **Interactive Web Terminal (`ContainerTerminalModal`)**, and **System Prune (`SystemPruneModal`)** |
+| **Uptime** | `/uptime` | Service uptime monitors, ICMP Ping, proactive SSL alerts, Dead Man's Snitch monitors, historical check logs, and incident management |
+| **System Metrics** | `/metrics` | Time-series hardware utilization charts with **1h, 6h, 12h, 24h, 7d, 30d, 90d, and 1y** periods powered by hourly rollups |
+| **Settings** | `/settings` | Single-column (`max-w-4xl`) settings shell with general options, DB storage stats, backup snapshots, **SMTP Email**, **Slack Webhook**, and **Flapping Protection** |
+| **Profile** | `/profile` | Self-service password change, 2FA setup, and administrative user management with RBAC |
+| **Public Status** | `/status` | Unauthenticated public uptime dashboard with incident notice banners and collapsible category accordions |
 | **Mobile Glass BottomNav**| *Global* | 7-tab frosted glass bottom navigation bar with sliding indicator and safe-area support (`BottomNav.tsx`) |
 
 ---

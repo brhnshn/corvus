@@ -30,32 +30,32 @@ corvus/
 │   │   ├── Endpoints/             # Resource-oriented Minimal API endpoints (extension methods)
 │   │   │   ├── AuthEndpoints.cs          # Session auth, registration toggle, and Zero-Trust SSO
 │   │   │   ├── BackupEndpoints.cs        # One-click SQLite VACUUM INTO snapshot download
-│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs, /logs/stream, and lifecycle controls
+│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, lifecycle, Web Terminal (/terminal), and System Prune (/prune)
 │   │   │   ├── DashboardEndpoints.cs     # Dashboard aggregated KPI summary
 │   │   │   ├── IncidentEndpoints.cs      # Incident and maintenance announcement CRUD & lifecycle
-│   │   │   ├── MetricsEndpoints.cs       # Host system metrics time-series
-│   │   │   ├── NotificationEndpoints.cs  # Multi-channel alert test endpoint
+│   │   │   ├── MetricsEndpoints.cs       # Host system metrics time-series (1h-1y)
+│   │   │   ├── NotificationEndpoints.cs  # Multi-channel alert test endpoint (Discord, Telegram, SMTP, Slack, Ntfy, Webhooks)
 │   │   │   ├── PushEndpoints.cs          # Push webhooks and Dead Man's Snitch (/push-monitors)
 │   │   │   ├── ServicesEndpoints.cs      # Service CRUD and /reorder
 │   │   │   ├── SettingsEndpoints.cs      # Dynamic system settings (RequireAdmin) and database size telemetry
 │   │   │   ├── StatusPageEndpoints.cs    # Public unauthenticated status summary (/api/status-page)
 │   │   │   ├── StreamEndpoints.cs        # Live Server-Sent Events stream (/api/stream/events)
-│   │   │   ├── UptimeEndpoints.cs        # Service uptime check history and ICMP ping diagnostics
+│   │   │   ├── UptimeEndpoints.cs        # Service uptime check history, HTTP body assertion, and ICMP ping diagnostics
 │   │   │   └── UserEndpoints.cs          # Administrator RBAC user management CRUD endpoints (/api/users)
 │   │   ├── BackgroundServices/    # Continuous background worker threads
 │   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periodic container discovery (10s)
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrics sampler (15s)
-│   │   │   ├── UptimeCheckerService.cs       # 3-state HTTP/TCP/ICMP ping, proactive SSL early warnings, and Snitch checks
+│   │   │   ├── UptimeCheckerService.cs       # 3-state HTTP/TCP/ICMP ping, body assertions, proactive SSL early warnings, and Snitch checks
 │   │   │   ├── MemoryTrimmerBackgroundService.cs # Periodic native memory trimming, PRAGMA wal_checkpoint(TRUNCATE), Gen2 compaction & malloc_trim
-│   │   │   └── RetentionCleanupService.cs    # Dynamic retention data cleanup, SQLite automated VACUUM & Gen2 compaction (24h)
+│   │   │   └── RetentionCleanupService.cs    # Dynamic retention cleanup, hourly metrics rollup (system_metrics_hourly), dual retention (7d raw / 365d hourly), SQLite VACUUM & Gen2 compaction (24h)
 │   │   ├── Data/                  # Persistence and data access layer (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000, and PRAGMA tuning
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sequential migration runner
 │   │   │   ├── IncidentRepository.cs         # Incident and maintenance notice data access
 │   │   │   ├── ServicesRepository.cs         # Service definition and override queries
 │   │   │   ├── PushMonitorRepository.cs      # Dead Man's Snitch data access
-│   │   │   ├── UptimeRepository.cs           # Uptime history data access
-│   │   │   ├── MetricsRepository.cs          # Host telemetry time-series storage
+│   │   │   ├── UptimeRepository.cs           # Uptime history data access and daily rollups
+│   │   │   ├── MetricsRepository.cs          # Host telemetry time-series storage, hourly rollup aggregation, and downsampled CTE queries
 │   │   │   ├── BackupRepository.cs           # Push backup event logs
 │   │   │   ├── UserRepository.cs             # User accounts, RBAC roles and password hashing
 │   │   │   ├── SessionRepository.cs          # Persistent SQLite session store (user_sessions table)
@@ -70,13 +70,15 @@ corvus/
 │   │   │       ├── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing status reset and index
 │   │   │       ├── 008_service_incidents.sql     # Service incidents and maintenance announcements schema
 │   │   │       ├── 009_uptime_rollup_and_transition.sql # Uptime daily rollup & transition state tracking
-│   │   │       └── 010_user_sessions.sql         # Persistent user sessions table
+│   │   │       ├── 010_user_sessions.sql         # Persistent user sessions table
+│   │   │       ├── 011_expected_body.sql         # HTTP response body keyword & regex validation
+│   │   │       └── 012_metrics_hourly_rollup.sql # Hourly telemetry rollup table and indexes
 │   │   ├── Models/                 # DTOs and Database Entities
-│   │   │   ├── Service.cs                    # Service entity (check_type: http, tcp, ping, port, ssl, is_public, display_order)
+│   │   │   ├── Service.cs                    # Service entity (check_type: http, tcp, ping, port, ssl, expected_body, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Incident announcement entity
 │   │   │   ├── ServiceOverride.cs            # Docker label override model
 │   │   │   ├── PushMonitor.cs                # Dead Man's Snitch entity
-│   │   │   ├── DockerModels.cs               # Docker Engine API schemas
+│   │   │   ├── DockerModels.cs               # Docker Engine API schemas, prune requests/results, exec resize frames
 │   │   │   ├── DockerActionResult.cs         # Container action result response
 │   │   │   ├── SystemMetric.cs               # System hardware metrics sample
 │   │   │   ├── UptimeCheck.cs                # Health check audit log
@@ -86,12 +88,15 @@ corvus/
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
 │   │   ├── Utils/                  # Helper utilities
 │   │   │   ├── StatusCodeMatcher.cs          # HTTP status code pattern matcher (ranges and discrete codes)
-│   │   │   └── NativeMemoryTrimmer.cs        # Platform-guarded libc malloc_trim native memory reclamation
+│   │   │   ├── NativeMemoryTrimmer.cs        # Platform-guarded libc malloc_trim native memory reclamation
+│   │   │   └── HttpBodyValidator.cs          # Zero-allocation 64 KB bounded stream content validator with ReDoS timeout
 │   │   └── Services/                # Core domain business logic
-│   │       ├── DockerHttpClient.cs           # SocketsHttpHandler direct socket client
-│   │       ├── DockerService.cs              # Container operations, stats, and label parsing
+│   │       ├── DockerHttpClient.cs           # SocketsHttpHandler direct socket client (exec, prune, stats, logs)
+│   │       ├── DockerService.cs              # Container operations, system prune, stats, and label parsing
 │   │       ├── DockerLogDemuxer.cs           # Zero-alloc multiplexed Docker stdout/stderr demuxer
-│   │       ├── NotificationService.cs        # Bilingual multi-channel alert dispatcher (Discord, Telegram, Ntfy, Webhook)
+│   │       ├── IFlappingDetector.cs          # Sliding-window flapping detection interface
+│   │       ├── FlappingDetector.cs           # In-memory sliding-window transition tracker & alert debounce engine
+│   │       ├── NotificationService.cs        # Multi-channel alert dispatcher (Discord, Telegram, SMTP Email, Slack, Ntfy, Webhook)
 │   │       ├── EventBroadcaster.cs           # Bounded Channel SSE real-time event publisher
 │   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hashing, persistent SQLite session store & RBAC
 │   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter authentication & RBAC authorization layer
@@ -128,6 +133,7 @@ corvus/
 │       │   │   ├── BottomNav.tsx             # Mobile Glass Bottom Navigation Bar — 7-tab frosted glass bar
 │       │   │   ├── StatusBadge.tsx           # Health indicator badge (healthy, degraded, down)
 │       │   │   ├── LanguageSwitch.tsx        # Compact & full interface language switcher
+│       │   │   ├── EmailRecipientInput.tsx   # Interactive pills/tags multi-recipient email input component
 │       │   │   └── RegistrationPromptModal.tsx # Global first-admin prompt modal
 │       │   └── pages/              # Modular feature-driven page directories
 │       │       ├── AuthPage/
@@ -137,8 +143,10 @@ corvus/
 │       │       │   ├── ContainerList.tsx     # Responsive mobile cards and desktop table
 │       │       │   ├── ComposeStackGroup.tsx # Collapsible Docker Compose stack accordions
 │       │       │   ├── ContainerStatsBadges.tsx # Real-time CPU, RAM, Net I/O badges
-│       │       │   ├── ContainerActionButtons.tsx # Lifecycle controls with loading states
-│       │       │   └── ContainerLogsModal.tsx   # Live container log streaming terminal
+│       │       │   ├── ContainerActionButtons.tsx # Lifecycle controls, log viewer, and web terminal trigger
+│       │       │   ├── ContainerLogsModal.tsx   # Live container log streaming terminal
+│       │       │   ├── ContainerTerminalModal.tsx # Interactive in-browser web terminal (@xterm/xterm, shell selector, PTY resize)
+│       │       │   └── SystemPruneModal.tsx     # One-click host disk space cleanup (images, containers, volumes, networks, build cache)
 │       │       ├── Dashboard/
 │       │       │   ├── index.tsx             # Consolidated KPI summary & active services
 │       │       │   ├── SystemPulseHero.tsx   # Live system pulse, network I/O & update checker
@@ -159,16 +167,21 @@ corvus/
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Service launcher and drag & drop reordering
 │       │       │   ├── ServiceCard.tsx       # Service card (HTTP, TCP, PING, Docker badges)
-│       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services (with ICMP Ping option)
+│       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services (with ICMP Ping & expected body options)
 │       │       │   ├── EditServiceModal.tsx  # Modular modal for service endpoint, reverse proxy domain & check type
-│       │       │   └── AdvancedCheckOptions.tsx # Modular accordion for check interval, retries, TLS & status codes
+│       │       │   └── AdvancedCheckOptions.tsx # Modular accordion for check interval, retries, TLS, body assertion & status codes
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Unified single-column (max-w-4xl) settings shell with header version badge
 │       │       │   ├── GeneralSettingsTab.tsx # General options, retention, and DB size telemetry
-│       │       │   ├── NotificationSettingsTab.tsx # Multi-channel alert configuration
-│       │       │   └── BackupSettingsTab.tsx # Dual-mode internal/external backup manager
+│       │       │   ├── NotificationSettingsTab.tsx # Multi-channel alert configuration (Discord, Telegram, SMTP, Slack, Ntfy, Webhooks)
+│       │       │   ├── BackupSettingsTab.tsx # Dual-mode internal/external backup manager
+│       │       │   └── notifications/        # Modular notification channel panels
+│       │       │       ├── EmailChannelPanel.tsx       # SMTP host, port, TLS, from name and multi-recipient configuration
+│       │       │       ├── SlackChannelPanel.tsx       # Slack incoming webhook URL and channel test trigger
+│       │       │       ├── FlappingProtectionCard.tsx  # Flapping transition thresholds, window, and recovery checks
+│       │       │       └── NotificationEventFilters.tsx # Granular event triggers (down, up, ssl, flapping)
 │       │       ├── SystemMetrics/
-│       │       │   ├── index.tsx             # Time-series telemetry shell & period filter
+│       │       │   ├── index.tsx             # Time-series telemetry shell & period filter (1h, 6h, 12h, 24h, 7d, 30d, 90d, 1y)
 │       │       │   ├── SystemKpiCards.tsx    # Live hardware utilization metric cards
 │       │       │   ├── CpuMetricsChart.tsx   # CPU load area chart
 │       │       │   ├── RamMetricsChart.tsx   # Memory utilization area chart
@@ -190,12 +203,15 @@ corvus/
 │       └── wwwroot/                # Production compiled bundle output (hosted by Corvus.Api)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Suite (144 Passing Tests)
+│   └── Corvus.Api.Tests/           # xUnit Test Suite (211 Passing Tests)
 │       ├── AuthServiceTests.cs
-│       ├── DockerServiceTests.cs     # Container operations, micro-cache, and batch stats tests
+│       ├── DockerServiceTests.cs     # Container operations, system prune, micro-cache, and batch stats tests
 │       ├── DockerLogDemuxerTests.cs
+│       ├── FlappingDetectorTests.cs  # Sliding-window transition tracking and flapping alert debounce tests
+│       ├── HttpBodyValidatorTests.cs # Zero-allocation stream content verification & ReDoS timeout tests
 │       ├── MemoryTrimmerTests.cs     # Native memory trimmer and GC optimization tests
-│       ├── NotificationServiceTests.cs
+│       ├── MetricsRepositoryTests.cs # Hourly aggregation, dual retention cleanups, and downsampling query tests
+│       ├── NotificationServiceTests.cs # Multi-channel dispatch tests (Discord, Telegram, SMTP, Slack, Ntfy, Webhooks)
 │       ├── RoadmapFeaturesTests.cs
 │       ├── UpdateCheckerTests.cs
 │       ├── StatusCodeMatcherTests.cs
@@ -313,12 +329,56 @@ Prior to pruning older raw checks, daily aggregates are calculated and persisted
 - Enables instant rendering of historical uptime percentages across 30-day, 90-day, and 365-day periods without heavy table scans on `uptime_checks`.
 - Historical daily statistics older than 365 days are pruned, keeping a full year of SLA memory within mere kilobytes of storage.
 
-### 3. Incident & Maintenance Lifecycle (`service_incidents`)
-Public status communication during outages or maintenance is decoupled from raw automated health checks:
-- **Severity Levels:** `info`, `warning`, `critical`, `maintenance`.
-- **Status Workflow:** `investigating` ➔ `identified` ➔ `monitoring` ➔ `resolved`.
-- **Public Visibility:** Active and pinned incidents are exposed through `GET /api/status-page` and rendered in dynamic, real-time alert banners (`PublicStatusIncidentBanner.tsx`) atop the public board.
-- **Administrative Management:** Managed from the Uptime page's Incidents tab (`IncidentsTab.tsx`) with modal creation (`AddIncidentModal.tsx`), stage progression, and one-click resolution (`POST /api/incidents/{id}/resolve`).
+### 4. Time-Series Telemetry Downsampling & Hourly Rollups (`system_metrics_hourly`)
+High-frequency (15-second) system metrics can quickly accumulate hundreds of thousands of rows. Corvus applies a dual-stage downsampling policy:
+- **7-Day Raw Data Retention:** Full 15-second granularity records (`system_metrics`) are preserved for 7 days to facilitate high-resolution troubleshooting and short-term analysis.
+- **Automated Hourly Rollup (`AggregateHourlyMetricsAsync`):** Past completed hours are automatically aggregated into `system_metrics_hourly` by `RetentionCleanupService` and `MetricsRepository`, computing average CPU, RAM, Disk, Net I/O and peak capacities with mathematical idempotency.
+- **365-Day Rollup Retention:** Hourly summaries are retained for up to 365 days (or user-defined retention limit).
+- **Unified Query Dispatcher:** For long-term views (`30d`, `90d`, `1y`), `GetRecentAsync` executes an optimized SQLite CTE combining historical hourly rollups with unaggregated recent hours, delivering instantaneous sub-second chart rendering with zero data gaps.
+
+---
+
+## 💻 In-Browser Container Web Terminal & System Prune Architecture
+
+### 1. Zero-Allocation WebSocket Exec Proxy (`/terminal`)
+- **Direct Shell Access:** Users can launch an interactive shell (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) directly into running Docker containers from the browser.
+- **Bi-Directional Proxy:** The ASP.NET Core Native AOT backend establishes a hijacked HTTP 1.1 Upgrade connection to the Docker daemon (`/exec/{id}/start`) and bridges it to the client WebSocket.
+- **Zero GC Allocation:** Uses `ArrayPool<byte>.Shared` with static 8 KB buffers, avoiding heap pressure during high-throughput terminal sessions.
+- **Immediate Resource Cleanup:** Upon client disconnect or modal closure, the Docker exec process is terminated, rented buffers returned to the pool, and system RAM restored to baseline (~30 MB).
+- **Dynamic PTY Resizing:** The client transmits JSON control frames (`{type: "resize", cols, rows}`) which are automatically translated to Docker Engine `/exec/{id}/resize` API calls.
+- **RBAC Security:** Exec terminal access is strictly protected under `[RequireAdmin]` (403 Forbidden for viewer accounts).
+
+### 2. Docker System Prune & Storage Reclamation (`/prune`)
+- **Direct Daemon Orchestration:** Orchestrates cleanup across `/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune`, and `/build/prune`.
+- **Persistent Data Protection:** Safeguards against accidental volume loss by keeping `Volumes` unselected by default, accompanied by a prominent warning banner. Supports selective pruning of dangling vs all unused images.
+- **Granular Savings Audit:** Summarizes reclaimed bytes per category (Images, Containers, Volumes, Networks, Build Cache) and reports aggregate disk recovery (`1.42 GB reclaimed`).
+
+---
+
+## 🔕 Intelligent Flapping Suppression & Alert Anti-Spam (`FlappingDetector`)
+
+### 1. Sliding-Window Transition Tracking
+Services oscillating rapidly between `up` and `down` can trigger alert fatigue and notify flood. Corvus introduces an in-memory `IFlappingDetector`:
+- Tracks service state transition timestamps within a configurable sliding window (default: 5 minutes).
+- **Suppression Trigger:** If transitions meet or exceed the configured threshold (default: 4 transitions), flapping state is declared. Corvus emits a single Amber warning alert (`[FLAPPING DETECTED]`) and suppresses all subsequent intermediate notifications.
+- **Stability & Recovery:** Once the service achieves a consecutive number of stable checks (default: 3 checks), the suppression is lifted and a single Green recovery notification (`[FLAPPING RESOLVED]`) is dispatched.
+- **Zero Leakage:** In-memory transition history is pruned automatically to prevent memory leaks over long operational runs.
+
+### 2. Multi-Channel Alert Dispatcher (`NotificationService`)
+- Outbound alerts support **Discord** (color-coded rich embeds), **Telegram** (MarkdownV2 formatting), **Email (SMTP)** (responsive dark-mode HTML template with multiple recipients), **Slack** (attachments with status color accents), **Ntfy / Gotify** (custom tags and priority levels), and **Generic Webhooks**.
+
+---
+
+## 🔍 HTTP Response Body Assertion Engine (`HttpBodyValidator`)
+
+### 1. Payload Content Verification
+Services returning HTTP 200 may still be displaying an application error page or database connection fault. Corvus supports deep payload verification:
+- **Keyword Matching:** Asserts the presence of specific keywords (`"status":"healthy"`, `"database":"connected"`).
+- **Regex Pattern Matching:** Asserts complex expressions with compiled regular expressions.
+
+### 2. Zero-Allocation 64 KB Memory Bounding & ReDoS Defense
+- Instead of buffering unbounded response bodies into heap memory, `HttpBodyValidator` streams payloads up to a strict 64 KB ceiling backed by `ArrayPool<byte>` buffers.
+- Regular expression evaluations are guarded with a 200ms strict timeout to prevent Regular Expression Denial of Service (ReDoS) vulnerabilities.
 
 ---
 

@@ -37,7 +37,9 @@ Corvus is not tailored for a single individual or specific private infrastructur
 | Orchestration | Coolify / Portainer | Interacts directly with the standard Docker socket (`/var/run/docker.sock`); no external orchestration dependencies required. |
 | Networking / VPN | Tailscale | Requires no specific VPN layer; functions identically across LAN, WireGuard, Tailscale, or the public Internet. |
 | Backup / Cron Monitoring | `/opt/scripts/backup.sh` | **Dead Man's Snitch** push infrastructure (`/api/push/{token}`). Automatically dispatches alerts when expected intervals and grace windows expire. |
-| Alerting & Notifications | — | Built-in multi-channel alerting: Discord, Telegram, Ntfy/Gotify, and generic HTTP Webhooks. |
+| Alerting & Notifications | — | Built-in multi-channel alerting: Discord, Telegram, Email (SMTP), Slack Webhooks, Ntfy/Gotify, and generic HTTP Webhooks with intelligent flapping suppression. |
+| Container Terminal & Prune | — | Browser-based interactive container web terminal (`/api/containers/{id}/terminal`) and one-click system prune (`/api/containers/prune`) via standard Docker API. |
+| Telemetry Downsampling | — | Dual-stage retention (7d raw, 365d hourly rollup) maintaining lightweight SQLite database with fast 30d/90d/1y time-series charts. |
 | Real-Time Communication | — | Server-Sent Events (SSE) via `/api/stream/events` and real-time container log streaming (`/api/containers/{id}/logs/stream`). |
 
 ---
