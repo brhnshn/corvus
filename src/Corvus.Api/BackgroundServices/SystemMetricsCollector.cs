@@ -72,20 +72,23 @@ public class SystemMetricsCollector : BackgroundService
                 long memTotalKb = 0;
                 long memAvailKb = 0;
 
-                foreach (var line in File.ReadLines("/proc/meminfo"))
+                using (var sr = new StreamReader("/proc/meminfo"))
                 {
-                    if (line.StartsWith("MemTotal:"))
+                    while (sr.ReadLine() is { } line)
                     {
-                        memTotalKb = ParseMemInfoKb(line);
-                    }
-                    else if (line.StartsWith("MemAvailable:"))
-                    {
-                        memAvailKb = ParseMemInfoKb(line);
-                    }
+                        if (line.StartsWith("MemTotal:"))
+                        {
+                            memTotalKb = ParseMemInfoKb(line);
+                        }
+                        else if (line.StartsWith("MemAvailable:"))
+                        {
+                            memAvailKb = ParseMemInfoKb(line);
+                        }
 
-                    if (memTotalKb > 0 && memAvailKb > 0)
-                    {
-                        break;
+                        if (memTotalKb > 0 && memAvailKb > 0)
+                        {
+                            break;
+                        }
                     }
                 }
 

@@ -35,6 +35,7 @@ ENV CORVUS_PORT=8090 \
     DOCKER_SOCKET=/var/run/docker.sock \
     CORVUS_VERSION=${APP_VERSION} \
     DOTNET_gcServer=0 \
+    DOTNET_gcConcurrent=0 \
     DOTNET_GCConserveMemory=9 \
     MALLOC_ARENA_MAX=2 \
     MALLOC_TRIM_THRESHOLD_=65536

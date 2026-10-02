@@ -54,7 +54,7 @@ public class DockerService : IDockerService
         var list = await _client.ListContainersAsync(all: true, cancellationToken);
         lock (_containersLock)
         {
-            _cachedContainers = (now.AddSeconds(2.5), list);
+            _cachedContainers = (now.AddSeconds(10), list);
         }
         return list;
     }

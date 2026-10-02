@@ -50,9 +50,11 @@ public class MemoryTrimmerBackgroundService : BackgroundService
                 }
 
                 SqliteConnection.ClearAllPools();
-                GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
+                GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+                GC.WaitForPendingFinalizers();
+                GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
                 NativeMemoryTrimmer.Trim();
-                _logger.LogDebug("Periyodik bellek kırpma tamamlandı (Sqlite shrink & checkpoint yapıldı, pool temizlendi, Gen2 non-blocking GC ve Native trim tetiklendi).");
+                _logger.LogDebug("Periyodik bellek kırpma tamamlandı (Sqlite shrink & checkpoint yapıldı, pool temizlendi, agresif Gen2 kompaksiyon ve Native trim uygulandı).");
             }
             catch (Exception ex)
             {
