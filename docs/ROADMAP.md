@@ -6,14 +6,15 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
 
 ## Phase 1: Reliability, Identity & Auth Hardening
 
-### Ticket 1.1 — Persistent SQLite Session Store
+### Ticket 1.1 — Persistent SQLite Session Store [Completed - v1.5.19]
 * **Blocked by:** None.
 * **Objective:** Prevent session logout when the container restarts or updates.
 * **Scope:**
-  - SQLite `sessions` table migration (`token`, `username`, `expires_at`, `created_at`).
-  - Transition `AuthService` from in-memory `ActiveSessions` dictionary to SQLite backing store.
-  - Automatic expiration and periodic pruning of stale sessions.
-* **Acceptance Criteria:** User sessions survive container restart; all auth unit tests pass.
+  - SQLite `user_sessions` table migration (`010_user_sessions.sql`).
+  - `ISessionRepository` and `SessionRepository` data access layer.
+  - Hybrid write-through caching in `AuthService` (RAM speed + SQLite durability).
+  - Daily pruning of expired sessions in `RetentionCleanupService`.
+* **Acceptance Criteria:** User sessions survive container restart; all 149 unit tests pass.
 
 ### Ticket 1.2 — User Management, RBAC & Password Change
 * **Blocked by:** Ticket 1.1

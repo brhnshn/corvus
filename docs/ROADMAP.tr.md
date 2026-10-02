@@ -6,14 +6,15 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
 
 ## Faz 1: Güvenilirlik, Kimlik & Oturum (Temel Zırhlama)
 
-### Bilet 1.1 — Kalıcı SQLite Oturum Yönetimi (Persistent Sessions)
+### Bilet 1.1 — Kalıcı SQLite Oturum Yönetimi (Persistent Sessions) [Tamamlandı - v1.5.19]
 * **Önkoşul:** Yok (Hemen başlanabilir).
 * **Amaç:** Konteyner yeniden başladığında veya güncellendiğinde tüm kullanıcıların oturumunun düşmesini engellemek.
 * **Kapsam:**
-  - SQLite `sessions` tablosu migration'ı (`token`, `username`, `expires_at`, `created_at`).
-  - `AuthService` içindeki in-memory `ActiveSessions` sözlüğünün SQLite ile değiştirilmesi.
-  - Süresi dolmuş oturumların periyodik temizlenmesi.
-* **Kabul Kriteri:** Konteyner yeniden başlatıldıktan sonra tarayıcı çereziyle oturumun korunması, unit testlerin geçmesi.
+  - SQLite `user_sessions` tablosu migration'ı (`010_user_sessions.sql`).
+  - `ISessionRepository` ve `SessionRepository` veri erişim katmanı.
+  - `AuthService` içindeki hibrit write-through önbellek mimarisi (RAM hızı + SQLite kalıcılığı).
+  - `RetentionCleanupService` günlük süresi dolmuş oturum temizliği.
+* **Kabul Kriteri:** Konteyner yeniden başlatıldıktan sonra tarayıcı çereziyle oturumun korunması, unit testlerin geçmesi (149/149 test geçti).
 
 ### Bilet 1.2 — Kullanıcı Yönetimi, Rol Yetkilendirme & Şifre Değiştirme (RBAC)
 * **Önkoşul:** Bilet 1.1
