@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.5.19] - 2026-10-02
 
+### Security & User Management (RBAC)
+- **Role-Based Access Control (RBAC)**: Enforced `admin` vs `viewer` role privileges via `CorvusAuthFilter` and `RequireAdminAttribute`. `viewer` users are restricted to read-only access; mutating service/container actions, system settings updates, and backup downloads are guarded with 403 Forbidden.
+- **User Management & Password Change**: Introduced SQLite `UserRepository` CRUD endpoints (`/api/users`), self-service password updates (`/api/auth/change-password`), and instant revocation of all active sessions upon user deletion (`DeleteSessionsByUsernameAsync`).
+- **User Profile Modal**: Added a dual-tab modal (`UserProfileModal.tsx`) directly accessible from the Sidebar user card for instant password change and administrator user management.
+
+### Network & Monitoring Engine
+- **Proactive SSL/TLS Expiry Alerts**: Implemented proactive alerting dispatched to Discord (color-coded embed), Telegram, Ntfy (lock/warning priority), and Generic Webhook at 14 days and 7 days prior to certificate expiration.
+- **Smart Debounce & Anti-Spam Defense**: Built level-based (14d warning vs 7d critical) daily deduplication memory into `UptimeCheckerService`; automatically resets state upon certificate renewal.
+- **Service Card SSL Badges**: Added pulsing red `ShieldAlert` badge for $\le 7$ days and amber badge for $\le 14$ days on Service cards and status views.
+- **Notification Event Filter**: Added `notify_ssl_expiry` toggle to Notification Settings.
+
+### UI/UX & Responsive Experience
+- **Mobile Glass Bottom Navigation Bar**: Designed and implemented a frosted glass bottom navigation bar (`BottomNav.tsx`) for mobile/tablet screens (`< lg`) featuring sliding pill indicator and expanding active tabs with safe-area notch support (`viewport-fit=cover`).
+- **Complete TR/EN Bilingual Support**: Defined all new labels, modal titles, and notification strings across both `tr.ts` and `en.ts`.
+
 ### Performance & Memory
 - **Aggressive Compacting Gen 2 Trimming**: Replaced `GCCollectionMode.Optimized` (which was silently skipped by .NET GC under low memory pressure) with `GCCollectionMode.Aggressive, blocking: true, compacting: true` followed by `GC.WaitForPendingFinalizers()` in `MemoryTrimmerBackgroundService` and `RetentionCleanupService`, eliminating heap fragmentation and returning uncommitted virtual pages directly to Linux kernel via `madvise`.
 - **Non-Concurrent Workstation GC**: Switched `ConcurrentGarbageCollection` to `false` and set `DOTNET_gcConcurrent=0` in runtime container, preventing oversized 80MB segment reservations and forcing compact allocation profiles tailored for low-footprint containers.
@@ -18,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Docker Log Rotation Cap**: Configured `json-file` log limits (`max-size: 10m`, `max-file: 3`) in `docker-compose.yml` to prevent runaway host container log growth.
 
 ### Tests
-- Validated all 145 unit tests across the entire test suite (`Passed: 145, Failed: 0`).
+- Validated all 160 unit tests across the entire test suite (`Passed: 160, Failed: 0`).
 
 ---
 

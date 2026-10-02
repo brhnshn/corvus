@@ -37,7 +37,7 @@ public static class ServicesEndpoints
 
             var created = await repo.CreateManualAsync(request);
             return Results.Created($"/api/services/{created.Id}", created);
-        });
+        }).RequireAdmin();
 
         group.MapPut("/{id}", async (string id, UpdateServiceRequest request, IServicesRepository repo) =>
         {
@@ -54,13 +54,13 @@ public static class ServicesEndpoints
 
             var updated = await repo.UpdateAsync(id, request);
             return updated != null ? Results.Ok(updated) : Results.NotFound();
-        });
+        }).RequireAdmin();
 
         group.MapDelete("/{id}", async (string id, IServicesRepository repo) =>
         {
             bool success = await repo.DeleteAsync(id);
             return success ? Results.Ok(new GenericApiResponse(true, "Servis silindi veya override kaldırıldı.")) : Results.NotFound();
-        });
+        }).RequireAdmin();
 
         group.MapPut("/reorder", async (ReorderServicesRequest request, IServicesRepository repo) =>
         {
@@ -71,6 +71,6 @@ public static class ServicesEndpoints
 
             await repo.ReorderAsync(request.ServiceIds);
             return Results.Ok(new GenericApiResponse(true, "Servis sıralaması güncellendi."));
-        });
+        }).RequireAdmin();
     }
 }

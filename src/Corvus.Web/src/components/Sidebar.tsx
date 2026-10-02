@@ -13,6 +13,7 @@ import {
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
 import { LanguageSwitch } from './LanguageSwitch';
+import { UserProfileModal } from './UserProfileModal';
 
 export type PageId = 'dashboard' | 'services' | 'containers' | 'metrics' | 'uptime' | 'settings';
 
@@ -20,6 +21,7 @@ interface SidebarProps {
   currentPage: PageId;
   onSelectPage: (page: PageId) => void;
   username?: string | null;
+  role?: string | null;
   onLogout?: () => void;
   isOpen?: boolean;
   onClose?: () => void;
@@ -29,12 +31,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentPage, 
   onSelectPage,
   username,
+  role,
   onLogout,
   isOpen = false,
   onClose
 }) => {
   const [versionInfo, setVersionInfo] = React.useState<VersionInfo | null>(null);
   const [isStatusLinkVisible, setIsStatusLinkVisible] = React.useState<boolean>(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = React.useState<boolean>(false);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -151,19 +155,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* User Profile Footer */}
         {username && (
           <div className="p-3.5 border-t border-[#2a2e3f] bg-[#0f1117]/50">
-            <div className="flex items-center justify-between bg-[#1a1d29] border border-[#2a2e3f] rounded-lg px-3 py-2">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-6 h-6 rounded-full bg-[#d4d4d8]/10 text-[#d4d4d8] flex items-center justify-center shrink-0">
+            <div className="flex items-center justify-between bg-[#1a1d29] border border-[#2a2e3f] rounded-lg px-2.5 py-2">
+              <button
+                type="button"
+                onClick={() => setIsProfileModalOpen(true)}
+                className="flex items-center gap-2.5 overflow-hidden text-left hover:opacity-85 transition-opacity cursor-pointer flex-1 min-w-0 pr-2 group"
+                title={t('userManagement.openProfile')}
+              >
+                <div className="w-7 h-7 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   <UserIcon className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-medium text-[#e5e7eb] truncate">{username}</span>
-              </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold text-[#e5e7eb] truncate group-hover:text-purple-300 transition-colors">
+                    {username}
+                  </span>
+                  <span className="text-[10px] text-[#9ca3af] uppercase tracking-wider font-mono">
+                    {role === 'admin' ? t('userManagement.roleAdmin') : t('userManagement.roleViewer')}
+                  </span>
+                </div>
+              </button>
               {onLogout && (
                 <button
                   type="button"
                   onClick={onLogout}
                   title={t('nav.logout')}
-                  className="text-[#9ca3af] hover:text-[#ef4444] p-1 rounded transition-colors cursor-pointer"
+                  className="text-[#9ca3af] hover:text-[#ef4444] p-1.5 rounded transition-colors cursor-pointer shrink-0"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -207,6 +223,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <LanguageSwitch variant="compact" />
         </div>
       </aside>
+
+      {username && (
+        <UserProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          currentUsername={username}
+          currentRole={role}
+        />
+      )}
     </>
   );
 };

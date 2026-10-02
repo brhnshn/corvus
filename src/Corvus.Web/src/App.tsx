@@ -1,6 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { api, type AuthStatus, invalidateCache } from './api/client';
 import { Sidebar, type PageId } from './components/Sidebar';
+import { BottomNav } from './components/BottomNav';
 import { RegistrationPromptModal } from './components/RegistrationPromptModal';
 import { Menu, RefreshCw } from 'lucide-react';
 import { useI18n } from './i18n';
@@ -352,6 +353,7 @@ export const App: React.FC = () => {
         currentPage={currentPage} 
         onSelectPage={navigateTo} 
         username={authStatus?.username}
+        role={authStatus?.role}
         onLogout={authStatus?.authEnabled ? handleLogout : undefined}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
@@ -389,7 +391,7 @@ export const App: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pb-28 lg:pb-8">
           <div className="max-w-7xl mx-auto">
             <ChunkErrorBoundary>
               <Suspense fallback={<PageLoader />}>
@@ -399,6 +401,9 @@ export const App: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Mobil Cam Altbar (lg altında aktif, genişleyen hap + kayan gösterge) */}
+      <BottomNav currentPage={currentPage} onSelectPage={navigateTo} />
 
       {/* Kayıtları kapatma öneri modalı */}
       <RegistrationPromptModal

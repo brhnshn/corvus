@@ -1,5 +1,5 @@
 import React from 'react';
-import { Server, ShieldCheck, ArrowUp, ArrowDown, ExternalLink, Trash2, Pencil } from 'lucide-react';
+import { Server, ShieldCheck, ShieldAlert, ArrowUp, ArrowDown, ExternalLink, Trash2, Pencil } from 'lucide-react';
 import type { Service } from '../../types';
 import { StatusBadge } from '../../components/StatusBadge';
 import { formatServiceUrl } from '../../utils/url';
@@ -80,16 +80,20 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         {service.sslExpiryDays !== null && service.sslExpiryDays !== undefined && (
           <div className="mt-2">
             <span
-              className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full border ${
+              className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-full border ${
                 service.sslExpiryDays <= 7
-                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400 font-semibold'
-                  : service.sslExpiryDays <= 30
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 font-semibold animate-pulse shadow-xs shadow-rose-950'
+                  : service.sslExpiryDays <= 14
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-medium'
                   : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
               }`}
               title={`Sertifika Sağlayıcı: ${service.sslIssuer || 'Bilinmiyor'}`}
             >
-              <ShieldCheck className="w-3 h-3" />
+              {service.sslExpiryDays <= 14 ? (
+                <ShieldAlert className="w-3 h-3 shrink-0" />
+              ) : (
+                <ShieldCheck className="w-3 h-3 shrink-0" />
+              )}
               <span>
                 {t('services.sslRemaining', { days: service.sslExpiryDays })}
               </span>

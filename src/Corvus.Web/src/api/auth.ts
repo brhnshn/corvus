@@ -28,6 +28,25 @@ export const authApi = {
       body: JSON.stringify({ enabled })
     }),
 
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    fetchJson<{ success: boolean; message?: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  getUsers: () => fetchJson<import('../types').UserDto[]>('/users'),
+
+  createUser: (data: { username: string; password: string; role: string }) =>
+    fetchJson<{ success: boolean; message?: string }>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  deleteUser: (id: string) =>
+    fetchJson<{ success: boolean; message?: string }>(`/users/${id}`, {
+      method: 'DELETE'
+    }),
+
   logout: async () => {
     const res = await fetchJson<{ success: boolean; message?: string }>('/auth/logout', {
       method: 'POST'

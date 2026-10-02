@@ -154,8 +154,16 @@ export interface AuthStatus {
   authEnabled: boolean;
   isAuthenticated: boolean;
   username?: string | null;
+  role?: 'admin' | 'viewer' | string | null;
   hasUsers: boolean;
   registrationEnabled: boolean;
+}
+
+export interface UserDto {
+  id: string;
+  username: string;
+  role: 'admin' | 'viewer' | string;
+  createdAt: string;
 }
 
 export interface VersionInfo {

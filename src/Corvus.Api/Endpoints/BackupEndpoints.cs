@@ -63,7 +63,7 @@ public static class BackupEndpoints
                 }
                 throw;
             }
-        });
+        }).RequireAdmin();
 
         // Backup event listesi
         group.MapGet("/backup-events", async (int? limit, IBackupRepository repo) =>

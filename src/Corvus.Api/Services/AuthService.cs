@@ -19,6 +19,11 @@ public interface IAuthService
     (bool IsValid, string? Username) ValidateSessionToken(string? token);
     void InvalidateSessionToken(string? token);
     string? CheckProxyAuthHeader(IHeaderDictionary headers, IPAddress? remoteIp = null);
+    Task<string> GetUserRoleAsync(string username);
+    Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string username, string currentPassword, string newPassword);
+    Task<List<UserDto>> GetAllUsersAsync();
+    Task<(bool Success, string? ErrorMessage)> CreateUserAsync(string username, string password, string role);
+    Task<(bool Success, string? ErrorMessage)> DeleteUserAsync(string id, string currentUsername);
     bool IsLoginRateLimited(string ipOrKey);
     void RecordLoginFailure(string ipOrKey);
     void ResetLoginAttempts(string ipOrKey);
@@ -297,6 +302,164 @@ public class AuthService : IAuthService
         }
 
         return null;
+    }
+
+    public async Task<string> GetUserRoleAsync(string username)
+    {
+        if (!_authEnabled || string.Equals(username, "anonymous", StringComparison.OrdinalIgnoreCase))
+        {
+            return "admin";
+        }
+
+        var user = await _userRepo.GetByUsernameAsync(username);
+        return user?.Role ?? "admin";
+    }
+
+    public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string username, string currentPassword, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            return (false, "Kullanıcı bilgisi geçersiz.");
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 4)
+        {
+            return (false, "Yeni şifre en az 4 karakter olmalıdır.");
+        }
+
+        var user = await _userRepo.GetByUsernameAsync(username);
+        if (user != null)
+        {
+            if (!VerifyPassword(currentPassword, user.PasswordHash, out _))
+            {
+                return (false, "Mevcut şifre hatalı.");
+            }
+
+            string newHash = HashPassword(newPassword);
+            bool updated = await _userRepo.UpdatePasswordAsync(username, newHash);
+            return updated ? (true, null) : (false, "Şifre güncellenemedi.");
+        }
+
+        // Fallback default admin kontrolü (eğer henüz users tablosunda kullanıcı yoksa)
+        if (string.Equals(username, _defaultUser, StringComparison.OrdinalIgnoreCase))
+        {
+            if (!VerifyPassword(currentPassword, _defaultPassHash, out _))
+            {
+                return (false, "Mevcut şifre hatalı.");
+            }
+
+            var newUser = new User
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Username = _defaultUser,
+                PasswordHash = HashPassword(newPassword),
+                Role = "admin",
+                CreatedAt = DateTime.UtcNow.ToString("o")
+            };
+            await _userRepo.CreateAsync(newUser);
+            return (true, null);
+        }
+
+        return (false, "Kullanıcı bulunamadı.");
+    }
+
+    public async Task<List<UserDto>> GetAllUsersAsync()
+    {
+        var users = await _userRepo.GetAllAsync();
+        if (users.Count == 0 && !string.IsNullOrEmpty(_defaultUser))
+        {
+            return new List<UserDto>
+            {
+                new("default", _defaultUser, "admin", DateTime.UtcNow.ToString("o"))
+            };
+        }
+
+        var result = new List<UserDto>(users.Count);
+        foreach (var u in users)
+        {
+            result.Add(new UserDto(u.Id, u.Username, u.Role, u.CreatedAt));
+        }
+        return result;
+    }
+
+    public async Task<(bool Success, string? ErrorMessage)> CreateUserAsync(string username, string password, string role)
+    {
+        string cleanUser = username?.Trim() ?? string.Empty;
+        if (cleanUser.Length < 3)
+        {
+            return (false, "Kullanıcı adı en az 3 karakter olmalıdır.");
+        }
+
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 4)
+        {
+            return (false, "Şifre en az 4 karakter olmalıdır.");
+        }
+
+        string cleanRole = string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) ? "admin" : "viewer";
+
+        var existing = await _userRepo.GetByUsernameAsync(cleanUser);
+        if (existing != null || (await _userRepo.GetCountAsync() == 0 && string.Equals(cleanUser, _defaultUser, StringComparison.OrdinalIgnoreCase)))
+        {
+            return (false, "Bu kullanıcı adı zaten kayıtlı.");
+        }
+
+        var user = new User
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Username = cleanUser,
+            PasswordHash = HashPassword(password),
+            Role = cleanRole,
+            CreatedAt = DateTime.UtcNow.ToString("o")
+        };
+
+        await _userRepo.CreateAsync(user);
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? ErrorMessage)> DeleteUserAsync(string id, string currentUsername)
+    {
+        var user = await _userRepo.GetByIdAsync(id);
+        if (user == null)
+        {
+            return (false, "Kullanıcı bulunamadı.");
+        }
+
+        if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase))
+        {
+            return (false, "Kendi hesabınızı silemezsiniz.");
+        }
+
+        if (string.Equals(user.Role, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            var allUsers = await _userRepo.GetAllAsync();
+            int adminCount = allUsers.Count(u => string.Equals(u.Role, "admin", StringComparison.OrdinalIgnoreCase));
+            if (adminCount <= 1)
+            {
+                return (false, "Sistemdeki son yönetici hesabı silinemez.");
+            }
+        }
+
+        bool deleted = await _userRepo.DeleteAsync(id);
+        if (!deleted)
+        {
+            return (false, "Kullanıcı silinemedi.");
+        }
+
+        // Kullanıcının aktif oturumlarını temizle
+        if (_sessionRepo != null)
+        {
+            await _sessionRepo.DeleteSessionsByUsernameAsync(user.Username);
+        }
+
+        foreach (var pair in ActiveSessions)
+        {
+            if (string.Equals(pair.Value.Username, user.Username, StringComparison.OrdinalIgnoreCase))
+            {
+                ActiveSessions.TryRemove(pair.Key, out _);
+            }
+        }
+
+        return (true, null);
     }
 
     public bool IsLoginRateLimited(string ipOrKey)

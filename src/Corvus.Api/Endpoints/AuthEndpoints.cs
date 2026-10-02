@@ -16,20 +16,22 @@ public static class AuthEndpoints
 
             if (!auth.IsAuthEnabled)
             {
-                return Results.Ok(new AuthStatusResponse(false, true, "anonymous", hasUsers, regEnabled));
+                return Results.Ok(new AuthStatusResponse(false, true, "anonymous", "admin", hasUsers, regEnabled));
             }
 
             // Zero-Trust SSO / Reverse Proxy Header Kontrolü (Güvenilir IP & Doğrulama Kontrolü)
             string? proxyUser = auth.CheckProxyAuthHeader(context.Request.Headers, context.Connection.RemoteIpAddress);
             if (!string.IsNullOrEmpty(proxyUser))
             {
-                return Results.Ok(new AuthStatusResponse(true, true, proxyUser, hasUsers, regEnabled));
+                string proxyRole = await auth.GetUserRoleAsync(proxyUser);
+                return Results.Ok(new AuthStatusResponse(true, true, proxyUser, proxyRole, hasUsers, regEnabled));
             }
 
             string? token = context.Request.Cookies["corvus_session"];
             var (isAuth, username) = auth.ValidateSessionToken(token);
+            string? userRole = isAuth && !string.IsNullOrEmpty(username) ? await auth.GetUserRoleAsync(username) : null;
 
-            return Results.Ok(new AuthStatusResponse(true, isAuth, isAuth ? username : null, hasUsers, regEnabled));
+            return Results.Ok(new AuthStatusResponse(true, isAuth, isAuth ? username : null, userRole, hasUsers, regEnabled));
         });
 
         group.MapPost("/register", async (AuthRegisterRequest request, HttpContext context, IAuthService auth) =>
@@ -98,6 +100,30 @@ public static class AuthEndpoints
             await auth.SetRegistrationEnabledAsync(request.Enabled);
             string msg = request.Enabled ? "Kayıtlar başarıyla açıldı." : "Kayıtlar başarıyla kapatıldı.";
             return Results.Ok(new GenericApiResponse(true, msg));
+        }).AddEndpointFilter<CorvusAuthFilter>().RequireAdmin();
+
+        group.MapPost("/change-password", async (ChangePasswordRequest request, HttpContext context, IAuthService auth) =>
+        {
+            string? username = context.Items["Corvus_User"] as string;
+            if (string.IsNullOrEmpty(username))
+            {
+                string? token = context.Request.Cookies["corvus_session"];
+                var (_, u) = auth.ValidateSessionToken(token);
+                username = u;
+            }
+
+            if (string.IsNullOrEmpty(username))
+            {
+                return Results.Unauthorized();
+            }
+
+            var (success, error) = await auth.ChangePasswordAsync(username, request.CurrentPassword, request.NewPassword);
+            if (!success)
+            {
+                return Results.BadRequest(new GenericApiResponse(false, error ?? "Şifre değiştirilemedi."));
+            }
+
+            return Results.Ok(new GenericApiResponse(true, "Şifre başarıyla güncellendi."));
         }).AddEndpointFilter<CorvusAuthFilter>();
 
         group.MapPost("/logout", (HttpContext context, IAuthService auth) =>

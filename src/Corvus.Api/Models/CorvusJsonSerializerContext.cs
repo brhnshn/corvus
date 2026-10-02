@@ -147,8 +147,27 @@ public record AuthStatusResponse(
     bool AuthEnabled,
     bool IsAuthenticated,
     string? Username,
+    string? Role,
     bool HasUsers,
     bool RegistrationEnabled
+);
+
+public record ChangePasswordRequest(
+    string CurrentPassword,
+    string NewPassword
+);
+
+public record CreateUserRequest(
+    string Username,
+    string Password,
+    string Role
+);
+
+public record UserDto(
+    string Id,
+    string Username,
+    string Role,
+    string CreatedAt
 );
 
 public record GenericApiResponse(
@@ -206,6 +225,10 @@ public record NotificationResult(
 [JsonSerializable(typeof(AuthRegisterRequest))]
 [JsonSerializable(typeof(ToggleRegistrationRequest))]
 [JsonSerializable(typeof(AuthStatusResponse))]
+[JsonSerializable(typeof(ChangePasswordRequest))]
+[JsonSerializable(typeof(CreateUserRequest))]
+[JsonSerializable(typeof(UserDto))]
+[JsonSerializable(typeof(List<UserDto>))]
 [JsonSerializable(typeof(GenericApiResponse))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(ContainerLogsDto))]

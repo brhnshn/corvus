@@ -9,6 +9,7 @@ namespace Corvus.Api.Services;
 public interface INotificationService
 {
     Task DispatchServiceAlertAsync(string serviceName, string? url, bool isDown, string? errorMessage, CancellationToken ct = default);
+    Task DispatchSslExpiryAlertAsync(string serviceName, string? url, int daysRemaining, string? issuer, CancellationToken ct = default);
     Task<NotificationResult> TestChannelAsync(string channel, string? webhookUrl, string? botToken, string? chatId, CancellationToken ct = default);
 }
 
@@ -79,6 +80,63 @@ public class NotificationService : INotificationService
             settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
         {
             tasks.Add(SendGenericWebhookAsync(wUrl, isDown ? "service_down" : "service_up", title, message, ct));
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+        }
+    }
+
+    public async Task DispatchSslExpiryAlertAsync(string serviceName, string? url, int daysRemaining, string? issuer, CancellationToken ct = default)
+    {
+        var settings = await _settings.GetAllAsync();
+        if (settings.TryGetValue("notify_ssl_expiry", out var nse) && nse == "false")
+        {
+            return; // SSL sertifika bildirimleri devre dışı bırakılmış
+        }
+
+        bool isTr = settings.TryGetValue("system_language", out var lang) && lang?.ToLowerInvariant() == "tr";
+        bool isCritical = daysRemaining <= 7;
+
+        string title = isCritical
+            ? (isTr ? $"[KRİTİK SSL UYARISI] {serviceName}" : $"[CRITICAL SSL ALERT] {serviceName}")
+            : (isTr ? $"[SSL YENİLEME UYARISI] {serviceName}" : $"[SSL RENEWAL ALERT] {serviceName}");
+
+        string message = isTr
+            ? $"SSL sertifikasının bitmesine {daysRemaining} gün kaldı!\nServis: {serviceName}\nURL: {url ?? "Belirtilmedi"}\nSağlayıcı: {issuer ?? "Bilinmiyor"}\nLütfen sertifikanızı en kısa sürede yenileyin.\nZaman: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC"
+            : $"SSL certificate will expire in {daysRemaining} days!\nService: {serviceName}\nURL: {url ?? "Not specified"}\nIssuer: {issuer ?? "Unknown"}\nPlease renew your certificate soon.\nTime: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
+
+        var tasks = new List<Task>();
+
+        // Discord (Amber for 14d warning, Red for <= 7d critical)
+        if (settings.TryGetValue("notification_discord_enabled", out var dEnabled) && dEnabled == "true" &&
+            settings.TryGetValue("notification_discord_webhook_url", out var dUrl) && !string.IsNullOrWhiteSpace(dUrl))
+        {
+            int color = isCritical ? 15548997 : 16098851; // #ED4245 (Red) or #F59E0B (Amber)
+            tasks.Add(SendDiscordAsync(dUrl, title, message, color, ct));
+        }
+
+        // Telegram
+        if (settings.TryGetValue("notification_telegram_enabled", out var tEnabled) && tEnabled == "true" &&
+            settings.TryGetValue("notification_telegram_bot_token", out var tToken) && !string.IsNullOrWhiteSpace(tToken) &&
+            settings.TryGetValue("notification_telegram_chat_id", out var tChat) && !string.IsNullOrWhiteSpace(tChat))
+        {
+            tasks.Add(SendTelegramAsync(tToken, tChat, title, message, ct));
+        }
+
+        // Ntfy
+        if (settings.TryGetValue("notification_ntfy_enabled", out var nEnabled) && nEnabled == "true" &&
+            settings.TryGetValue("notification_ntfy_url", out var nUrl) && !string.IsNullOrWhiteSpace(nUrl))
+        {
+            tasks.Add(SendNtfyAsync(nUrl, title, message, priority: isCritical ? "urgent" : "high", tags: isCritical ? "warning,lock" : "lock", ct));
+        }
+
+        // Generic Webhook
+        if (settings.TryGetValue("notification_webhook_enabled", out var wEnabled) && wEnabled == "true" &&
+            settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
+        {
+            tasks.Add(SendGenericWebhookAsync(wUrl, "ssl_expiry", title, message, ct));
         }
 
         if (tasks.Count > 0)
@@ -195,7 +253,10 @@ public class NotificationService : INotificationService
         }
     }
 
-    private async Task SendDiscordAsync(string webhookUrl, string title, string message, bool isDown, CancellationToken ct)
+    private Task SendDiscordAsync(string webhookUrl, string title, string message, bool isDown, CancellationToken ct) =>
+        SendDiscordAsync(webhookUrl, title, message, isDown ? 15548997 : 5763719, ct);
+
+    private async Task SendDiscordAsync(string webhookUrl, string title, string message, int color, CancellationToken ct)
     {
         if (!ValidateWebhookUrl(webhookUrl, isTr: false, out var err))
         {
@@ -208,7 +269,6 @@ public class NotificationService : INotificationService
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(8);
 
-            int color = isDown ? 15548997 : 5763719; // Kırmızı (#ED4245) veya Yeşil (#57F287)
             string isoNow = DateTime.UtcNow.ToString("o");
 
             string json = $$"""
@@ -271,7 +331,10 @@ public class NotificationService : INotificationService
         }
     }
 
-    private async Task SendNtfyAsync(string ntfyUrl, string title, string message, bool isDown, CancellationToken ct)
+    private Task SendNtfyAsync(string ntfyUrl, string title, string message, bool isDown, CancellationToken ct) =>
+        SendNtfyAsync(ntfyUrl, title, message, isDown ? "urgent" : "default", isDown ? "warning,skull" : "white_check_mark,sparkles", ct);
+
+    private async Task SendNtfyAsync(string ntfyUrl, string title, string message, string priority, string tags, CancellationToken ct)
     {
         if (!ValidateWebhookUrl(ntfyUrl, isTr: false, out var err))
         {
@@ -286,8 +349,8 @@ public class NotificationService : INotificationService
 
             using var req = new HttpRequestMessage(HttpMethod.Post, ntfyUrl);
             req.Headers.Add("Title", title);
-            req.Headers.Add("Priority", isDown ? "urgent" : "default");
-            req.Headers.Add("Tags", isDown ? "warning,skull" : "white_check_mark,sparkles");
+            req.Headers.Add("Priority", priority);
+            req.Headers.Add("Tags", tags);
             req.Content = new StringContent(message, Encoding.UTF8, "text/plain");
 
             var res = await client.SendAsync(req, ct);

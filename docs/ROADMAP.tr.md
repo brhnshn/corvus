@@ -16,27 +16,32 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - `RetentionCleanupService` günlük süresi dolmuş oturum temizliği.
 * **Kabul Kriteri:** Konteyner yeniden başlatıldıktan sonra tarayıcı çereziyle oturumun korunması, unit testlerin geçmesi (149/149 test geçti).
 
-### Bilet 1.2 — Kullanıcı Yönetimi, Rol Yetkilendirme & Şifre Değiştirme (RBAC)
+### Bilet 1.2 — Kullanıcı Yönetimi, Rol Yetkilendirme & Şifre Değiştirme (RBAC) [Tamamlandı]
 * **Önkoşul:** Bilet 1.1
 * **Amaç:** Admin kullanıcısının mevcut şifresini değiştirebilmesi, yeni kullanıcı açabilmesi ve `admin` / `viewer` (salt okunur) yetkisi atayabilmesi.
 * **Kapsam:**
   - `UserRepository` CRUD genişletmesi (şifre güncelleme, kullanıcı listeleme/silme).
-  - API uç noktaları: `POST /api/auth/change-password`, `GET/POST/DELETE /api/users`.
-  - Ayarlar sayfasında "Kullanıcılar & Roller" yönetim sekmesi.
-* **Kabul Kriteri:** Şifre değişikliğinin doğrulanması, `viewer` rolündeki kullanıcının konteyner durdurma/başlatma aksiyonlarında 403 Forbidden alması.
+  - API uç noktaları: `POST /api/auth/change-password`, `GET/POST/DELETE /api/users` ve `RequireAdmin` RBAC filtresi.
+  - Son yönetici ve kendi hesabını silme engelleri, silinen kullanıcının oturumlarının anında geçersiz kılınması.
+  - Mutating uç noktaların (konteyner başlat/durdur/yeniden başlat, servis ekle/düzenle/sil, ayarlar ve yedek indirme) admin rolüne kilitlenmesi.
+  - Sidebar kullanıcı profili alanı üzerinden açılan çift sekmeli `UserProfileModal` ("Profil & Güvenlik" ve adminler için "Kullanıcılar & Roller").
+  - Tam çift dilli (TR/EN) dil desteği.
+* **Kabul Kriteri:** Şifre değişikliğinin doğrulanması, `viewer` rolündeki kullanıcının konteyner aksiyonlarında 403 Forbidden alması, unit testlerin geçmesi (157/157 test geçti).
 
 ---
 
 ## Faz 2: Ağ & Gelişmiş İzleme Motoru (Probes & Health)
 
-### Bilet 2.1 — SSL/TLS Erken Uyarı ve Proaktif Bildirim Motoru
+### Bilet 2.1 — SSL/TLS Erken Uyarı ve Proaktif Bildirim Motoru [Tamamlandı]
 * **Önkoşul:** Yok.
-* **Amaç:** Sertifika bitimine 14 ve 7 gün kaldığında bildirim kanallarına (Telegram, Discord vb.) otomatik alarm iletmek.
+* **Amaç:** Sertifika bitimine 14 ve 7 gün kaldığında bildirim kanallarına (Telegram, Discord, Ntfy, Webhook) otomatik proaktif alarm iletmek.
 * **Kapsam:**
-  - `UptimeCheckerService` içinde sertifika gün kontrolü ve bildirim tetikleyicisi.
-  - Bildirim formatında SSL kalan gün sayısı ve yenileme uyarısı şablonu.
-  - Panel üzerinde 14 günden az kalan sertifikalar için sarı/kırmızı uyarı rozeti.
-* **Kabul Kriteri:** Test SSL uç noktasında gün eşiği aşıldığında bildirim gönderilmesi.
+  - `INotificationService` içine `DispatchSslExpiryAlertAsync` eklendi; Discord (Amber/Red embed), Telegram (HTML format), Ntfy (lock/warning priority) ve Generic Webhook kanallarına bağlandı.
+  - `UptimeCheckerService` içinde sertifika gün kontrolü ve seviye bazlı (`7d` kritik, `14d` uyarı) günlük debounce (anti-spam) motoru. Sertifika yenilendiğinde alarm durumu otomatik sıfırlanır.
+  - Bildirim ayarlarında `notify_ssl_expiry` filtresi (aç/kapa).
+  - UI kartlarında (Servisler, Durum Sayfası) \(\le 14\) gün için amber uyarı ve \(\le 7\) gün için yanıp sönen `ShieldAlert` kırmızı kritik rozet.
+  - TR/EN çift dilli sözlük desteği.
+* **Kabul Kriteri:** Eşik aşıldığında bildirimlerin başarıyla tetiklenmesi, spam önlemesi, birim testlerin geçmesi (160/160 test geçti).
 
 ### Bilet 2.2 — ICMP Ping Denetleyicisi (Ping Monitörü)
 * **Önkoşul:** Yok.

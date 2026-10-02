@@ -121,6 +121,7 @@ app.MapMetricsEndpoints();
 app.MapUptimeEndpoints();
 app.MapPushEndpoints();
 app.MapAuthEndpoints();
+app.MapUsersEndpoints();
 app.MapDashboardEndpoints();
 app.MapSettingsEndpoints();
 app.MapBackupEndpoints();

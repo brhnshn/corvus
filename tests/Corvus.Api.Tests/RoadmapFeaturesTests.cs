@@ -288,9 +288,12 @@ public class RoadmapFeaturesTests
     private class FakeUserRepo : Corvus.Api.Data.IUserRepository
     {
         public Task<User?> GetByUsernameAsync(string username) => Task.FromResult<User?>(null);
+        public Task<User?> GetByIdAsync(string id) => Task.FromResult<User?>(null);
+        public Task<List<User>> GetAllAsync() => Task.FromResult(new List<User>());
         public Task<int> GetCountAsync() => Task.FromResult(0);
         public Task CreateAsync(User user) => Task.CompletedTask;
         public Task<bool> UpdatePasswordAsync(string username, string newPasswordHash) => Task.FromResult(true);
+        public Task<bool> DeleteAsync(string id) => Task.FromResult(true);
     }
 
     private class FakeSettingsRepo : Corvus.Api.Data.ISettingsRepository

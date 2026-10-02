@@ -16,27 +16,32 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Daily pruning of expired sessions in `RetentionCleanupService`.
 * **Acceptance Criteria:** User sessions survive container restart; all 149 unit tests pass.
 
-### Ticket 1.2 — User Management, RBAC & Password Change
+### Ticket 1.2 — User Management, RBAC & Password Change [Completed]
 * **Blocked by:** Ticket 1.1
 * **Objective:** Allow administrators to update passwords, manage users, and assign `admin` vs `viewer` (read-only) roles.
 * **Scope:**
   - `UserRepository` CRUD expansion (update password, list/delete users).
-  - Endpoints: `POST /api/auth/change-password`, `GET/POST/DELETE /api/users`.
-  - Settings page "Users & Roles" management tab.
-* **Acceptance Criteria:** Password change verified; `viewer` role blocked with 403 Forbidden on container mutating actions.
+  - Endpoints: `POST /api/auth/change-password`, `GET/POST/DELETE /api/users`, and `RequireAdmin` RBAC filter.
+  - Safeguards against self-deletion and last admin deletion; active session revocation on deletion.
+  - Guard mutating actions (container restart/start/stop, service mutations, settings update, backup download) with 403 Forbidden for viewers.
+  - Interactive dual-tab `UserProfileModal` accessible from Sidebar profile card.
+  - Full bilingual (TR & EN) localization.
+* **Acceptance Criteria:** Password change verified; `viewer` role blocked with 403 Forbidden on mutating actions; all 157 unit tests pass.
 
 ---
 
 ## Phase 2: Network & Advanced Monitoring Engine
 
-### Ticket 2.1 — Proactive SSL/TLS Expiry Alerting
+### Ticket 2.1 — Proactive SSL/TLS Expiry Alerting [Completed]
 * **Blocked by:** None.
 * **Objective:** Send proactive alerts to notification channels when certificates are within 14 and 7 days of expiration.
 * **Scope:**
-  - `UptimeCheckerService` evaluation of certificate validity days and alert triggering.
-  - Dedicated notification template with days remaining and renewal guidance.
-  - UI warning badge on services with expiring certificates.
-* **Acceptance Criteria:** Alerts sent upon threshold breach; UI displays alert badge.
+  - Added `DispatchSslExpiryAlertAsync` to `INotificationService` with Discord (Amber/Red embed), Telegram, Ntfy (lock/warning priority), and Generic Webhook integrations.
+  - Level-based (`7d` critical, `14d` warning) daily debounce (anti-spam) in `UptimeCheckerService` with auto-reset upon certificate renewal.
+  - Notification trigger filter `notify_ssl_expiry` in Settings.
+  - Enhanced UI badges on Service and Status pages with pulsing red `ShieldAlert` for <= 7d and amber warning for <= 14d.
+  - Full bilingual (TR & EN) localization.
+* **Acceptance Criteria:** Alerts sent upon threshold breach; anti-spam debounce verified; all 160 unit tests pass.
 
 ### Ticket 2.2 — ICMP Ping Monitor
 * **Blocked by:** None.

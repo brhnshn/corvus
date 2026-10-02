@@ -17,6 +17,8 @@ public class UptimeCheckerService : BackgroundService
     private readonly ConcurrentDictionary<string, bool> _alertedDown = new();
     private readonly ConcurrentDictionary<string, DateTime> _lastCheckTimes = new();
     private readonly ConcurrentDictionary<string, string> _previousStatus = new();
+    private record SslAlertState(int Level, DateTime AlertDate);
+    private readonly ConcurrentDictionary<string, SslAlertState> _lastSslAlerts = new();
     private static readonly HttpRequestOptionsKey<SslInfoHolder> SslInfoKey = new("Corvus_SslInfo");
     private static readonly HttpRequestOptionsKey<bool> IgnoreTlsKey = new("Corvus_IgnoreTls");
     private readonly HttpClient _httpClient;
@@ -166,10 +168,42 @@ public class UptimeCheckerService : BackgroundService
 
                         if (sslHolder?.SslDays.HasValue == true)
                         {
-                            await servicesRepo.UpdateSslInfoAsync(s.Id, sslHolder.SslDays.Value, sslHolder.SslIssuer);
-                            if (sslHolder.SslDays.Value <= 14)
+                            int sslDays = sslHolder.SslDays.Value;
+                            await servicesRepo.UpdateSslInfoAsync(s.Id, sslDays, sslHolder.SslIssuer);
+
+                            if (sslDays <= 14)
                             {
-                                _logger.LogWarning("SSL sertifikası yakında bitiyor: Servis {ServiceName}, Kalan Gün: {Days}", s.Name, sslHolder.SslDays.Value);
+                                int alertLevel = sslDays <= 7 ? 7 : 14;
+                                var today = DateTime.UtcNow.Date;
+
+                                bool shouldAlert = false;
+                                if (!_lastSslAlerts.TryGetValue(s.Id, out var lastAlert))
+                                {
+                                    shouldAlert = true;
+                                }
+                                else if (lastAlert.Level > alertLevel)
+                                {
+                                    // 14 günlük uyarıdan 7 günlük kritik uyarıya geçiş
+                                    shouldAlert = true;
+                                }
+                                else if (lastAlert.AlertDate < today)
+                                {
+                                    // Günde en fazla 1 kez hatırlatma
+                                    shouldAlert = true;
+                                }
+
+                                if (shouldAlert)
+                                {
+                                    _lastSslAlerts[s.Id] = new SslAlertState(alertLevel, today);
+                                    _logger.LogWarning("SSL sertifikası bitiş uyarısı tetiklendi: Servis {ServiceName}, Kalan Gün: {Days} (Seviye: {Level}g)", s.Name, sslDays, alertLevel);
+                                    string? alertUrl = !string.IsNullOrWhiteSpace(s.HealthCheckUrl) ? s.HealthCheckUrl : s.Url;
+                                    _ = notifService.DispatchSslExpiryAlertAsync(s.Name, alertUrl ?? $"Port:{s.Port}", sslDays, sslHolder.SslIssuer, stoppingToken);
+                                }
+                            }
+                            else
+                            {
+                                // Sertifika yenilenmiş (> 14 gün), aktif alarm durumunu temizle
+                                _lastSslAlerts.TryRemove(s.Id, out _);
                             }
                         }
 

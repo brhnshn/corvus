@@ -26,7 +26,7 @@ public static class IncidentEndpoints
 
             var incident = await repo.CreateAsync(req);
             return Results.Created($"/api/incidents/{incident.Id}", incident);
-        });
+        }).RequireAdmin();
 
         group.MapPut("/{id}", async (string id, UpdateIncidentRequest req, IIncidentRepository repo) =>
         {
@@ -42,7 +42,7 @@ public static class IncidentEndpoints
             }
 
             return Results.Ok(updated);
-        });
+        }).RequireAdmin();
 
         group.MapPost("/{id}/resolve", async (string id, IIncidentRepository repo) =>
         {
@@ -53,7 +53,7 @@ public static class IncidentEndpoints
             }
 
             return Results.Ok(new GenericApiResponse(true, "Incident marked as resolved."));
-        });
+        }).RequireAdmin();
 
         group.MapDelete("/{id}", async (string id, IIncidentRepository repo) =>
         {
@@ -64,6 +64,6 @@ public static class IncidentEndpoints
             }
 
             return Results.Ok(new GenericApiResponse(true, "Incident deleted."));
-        });
+        }).RequireAdmin();
     }
 }

@@ -7,6 +7,7 @@ public interface ISessionRepository
     Task CreateSessionAsync(string token, string username, DateTime expiresAt);
     Task<(bool Exists, string? Username, DateTime ExpiresAt)> GetSessionAsync(string token);
     Task DeleteSessionAsync(string token);
+    Task DeleteSessionsByUsernameAsync(string username);
     Task CleanupExpiredSessionsAsync();
 }
 
@@ -61,6 +62,13 @@ public class SessionRepository : ISessionRepository
         using var conn = _db.CreateConnection();
         const string sql = "DELETE FROM user_sessions WHERE token = @Token;";
         await conn.ExecuteAsync(sql, new { Token = token });
+    }
+
+    public async Task DeleteSessionsByUsernameAsync(string username)
+    {
+        using var conn = _db.CreateConnection();
+        const string sql = "DELETE FROM user_sessions WHERE username = @Username COLLATE NOCASE;";
+        await conn.ExecuteAsync(sql, new { Username = username });
     }
 
     public async Task CleanupExpiredSessionsAsync()

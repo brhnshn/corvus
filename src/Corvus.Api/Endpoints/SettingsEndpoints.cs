@@ -21,7 +21,7 @@ public static class SettingsEndpoints
         {
             await repo.SetBatchAsync(settings);
             return Results.Ok(new GenericApiResponse(true, "Ayarlar kaydedildi."));
-        });
+        }).RequireAdmin();
 
         group.MapGet("/settings/db-stats", (IDbConnectionFactory dbFactory) =>
         {
