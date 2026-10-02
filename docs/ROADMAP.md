@@ -24,7 +24,7 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Endpoints: `POST /api/auth/change-password`, `GET/POST/DELETE /api/users`, and `RequireAdmin` RBAC filter.
   - Safeguards against self-deletion and last admin deletion; active session revocation on deletion.
   - Guard mutating actions (container restart/start/stop, service mutations, settings update, backup download) with 403 Forbidden for viewers.
-  - Interactive dual-tab `UserProfileModal` accessible from Sidebar profile card.
+  - Modular Profile page (`/profile`) with dual tabs ("Profile & Security" and admin "Users & Roles").
   - Full bilingual (TR & EN) localization.
 * **Acceptance Criteria:** Password change verified; `viewer` role blocked with 403 Forbidden on mutating actions; all 157 unit tests pass.
 
@@ -43,14 +43,17 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Full bilingual (TR & EN) localization.
 * **Acceptance Criteria:** Alerts sent upon threshold breach; anti-spam debounce verified; all 160 unit tests pass.
 
-### Ticket 2.2 — ICMP Ping Monitor
+### Ticket 2.2 — ICMP Ping Monitor [Completed]
 * **Blocked by:** None.
 * **Objective:** Measure RTT latency and packet loss for bare network devices (routers, switches, gateways).
 * **Scope:**
-  - Linux non-privileged ICMP ping integration via .NET socket.
-  - Service model support for `CheckType = "ping"`.
-  - UI modal option for ICMP Ping monitors.
-* **Acceptance Criteria:** Ping check records latency and packet loss accurately.
+  - Non-blocking asynchronous ICMP Echo Request and RTT measurement via `System.Net.NetworkInformation.Ping`.
+  - Target host sanitization (`ExtractHost`: stripping `ping://`, ports, and paths) and container loopback resolution.
+  - `CheckType = "ping"` support in Service model and real-time ping check on `/api/uptime/test-connection`.
+  - UI options in Add, Edit, and Enable Uptime modals with dynamic field filtering (hiding HTTP options when ping is selected).
+  - Cyan `ICMP PING` / `PING` badges and RTT metrics display on Dashboard and Uptime views.
+  - Full bilingual (TR & EN) localization and xUnit unit test suite (`PingCheckerTests.cs`).
+* **Acceptance Criteria:** ICMP ping records latency correctly; unit tests pass (169/169 tests passing).
 
 ### Ticket 2.3 — HTTP Response Body (Keyword / Regex) Assertion
 * **Blocked by:** None.

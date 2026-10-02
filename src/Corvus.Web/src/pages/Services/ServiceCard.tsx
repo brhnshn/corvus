@@ -64,6 +64,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                     TCP {service.port ? `:${service.port}` : ''}
                   </span>
                 )}
+                {service.checkType === 'ping' && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono">
+                    ICMP PING
+                  </span>
+                )}
               </div>
             </div>
           </div>

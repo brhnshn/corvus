@@ -15,7 +15,7 @@ public class Service
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 
-    public string CheckType { get; set; } = "http"; // 'http' | 'tcp'
+    public string CheckType { get; set; } = "http"; // 'http' | 'tcp' | 'ping' | 'docker' | 'none'
     public int? Port { get; set; }
     public int? SslExpiryDays { get; set; }
     public string? SslIssuer { get; set; }

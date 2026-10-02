@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Sliders, ShieldAlert } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
 export interface AdvancedCheckOptionsProps {
-  checkType: 'http' | 'tcp' | 'docker' | 'none';
+  checkType: 'http' | 'tcp' | 'docker' | 'none' | 'ping';
   checkInterval: number | '';
   onChangeCheckInterval: (val: number | '') => void;
   timeoutSeconds: number | '';

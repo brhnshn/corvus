@@ -102,6 +102,8 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
               ? 'Kontrol Edilen Hedef'
               : selectedService.checkType === 'tcp'
               ? t('uptime.targetTcp')
+              : selectedService.checkType === 'ping'
+              ? t('uptime.targetPing')
               : t('uptime.targetUrl')}
           </span>
           <span className="text-sm font-mono text-[#e5e7eb] break-all">
@@ -109,6 +111,8 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
               ? `Docker Daemon (${selectedService.name}) — Konteyner Durum Takibi`
               : selectedService.checkType === 'tcp'
               ? `${selectedService.url || 'localhost'}:${selectedService.port || 80}`
+              : selectedService.checkType === 'ping'
+              ? `${selectedService.url || 'localhost'} (ICMP Echo)`
               : selectedService.healthCheckUrl || selectedService.url || t('uptime.noAddress')}
           </span>
         </div>

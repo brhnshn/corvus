@@ -6,6 +6,7 @@ import {
   Activity,
   Clock,
   Settings,
+  User,
   type LucideIcon,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -36,6 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
     { id: 'metrics', label: t('nav.metricsShort'), full: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), full: t('nav.uptime'), icon: Clock },
     { id: 'settings', label: t('nav.settings'), full: t('nav.settings'), icon: Settings },
+    { id: 'profile', label: t('nav.profileShort'), full: t('nav.profile'), icon: User },
   ];
 
   const totalFr = items.length - 1 + ACTIVE_FR;
@@ -48,7 +50,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
     <nav
       aria-label="Ana gezinme"
       className="
-        fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-[480px] lg:hidden
+        fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-[520px] lg:hidden
         h-16 rounded-full p-1.5 select-none
         bg-[#1b1d2a]/55 backdrop-blur-2xl backdrop-saturate-[1.9]
         border border-white/15

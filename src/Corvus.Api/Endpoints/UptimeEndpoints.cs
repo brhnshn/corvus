@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
@@ -73,6 +74,50 @@ public static class UptimeEndpoints
                         null,
                         sw.ElapsedMilliseconds,
                         $"TCP bağlantısı başarılı ({host}:{port})"
+                    ));
+                }
+                else if (checkType == "ping")
+                {
+                    string target = req.Url?.Trim() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(target))
+                    {
+                        return Results.BadRequest(new TestConnectionResponse(
+                            false,
+                            null,
+                            0,
+                            "Ping testi için geçerli bir Host veya IP adresi belirtilmelidir."
+                        ));
+                    }
+
+                    if (target.StartsWith("ping://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        target = target[7..];
+                    }
+                    else if (target.Contains("://", StringComparison.Ordinal))
+                    {
+                        try { target = new Uri(target).Host; } catch { }
+                    }
+                    int slashIdx = target.IndexOf('/');
+                    if (slashIdx >= 0) target = target[..slashIdx];
+                    int colonIdx = target.IndexOf(':');
+                    if (colonIdx >= 0) target = target[..colonIdx];
+                    target = target.Trim();
+
+                    using var ping = new Ping();
+                    int timeoutMs = timeoutSec * 1000;
+                    var reply = await ping.SendPingAsync(target, timeoutMs);
+                    sw.Stop();
+
+                    bool isOk = reply.Status == IPStatus.Success;
+                    long rtt = isOk ? Math.Max(1, reply.RoundtripTime) : sw.ElapsedMilliseconds;
+
+                    return Results.Ok(new TestConnectionResponse(
+                        isOk,
+                        null,
+                        rtt,
+                        isOk
+                            ? $"ICMP Ping başarılı ({target}) - RTT: {rtt}ms"
+                            : $"Ping başarısız ({target}): {reply.Status}"
                     ));
                 }
                 else

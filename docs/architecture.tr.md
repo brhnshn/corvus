@@ -48,16 +48,17 @@ corvus/
 │   │   │   ├── NotificationEndpoints.cs  # Çok kanallı alarm test uç noktası
 │   │   │   ├── PushEndpoints.cs          # Push webhooks ve Dead Man's Snitch (/push-monitors)
 │   │   │   ├── ServicesEndpoints.cs      # Servis CRUD ve /reorder
-│   │   │   ├── SettingsEndpoints.cs      # Dinamik ayarlar, sürüm kontrolü (/version) ve DB disk telemetrisi
+│   │   │   ├── SettingsEndpoints.cs      # Dinamik ayarlar (RequireAdmin), sürüm kontrolü (/version) ve DB disk telemetrisi
 │   │   │   ├── StatusPageEndpoints.cs    # Şifresiz halka açık durum özeti (/api/status-page)
 │   │   │   ├── StreamEndpoints.cs        # Canlı SSE olay akışı (/api/stream/events)
-│   │   │   └── UptimeEndpoints.cs        # Servis uptime denetim geçmişi
+│   │   │   ├── UptimeEndpoints.cs        # Servis uptime denetim geçmişi ve ICMP ping testi
+│   │   │   └── UserEndpoints.cs          # Yönetici RBAC kullanıcı yönetimi CRUD uç noktaları (/api/users)
 │   │   ├── BackgroundServices/    # Arka plan çalışan iş parçacıkları
 │   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periyodik konteyner senkronizasyonu (10s, fingerprint & inspect cache)
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrik toplayıcısı (15s, streaming /proc/meminfo)
-│   │   │   ├── UptimeCheckerService.cs       # 3 durumlu HTTP/TCP ping, SSL ve Snitch denetimi (60s)
-│   │   │   ├── MemoryTrimmerBackgroundService.cs # 3dk periyotlu SQLite havuz temizliği, Gen1 GC ve malloc_trim(0) bellek sıkıştırması
-│   │   │   └── RetentionCleanupService.cs    # Dinamik veri saklama temizleyicisi, PRAGMA optimize & GC compact (24h)
+│   │   │   ├── UptimeCheckerService.cs       # 3 durumlu HTTP/TCP/Ping, proaktif SSL erken uyarısı ve Snitch denetimi
+│   │   │   ├── MemoryTrimmerBackgroundService.cs # 3dk periyotlu SQLite havuz temizliği, PRAGMA wal_checkpoint(TRUNCATE), Gen2 agresif sıkıştırma ve malloc_trim(0)
+│   │   │   └── RetentionCleanupService.cs    # Dinamik veri saklama temizleyicisi, SQLite otomatik VACUUM freelist iadesi & GC compact (24h)
 │   │   ├── Data/                  # Veri erişim katmanı (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000 ve PRAGMA optimizasyonları
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sıralı göç yöneticisi
@@ -68,6 +69,7 @@ corvus/
 │   │   │   ├── MetricsRepository.cs          # Host metrikleri
 │   │   │   ├── BackupRepository.cs           # Push backup logları
 │   │   │   ├── UserRepository.cs             # Kullanıcı hesapları ve parola hashleme
+│   │   │   ├── SessionRepository.cs          # Kalıcı SQLite oturum deposu (user_sessions tablosu)
 │   │   │   ├── SettingsRepository.cs         # Key-value ayarlar
 │   │   │   └── Migrations/                   # Sıralı göç SQL dosyaları
 │   │   │       ├── 001_init.sql
@@ -78,9 +80,10 @@ corvus/
 │   │   │       ├── 006_uptime_advanced_options.sql
 │   │   │       ├── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing durum sıfırlama ve indeks
 │   │   │       ├── 008_service_incidents.sql     # Sistem olayları ve planlı bakım şeması
-│   │   │       └── 009_uptime_rollup_and_transition.sql # Uptime günlük özet ve durum geçiş takibi
+│   │   │       ├── 009_uptime_rollup_and_transition.sql # Uptime günlük özet ve durum geçiş takibi
+│   │   │       └── 010_user_sessions.sql         # Kalıcı kullanıcı oturumları tablosu
 │   │   ├── Models/                 # DTO'lar ve Veritabanı Varlıkları
-│   │   │   ├── Service.cs                    # Servis modeli (check_type, port, ssl, is_public, display_order)
+│   │   │   ├── Service.cs                    # Servis modeli (check_type: http, tcp, ping, port, ssl, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Sistem olay duyurusu modeli
 │   │   │   ├── ServiceOverride.cs            # Docker override modeli
 │   │   │   ├── PushMonitor.cs                # Dead Man's Snitch modeli
@@ -89,7 +92,7 @@ corvus/
 │   │   │   ├── SystemMetric.cs               # Host donanım metrik modeli
 │   │   │   ├── UptimeCheck.cs                # Uptime denetim kayıt modeli
 │   │   │   ├── BackupEvent.cs                # Backup push bildirim modeli
-│   │   │   ├── User.cs                       # Kullanıcı modeli
+│   │   │   ├── User.cs                       # Kullanıcı ve rol modeli (admin, viewer)
 │   │   │   ├── VersionInfo.cs                # Dinamik GitHub SemVer sürüm DTO'su
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
 │   │   ├── Utils/                  # Yardımcı sınıflar
@@ -101,19 +104,19 @@ corvus/
 │   │       ├── DockerLogDemuxer.cs           # Multiplexed Docker stdout/stderr sıfır bellek tahsisli ayrıştırıcı
 │   │       ├── NotificationService.cs        # SSRF korumalı, çift dilli Discord, Telegram, Ntfy ve Webhook motoru
 │   │       ├── EventBroadcaster.cs           # Çok istemcili Channel Pub/Sub SSE olay yayıncısı
-│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hash, brute-force rate limiter ve session auth
-│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter kimlik doğrulama katmanı (401 koruması)
+│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hash, kalıcı SQLite session store, RBAC ve kullanıcı yönetimi
+│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter kimlik doğrulama & RBAC katmanı (admin/viewer koruması)
 │   │       └── UpdateCheckerService.cs       # GitHub Releases API sürüm kontrol servisi
 │   │
 │   └── Corvus.Web/                 # Frontend — TypeScript + React 19 + Vite + Tailwind CSS v4
 │       ├── vite.config.ts          # manualChunks ile optimize edilmiş Vite yapılandırması
 │       ├── src/
 │       │   ├── main.tsx
-│       │   ├── App.tsx             # React.lazy rota kod ayrıştırma (code-splitting) & SSE bağlantısı
+│       │   ├── App.tsx             # React.lazy rota kod ayrıştırma, merkezi 401 dinleyicisi & SSE bağlantısı
 │       │   ├── types/              # Modüler tip sözleşmeleri (Clean Architecture)
-│       │   │   └── index.ts        # Tüm API ve DTO arayüz tipleri
+│       │   │   └── index.ts        # Tüm API, DTO ve CheckType ('http' | 'tcp' | 'docker' | 'ping') arayüz tipleri
 │       │   ├── api/                # Modülerleştirilmiş API istemci katmanı
-│       │   │   ├── http.ts         # fetchJson, in-memory SWR önbellek (fetchCachedJson), invalidateCache
+│       │   │   ├── http.ts         # fetchJson (merkezi corvus_unauthorized pencere olayı), in-memory SWR önbellek, invalidateCache
 │       │   │   ├── auth.ts         # Kimlik doğrulama uç noktaları
 │       │   │   ├── services.ts     # Servis CRUD ve sıralama
 │       │   │   ├── containers.ts   # Konteyner işlemleri, toplu stats (/stats-summary) ve loglar
@@ -132,7 +135,8 @@ corvus/
 │       │   │   ├── format.ts       # Bayt dönüştürme (B, KB, MB, GB, TB) yardımcı modülü
 │       │   │   └── grouping.ts     # Docker Compose akıllı gruplama mantığı
 │       │   ├── components/         # SADECE ortak/paylaşılan global UI bileşenleri
-│       │   │   ├── Sidebar.tsx               # Masaüstü ray menü & mobil slide-over çekmece
+│       │   │   ├── Sidebar.tsx               # Masaüstü ray menü (hidden lg:flex)
+│       │   │   ├── BottomNav.tsx             # Mobil Cam Altbar — 7 sekmeli buzlu cam gezinti çubuğu
 │       │   │   ├── StatusBadge.tsx           # Sağlık durumu rozeti (healthy, degraded, down)
 │       │   │   ├── LanguageSwitch.tsx        # Kompakt ve tam modlu arayüz dil değiştirici
 │       │   │   └── RegistrationPromptModal.tsx # İlk yönetici kayıt yönlendirme modalı
@@ -152,6 +156,11 @@ corvus/
 │       │       │   ├── SystemKpiStrip.tsx    # 2 sütunlu kompakt KPI şeridi ve tam genişlikte Disk çubuğu
 │       │       │   ├── AttentionRequiredCard.tsx # Kritik arızalar ve SSL uyarıları kartı
 │       │       │   └── ActiveContainersWidget.tsx # 2 sütunlu duyarlı aktif konteynerler kartı
+│       │       ├── Profile/
+│       │       │   ├── index.tsx             # Profil ve kullanıcı yönetimi sayfası kabuğu
+│       │       │   ├── ProfileSecurityTab.tsx # Şifre değiştirme ve 2FA güvenlik sekmesi
+│       │       │   ├── ProfileUsersTab.tsx   # Yöneticiler için kullanıcı listesi ve rol yönetimi
+│       │       │   └── AddUserModal.tsx      # Yeni kullanıcı oluşturma modalı
 │       │       ├── PublicStatus/
 │       │       │   ├── index.tsx             # Şifresiz halka açık durum sayfası (/status)
 │       │       │   ├── PublicStatusCategoryGroup.tsx # Kategori bazlı açılır/kapanır akordeon grupları
@@ -160,12 +169,12 @@ corvus/
 │       │       │   └── PublicStatusServiceCard.tsx # Detaylı servis durum ve uptime kartı
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Servis launcher ve sürükle-bırak sıralama
-│       │       │   ├── ServiceCard.tsx       # Servis kartı ve düzenleme aksiyonu
-│       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı
+│       │       │   ├── ServiceCard.tsx       # Servis kartı (HTTP, TCP, PING, Docker rozetleri)
+│       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı (ICMP Ping seçeneğiyle)
 │       │       │   ├── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL ve kontrol türü düzenleme modalı
 │       │       │   └── AdvancedCheckOptions.tsx # Bağımsız gelişmiş kontrol parametreleri akordiyonu
 │       │       ├── Settings/
-│       │       │   ├── index.tsx             # Ayarlar kabuğu ve sekme seçici
+│       │       │   ├── index.tsx             # Tek kolonlu (max-w-4xl) modern ayarlar kabuğu ve başlık sürüm rozeti
 │       │       │   ├── GeneralSettingsTab.tsx # Genel ayarlar, retention ve DB boyutu telemetrisi
 │       │       │   ├── NotificationSettingsTab.tsx # Çok kanallı alarm yapılandırması
 │       │       │   └── BackupSettingsTab.tsx # Çift yönlü dahili/harici yedekleme yöneticisi
@@ -177,7 +186,7 @@ corvus/
 │       │       │   └── DiskStorageCard.tsx   # Disk depolama ve bölüm dağılımı
 │       │       └── Uptime/
 │       │           ├── index.tsx             # Uptime kabuğu ve sekme seçici
-│       │           ├── PingUptimeTab.tsx     # HTTP/TCP ping, gecikme ve SSL takibi ana sekmesi
+│       │           ├── PingUptimeTab.tsx     # HTTP/TCP/ICMP ping, gecikme ve SSL takibi ana sekmesi
 │       │           ├── PushMonitorsTab.tsx   # Dead Man's Snitch cron izleme listesi
 │       │           ├── IncidentsTab.tsx      # Sistem olayları ve planlı bakım yönetim sekmesi
 │       │           ├── AddSnitchModal.tsx    # Push monitor oluşturma modalı

@@ -106,6 +106,11 @@ export const UptimeServiceSelector: React.FC<UptimeServiceSelectorProps> = ({
                   TCP
                 </span>
               )}
+              {s.checkType === 'ping' && (
+                <span className="text-[9px] px-1 rounded bg-cyan-500/20 text-cyan-300 font-mono">
+                  PING
+                </span>
+              )}
             </button>
           );
         })}

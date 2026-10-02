@@ -7,15 +7,13 @@ import {
   Clock, 
   Settings, 
   User as UserIcon, 
-  LogOut,
-  X
+  LogOut
 } from 'lucide-react';
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
 import { LanguageSwitch } from './LanguageSwitch';
-import { UserProfileModal } from './UserProfileModal';
 
-export type PageId = 'dashboard' | 'services' | 'containers' | 'metrics' | 'uptime' | 'settings';
+export type PageId = 'dashboard' | 'services' | 'containers' | 'metrics' | 'uptime' | 'settings' | 'profile';
 
 interface SidebarProps {
   currentPage: PageId;
@@ -38,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [versionInfo, setVersionInfo] = React.useState<VersionInfo | null>(null);
   const [isStatusLinkVisible, setIsStatusLinkVisible] = React.useState<boolean>(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = React.useState<boolean>(false);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -73,48 +70,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <>
-      {/* Mobil & Tablet Backdrop */}
-      {isOpen && (
-        <div 
-          onClick={onClose}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar / Drawer */}
-      <aside 
-        className={`w-64 bg-[#1a1d29] border-r border-[#2a2e3f] flex flex-col h-screen fixed left-0 top-0 select-none z-50 transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
-        }`}
-      >
-        {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-[#2a2e3f]">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/logo_transparent.png" 
-              alt="Corvus" 
-              className="w-9 h-9 object-contain shrink-0"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
-            <span className="font-bold text-lg tracking-wider text-[#e5e7eb] leading-tight">CORVUS</span>
-          </div>
-
-          {/* Mobil & Tablet Kapatma Butonu */}
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="lg:hidden text-[#9ca3af] hover:text-[#e5e7eb] p-1.5 rounded-lg hover:bg-[#1e2130] transition-colors cursor-pointer"
-              title={t('common.close')}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+    <aside className="hidden lg:flex w-64 bg-[#1a1d29] border-r border-[#2a2e3f] flex-col h-screen fixed left-0 top-0 select-none z-50">
+      {/* Brand Header */}
+      <div className="h-16 flex items-center justify-between px-5 border-b border-[#2a2e3f]">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/logo_transparent.png" 
+            alt="Corvus" 
+            className="w-9 h-9 object-contain shrink-0"
+            onError={(e) => {
+              (e.target as HTMLElement).style.display = 'none';
+            }}
+          />
+          <span className="font-bold text-lg tracking-wider text-[#e5e7eb] leading-tight">CORVUS</span>
         </div>
+      </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -155,18 +125,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* User Profile Footer */}
         {username && (
           <div className="p-3.5 border-t border-[#2a2e3f] bg-[#0f1117]/50">
-            <div className="flex items-center justify-between bg-[#1a1d29] border border-[#2a2e3f] rounded-lg px-2.5 py-2">
+            <div className={`flex items-center justify-between border rounded-lg px-2.5 py-2 transition-all ${
+              currentPage === 'profile'
+                ? 'bg-indigo-500/10 border-indigo-500/50 shadow-xs'
+                : 'bg-[#1a1d29] border-[#2a2e3f] hover:border-[#3f4458]'
+            }`}>
               <button
                 type="button"
-                onClick={() => setIsProfileModalOpen(true)}
-                className="flex items-center gap-2.5 overflow-hidden text-left hover:opacity-85 transition-opacity cursor-pointer flex-1 min-w-0 pr-2 group"
+                onClick={() => onSelectPage('profile')}
+                className="flex items-center gap-2.5 overflow-hidden text-left hover:opacity-90 transition-opacity cursor-pointer flex-1 min-w-0 pr-2 group"
                 title={t('userManagement.openProfile')}
               >
-                <div className="w-7 h-7 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 border ${
+                  currentPage === 'profile'
+                    ? 'bg-indigo-500/25 border-indigo-500/50 text-indigo-300'
+                    : 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400'
+                }`}>
                   <UserIcon className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-semibold text-[#e5e7eb] truncate group-hover:text-purple-300 transition-colors">
+                  <span className="text-xs font-semibold text-[#e5e7eb] truncate group-hover:text-indigo-300 transition-colors">
                     {username}
                   </span>
                   <span className="text-[10px] text-[#9ca3af] uppercase tracking-wider font-mono">
@@ -223,15 +201,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <LanguageSwitch variant="compact" />
         </div>
       </aside>
-
-      {username && (
-        <UserProfileModal
-          isOpen={isProfileModalOpen}
-          onClose={() => setIsProfileModalOpen(false)}
-          currentUsername={username}
-          currentRole={role}
-        />
-      )}
-    </>
-  );
+    );
 };

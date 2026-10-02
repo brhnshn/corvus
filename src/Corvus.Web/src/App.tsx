@@ -3,7 +3,7 @@ import { api, type AuthStatus, invalidateCache } from './api/client';
 import { Sidebar, type PageId } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { RegistrationPromptModal } from './components/RegistrationPromptModal';
-import { Menu, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useI18n } from './i18n';
 
 // Chunk yükleme hatalarını (yeni dağıtımlarda 404 veren eski JS dosyalarını) yakalayıp tazeleyen dirençli lazy sarmalayıcı
@@ -37,6 +37,7 @@ const ContainersPage = lazyWithRetry(() => import('./pages/Containers').then(m =
 const SystemMetricsPage = lazyWithRetry(() => import('./pages/SystemMetrics').then(m => ({ default: m.SystemMetricsPage })));
 const UptimePage = lazyWithRetry(() => import('./pages/Uptime').then(m => ({ default: m.UptimePage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
+const ProfilePage = lazyWithRetry(() => import('./pages/Profile').then(m => ({ default: m.ProfilePage })));
 const AuthPage = lazyWithRetry(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const PublicStatus = lazyWithRetry(() => import('./pages/PublicStatus'));
 
@@ -93,7 +94,7 @@ const PageLoader = () => (
   </div>
 );
 
-const VALID_PAGES: PageId[] = ['dashboard', 'services', 'containers', 'metrics', 'uptime', 'settings'];
+const VALID_PAGES: PageId[] = ['dashboard', 'services', 'containers', 'metrics', 'uptime', 'settings', 'profile'];
 
 const getInitialPage = (): PageId => {
   const path = window.location.pathname.replace(/^\//, '').toLowerCase();
@@ -110,7 +111,6 @@ export const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(!isStatusPath);
   const [currentPage, setCurrentPage] = useState<PageId>(getInitialPage);
   const [showRegPrompt, setShowRegPrompt] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigateTo = (page: PageId) => {
     setCurrentPage(page);
@@ -144,6 +144,13 @@ export const App: React.FC = () => {
     if (!isStatusPath) {
       checkAuth();
     }
+
+    const handleUnauthorized = () => {
+      checkAuth();
+    };
+
+    window.addEventListener('corvus_unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('corvus_unauthorized', handleUnauthorized);
   }, [isStatusPath]);
 
   // Server-Sent Events (SSE) — Canlı Veri Yayını Bağlantısı (Yüksek Dayanıklılık Mimarisi)
@@ -250,6 +257,7 @@ export const App: React.FC = () => {
       case 'metrics': return t('nav.metrics');
       case 'uptime': return t('nav.uptime');
       case 'settings': return t('nav.settings');
+      case 'profile': return t('nav.profile');
     }
   };
 
@@ -341,6 +349,8 @@ export const App: React.FC = () => {
         return <UptimePage />;
       case 'settings':
         return <SettingsPage />;
+      case 'profile':
+        return <ProfilePage username={authStatus?.username} role={authStatus?.role} />;
       default:
         return <DashboardPage onNavigate={navigateTo} />;
     }
@@ -348,49 +358,17 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f1117] text-[#e5e7eb] flex flex-col lg:flex-row">
-      {/* Sidebar (Desktop kalıcı, Mobil & Tablet drawer) */}
+      {/* Sidebar (Desktop kalıcı) */}
       <Sidebar 
         currentPage={currentPage} 
         onSelectPage={navigateTo} 
         username={authStatus?.username}
         role={authStatus?.role}
         onLogout={authStatus?.authEnabled ? handleLogout : undefined}
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        {/* Mobil & Tablet Üst Barı (lg:hidden) */}
-        <header className="lg:hidden sticky top-0 z-30 bg-[#1a1d29]/95 backdrop-blur-md border-b border-[#2a2e3f] h-14 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-1.5 rounded-lg text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors cursor-pointer"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <div className="flex items-center gap-2">
-              <img
-                src="/logo_transparent.png"
-                alt="Corvus"
-                className="w-7 h-7 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-              <span className="font-bold text-base tracking-wider text-[#e5e7eb]">CORVUS</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium px-2.5 py-1 rounded-md bg-[#0f1117] border border-[#2a2e3f] text-[#d4d4d8]">
-              {getPageTitle(currentPage)}
-            </span>
-          </div>
-        </header>
-
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pb-28 lg:pb-8">
           <div className="max-w-7xl mx-auto">
             <ChunkErrorBoundary>

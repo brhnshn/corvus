@@ -37,16 +37,17 @@ corvus/
 │   │   │   ├── NotificationEndpoints.cs  # Multi-channel alert test endpoint
 │   │   │   ├── PushEndpoints.cs          # Push webhooks and Dead Man's Snitch (/push-monitors)
 │   │   │   ├── ServicesEndpoints.cs      # Service CRUD and /reorder
-│   │   │   ├── SettingsEndpoints.cs      # Dynamic system settings and database size telemetry
+│   │   │   ├── SettingsEndpoints.cs      # Dynamic system settings (RequireAdmin) and database size telemetry
 │   │   │   ├── StatusPageEndpoints.cs    # Public unauthenticated status summary (/api/status-page)
 │   │   │   ├── StreamEndpoints.cs        # Live Server-Sent Events stream (/api/stream/events)
-│   │   │   └── UptimeEndpoints.cs        # Service uptime check history
+│   │   │   ├── UptimeEndpoints.cs        # Service uptime check history and ICMP ping diagnostics
+│   │   │   └── UserEndpoints.cs          # Administrator RBAC user management CRUD endpoints (/api/users)
 │   │   ├── BackgroundServices/    # Continuous background worker threads
 │   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periodic container discovery (10s)
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrics sampler (15s)
-│   │   │   ├── UptimeCheckerService.cs       # HTTP/TCP ping, SSL cert tracking, and Snitch checks (60s)
-│   │   │   ├── MemoryTrimmerBackgroundService.cs # Periodic native memory trimming and pool flush (3m)
-│   │   │   └── RetentionCleanupService.cs    # Dynamic retention data cleanup & PRAGMA optimize (24h)
+│   │   │   ├── UptimeCheckerService.cs       # 3-state HTTP/TCP/ICMP ping, proactive SSL early warnings, and Snitch checks
+│   │   │   ├── MemoryTrimmerBackgroundService.cs # Periodic native memory trimming, PRAGMA wal_checkpoint(TRUNCATE), Gen2 compaction & malloc_trim
+│   │   │   └── RetentionCleanupService.cs    # Dynamic retention data cleanup, SQLite automated VACUUM & Gen2 compaction (24h)
 │   │   ├── Data/                  # Persistence and data access layer (Dapper.AOT + SQLite)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000, and PRAGMA tuning
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sequential migration runner
@@ -56,7 +57,8 @@ corvus/
 │   │   │   ├── UptimeRepository.cs           # Uptime history data access
 │   │   │   ├── MetricsRepository.cs          # Host telemetry time-series storage
 │   │   │   ├── BackupRepository.cs           # Push backup event logs
-│   │   │   ├── UserRepository.cs             # User accounts and password hashing
+│   │   │   ├── UserRepository.cs             # User accounts, RBAC roles and password hashing
+│   │   │   ├── SessionRepository.cs          # Persistent SQLite session store (user_sessions table)
 │   │   │   ├── SettingsRepository.cs         # Key-value dynamic application settings
 │   │   │   └── Migrations/                   # Ordered migration SQL scripts
 │   │   │       ├── 001_init.sql
@@ -67,9 +69,10 @@ corvus/
 │   │   │       ├── 006_uptime_advanced_options.sql
 │   │   │       ├── 007_opt_in_uptime.sql         # Opt-in uptime, self-healing status reset and index
 │   │   │       ├── 008_service_incidents.sql     # Service incidents and maintenance announcements schema
-│   │   │       └── 009_uptime_rollup_and_transition.sql # Uptime daily rollup & transition state tracking
+│   │   │       ├── 009_uptime_rollup_and_transition.sql # Uptime daily rollup & transition state tracking
+│   │   │       └── 010_user_sessions.sql         # Persistent user sessions table
 │   │   ├── Models/                 # DTOs and Database Entities
-│   │   │   ├── Service.cs                    # Service entity (check_type, port, ssl, is_public, display_order)
+│   │   │   ├── Service.cs                    # Service entity (check_type: http, tcp, ping, port, ssl, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Incident announcement entity
 │   │   │   ├── ServiceOverride.cs            # Docker label override model
 │   │   │   ├── PushMonitor.cs                # Dead Man's Snitch entity
@@ -78,7 +81,7 @@ corvus/
 │   │   │   ├── SystemMetric.cs               # System hardware metrics sample
 │   │   │   ├── UptimeCheck.cs                # Health check audit log
 │   │   │   ├── BackupEvent.cs                # External push backup ping
-│   │   │   ├── User.cs                       # User authentication entity
+│   │   │   ├── User.cs                       # User authentication & RBAC entity (admin, viewer)
 │   │   │   ├── VersionInfo.cs                # Update checker DTO
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
 │   │   ├── Utils/                  # Helper utilities
@@ -90,19 +93,19 @@ corvus/
 │   │       ├── DockerLogDemuxer.cs           # Zero-alloc multiplexed Docker stdout/stderr demuxer
 │   │       ├── NotificationService.cs        # Bilingual multi-channel alert dispatcher (Discord, Telegram, Ntfy, Webhook)
 │   │       ├── EventBroadcaster.cs           # Bounded Channel SSE real-time event publisher
-│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hashing, brute-force rate limiter & session auth
-│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter authentication layer (401 gate)
+│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hashing, persistent SQLite session store & RBAC
+│   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter authentication & RBAC authorization layer
 │   │       └── UpdateCheckerService.cs       # GitHub Releases version checking
 │   │
 │   └── Corvus.Web/                 # Frontend — TypeScript + React 19 + Vite + Tailwind CSS v4
 │       ├── vite.config.ts          # Optimized Vite build with manual vendor chunks
 │       ├── src/
 │       │   ├── main.tsx
-│       │   ├── App.tsx             # React.lazy route code-splitting & SSE streaming listener
+│       │   ├── App.tsx             # React.lazy route code-splitting, centralized 401 listener & SSE streaming
 │       │   ├── types/              # Modular type contracts (Clean Architecture)
-│       │   │   └── index.ts        # All API and DTO interface types
+│       │   │   └── index.ts        # All API and DTO interface types including CheckType ('http' | 'tcp' | 'docker' | 'ping')
 │       │   ├── api/                # Modular API client layer
-│       │   │   ├── http.ts         # fetchJson, in-memory SWR cache (fetchCachedJson), invalidateCache
+│       │   │   ├── http.ts         # fetchJson (centralized corvus_unauthorized event), in-memory SWR cache, invalidateCache
 │       │   │   ├── auth.ts         # Authentication endpoints
 │       │   │   ├── services.ts     # Service CRUD and reordering
 │       │   │   ├── containers.ts   # Container operations, batch stats (/stats-summary), and logs
@@ -121,7 +124,8 @@ corvus/
 │       │   │   ├── format.ts       # Byte sizing (B, KB, MB, GB, TB) formatter
 │       │   │   └── grouping.ts     # Docker Compose intelligent grouping logic
 │       │   ├── components/         # Shared global UI components ONLY
-│       │   │   ├── Sidebar.tsx               # Responsive desktop rail & mobile slide-over drawer
+│       │   │   ├── Sidebar.tsx               # Desktop rail menu (hidden lg:flex)
+│       │   │   ├── BottomNav.tsx             # Mobile Glass Bottom Navigation Bar — 7-tab frosted glass bar
 │       │   │   ├── StatusBadge.tsx           # Health indicator badge (healthy, degraded, down)
 │       │   │   ├── LanguageSwitch.tsx        # Compact & full interface language switcher
 │       │   │   └── RegistrationPromptModal.tsx # Global first-admin prompt modal
@@ -141,6 +145,11 @@ corvus/
 │       │       │   ├── SystemKpiStrip.tsx    # 2-column compact KPI strip & full-width Disk bar
 │       │       │   ├── AttentionRequiredCard.tsx # Degraded services and SSL certificate warning card
 │       │       │   └── ActiveContainersWidget.tsx # 2-column responsive active containers card
+│       │       ├── Profile/
+│       │       │   ├── index.tsx             # Profile and user management page shell
+│       │       │   ├── ProfileSecurityTab.tsx # Self-service password change and 2FA tab
+│       │       │   ├── ProfileUsersTab.tsx   # Admin user management and role assignment tab
+│       │       │   └── AddUserModal.tsx      # Modal for creating new users
 │       │       ├── PublicStatus/
 │       │       │   ├── index.tsx             # Unauthenticated status page (/status)
 │       │       │   ├── PublicStatusCategoryGroup.tsx # Collapsible category accordion groups
@@ -149,12 +158,12 @@ corvus/
 │       │       │   └── PublicStatusServiceCard.tsx   # Detailed service status card with uptime metrics
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Service launcher and drag & drop reordering
-│       │       │   ├── ServiceCard.tsx       # Service card with edit modal trigger
-│       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services
+│       │       │   ├── ServiceCard.tsx       # Service card (HTTP, TCP, PING, Docker badges)
+│       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services (with ICMP Ping option)
 │       │       │   ├── EditServiceModal.tsx  # Modular modal for service endpoint, reverse proxy domain & check type
 │       │       │   └── AdvancedCheckOptions.tsx # Modular accordion for check interval, retries, TLS & status codes
 │       │       ├── Settings/
-│       │       │   ├── index.tsx             # Settings shell and tab switcher
+│       │       │   ├── index.tsx             # Unified single-column (max-w-4xl) settings shell with header version badge
 │       │       │   ├── GeneralSettingsTab.tsx # General options, retention, and DB size telemetry
 │       │       │   ├── NotificationSettingsTab.tsx # Multi-channel alert configuration
 │       │       │   └── BackupSettingsTab.tsx # Dual-mode internal/external backup manager
@@ -166,7 +175,7 @@ corvus/
 │       │       │   └── DiskStorageCard.tsx   # Disk usage and partition distribution
 │       │       └── Uptime/
 │       │           ├── index.tsx             # Uptime shell and tab selector
-│       │           ├── PingUptimeTab.tsx     # HTTP/TCP ping, latency, and SSL tracking main tab
+│       │           ├── PingUptimeTab.tsx     # HTTP/TCP/ICMP ping, latency, and SSL tracking main tab
 │       │           ├── PushMonitorsTab.tsx   # Dead Man's Snitch cron monitor list
 │       │           ├── IncidentsTab.tsx      # Incident and scheduled maintenance management tab
 │       │           ├── AddSnitchModal.tsx    # Modal for creating push monitors

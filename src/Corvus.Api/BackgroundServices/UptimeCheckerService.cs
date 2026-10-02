@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
@@ -440,6 +441,31 @@ public class UptimeCheckerService : BackgroundService
         return host;
     }
 
+    private static string ExtractHost(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        raw = raw.Trim();
+        if (raw.StartsWith("ping://", StringComparison.OrdinalIgnoreCase))
+        {
+            raw = raw[7..];
+        }
+        else if (raw.Contains("://", StringComparison.Ordinal))
+        {
+            try
+            {
+                var uri = new Uri(raw);
+                return uri.Host;
+            }
+            catch { }
+        }
+
+        int slashIdx = raw.IndexOf('/');
+        if (slashIdx >= 0) raw = raw[..slashIdx];
+        int colonIdx = raw.IndexOf(':');
+        if (colonIdx >= 0) raw = raw[..colonIdx];
+        return raw.Trim();
+    }
+
     private async Task<(Service Service, UptimeCheck? Check, SslInfoHolder? Ssl)> CheckSingleServiceAsync(Service s, CancellationToken ct)
     {
         if (!s.IsUptimeEnabled || string.Equals(s.CheckType, "none", StringComparison.OrdinalIgnoreCase))
@@ -454,11 +480,13 @@ public class UptimeCheckerService : BackgroundService
 
         string? targetUrl = !string.IsNullOrWhiteSpace(s.HealthCheckUrl) ? s.HealthCheckUrl : s.Url;
         bool isDockerCheck = string.Equals(s.CheckType, "docker", StringComparison.OrdinalIgnoreCase) ||
-                             (s.Source == "docker" && string.IsNullOrWhiteSpace(targetUrl) && !string.Equals(s.CheckType, "tcp", StringComparison.OrdinalIgnoreCase));
+                             (s.Source == "docker" && string.IsNullOrWhiteSpace(targetUrl) && !string.Equals(s.CheckType, "tcp", StringComparison.OrdinalIgnoreCase) && !string.Equals(s.CheckType, "ping", StringComparison.OrdinalIgnoreCase));
+        bool isPing = string.Equals(s.CheckType, "ping", StringComparison.OrdinalIgnoreCase) ||
+                     (!string.IsNullOrWhiteSpace(targetUrl) && targetUrl.StartsWith("ping://", StringComparison.OrdinalIgnoreCase));
         bool isTcp = string.Equals(s.CheckType, "tcp", StringComparison.OrdinalIgnoreCase) ||
                     (!string.IsNullOrWhiteSpace(targetUrl) && targetUrl.StartsWith("tcp://", StringComparison.OrdinalIgnoreCase));
 
-        if (string.IsNullOrWhiteSpace(targetUrl) && !isTcp && !isDockerCheck)
+        if (string.IsNullOrWhiteSpace(targetUrl) && !isTcp && !isDockerCheck && !isPing)
         {
             return (s, null, null);
         }
@@ -520,6 +548,68 @@ public class UptimeCheckerService : BackgroundService
             {
                 check.Status = "down";
                 check.ErrorMessage = $"Docker: {containerStateDesc}";
+            }
+
+            return (s, check, null);
+        }
+        else if (isPing)
+        {
+            string host = ExtractHost(targetUrl ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                host = "localhost";
+            }
+            string checkHost = ResolveHealthCheckHost(host);
+
+            async Task<(bool Ok, long Rtt, string? Error)> TryPingAsync()
+            {
+                try
+                {
+                    using var ping = new Ping();
+                    int timeoutMs = timeoutSeconds * 1000;
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    cts.CancelAfter(timeoutMs);
+
+                    var reply = await ping.SendPingAsync(checkHost, timeoutMs);
+                    if (reply.Status == IPStatus.Success)
+                    {
+                        return (true, reply.RoundtripTime, null);
+                    }
+                    return (false, reply.RoundtripTime, $"ICMP Ping: {reply.Status}");
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    return (false, 0, $"Zaman aşımı ({timeoutSeconds}s) - Ping yanıt vermedi ({checkHost})");
+                }
+                catch (Exception ex)
+                {
+                    return (false, 0, $"Ping hatası ({checkHost}): {ex.GetBaseException().Message}");
+                }
+            }
+
+            var pingResult = await TryPingAsync();
+            for (int r = 0; r < maxRetries && !pingResult.Ok && !ct.IsCancellationRequested; r++)
+            {
+                try { await Task.Delay(TimeSpan.FromSeconds(Math.Min(retryIntervalSec, 30)), ct); } catch (OperationCanceledException) { break; }
+                if (!ct.IsCancellationRequested)
+                {
+                    pingResult = await TryPingAsync();
+                }
+            }
+
+            sw.Stop();
+            check.ResponseTimeMs = pingResult.Ok
+                ? Math.Max(1, (int)pingResult.Rtt)
+                : (int)sw.ElapsedMilliseconds;
+
+            if (pingResult.Ok)
+            {
+                check.Status = "up";
+            }
+            else
+            {
+                check.Status = "down";
+                check.ErrorMessage = pingResult.Error ?? "Bilinmeyen ICMP hatası";
             }
 
             return (s, check, null);

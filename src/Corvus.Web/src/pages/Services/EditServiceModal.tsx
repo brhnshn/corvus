@@ -24,7 +24,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [formDesc, setFormDesc] = useState('');
   const [formHealth, setFormHealth] = useState('');
   const [formIcon, setFormIcon] = useState('');
-  const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'docker' | 'none'>('http');
+  const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'docker' | 'none' | 'ping'>('http');
   const [formPort, setFormPort] = useState<number | ''>('');
   const [formIsPublic, setFormIsPublic] = useState(false);
   const [formCheckInterval, setFormCheckInterval] = useState<number | ''>(60);
@@ -45,7 +45,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setFormDesc(service.description || '');
       setFormHealth(service.healthCheckUrl || '');
       setFormIcon(service.icon || '');
-      setFormCheckType((service.checkType as 'http' | 'tcp' | 'docker' | 'none') || (service.source === 'docker' && !service.url ? 'docker' : 'http'));
+      setFormCheckType((service.checkType as 'http' | 'tcp' | 'docker' | 'none' | 'ping') || (service.source === 'docker' && !service.url ? 'docker' : 'http'));
       setFormPort(service.port !== undefined && service.port !== null ? service.port : '');
       setFormIsPublic(service.isPublic === true);
       setFormCheckInterval(service.checkInterval ?? 60);
@@ -166,7 +166,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             <label className="block text-xs font-medium text-[#9ca3af] mb-1.5">
               {t('services.formCheckType')}
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
                 formCheckType === 'http'
                   ? 'bg-indigo-500/10 border-indigo-500 text-white font-medium shadow-xs'
@@ -197,6 +197,22 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   className="sr-only"
                 />
                 <span>TCP Port</span>
+              </label>
+
+              <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
+                formCheckType === 'ping'
+                  ? 'bg-indigo-500/10 border-indigo-500 text-white font-medium shadow-xs'
+                  : 'bg-[#0f1117] border-[#2a2e3f] text-[#9ca3af] hover:border-[#3f4458]'
+              }`}>
+                <input
+                  type="radio"
+                  name="editCheckType"
+                  value="ping"
+                  checked={formCheckType === 'ping'}
+                  onChange={() => setFormCheckType('ping')}
+                  className="sr-only"
+                />
+                <span>ICMP Ping</span>
               </label>
 
               <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
@@ -294,6 +310,26 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
+            </div>
+          )}
+
+          {/* ICMP Ping Ayarları */}
+          {formCheckType === 'ping' && (
+            <div>
+              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                {t('services.formPingHost')}
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={t('services.formPingHostPlaceholder')}
+                value={formUrl}
+                onChange={(e) => setFormUrl(e.target.value)}
+                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+              />
+              <p className="text-[11px] text-[#9ca3af]/70 mt-1">
+                Hedef IP adresi veya hostname girin (örn: 1.1.1.1 veya router.local). Port ve HTTP gerektirmez.
+              </p>
             </div>
           )}
 

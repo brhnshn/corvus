@@ -11,6 +11,10 @@ export async function fetchJson<T>(url: string, options?: RequestInit): Promise<
   });
 
   if (!res.ok) {
+    if (res.status === 401 && !url.includes('/auth/')) {
+      window.dispatchEvent(new CustomEvent('corvus_unauthorized'));
+    }
+
     let errMsg = `HTTP ${res.status}: ${res.statusText}`;
     try {
       const errBody: unknown = await res.json();

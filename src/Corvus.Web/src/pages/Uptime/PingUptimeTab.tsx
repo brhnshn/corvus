@@ -152,6 +152,8 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
                         ? 'Docker Daemon Kontrolü'
                         : selectedService.checkType === 'tcp'
                         ? 'TCP Kontrolü'
+                        : selectedService.checkType === 'ping'
+                        ? 'ICMP Ping Kontrolü'
                         : selectedService.checkType === 'none'
                         ? 'Kontrol Devre Dışı'
                         : 'HTTP/S Kontrolü'}

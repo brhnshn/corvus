@@ -16,7 +16,7 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
   const [formCategory, setFormCategory] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formHealth, setFormHealth] = useState('');
-  const [formCheckType, setFormCheckType] = useState<'http' | 'tcp'>('http');
+  const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'ping'>('http');
   const [formPort, setFormPort] = useState<number | ''>('');
   const [formIsPublic, setFormIsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,7 +95,7 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
 
           <div>
             <label className="block text-xs font-medium text-[#9ca3af] mb-1">{t('services.formCheckType')}</label>
-            <div className="flex items-center gap-4 py-1">
+            <div className="flex items-center gap-4 py-1 flex-wrap">
               <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
                 <input
                   type="radio"
@@ -118,6 +118,17 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
                 />
                 <span>{t('services.checkTypeTcp')}</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                <input
+                  type="radio"
+                  name="checkType"
+                  value="ping"
+                  checked={formCheckType === 'ping'}
+                  onChange={() => setFormCheckType('ping')}
+                  className="accent-indigo-500"
+                />
+                <span>{t('services.checkTypePing')}</span>
+              </label>
             </div>
           </div>
 
@@ -137,11 +148,22 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
 
           <div>
             <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              {formCheckType === 'http' ? t('services.formUrl') : t('services.formHost')}
+              {formCheckType === 'http'
+                ? t('services.formUrl')
+                : formCheckType === 'ping'
+                ? t('services.formPingHost')
+                : t('services.formHost')}
             </label>
             <input
               type="text"
-              placeholder={formCheckType === 'http' ? t('services.formUrlPlaceholder') : t('services.formHostPlaceholder')}
+              required={formCheckType === 'ping'}
+              placeholder={
+                formCheckType === 'http'
+                  ? t('services.formUrlPlaceholder')
+                  : formCheckType === 'ping'
+                  ? t('services.formPingHostPlaceholder')
+                  : t('services.formHostPlaceholder')
+              }
               value={formUrl}
               onChange={(e) => setFormUrl(e.target.value)}
               className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"

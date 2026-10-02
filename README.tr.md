@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Testler-145_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-169_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -35,15 +35,24 @@
 
 ## ✨ Temel Özellikler
 
+- **🔐 Rol Tabanlı Yetkilendirme (RBAC) & Kalıcı Oturumlar (Session Store):**
+  - `admin` (tam yetki) ve `viewer` (salt okuma) rolleri ile uç nokta düzeyinde RBAC koruması (`RequireAdminAttribute`).
+  - Kalıcı SQLite oturum deposu (`user_sessions` tablosu): Konteyner yeniden başladığında veya güncellendiğinde oturumun düşmesini önler; bellek üzerinde mikrosaniye seviyesinde doğrulama hızını korur.
+  - Bağımsız modüler **Profil ve Güvenlik Sayfası** (`/profile`): Şifre değiştirme, 2FA yönetimi ve yöneticiler için kullanıcı ekleme/silme paneli.
+  - Merkezi `corvus_unauthorized` oturum düşüş yakalayıcısı: Oturum bittiğinde ekranda kırmızı hata yerine kullanıcıyı doğrudan ve zarifçe giriş ekranına yönlendirir.
+- **📱 Mobil Cam Altbar (Mobile Glass Bottom Navigation):**
+  - Tablet ve mobil ekranlar için özel tasarlanmış, kayan göstergeli ve genişleyen 7 sekmeli buzlu cam (frosted glass) alt gezinti çubuğu (`BottomNav.tsx`).
+  - Ekran alanını daraltan eski mobil üst bar ve hamburger çekmece menüsü kaldırılarak tam ekran temiz mobil deneyim.
 - **🌍 Çift Dilli & Compile-Time Çoklu Dil (i18n):**
   - Harici kütüphane ek yükü olmayan (~1.2 KB), derleme anında tip korumalı (`DeepStringify`) yerli React 19 Context.
   - Varsayılan İngilizce (`en`), %100 eksiksiz Türkçe (`tr`) ve anında geçiş sağlayan dil seçici.
   - Arka plan bildirim kanallarının (Discord, Telegram, Ntfy, Webhook) seçili sistem diline göre otomatik senkronizasyonu.
 - **🧠 Dahili In-Memory Micro-Cache & Agresif Bellek Sıkıştırma (Memory Trimmer):**
-  - 2.5 saniyelik sıfır-tahsisli dahili önbellekleme: Sekmeler arası hızlı geçişlerde Docker soket ve SQLite sorgu yükünü %90 azaltarak bellek sıçramalarını önler (<150 KB bellek maliyeti).
+  - 2.5–10 saniyelik sıfır-tahsisli dahili önbellekleme: Sekmeler arası hızlı geçişlerde Docker soket ve SQLite sorgu yükünü %90 azaltarak bellek sıçramalarını önler (<150 KB bellek maliyeti).
   - N+1 yerine tek sorguda çalışan `one-shot=true` ve kayan pencere (sliding delta) CPU motorlu toplu metrik uç noktası (`GET /api/containers/stats-summary`), Docker'ın 1 saniyelik uykusunu kaldırarak 100ms altı anlık yanıt sağlar.
-  - **MemoryTrimmerBackgroundService:** Her 3 dakikada bir SQLite bağlantı havuzlarını temizler (`ClearAllPools`), Gen1 GC'yi tetikler ve Linux libc `malloc_trim(0)` ile serbest kalan bellek sayfalarını doğrudan işletim sistemine iade eder.
-  - .NET 9 `System.GC.ConserveMemory=9`, `DOTNET_GCHeapHardLimit=0x3000000` (48 MB tavan) ve `MALLOC_TRIM_THRESHOLD_=65536` yapılandırmasıyla RAM'i boşta ~25-35 MB bandında kilitler.
+  - **MemoryTrimmerBackgroundService:** Her 3 dakikada bir SQLite bağlantı havuzlarını temizler (`ClearAllPools`), `PRAGMA wal_checkpoint(TRUNCATE);` ile WAL boyutunu 0 byte'a çeker, Gen 2 agresif sıkıştırmalı GC'yi tetikler ve Linux libc `malloc_trim(0)` ile serbest kalan bellek sayfalarını doğrudan işletim sistemine iade eder.
+  - **Non-Concurrent Workstation GC** (`DOTNET_gcConcurrent=0`) ve `DOTNET_GCConserveMemory=9` ile RAM'i boşta ~20-30 MB bandında kilitler.
+  - **RetentionCleanupService:** Günlük temizlik sonrasında otomatik `VACUUM;` çağırarak silinen verilerin freelist alanlarını host diskine geri kazandırır.
 - **🚀 Çift Modlu Servis Başlatıcı & Akıllı Konteyner Senkronizasyonu:**
   - **Akıllı Otomatik Keşif:** Docker socket (`/var/run/docker.sock`) üzerinden konteynerleri tespit eder. `_inspectCache` ile değişmeyen konteyner ortam değişkenlerini önbelleğe alır; `ComputeFingerprint` algoritmasıyla durum değişmediğinde gereksiz SQLite yazma transaction'larını tamamen atlar.
   - **Manuel Servisler:** Harici URL'leri, yerel servisleri veya IoT uç noktalarını el ile tanımlayabilme.
@@ -52,8 +61,10 @@
   - `healthy` ➔ `degraded` ➔ `down` durum makinesi: Anlık ağ dalgalanmalarında panik false-alarmı üretmez; 3 ardışık başarısızlıktan sonra gerçek arıza alarmı üretir.
   - `Parallel.ForEachAsync` ile onlarca servisi darboğazsız eşzamanlı denetler.
   - Konteyner loopback ağını otomatik çözümler (`host.docker.internal` / varsayılan bridge gateway yönlendirmesi).
-- **⏱️ Genişletilmiş Uptime, SSL & Web Filtreleme:**
-  - **Kullanıcı Kontrollü (Opt-in) Uptime & Canlı Bağlantı Testi:** Keşfedilen konteynerler havuzunda tek tıkla **"Yalnızca Web/Domain"** filtresiyle harici URL'si olan servisleri listeleme; dahili "Bağlantıyı Sına" (`POST /api/uptime/test-connection`) butonuyla anlık yanıt süresi ve HTTP/TCP durumunu test ederek onaylama.
+- **⏱️ Genişletilmiş Uptime, ICMP Ping & SSL Erken Uyarısı:**
+  - **ICMP Ping Denetimi:** HTTP portu bulunmayan sunucular, router'lar ve IoT cihazlar için `System.Net.NetworkInformation.Ping` ile asenkron paket gecikmesi (RTT) ve erişilebilirlik takibi (`checkType: 'ping'`).
+  - **Proaktif SSL/TLS Erken Uyarısı:** Sertifika bitimine 14 ve 7 gün kala Discord, Telegram, Ntfy ve Webhook kanallarına otomatik erken uyarı bildirim motoru; günlük seviye tabanlı debounce hafızası.
+  - **Kullanıcı Kontrollü (Opt-in) Uptime & Canlı Bağlantı Testi:** Keşfedilen konteynerler havuzunda tek tıkla **"Yalnızca Web/Domain"** filtresiyle harici URL'si olan servisleri listeleme; dahili "Bağlantıyı Sına" (`POST /api/uptime/test-connection`) butonuyla anlık yanıt süresi ve HTTP/TCP/ICMP durumunu test ederek onaylama.
   - **Etkileşimli Yanıt Süresi Rozetleri:** Son kontrollerde yanıt sürelerini renkli eşiklerle (<200ms yeşil, 200-500ms sarı, >500ms kırmızı) anında görselleştirme.
   - **Ters Vekil (Reverse Proxy) Otomatik Algılama:** Traefik kuralları (`Host(...)`), Caddy etiketleri, `VIRTUAL_HOST`, `LETSENCRYPT_HOST` ve konteyner ortam değişkenleri (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) taranarak yerel `localhost` yerine gerçek alan adlarını otomatik bağlama.
   - **Gelişmiş Monitör Parametreleri (`AdvancedCheckOptions`):** Servis bazında bağımsız kontrol sıklığı (`check_interval`: 10s-300s), özel zaman aşımı (`timeout_seconds`), başarısızlık toleransı (`max_retries` / `retry_interval`), SSL hatalarını yoksayma (`ignore_tls`), kabul edilen HTTP durum kodları (`accepted_status_codes`, örn: `200-299, 401`) ve HTTP yöntemi (GET/POST/HEAD).

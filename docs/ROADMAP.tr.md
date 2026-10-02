@@ -24,7 +24,7 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - API uç noktaları: `POST /api/auth/change-password`, `GET/POST/DELETE /api/users` ve `RequireAdmin` RBAC filtresi.
   - Son yönetici ve kendi hesabını silme engelleri, silinen kullanıcının oturumlarının anında geçersiz kılınması.
   - Mutating uç noktaların (konteyner başlat/durdur/yeniden başlat, servis ekle/düzenle/sil, ayarlar ve yedek indirme) admin rolüne kilitlenmesi.
-  - Sidebar kullanıcı profili alanı üzerinden açılan çift sekmeli `UserProfileModal` ("Profil & Güvenlik" ve adminler için "Kullanıcılar & Roller").
+  - Bağımsız modüler Profil Sayfası (`/profile`) üzerinden açılan çift sekmeli yapı ("Profil & Güvenlik" ve adminler için "Kullanıcılar & Roller").
   - Tam çift dilli (TR/EN) dil desteği.
 * **Kabul Kriteri:** Şifre değişikliğinin doğrulanması, `viewer` rolündeki kullanıcının konteyner aksiyonlarında 403 Forbidden alması, unit testlerin geçmesi (157/157 test geçti).
 
@@ -43,14 +43,17 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - TR/EN çift dilli sözlük desteği.
 * **Kabul Kriteri:** Eşik aşıldığında bildirimlerin başarıyla tetiklenmesi, spam önlemesi, birim testlerin geçmesi (160/160 test geçti).
 
-### Bilet 2.2 — ICMP Ping Denetleyicisi (Ping Monitörü)
+### Bilet 2.2 — ICMP Ping Denetleyicisi (Ping Monitörü) [Tamamlandı]
 * **Önkoşul:** Yok.
 * **Amaç:** Web sunucusu olmayan ağ cihazları, gateway ve router'ların paket gecikmesi (RTT) ve paket kaybını izlemek.
 * **Kapsam:**
-  - .NET `System.Net.NetworkInformation.Ping` veya Linux raw socket ICMP denetimi.
-  - Servis modeline `CheckType = "ping"` seçeneği.
-  - UI modalında servis tipi olarak "ICMP Ping" seçimi.
-* **Kabul Kriteri:** IP adresine ping atılarak RTT yanıt süresinin kaydedilmesi.
+  - `System.Net.NetworkInformation.Ping` ile asenkron ICMP Echo Request denetimi ve RTT gecikme ölçümü.
+  - Hedef host ayrıştırma (`ExtractHost`: `ping://`, port ve path filtreleme) ve container loopback çözümlemesi.
+  - Servis modeline `CheckType = "ping"` desteği ve `/api/uptime/test-connection` üzerinde anlık ping testi.
+  - UI servis ekleme, düzenleme ve uptime aktif etme modallarında "ICMP Ping" seçimi; ping seçildiğinde HTTP alanlarının otomatik gizlenmesi.
+  - Servis ve uptime kartlarında `ICMP PING` / `PING` cyan rozetleri ve RTT formatlaması.
+  - TR/EN çift dilli sözlük desteği ve xUnit birim testleri (`PingCheckerTests.cs`).
+* **Kabul Kriteri:** IP adresine ping atılarak RTT yanıt süresinin kaydedilmesi, unit testlerin geçmesi (169/169 test geçti).
 
 ### Bilet 2.3 — HTTP Yanıt Gövdesi (Keyword / Regex) Doğrulaması
 * **Önkoşul:** Yok.

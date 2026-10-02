@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-145_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-169_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -35,15 +35,24 @@
 
 ## ✨ Key Features
 
+- **🔐 Role-Based Access Control (RBAC) & Persistent Sessions:**
+  - Granular `admin` (full mutations) and `viewer` (read-only) roles protected at the endpoint level via `RequireAdminAttribute`.
+  - Persistent SQLite session store (`user_sessions` table): Ensures user sessions survive container upgrades, restarts, and redeployments without losing sub-microsecond in-memory verification.
+  - Modular **Profile & Security View** (`/profile`): Self-service password updates, 2FA management, and administrative user provisioning.
+  - Centralized `corvus_unauthorized` session interceptor: Gracefully redirects users back to login without throwing unhandled exceptions.
+- **📱 Mobile Glass Bottom Navigation Bar:**
+  - 7-tab frosted glass bottom navigation bar (`BottomNav.tsx`) with expanding active tabs, sliding indicator, and safe-area notch padding.
+  - Clean edge-to-edge mobile experience without redundant top bars or drawer clutter.
 - **🌍 Fully Bilingual & Compile-Time i18n:**
   - Native React 19 Context with zero external library overhead (~1.2 KB) and compile-time type safety (`DeepStringify`).
   - English (`en`) as default, Turkish (`tr`) fully supported with one-click seamless switcher.
   - Outbound alerts (Discord, Telegram, Ntfy, Webhooks) synchronized to the configured system language.
 - **🧠 In-Memory Micro-Cache & Aggressive Memory Compaction (Memory Trimmer):**
-  - 2.5-second zero-allocation in-memory cache: Eliminates 90% of redundant Docker socket and SQLite calls during rapid tab switching (<150 KB memory footprint).
+  - 2.5–10 second zero-allocation in-memory cache: Eliminates 90% of redundant Docker socket and SQLite calls during rapid tab switching (<150 KB memory footprint).
   - Batch container stats endpoint (`GET /api/containers/stats-summary`) with `one-shot=true` and sliding CPU delta calculation, eliminating Docker Engine 1-second sampling sleep and delivering sub-100ms instant metrics.
-  - **MemoryTrimmerBackgroundService:** Periodically (every 3 min) flushes SQLite connection pools (`ClearAllPools`), invokes Gen1 GC, and calls Linux libc `malloc_trim(0)` to return freed memory pages directly to the operating system.
-  - .NET 9 `System.GC.ConserveMemory=9`, `DOTNET_GCHeapHardLimit=0x3000000` (48 MB ceiling), and `MALLOC_TRIM_THRESHOLD_=65536` locking idle RAM strictly between 25–35 MB.
+  - **MemoryTrimmerBackgroundService:** Periodically (every 3 min) flushes SQLite connection pools (`ClearAllPools`), truncates WAL logs via `PRAGMA wal_checkpoint(TRUNCATE);`, invokes Gen 2 aggressive compacting GC, and calls Linux libc `malloc_trim(0)`.
+  - **Non-Concurrent Workstation GC** (`DOTNET_gcConcurrent=0`) and `DOTNET_GCConserveMemory=9` locking idle RAM strictly between 20–30 MB.
+  - **RetentionCleanupService:** Performs automatic SQLite `VACUUM;` after daily cleanups to return orphaned freelist storage directly back to the host filesystem.
 - **🚀 Dual-Mode Service Launcher & Smart Container Sync:**
   - **Smart Automatic Discovery:** Discovers Docker containers via direct Docker socket communication (`/var/run/docker.sock`). Caches unchanged container environment variables via `_inspectCache` and skips redundant database write transactions using `ComputeFingerprint`.
   - **Manual Services:** Add external URLs, bare-metal endpoints, IoT devices, or local services.
@@ -52,7 +61,9 @@
   - `healthy` ➔ `degraded` ➔ `down` state machine: Prevents panicky false alarms during transient network glitches; only raises alarms after 3 consecutive failures.
   - Concurrent health probing powered by `Parallel.ForEachAsync` with bounded concurrency.
   - Automatic container loopback networking resolution (`host.docker.internal` / default bridge gateway routing).
-- **⏱️ Extended Endpoint Uptime, SSL & Web Filtering:**
+- **⏱️ Extended Endpoint Uptime, ICMP Ping & Proactive SSL Expiry:**
+  - **ICMP Ping Monitor:** Asynchronous packet round-trip latency (RTT) and reachability diagnostics via `System.Net.NetworkInformation.Ping` for bare-metal nodes, switches, and routers (`checkType: 'ping'`).
+  - **Proactive SSL/TLS Expiry Alerts:** Early alerts dispatched to Discord, Telegram, Ntfy, and Webhooks at 14 and 7 days prior to certificate expiration with level-based daily debounce deduplication.
   - **User-Controlled (Opt-in) Uptime & Live Connection Testing:** One-click **"Web/Domain Only"** filter on discovered containers to isolate HTTP endpoints; verify reachability via instant "Test Connection" button (`POST /api/uptime/test-connection`) before opting in.
   - **Interactive Latency Badges:** Color-coded response time badges in recent checks (<200ms green, 200-500ms amber, >500ms red).
   - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.

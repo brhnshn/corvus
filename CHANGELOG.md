@@ -8,15 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Security & User Management (RBAC)
 - **Role-Based Access Control (RBAC)**: Enforced `admin` vs `viewer` role privileges via `CorvusAuthFilter` and `RequireAdminAttribute`. `viewer` users are restricted to read-only access; mutating service/container actions, system settings updates, and backup downloads are guarded with 403 Forbidden.
 - **User Management & Password Change**: Introduced SQLite `UserRepository` CRUD endpoints (`/api/users`), self-service password updates (`/api/auth/change-password`), and instant revocation of all active sessions upon user deletion (`DeleteSessionsByUsernameAsync`).
-- **User Profile Modal**: Added a dual-tab modal (`UserProfileModal.tsx`) directly accessible from the Sidebar user card for instant password change and administrator user management.
+- **Modular Profile & User Management Page**: Replaced the monolithic modal with a dedicated, modular page (`/profile`). Segmented into independent components for self-service password updates (`ProfileSecurityTab.tsx`) and administrator user management (`ProfileUsersTab.tsx`, `AddUserModal.tsx`). Restored design palette consistency by replacing inconsistent purple tones with Corvus's standard Indigo system.
 
 ### Network & Monitoring Engine
+- **ICMP Ping Monitor**: Integrated asynchronous non-blocking ICMP echo requests via `System.Net.NetworkInformation.Ping` to track packet latency (RTT) and reachability for bare devices, routers, and gateways without requiring HTTP ports. Added ICMP Ping options to Add/Edit modals, instant connectivity diagnostics on `/api/uptime/test-connection`, and cyan `ICMP PING` badges.
 - **Proactive SSL/TLS Expiry Alerts**: Implemented proactive alerting dispatched to Discord (color-coded embed), Telegram, Ntfy (lock/warning priority), and Generic Webhook at 14 days and 7 days prior to certificate expiration.
 - **Smart Debounce & Anti-Spam Defense**: Built level-based (14d warning vs 7d critical) daily deduplication memory into `UptimeCheckerService`; automatically resets state upon certificate renewal.
 - **Service Card SSL Badges**: Added pulsing red `ShieldAlert` badge for $\le 7$ days and amber badge for $\le 14$ days on Service cards and status views.
 - **Notification Event Filter**: Added `notify_ssl_expiry` toggle to Notification Settings.
 
 ### UI/UX & Responsive Experience
+- **Settings Page Streamlining & De-duplication**: Removed the redundant 4-column sticky sidebar (duplicate database metrics, registration status, and static text), consolidating the settings into a modern, unified `max-w-4xl` layout that fits comfortably on screen without vertical bloat. Eliminated dual save buttons and integrated version diagnostics directly into a compact header badge.
+- **Resilient 401 Session Interceptor**: Centralized HTTP 401 handling across the frontend via a `corvus_unauthorized` window event; automatically prompts the user back to the authentication screen when sessions expire rather than emitting unhandled rejections.
+- **Mobile Layout Streamlining**: Eliminated the redundant top header, hamburger menu, and drawer on mobile screens (`< lg`), maximizing screen estate and routing all navigation exclusively through the floating glass `BottomNav`.
+- **Profile Tab in Bottom Bar**: Added dedicated profile navigation directly to mobile bottom bar for quick one-tap account access.
+- **Role Label Refinement**: Standardized role terminology in Turkish locale to clean `Yönetici` and `Gözlemci`.
 - **Mobile Glass Bottom Navigation Bar**: Designed and implemented a frosted glass bottom navigation bar (`BottomNav.tsx`) for mobile/tablet screens (`< lg`) featuring sliding pill indicator and expanding active tabs with safe-area notch support (`viewport-fit=cover`).
 - **Complete TR/EN Bilingual Support**: Defined all new labels, modal titles, and notification strings across both `tr.ts` and `en.ts`.
 
@@ -33,7 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Docker Log Rotation Cap**: Configured `json-file` log limits (`max-size: 10m`, `max-file: 3`) in `docker-compose.yml` to prevent runaway host container log growth.
 
 ### Tests
-- Validated all 160 unit tests across the entire test suite (`Passed: 160, Failed: 0`).
+- Validated all 169 unit tests across the entire test suite (`Passed: 169, Failed: 0`).
 
 ---
 

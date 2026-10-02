@@ -21,7 +21,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [port, setPort] = useState<number | undefined>(undefined);
-  const [checkType, setCheckType] = useState<'http' | 'tcp'>('http');
+  const [checkType, setCheckType] = useState<'http' | 'tcp' | 'ping'>('http');
   const [isPublic, setIsPublic] = useState(false);
   const [checkInterval, setCheckInterval] = useState(60);
   const [ignoreTls, setIgnoreTls] = useState(true);
@@ -36,7 +36,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
       setName(service.name || '');
       setUrl(service.url || '');
       setPort(service.port || undefined);
-      setCheckType(service.checkType === 'tcp' ? 'tcp' : 'http');
+      setCheckType(service.checkType === 'tcp' ? 'tcp' : (service.checkType === 'ping' ? 'ping' : 'http'));
       setIsPublic(service.isPublic || false);
       setCheckInterval(service.checkInterval || 60);
       setIgnoreTls(service.ignoreTls ?? true);
@@ -128,33 +128,51 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
               <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Denetim Türü</label>
               <select
                 value={checkType}
-                onChange={(e) => setCheckType(e.target.value as 'http' | 'tcp')}
+                onChange={(e) => setCheckType(e.target.value as 'http' | 'tcp' | 'ping')}
                 className="w-full px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
               >
                 <option value="http">HTTP / HTTPS</option>
                 <option value="tcp">TCP Port</option>
+                <option value="ping">ICMP Ping</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Port (Opsiyonel)</label>
-              <input
-                type="number"
-                value={port ?? ''}
-                onChange={(e) => setPort(e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                placeholder="Örn: 8080"
-                className="w-full px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-            </div>
+            {checkType !== 'ping' ? (
+              <div>
+                <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Port (Opsiyonel)</label>
+                <input
+                  type="number"
+                  value={port ?? ''}
+                  onChange={(e) => setPort(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                  placeholder="Örn: 8080"
+                  className="w-full px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Protokol</label>
+                <div className="w-full px-3 py-2 rounded-xl bg-[#1a1d29]/50 border border-[#2a2e3f] text-cyan-400 text-xs font-mono flex items-center h-[38px]">
+                  ICMP Echo Request
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Hedef URL veya Host</label>
+            <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">
+              {checkType === 'http' ? 'Hedef URL' : checkType === 'ping' ? 'Hedef Host / IP' : 'Hedef Host'}
+            </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder={checkType === 'http' ? 'http://192.168.1.50:8080' : '192.168.1.50'}
+                placeholder={
+                  checkType === 'http'
+                    ? 'http://192.168.1.50:8080'
+                    : checkType === 'ping'
+                    ? '1.1.1.1 veya router.local'
+                    : '192.168.1.50'
+                }
                 className="flex-1 px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
               />
               <button
