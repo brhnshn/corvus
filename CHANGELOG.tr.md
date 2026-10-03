@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.5.19] - 2026-10-03
+## [1.5.20] - 2026-10-03
 
 ### Eklenenler (Added)
 - **Güvenli Sistem Temizliği ve Kuru Çalıştırma Ön İnceleme (Paket 3 — Safe System Prune & Dry-Run Audit)**:
@@ -35,7 +35,12 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Web Terminali Pipe Kilitlenme Düzeltmesi (Paket 1)**: `ContainersEndpoints.cs` içindeki NamedPipeClientStream üzerinde Win32 `FlushFileBuffers` çağrısını tetikleyerek klavye girişini kilitleyen gereksiz `FlushAsync` kaldırıldı; terminal yazım akışı anlık ve akıcı hale getirildi.
 - **XTerm Girdi Akışı Konsolidasyonu**: `ContainerTerminalModal.tsx` içindeki mükerrer `term.onBinary` dinleyicisi kaldırılarak tüm kullanıcı girişleri tekil `term.onData` üzerinden güvenle iletilecek biçimde standartlaştırıldı.
 
-### Servis & Konteyner Etiketleme / Gruplama (Faz 5 - Bilet 5.2)
+---
+
+## [1.5.19] - 2026-10-02
+
+### Eklenenler (Added)
+- **Servis & Konteyner Etiketleme / Gruplama (Faz 5 - Bilet 5.2)**:
 - **Veritabanı Şema Güncellemesi (`013_service_tags.sql`)**: `services` ve `service_overrides` tablolarına kesintisiz migration ile `tags TEXT DEFAULT ''` kolonu eklendi.
 - **Native AOT Backend Modelleri & Esnek Ayrıştırma**:
   - `Service` ve `ServiceOverride` modellerine `List<string> Tags` özelliği entegre edildi.

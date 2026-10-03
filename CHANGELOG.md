@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.19] - 2026-10-03
+## [1.5.20] - 2026-10-03
 
 ### Added
 - **Safe System Prune & Dry-Run Disk Audit (Package 3)**:
@@ -35,7 +35,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Web Terminal Pipe Deadlock Fix (Package 1)**: Removed blocking Win32 `FlushFileBuffers` triggered by `FlushAsync` on NamedPipeClientStream in `ContainersEndpoints.cs`, eliminating keyboard input lockup and lag during container terminal sessions.
 - **XTerm Input Stream Consolidation**: Removed redundant `term.onBinary` listener in `ContainerTerminalModal.tsx`, standardizing on unified UTF-8 `term.onData` streaming to eliminate keystroke duplication and conflicts.
 
-### Tags & Category Grouping (Phase 5 - Ticket 5.2)
+---
+
+## [1.5.19] - 2026-10-02
+
+### Added
+- **Tags & Category Grouping (Phase 5 - Ticket 5.2)**:
 - **Database Schema Migration (`013_service_tags.sql`)**: Added `tags` text column to both `services` and `service_overrides` tables with non-blocking migration support.
 - **Native AOT Backend Models & Resilient Parsing**:
   - Extended `Service` and `ServiceOverride` entities with `List<string> Tags`.
