@@ -9,12 +9,14 @@ import { useEntityGrouping } from '../../utils/grouping';
 import { ServiceCard } from './ServiceCard';
 import { ServicesHeader } from './ServicesHeader';
 import { ServicesEmptyState } from './ServicesEmptyState';
+import { TagFilterBar } from '../../components/services/TagFilterBar';
 
 export const ServicesPage: React.FC = () => {
   const { t } = useI18n();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [reordering, setReordering] = useState(false);
@@ -101,13 +103,35 @@ export const ServicesPage: React.FC = () => {
     }
   };
 
+  const tagsWithCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    services.forEach(s => {
+      s.tags?.forEach(tag => {
+        const clean = tag.trim();
+        if (clean) {
+          counts.set(clean, (counts.get(clean) || 0) + 1);
+        }
+      });
+    });
+    return Array.from(counts.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  }, [services]);
+
   const filtered = services.filter((s) => {
     const q = search.toLowerCase();
-    return (
+    const matchesSearch = !q || (
       s.name.toLowerCase().includes(q) ||
       (s.category && s.category.toLowerCase().includes(q)) ||
-      (s.description && s.description.toLowerCase().includes(q))
+      (s.description && s.description.toLowerCase().includes(q)) ||
+      (s.tags && s.tags.some(t => t.toLowerCase().includes(q)))
     );
+
+    const matchesTag = !selectedTag || (
+      s.tags && s.tags.some(t => t.toLowerCase() === selectedTag.toLowerCase())
+    );
+
+    return matchesSearch && matchesTag;
   });
 
   const {
@@ -146,6 +170,15 @@ export const ServicesPage: React.FC = () => {
         onAddClick={() => setShowAddModal(true)}
         onRefreshClick={loadServices}
       />
+
+      {tagsWithCounts.length > 0 && (
+        <TagFilterBar
+          tagsWithCounts={tagsWithCounts}
+          selectedTag={selectedTag}
+          onSelectTag={setSelectedTag}
+          totalServicesCount={services.length}
+        />
+      )}
 
       {loading && services.length === 0 && (
         <div className="flex items-center justify-center h-64 text-[#9ca3af]">
@@ -188,6 +221,7 @@ export const ServicesPage: React.FC = () => {
                   onMove={handleMove}
                   onDelete={handleDelete}
                   onEdit={setEditingService}
+                  onSelectTag={setSelectedTag}
                 />
               ))}
             </div>

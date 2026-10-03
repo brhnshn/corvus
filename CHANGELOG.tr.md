@@ -3,6 +3,28 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.20] - 2026-10-03
+
+### Servis & Konteyner Etiketleme / Gruplama (Faz 5 - Bilet 5.2)
+- **Veritabanı Şema Güncellemesi (`013_service_tags.sql`)**: `services` ve `service_overrides` tablolarına kesintisiz migration ile `tags TEXT DEFAULT ''` kolonu eklendi.
+- **Native AOT Backend Modelleri & Esnek Ayrıştırma**:
+  - `Service` ve `ServiceOverride` modellerine `List<string> Tags` özelliği entegre edildi.
+  - `CreateServiceRequest` ve `UpdateServiceRequest` kaynak üretimli DTO modellerine opsiyonel `Tags` alanı eklendi.
+  - Hem JSON array metni (`["Prod","DB"]`) hem de virgülle ayrılmış dizgileri (`Prod, DB`) hatasız şekilde okuyan, boşlukları budayan ve yinelenenleri eleyen esnek ayrıştırıcı (`ParseTags`) geliştirildi.
+  - Docker servisleri arayüzden etiketlendiğinde (`service_overrides`) arka plan senkronizasyonlarının bu etiketleri koruması sağlandı.
+  - Docker container etiketlerinden (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`) otomatik etiket türetme motoru devreye alındı.
+- **Modüler Frontend Etiket Mimarisi**:
+  - `TagBadge.tsx`: Etiket metnine göre deterministik pastel palet (Emerald, Cyan, Indigo, Violet, Amber, Rose, Blue, Teal, Fuchsia) ve anlamsal ortam ön ayarları sunan yeniden kullanılabilir rozet bileşeni.
+  - `TagInput.tsx`: Enter/virgül/Tab ile ekleme, Backspace ve 'X' ile silme, mükerrer engelleyici ve hızlı öneri hapları içeren interaktif etiket formu bileşeni.
+  - `TagFilterBar.tsx`: Servislerdeki etiketleri anlık frekans adediyle listeleyen, tek tıkla süzme ve "Tümü" seçeneği sunan yatay filtreleme çubuğu.
+- **Servisler ve Konteynerler Sayfa Entegrasyonu**:
+  - `AddServiceModal.tsx` ve `EditServiceModal.tsx` formlarına `TagInput` eklendi.
+  - `ServiceCard.tsx` üzerinde tıklanabilir etiket rozetleri gösterildi (tıklandığında filtre çubuğunu anında tetikler).
+  - `ServicesPage` (`Services/index.tsx`) içine arama ile eşzamanlı çalışan `TagFilterBar` entegre edildi.
+  - `QuickServicesGrid.tsx` (Dashboard) ve `ContainerList.tsx` (mobil ve masaüstü) listelerinde etiket hapları görünür kılındı.
+- **Kapsamlı Birim Testleri**: Etiket oluşturma, güncelleme, JSON/CSV ayrıştırma ve Docker override kalıcılığını doğrulayan 2 yeni birim test eklendi (tüm 213 test başarılı).
+- **Çift Dilli Senkronizasyon**: Türkçe ve İngilizce dil dosyaları (`tr.ts`, `en.ts`) tam uyumlu hale getirildi.
+
 ## [1.5.19] - 2026-10-02
 
 ### Telemetri, Seyreltme & Metrik Özeti (Faz 5 - Bilet 5.1)

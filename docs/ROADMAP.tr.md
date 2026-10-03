@@ -134,9 +134,13 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - Kapsamlı xUnit test paketi (`MetricsRepositoryTests.cs`, 211/211 yeşil test).
 * **Kabul Kriteri:** 30 günlük, 90 günlük ve 1 yıllık grafiklerin veritabanı şişmeden milisaniyeler içinde akıcı çizilmesi; tüm birim testlerin geçmesi (211/211 yeşil test).
 
-### Bilet 5.2 — Servis & Konteyner Etiketleme / Gruplama (Tags)
+### Bilet 5.2 — Servis & Konteyner Etiketleme / Gruplama (Tags) (TAMAMLANDI)
 * **Önkoşul:** Yok.
 * **Amaç:** Prod, Staging, DB gibi etiketlerle servisleri ve konteynerleri arayüzde filtreleyebilmek.
 * **Kapsam:**
-  - `services` tablosuna `tags` kolonu (virgülle ayrılmış veya JSON array).
-  - Frontend üzerinde etiket hapları (tag pills) ve kategori filtreleme çubuğu.
+  - `services` ve `service_overrides` tablolarına `tags` kolonu (`013_service_tags.sql`).
+  - Native AOT uyumlu `List<string> Tags` modeli ve ikili JSON/CSV ayrıştırma motoru (`ParseTags`).
+  - Docker container etiketlerinden (`corvus.tags`, `environment`, `com.docker.compose.project`) otomatik etiket çıkarımı.
+  - Modüler `TagBadge`, `TagInput` ve `TagFilterBar` bileşenleri.
+  - `ServicesPage` üzerinde gerçek zamanlı sayaçlı etiket filtreleme çubuğu.
+* **Kabul Kriteri:** Servis ve konteynerlerin dinamik olarak etiketlenebilmesi ve süzülebilmesi; etiket durumunun yeniden başlatmalarda korunması; tüm birim testlerin geçmesi (213/213).

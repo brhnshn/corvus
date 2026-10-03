@@ -634,6 +634,122 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
         Assert.Equal(3, dailyStatsPreserved[0].TotalChecks);
     }
 
+    [Fact]
+    public async Task ServicesRepository_Tags_Create_Update_And_Query_Work_Properly()
+    {
+        var repo = new ServicesRepository(_dbFactory);
+
+        // 1. Create manual service with tags
+        var req = new CreateServiceRequest(
+            Name: "Tagged Service",
+            Description: "Testing tags",
+            Url: "http://tags.local",
+            Icon: "🏷️",
+            Category: "Backend",
+            HealthCheckUrl: "http://tags.local/health",
+            Tags: new List<string> { "Prod", "Critical", "API" }
+        );
+
+        var created = await repo.CreateManualAsync(req);
+        Assert.NotNull(created);
+        Assert.Equal(3, created.Tags.Count);
+        Assert.Contains("Prod", created.Tags);
+        Assert.Contains("Critical", created.Tags);
+        Assert.Contains("API", created.Tags);
+
+        // 2. Fetch from DB and verify tags
+        var fetched = await repo.GetByIdAsync(created.Id);
+        Assert.NotNull(fetched);
+        Assert.Equal(3, fetched.Tags.Count);
+        Assert.Contains("Prod", fetched.Tags);
+
+        // 3. Update tags
+        var updateReq = new UpdateServiceRequest(
+            Name: "Tagged Service",
+            Description: "Testing tags updated",
+            Url: "http://tags.local",
+            Icon: "🏷️",
+            Category: "Backend",
+            HealthCheckUrl: "http://tags.local/health",
+            Tags: new List<string> { "Staging", "Internal" }
+        );
+
+        var updated = await repo.UpdateAsync(created.Id, updateReq);
+        Assert.NotNull(updated);
+        Assert.Equal(2, updated.Tags.Count);
+        Assert.Contains("Staging", updated.Tags);
+        Assert.Contains("Internal", updated.Tags);
+        Assert.DoesNotContain("Prod", updated.Tags);
+
+        // 4. Verify GetAllAsync returns updated tags
+        var all = await repo.GetAllAsync();
+        var fromAll = all.FirstOrDefault(s => s.Id == created.Id);
+        Assert.NotNull(fromAll);
+        Assert.Equal(2, fromAll.Tags.Count);
+
+        // 5. Test ParseTags and SerializeTags logic
+        var emptyTags = ServicesRepository.ParseTags(null);
+        Assert.Empty(emptyTags);
+
+        var jsonTags = ServicesRepository.ParseTags("[\"Prod\", \"DB\", \"Cache\"]");
+        Assert.Equal(3, jsonTags.Count);
+        Assert.Contains("DB", jsonTags);
+
+        var csvTags = ServicesRepository.ParseTags("Prod, Staging, Internal, Prod ");
+        Assert.Equal(3, csvTags.Count); // Deduplicated and trimmed
+        Assert.Contains("Prod", csvTags);
+        Assert.Contains("Staging", csvTags);
+        Assert.Contains("Internal", csvTags);
+
+        var serialized = ServicesRepository.SerializeTags(new List<string> { "A", "B" });
+        Assert.Contains("\"A\"", serialized);
+        Assert.Contains("\"B\"", serialized);
+    }
+
+    [Fact]
+    public async Task DockerService_Override_Preserves_Tags()
+    {
+        var repo = new ServicesRepository(_dbFactory);
+
+        // 1. Insert Docker service
+        var dockerSvc = new Service
+        {
+            Id = "docker_tagged_123",
+            Source = "docker",
+            ContainerId = "cid_tagged_123",
+            Name = "Docker Tagged Container",
+            Tags = new List<string> { "DockerAuto" }
+        };
+        await repo.UpsertDockerServiceAsync(dockerSvc);
+
+        var fetched = await repo.GetByIdAsync("docker_tagged_123");
+        Assert.NotNull(fetched);
+        Assert.Contains("DockerAuto", fetched.Tags);
+
+        // 2. User overrides Docker service tags
+        var updateReq = new UpdateServiceRequest(
+            Name: "Docker Tagged Container",
+            Description: "Overridden",
+            Url: null,
+            Icon: null,
+            Category: "General",
+            HealthCheckUrl: null,
+            Tags: new List<string> { "CustomProd", "Monitored" }
+        );
+        var overridden = await repo.UpdateAsync("docker_tagged_123", updateReq);
+        Assert.NotNull(overridden);
+        Assert.Equal(2, overridden.Tags.Count);
+        Assert.Contains("CustomProd", overridden.Tags);
+        Assert.Contains("Monitored", overridden.Tags);
+
+        // 3. Upsert again from discovery -> should preserve overridden tags!
+        await repo.UpsertDockerServiceAsync(dockerSvc);
+        var fetchedAfterSync = await repo.GetByIdAsync("docker_tagged_123");
+        Assert.NotNull(fetchedAfterSync);
+        Assert.Equal(2, fetchedAfterSync.Tags.Count);
+        Assert.Contains("CustomProd", fetchedAfterSync.Tags);
+    }
+
     public void Dispose()
     {
         try

@@ -413,6 +413,25 @@ public class DockerService : IDockerService
             port = container.Ports[0].PrivatePort;
         }
 
+        var tags = new List<string>();
+        if (labels.TryGetValue("corvus.tags", out var lTags) && !string.IsNullOrWhiteSpace(lTags))
+        {
+            tags.AddRange(lTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+        if (labels.TryGetValue("environment", out var envTag) && !string.IsNullOrWhiteSpace(envTag))
+        {
+            tags.Add(envTag.Trim());
+        }
+        else if (labels.TryGetValue("env", out var shortEnvTag) && !string.IsNullOrWhiteSpace(shortEnvTag))
+        {
+            tags.Add(shortEnvTag.Trim());
+        }
+        if (labels.TryGetValue("com.docker.compose.project", out var cProj) && !string.IsNullOrWhiteSpace(cProj))
+        {
+            tags.Add(cProj.Trim());
+        }
+        tags = tags.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
         return new Service
         {
             Id = $"docker_{container.Id[..Math.Min(12, container.Id.Length)]}",
@@ -429,7 +448,8 @@ public class DockerService : IDockerService
             Port = port,
             IsUptimeEnabled = false,
             CreatedAt = DateTime.UtcNow.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.ToString("o")
+            UpdatedAt = DateTime.UtcNow.ToString("o"),
+            Tags = tags
         };
     }
 

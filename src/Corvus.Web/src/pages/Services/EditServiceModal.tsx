@@ -3,6 +3,7 @@ import { X, Save, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { api, type Service } from '../../api/client';
 import { AdvancedCheckOptions } from './AdvancedCheckOptions';
+import { TagInput } from '../../components/common/TagInput';
 
 interface EditServiceModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [formName, setFormName] = useState('');
   const [formUrl, setFormUrl] = useState('');
   const [formCategory, setFormCategory] = useState('');
+  const [formTags, setFormTags] = useState<string[]>([]);
   const [formDesc, setFormDesc] = useState('');
   const [formHealth, setFormHealth] = useState('');
   const [formIcon, setFormIcon] = useState('');
@@ -57,6 +59,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setFormAcceptedStatusCodes(service.acceptedStatusCodes || '200-299');
       setFormHttpMethod(service.httpMethod || 'GET');
       setFormExpectedBody(service.expectedBody || '');
+      setFormTags(service.tags || []);
       setErrorMsg(null);
     }
   }, [service]);
@@ -109,7 +112,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         ignoreTls: formIgnoreTls,
         acceptedStatusCodes: formAcceptedStatusCodes.trim() || '200-299',
         httpMethod: formHttpMethod || 'GET',
-        expectedBody: formExpectedBody.trim() || undefined
+        expectedBody: formExpectedBody.trim() || undefined,
+        tags: formTags
       });
 
       onClose();
@@ -369,6 +373,18 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-indigo-500 text-xs sm:text-sm"
               />
             </div>
+          </div>
+
+          {/* Etiketler (Ortam / Grup) */}
+          <div>
+            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              {t('services.formTags') || 'Etiketler (Ortam / Grup)'}
+            </label>
+            <TagInput
+              tags={formTags}
+              onChange={setFormTags}
+              placeholder={t('services.tagPlaceholder') || 'Etiket ekle (Prod, DB, API)...'}
+            />
           </div>
 
           {/* Açıklama */}

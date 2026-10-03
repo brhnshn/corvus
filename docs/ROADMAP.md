@@ -134,9 +134,13 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Comprehensive unit test suite (`MetricsRepositoryTests.cs`, 211/211 passing tests).
 * **Acceptance Criteria:** Smooth 30-day, 90-day, and 1-year charts without database size inflation; all unit tests green (211/211 passing tests).
 
-### Ticket 5.2 — Tags & Category Grouping
+### Ticket 5.2 — Tags & Category Grouping (COMPLETED)
 * **Blocked by:** None.
 * **Objective:** Group and filter services and containers by environment tags (e.g. `Prod`, `Staging`, `DB`).
 * **Scope:**
-  - `tags` column in `services` table.
-  - Tag pills and filter bar in frontend dashboard.
+  - `tags` column in `services` and `service_overrides` tables (`013_service_tags.sql`).
+  - Native AOT model support with `List<string> Tags` and dual-format JSON/CSV parsing.
+  - Automatic tag extraction from container labels (`corvus.tags`, `environment`, `com.docker.compose.project`).
+  - Modular `TagBadge`, `TagInput`, and `TagFilterBar` components.
+  - Interactive filtering in `ServicesPage` with real-time tag counts.
+* **Acceptance Criteria:** Services and containers can be tagged and filtered dynamically; tag state is persistent across restarts and rediscovery; all unit tests pass (213/213).

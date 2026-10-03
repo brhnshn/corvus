@@ -56,6 +56,7 @@ public class ServicesRepository : IServicesRepository
         string? accepted_status_codes,
         string? http_method,
         string? expected_body,
+        string? tags,
         string? OverrideName,
         string? OverrideDescription,
         string? OverrideUrl,
@@ -73,8 +74,47 @@ public class ServicesRepository : IServicesRepository
         int? OverrideIgnoreTls,
         string? OverrideAcceptedStatusCodes,
         string? OverrideHttpMethod,
-        string? OverrideExpectedBody
+        string? OverrideExpectedBody,
+        string? OverrideTags
     );
+
+    public static List<string> ParseTags(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return new List<string>();
+        raw = raw.Trim();
+        if (raw.StartsWith('[') && raw.EndsWith(']'))
+        {
+            try
+            {
+                var list = System.Text.Json.JsonSerializer.Deserialize(raw, CorvusJsonSerializerContext.Default.ListString);
+                if (list != null)
+                {
+                    return list.Where(t => !string.IsNullOrWhiteSpace(t))
+                               .Select(t => t.Trim())
+                               .Distinct(StringComparer.OrdinalIgnoreCase)
+                               .ToList();
+                }
+            }
+            catch
+            {
+                // Fallback to comma separated
+            }
+        }
+
+        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                  .Distinct(StringComparer.OrdinalIgnoreCase)
+                  .ToList();
+    }
+
+    public static string SerializeTags(List<string>? tags)
+    {
+        if (tags == null || tags.Count == 0) return "[]";
+        var clean = tags.Where(t => !string.IsNullOrWhiteSpace(t))
+                        .Select(t => t.Trim())
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+        return System.Text.Json.JsonSerializer.Serialize(clean, CorvusJsonSerializerContext.Default.ListString);
+    }
 
     private static Service MapRowToService(ServiceDbRow r) => new Service
     {
@@ -104,13 +144,15 @@ public class ServicesRepository : IServicesRepository
         IgnoreTls = (r.OverrideIgnoreTls ?? r.ignore_tls ?? 0) == 1,
         AcceptedStatusCodes = r.OverrideAcceptedStatusCodes ?? r.accepted_status_codes ?? "200-299",
         HttpMethod = r.OverrideHttpMethod ?? r.http_method ?? "GET",
-        ExpectedBody = r.OverrideExpectedBody ?? r.expected_body
+        ExpectedBody = r.OverrideExpectedBody ?? r.expected_body,
+        Tags = ParseTags(r.OverrideTags ?? r.tags)
     };
 
     private const string BaseSelectSql = @"
         SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
                s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.is_uptime_enabled, s.display_order,
                s.check_interval, s.max_retries, s.retry_interval, s.timeout_seconds, s.ignore_tls, s.accepted_status_codes, s.http_method, s.expected_body,
+               s.tags,
                o.name AS OverrideName, 
                o.description AS OverrideDescription, 
                o.url AS OverrideUrl, 
@@ -128,7 +170,8 @@ public class ServicesRepository : IServicesRepository
                o.ignore_tls AS OverrideIgnoreTls,
                o.accepted_status_codes AS OverrideAcceptedStatusCodes,
                o.http_method AS OverrideHttpMethod,
-               o.expected_body AS OverrideExpectedBody
+               o.expected_body AS OverrideExpectedBody,
+               o.tags AS OverrideTags
         FROM services s
         LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))";
 
@@ -165,6 +208,7 @@ public class ServicesRepository : IServicesRepository
     public async Task<Service> CreateManualAsync(CreateServiceRequest request)
     {
         using var conn = _db.CreateConnection();
+        var tags = request.Tags ?? new List<string>();
         var service = new Service
         {
             Id = Guid.NewGuid().ToString(),
@@ -190,12 +234,13 @@ public class ServicesRepository : IServicesRepository
             IgnoreTls = request.IgnoreTls ?? false,
             AcceptedStatusCodes = request.AcceptedStatusCodes ?? "200-299",
             HttpMethod = request.HttpMethod ?? "GET",
-            ExpectedBody = request.ExpectedBody
+            ExpectedBody = request.ExpectedBody,
+            Tags = tags
         };
 
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body)
-            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @ExpectedBody)";
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body, tags)
+            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @ExpectedBody, @Tags)";
 
         await conn.ExecuteAsync(sql, new {
             service.Id,
@@ -222,7 +267,8 @@ public class ServicesRepository : IServicesRepository
             IgnoreTlsInt = service.IgnoreTls ? 1 : 0,
             service.AcceptedStatusCodes,
             service.HttpMethod,
-            service.ExpectedBody
+            service.ExpectedBody,
+            Tags = SerializeTags(tags)
         });
         return service;
     }
@@ -246,6 +292,7 @@ public class ServicesRepository : IServicesRepository
         string acceptedStatusCodes = request.AcceptedStatusCodes ?? existing.AcceptedStatusCodes ?? "200-299";
         string httpMethod = request.HttpMethod ?? existing.HttpMethod ?? "GET";
         string? expectedBody = request.ExpectedBody ?? existing.ExpectedBody;
+        string tagsSerialized = request.Tags != null ? SerializeTags(request.Tags) : SerializeTags(existing.Tags);
 
         var sql = @"
             UPDATE services 
@@ -255,7 +302,7 @@ public class ServicesRepository : IServicesRepository
                 check_interval = @checkInterval, max_retries = @maxRetries, retry_interval = @retryInterval,
                 timeout_seconds = @timeoutSeconds, ignore_tls = @ignoreTlsInt,
                 accepted_status_codes = @acceptedStatusCodes, http_method = @httpMethod,
-                expected_body = @expectedBody
+                expected_body = @expectedBody, tags = @tagsSerialized
             WHERE id = @id";
 
         await conn.ExecuteAsync(sql, new { 
@@ -278,6 +325,7 @@ public class ServicesRepository : IServicesRepository
             acceptedStatusCodes,
             httpMethod,
             expectedBody,
+            tagsSerialized,
             id 
         });
 
@@ -285,8 +333,8 @@ public class ServicesRepository : IServicesRepository
         {
             string overrideKey = !string.IsNullOrEmpty(existing.ContainerId) ? existing.ContainerId : id;
             var overrideSql = @"
-                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, is_uptime_enabled, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body)
-                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @isUptimeEnabledInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod, @expectedBody)
+                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, is_uptime_enabled, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body, tags)
+                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @isUptimeEnabledInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod, @expectedBody, @tagsSerialized)
                 ON CONFLICT(container_id) DO UPDATE SET
                     service_id = excluded.service_id,
                     name = excluded.name,
@@ -306,7 +354,8 @@ public class ServicesRepository : IServicesRepository
                     ignore_tls = excluded.ignore_tls,
                     accepted_status_codes = excluded.accepted_status_codes,
                     http_method = excluded.http_method,
-                    expected_body = excluded.expected_body";
+                    expected_body = excluded.expected_body,
+                    tags = excluded.tags";
 
             await conn.ExecuteAsync(overrideSql, new { 
                 overrideKey, 
@@ -328,7 +377,8 @@ public class ServicesRepository : IServicesRepository
                 ignoreTlsInt,
                 acceptedStatusCodes,
                 httpMethod,
-                expectedBody
+                expectedBody,
+                tagsSerialized
             });
         }
 
@@ -378,8 +428,8 @@ public class ServicesRepository : IServicesRepository
     {
         using var conn = _db.CreateConnection();
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, tags)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @Tags)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
                 status = CASE 
@@ -395,6 +445,10 @@ public class ServicesRepository : IServicesRepository
                 check_type = COALESCE(services.check_type, excluded.check_type),
                 port = COALESCE(services.port, excluded.port),
                 is_uptime_enabled = COALESCE(services.is_uptime_enabled, excluded.is_uptime_enabled),
+                tags = CASE 
+                    WHEN services.tags IS NOT NULL AND services.tags != '' AND services.tags != '[]' THEN services.tags 
+                    ELSE excluded.tags 
+                END,
                 updated_at = excluded.updated_at";
 
         await conn.ExecuteAsync(sql, new {
@@ -420,7 +474,8 @@ public class ServicesRepository : IServicesRepository
             TimeoutSeconds = service.TimeoutSeconds ?? 5,
             IgnoreTlsInt = service.IgnoreTls ? 1 : 0,
             AcceptedStatusCodes = service.AcceptedStatusCodes ?? "200-299",
-            HttpMethod = service.HttpMethod ?? "GET"
+            HttpMethod = service.HttpMethod ?? "GET",
+            Tags = SerializeTags(service.Tags)
         });
     }
 
@@ -450,8 +505,8 @@ public class ServicesRepository : IServicesRepository
         using var tx = conn.BeginTransaction();
 
         var upsertSql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod)
+            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, tags)
+            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @Tags)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
                 status = CASE 
@@ -467,6 +522,10 @@ public class ServicesRepository : IServicesRepository
                 check_type = COALESCE(services.check_type, excluded.check_type),
                 port = COALESCE(services.port, excluded.port),
                 is_uptime_enabled = COALESCE(services.is_uptime_enabled, excluded.is_uptime_enabled),
+                tags = CASE 
+                    WHEN services.tags IS NOT NULL AND services.tags != '' AND services.tags != '[]' THEN services.tags 
+                    ELSE excluded.tags 
+                END,
                 updated_at = excluded.updated_at";
 
         foreach (var s in services)
@@ -494,7 +553,8 @@ public class ServicesRepository : IServicesRepository
                 TimeoutSeconds = s.TimeoutSeconds ?? 5,
                 IgnoreTlsInt = s.IgnoreTls ? 1 : 0,
                 AcceptedStatusCodes = s.AcceptedStatusCodes ?? "200-299",
-                HttpMethod = s.HttpMethod ?? "GET"
+                HttpMethod = s.HttpMethod ?? "GET",
+                Tags = SerializeTags(s.Tags)
             }, tx);
         }
 

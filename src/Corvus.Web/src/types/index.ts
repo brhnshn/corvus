@@ -26,6 +26,7 @@ export interface Service {
   acceptedStatusCodes?: string;
   httpMethod?: string;
   expectedBody?: string;
+  tags?: string[];
 }
 
 export interface TestConnectionRequest {

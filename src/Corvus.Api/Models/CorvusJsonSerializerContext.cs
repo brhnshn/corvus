@@ -31,7 +31,8 @@ public record CreateServiceRequest(
     bool? IgnoreTls = false,
     string? AcceptedStatusCodes = "200-299",
     string? HttpMethod = "GET",
-    string? ExpectedBody = null
+    string? ExpectedBody = null,
+    List<string>? Tags = null
 );
 
 public record UpdateServiceRequest(
@@ -52,7 +53,8 @@ public record UpdateServiceRequest(
     bool? IgnoreTls = null,
     string? AcceptedStatusCodes = null,
     string? HttpMethod = null,
-    string? ExpectedBody = null
+    string? ExpectedBody = null,
+    List<string>? Tags = null
 );
 
 public record TestConnectionRequest(

@@ -2,6 +2,7 @@ import React from 'react';
 import { Server, ShieldCheck, ShieldAlert, ArrowUp, ArrowDown, ExternalLink, Trash2, Pencil } from 'lucide-react';
 import type { Service } from '../../types';
 import { StatusBadge } from '../../components/StatusBadge';
+import { TagBadge } from '../../components/common/TagBadge';
 import { formatServiceUrl } from '../../utils/url';
 import { useI18n } from '../../i18n';
 
@@ -16,6 +17,7 @@ interface ServiceCardProps {
   onMove: (currentIndex: number, direction: 'up' | 'down') => void;
   onDelete: (id: string, name: string) => void;
   onEdit: (service: Service) => void;
+  onSelectTag?: (tag: string) => void;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -28,7 +30,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   onDragEnd,
   onMove,
   onDelete,
-  onEdit
+  onEdit,
+  onSelectTag
 }) => {
   const { t } = useI18n();
 
@@ -103,6 +106,20 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 {t('services.sslRemaining', { days: service.sslExpiryDays })}
               </span>
             </span>
+          </div>
+        )}
+
+        {/* Etiket Rozetleri (Tags) */}
+        {service.tags && service.tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+            {service.tags.map((tag) => (
+              <TagBadge
+                key={tag}
+                tag={tag}
+                onClick={onSelectTag ? () => onSelectTag(tag) : undefined}
+                size="sm"
+              />
+            ))}
           </div>
         )}
       </div>

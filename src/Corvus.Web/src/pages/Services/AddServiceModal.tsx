@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { api } from '../../api/client';
 import { AdvancedCheckOptions } from './AdvancedCheckOptions';
+import { TagInput } from '../../components/common/TagInput';
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
   const [formName, setFormName] = useState('');
   const [formUrl, setFormUrl] = useState('');
   const [formCategory, setFormCategory] = useState('');
+  const [formTags, setFormTags] = useState<string[]>([]);
   const [formDesc, setFormDesc] = useState('');
   const [formHealth, setFormHealth] = useState('');
   const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'ping'>('http');
@@ -65,11 +67,13 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
         acceptedStatusCodes: formAcceptedStatusCodes.trim() || '200-299',
         httpMethod: formHttpMethod || 'GET',
         expectedBody: formExpectedBody.trim() || undefined,
+        tags: formTags,
       });
       // Formu sıfırla ve kapat
       setFormName('');
       setFormUrl('');
       setFormCategory('');
+      setFormTags([]);
       setFormDesc('');
       setFormHealth('');
       setFormCheckType('http');
@@ -203,6 +207,17 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
               value={formCategory}
               onChange={(e) => setFormCategory(e.target.value)}
               className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              {t('services.formTags') || 'Etiketler (Ortam / Grup)'}
+            </label>
+            <TagInput
+              tags={formTags}
+              onChange={setFormTags}
+              placeholder={t('services.tagPlaceholder') || 'Etiket ekle (Prod, DB, API)...'}
             />
           </div>
 

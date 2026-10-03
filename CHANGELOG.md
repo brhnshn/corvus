@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.20] - 2026-10-03
+
+### Tags & Category Grouping (Phase 5 - Ticket 5.2)
+- **Database Schema Migration (`013_service_tags.sql`)**: Added `tags` text column to both `services` and `service_overrides` tables with non-blocking migration support.
+- **Native AOT Backend Models & Resilient Parsing**:
+  - Extended `Service` and `ServiceOverride` entities with `List<string> Tags`.
+  - Added optional `Tags` property to `CreateServiceRequest` and `UpdateServiceRequest` source-generated DTOs.
+  - Implemented dual-format tag parser (`ParseTags`) supporting both JSON array string (`["Prod","DB"]`) and comma-separated tokens (`Prod, DB`) with whitespace trimming and case-insensitive deduplication.
+  - Preserved Docker service overrides upon automated container rediscovery cycles.
+  - Automated tag derivation from Docker container labels (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`).
+- **Modular Frontend Tag Architecture**:
+  - `TagBadge.tsx`: Reusable deterministic badge component with dark-mode pastel palette hashing (Emerald, Cyan, Indigo, Violet, Amber, Rose, Blue, Teal, Fuchsia) and semantic environment presets.
+  - `TagInput.tsx`: Interactive multi-tag input component with chip badges, Enter/comma/Tab creation, Backspace deletion, duplicate prevention, and quick-tag suggestions.
+  - `TagFilterBar.tsx`: Dynamic horizontal filter bar computing real-time tag counts, allowing instant single/multi-selection or full reset ("All").
+- **Services & Containers Integration**:
+  - Embedded `TagInput` inside `AddServiceModal.tsx` and `EditServiceModal.tsx`.
+  - Displayed clickable tag pills on `ServiceCard.tsx`, directly triggering filter bar activation.
+  - Integrated `TagFilterBar` into `ServicesPage` (`Services/index.tsx`) with combined search + tag predicate filtering.
+  - Rendered tag pills in `QuickServicesGrid.tsx` (Dashboard) and `ContainerList.tsx` (mobile and desktop views).
+- **Comprehensive Test Coverage**: Added dedicated repository tests validating tag creation, updates, JSON/CSV parsing, and Docker override preservation (213/213 unit tests green).
+- **Bilingual Synchronization**: Fully aligned Turkish and English localization strings (`tr.ts`, `en.ts`).
+
 ## [1.5.19] - 2026-10-02
 
 ### Telemetry, Downsampling & Metrics Rollup (Phase 5 - Ticket 5.1)

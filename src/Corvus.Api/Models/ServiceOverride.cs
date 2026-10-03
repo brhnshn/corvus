@@ -22,4 +22,5 @@ public class ServiceOverride
     public string? AcceptedStatusCodes { get; set; }
     public string? HttpMethod { get; set; }
     public string? ExpectedBody { get; set; }
+    public List<string>? Tags { get; set; }
 }

@@ -3,6 +3,7 @@ import type { DockerContainer, ContainerStats } from '../../api/client';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ContainerStatsBadges } from './ContainerStatsBadges';
 import { ContainerActionButtons } from './ContainerActionButtons';
+import { TagBadge } from '../../components/common/TagBadge';
 import { useI18n } from '../../i18n';
 
 interface ContainerListProps {
@@ -16,6 +17,18 @@ interface ContainerListProps {
   onDragStart?: (e: React.DragEvent, id: string) => void;
   onDragEnd?: () => void;
   draggingId?: string | null;
+}
+
+function extractContainerTags(labels?: Record<string, string>): string[] {
+  if (!labels) return [];
+  const tags: string[] = [];
+  if (labels['corvus.tags']) {
+    tags.push(...labels['corvus.tags'].split(',').map(s => s.trim()).filter(Boolean));
+  }
+  if (labels['environment']) tags.push(labels['environment'].trim());
+  else if (labels['env']) tags.push(labels['env'].trim());
+  if (labels['com.docker.compose.project']) tags.push(labels['com.docker.compose.project'].trim());
+  return Array.from(new Set(tags));
 }
 
 export const ContainerList: React.FC<ContainerListProps> = ({
@@ -43,6 +56,7 @@ export const ContainerList: React.FC<ContainerListProps> = ({
           const isRunning = c.State.toLowerCase() === 'running';
           const isPaused = c.State.toLowerCase() === 'paused';
           const isDragging = draggingId === c.Id;
+          const containerTags = extractContainerTags(c.Labels);
 
           return (
             <div 
@@ -56,7 +70,12 @@ export const ContainerList: React.FC<ContainerListProps> = ({
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-semibold text-sm text-[#e5e7eb]">{cleanName}</h3>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="font-semibold text-sm text-[#e5e7eb]">{cleanName}</h3>
+                    {containerTags.map((tag) => (
+                      <TagBadge key={tag} tag={tag} size="sm" />
+                    ))}
+                  </div>
                   <div className="text-xs font-mono text-[#9ca3af] mt-0.5">{shortId}</div>
                 </div>
                 <StatusBadge status={isRunning ? 'healthy' : isPaused ? 'degraded' : 'down'} />
@@ -118,6 +137,7 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                 const isRunning = c.State.toLowerCase() === 'running';
                 const isPaused = c.State.toLowerCase() === 'paused';
                 const isDragging = draggingId === c.Id;
+                const containerTags = extractContainerTags(c.Labels);
 
                 return (
                   <tr 
@@ -130,7 +150,12 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                     } ${isDragging ? 'opacity-30 bg-indigo-500/10' : ''}`}
                   >
                     <td className="px-5 py-3.5">
-                      <div className="font-medium text-[#e5e7eb]">{cleanName}</div>
+                      <div className="font-medium text-[#e5e7eb] flex items-center gap-1.5 flex-wrap">
+                        <span>{cleanName}</span>
+                        {containerTags.map((tag) => (
+                          <TagBadge key={tag} tag={tag} size="sm" />
+                        ))}
+                      </div>
                       <div className="text-xs font-mono text-[#9ca3af]">{shortId}</div>
                     </td>
 

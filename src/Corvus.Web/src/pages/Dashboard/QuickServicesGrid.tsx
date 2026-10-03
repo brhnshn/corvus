@@ -12,6 +12,7 @@ import { useI18n } from '../../i18n';
 import type { Service } from '../../api/client';
 import { formatServiceUrl } from '../../utils/url';
 import { StatusBadge } from '../../components/StatusBadge';
+import { TagBadge } from '../../components/common/TagBadge';
 
 interface QuickServicesGridProps {
   services: Service[];
@@ -37,10 +38,12 @@ export const QuickServicesGrid: React.FC<QuickServicesGridProps> = ({ services, 
   // Filtrelenmiş servisler
   const filteredServices = useMemo(() => {
     return services.filter(service => {
-      const matchSearch = 
-        service.name.toLowerCase().includes(search.toLowerCase()) ||
-        (service.category && service.category.toLowerCase().includes(search.toLowerCase())) ||
-        (service.url && service.url.toLowerCase().includes(search.toLowerCase()));
+      const q = search.toLowerCase();
+      const matchSearch = !q ||
+        service.name.toLowerCase().includes(q) ||
+        (service.category && service.category.toLowerCase().includes(q)) ||
+        (service.url && service.url.toLowerCase().includes(q)) ||
+        (service.tags && service.tags.some(tag => tag.toLowerCase().includes(q)));
 
       const matchCategory = selectedCategory === 'all' || service.category === selectedCategory;
 
@@ -207,6 +210,20 @@ export const QuickServicesGrid: React.FC<QuickServicesGridProps> = ({ services, 
                         <span>{service.source === 'docker' ? 'Docker' : 'Manuel'}</span>
                       )}
                     </div>
+
+                    {/* Tags */}
+                    {service.tags && service.tags.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 mt-2">
+                        {service.tags.slice(0, 3).map((tag) => (
+                          <TagBadge key={tag} tag={tag} size="sm" />
+                        ))}
+                        {service.tags.length > 3 && (
+                          <span className="text-[9px] font-mono text-[#9ca3af] px-1 py-0.2 bg-[#1a1d29] rounded">
+                            +{service.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer Action */}
