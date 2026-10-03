@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.22] - 2026-10-03
+## [1.5.19] - 2026-10-03
 
 ### Added
 - **Safe System Prune & Dry-Run Disk Audit (Package 3)**:
@@ -17,11 +17,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - **Modular Container Detail Modal:** Created `ContainerDetailModal.tsx` and 5 modular sub-tabs (`ContainerOverviewTab`, `ContainerEnvTab`, `ContainerNetworkingTab`, `ContainerStorageTab`, `ContainerResourcesTab`).
   - **Environment Variables Inspector:** Added searchable environment table with sensitive value masking toggle and single/bulk `.env` clipboard export.
   - **Interactive Container Access:** Made container names clickable across list and stack views to directly open the detail modal, alongside a quick-access sliders action button.
-- **Test Suite Expansion:** Added comprehensive unit tests for inspect, update, and selective prune methods in `DockerServiceTests.cs` (all 223 tests passing).
-
-## [1.5.21] - 2026-10-03
-
-### Added
 - **Container Tags & Category Management (Package 2)**:
   - **Backend & Native AOT DTO:** Introduced `UpdateContainerTagsRequest` and registered it in `CorvusJsonSerializerContext` for Native AOT source generation.
   - **Database & Repository Layer:** Added `SaveContainerTagsAsync` and `GetAllContainerTagsAsync` to `ServicesRepository`, supporting atomic upsert into `service_overrides` and synchronization with the `services` table.
@@ -30,20 +25,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - **Frontend Types & API:** Extended `DockerContainer` with `tags?: string[]` and implemented `containersApi.updateContainerTags`.
   - **Reusable TagFilterBar Component:** Created `src/Corvus.Web/src/components/common/TagFilterBar.tsx` for real-time tag filtering across flat lists and Compose stack groups in `/containers`.
   - **Modular ContainerTagsModal:** Added `src/Corvus.Web/src/pages/Containers/ContainerTagsModal.tsx` utilizing `TagInput` to easily add/edit container tags from cards, rows, or badge buttons.
-  - **Comprehensive Unit Tests:** Added 7 new unit tests verifying DTO serialization, repository operations, tag merging, and cache invalidation (all 221 tests green).
-
-## [1.5.20] - 2026-10-03
+- **Smart Shell Auto-Detection & Fallback Chain (Package 1)**:
+  - Added `auto` shell detection mode (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`) in `ContainersEndpoints.cs` and frontend shell dropdown. Missing container shells no longer drop terminal connections, gracefully falling back to available alternatives.
+  - Configured `"Env": ["TERM=xterm-256color"]` in Docker exec creation (`DockerHttpClient.cs`) for full readline interactivity, arrow-key navigation, and 256-color support.
+  - Added explicit HTTP status checking (`101 UPGRADED` / `200 OK`) in `StartExecStreamAsync` to intercept Docker daemon failures early during shell fallback attempts.
+- **Test Suite Expansion:** Added comprehensive unit tests for inspect, update, tags, and selective prune methods in `DockerServiceTests.cs` and `ContainerTagsTests.cs` (all 223 tests passing).
 
 ### Fixed
-- **Web Terminal Pipe Deadlock Fix**: Removed blocking Win32 `FlushFileBuffers` triggered by `FlushAsync` on NamedPipeClientStream in `ContainersEndpoints.cs`, eliminating keyboard input lockup and lag during container terminal sessions.
+- **Web Terminal Pipe Deadlock Fix (Package 1)**: Removed blocking Win32 `FlushFileBuffers` triggered by `FlushAsync` on NamedPipeClientStream in `ContainersEndpoints.cs`, eliminating keyboard input lockup and lag during container terminal sessions.
 - **XTerm Input Stream Consolidation**: Removed redundant `term.onBinary` listener in `ContainerTerminalModal.tsx`, standardizing on unified UTF-8 `term.onData` streaming to eliminate keystroke duplication and conflicts.
-
-### Added
-- **Smart Shell Auto-Detection & Fallback Chain**: Added `auto` shell detection mode (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`) in `ContainersEndpoints.cs` and frontend shell dropdown. Missing container shells no longer drop terminal connections, gracefully falling back to available alternatives.
-- **Rich Terminal readline & Color Support**: Configured `"Env": ["TERM=xterm-256color"]` in Docker exec creation (`DockerHttpClient.cs`) for full readline interactivity, arrow-key navigation, and 256-color support.
-- **HTTP Exec Stream Status Validation**: Added explicit HTTP status checking (`101 UPGRADED` / `200 OK`) in `StartExecStreamAsync` to intercept Docker daemon failures early during shell fallback attempts.
-
-## [1.5.19] - 2026-10-03
 
 ### Tags & Category Grouping (Phase 5 - Ticket 5.2)
 - **Database Schema Migration (`013_service_tags.sql`)**: Added `tags` text column to both `services` and `service_overrides` tables with non-blocking migration support.

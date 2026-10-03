@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.5.22] - 2026-10-03
+## [1.5.19] - 2026-10-03
 
 ### Eklenenler (Added)
 - **Güvenli Sistem Temizliği ve Kuru Çalıştırma Ön İnceleme (Paket 3 — Safe System Prune & Dry-Run Audit)**:
@@ -17,11 +17,6 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - **Modüler Konteyner Detay Modalı:** `ContainerDetailModal.tsx` ve 5 bağımsız alt sekme (`ContainerOverviewTab`, `ContainerEnvTab`, `ContainerNetworkingTab`, `ContainerStorageTab`, `ContainerResourcesTab`) geliştirildi.
   - **Ortam Değişkenleri Görüntüleyici:** Hassas parolaları maskeleme toggle'ı, filtreleme araması ve tek tek veya toplu `.env` panoya kopyalama desteği sunuldu.
   - **İnteraktif Konteyner Erişimi:** Düz liste ve Compose gruplarında konteyner isimleri tıklanabilir hale getirildi; ayrıca aksiyon çubuğuna hızlı detay butonu eklendi.
-- **Birim Test Kapsamı:** İnceleme, güncelleme ve seçici temizlik metotları için `DockerServiceTests.cs` testleri eklendi (tüm 223 test başarılı).
-
-## [1.5.21] - 2026-10-03
-
-### Eklenenler (Added)
 - **Konteyner Etiketleme ve Filtreleme (Paket 2 — Container Tags & Category Management)**:
   - **Backend & Native AOT DTO:** `UpdateContainerTagsRequest` modeli oluşturuldu ve `CorvusJsonSerializerContext` kaynak üreticisine kaydedildi.
   - **Veritabanı ve Repository Katmanı:** `ServicesRepository` sınıfına `SaveContainerTagsAsync` ve `GetAllContainerTagsAsync` eklendi; etiketlerin `service_overrides` üzerinde upsert edilmesi ve `services` tablosuyla eşzamanlanması sağlandı.
@@ -30,20 +25,15 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - **Frontend Tipleri ve API:** `DockerContainer` arayüzüne `tags?: string[]` eklendi; `containersApi.updateContainerTags` metodu geliştirildi.
   - **Ortak TagFilterBar Bileşeni:** `src/Corvus.Web/src/components/common/TagFilterBar.tsx` ortak bileşeni oluşturuldu; `/containers` sayfasında anlık etiket süzme (hem düz liste hem Compose grupları dahil) aktif kılındı.
   - **Modüler Konteyner Etiket Modalı:** `src/Corvus.Web/src/pages/Containers/ContainerTagsModal.tsx` oluşturuldu; `TagInput` kullanılarak konteyner satırından veya rozetlerden tek tıkla etiket düzenleme imkanı sunuldu.
-  - **Kapsamlı Birim Testleri:** DTO serileştirmesi, repository işlemleri, etiket birleştirme ve önbellek geçersiz kılma mantığını doğrulayan 7 yeni birim test eklendi (tüm 221 test başarılı).
-
-## [1.5.20] - 2026-10-03
+- **Akıllı Kabuk Otomatik Tespiti ve Fallback Zinciri (Paket 1)**:
+  - `ContainersEndpoints.cs` ve arayüz kabuk seçicisine `auto` seçeneği eklendi (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`). Seçilen kabuk konteynerde bulunmadığında bağlantının kopması engellendi; otomatik olarak var olan kabuğa geçiş sağlandı.
+  - Docker exec oluşturma gövdesine (`DockerHttpClient.cs`) `"Env": ["TERM=xterm-256color"]` parametresi eklenerek Linux kabuklarında ok tuşları, geçmiş gezinimi (readline) ve renkli çıktı tam uyumlu kılındı.
+  - `StartExecStreamAsync` içinde HTTP durum kodu (`101 UPGRADED` / `200 OK`) kontrolü getirilerek Docker daemon başlatma hataları kabuk deneme döngüsünde anında yakalanabilir hale getirildi.
+- **Birim Test Kapsamı:** İnceleme, güncelleme, etiketler ve seçici temizlik metotları için `DockerServiceTests.cs` ve `ContainerTagsTests.cs` testleri eklendi (tüm 223 test başarılı).
 
 ### Düzeltilenler (Fixed)
-- **Web Terminali Pipe Kilitlenme Düzeltmesi**: `ContainersEndpoints.cs` içindeki NamedPipeClientStream üzerinde Win32 `FlushFileBuffers` çağrısını tetikleyerek klavye girişini kilitleyen gereksiz `FlushAsync` kaldırıldı; terminal yazım akışı anlık ve akıcı hale getirildi.
+- **Web Terminali Pipe Kilitlenme Düzeltmesi (Paket 1)**: `ContainersEndpoints.cs` içindeki NamedPipeClientStream üzerinde Win32 `FlushFileBuffers` çağrısını tetikleyerek klavye girişini kilitleyen gereksiz `FlushAsync` kaldırıldı; terminal yazım akışı anlık ve akıcı hale getirildi.
 - **XTerm Girdi Akışı Konsolidasyonu**: `ContainerTerminalModal.tsx` içindeki mükerrer `term.onBinary` dinleyicisi kaldırılarak tüm kullanıcı girişleri tekil `term.onData` üzerinden güvenle iletilecek biçimde standartlaştırıldı.
-
-### Eklenenler (Added)
-- **Akıllı Kabuk Otomatik Tespiti ve Fallback Zinciri**: `ContainersEndpoints.cs` ve arayüz kabuk seçicisine `auto` seçeneği eklendi (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`). Seçilen kabuk konteynerde bulunmadığında bağlantının kopması engellendi; otomatik olarak var olan kabuğa geçiş sağlandı.
-- **Zengin Terminal readline ve 256 Renk Desteği**: Docker exec oluşturma gövdesine (`DockerHttpClient.cs`) `"Env": ["TERM=xterm-256color"]` parametresi eklenerek Linux kabuklarında ok tuşları, geçmiş gezinimi (readline) ve renkli çıktı tam uyumlu kılındı.
-- **HTTP Exec Yanıt Durumu Doğrulaması**: `StartExecStreamAsync` içinde HTTP durum kodu (`101 UPGRADED` / `200 OK`) kontrolü getirilerek Docker daemon başlatma hataları kabuk deneme döngüsünde anında yakalanabilir hale getirildi.
-
-## [1.5.19] - 2026-10-03
 
 ### Servis & Konteyner Etiketleme / Gruplama (Faz 5 - Bilet 5.2)
 - **Veritabanı Şema Güncellemesi (`013_service_tags.sql`)**: `services` ve `service_overrides` tablolarına kesintisiz migration ile `tags TEXT DEFAULT ''` kolonu eklendi.
