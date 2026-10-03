@@ -54,6 +54,7 @@ export interface DockerContainer {
   Created: number;
   Ports?: { IP?: string; PrivatePort: number; PublicPort?: number; Type?: string }[];
   Labels?: Record<string, string>;
+  tags?: string[];
 }
 
 export interface ContainerStats {
@@ -204,4 +205,162 @@ export interface DockerPruneResult {
   networksDeletedCount: number;
   buildCacheSpaceReclaimed: number;
   errorMessage?: string;
+}
+
+export interface DockerDfImageInfo {
+  id: string;
+  repoTags?: string[];
+  created: number;
+  size: number;
+  sharedSize: number;
+  containers: number;
+}
+
+export interface DockerDfContainerInfo {
+  id: string;
+  names?: string[];
+  image?: string;
+  command?: string;
+  created: number;
+  state?: string;
+  status?: string;
+  sizeRw: number;
+  sizeRootFs: number;
+}
+
+export interface DockerDfVolumeInfo {
+  name: string;
+  driver?: string;
+  mountpoint?: string;
+  usageData?: {
+    size: number;
+    refCount: number;
+  };
+}
+
+export interface DockerDfBuildCacheInfo {
+  id: string;
+  type?: string;
+  description?: string;
+  inUse: boolean;
+  shared: boolean;
+  size: number;
+}
+
+export interface DockerSystemDfResponse {
+  layersSize: number;
+  images?: DockerDfImageInfo[];
+  containers?: DockerDfContainerInfo[];
+  volumes?: DockerDfVolumeInfo[];
+  buildCache?: DockerDfBuildCacheInfo[];
+}
+
+export interface DockerSelectivePruneRequest {
+  containerIds?: string[];
+  imageIds?: string[];
+  volumeNames?: string[];
+  pruneBuildCache?: boolean;
+}
+
+export interface DockerSelectivePruneResult {
+  success: boolean;
+  totalSpaceReclaimed: number;
+  deletedContainers: string[];
+  deletedImages: string[];
+  deletedVolumes: string[];
+  buildCachePruned: boolean;
+  errors: string[];
+}
+
+export interface DockerRestartPolicy {
+  name: string;
+  maximumRetryCount?: number;
+}
+
+export interface DockerPortBindingHost {
+  hostIp?: string;
+  hostPort?: string;
+}
+
+export interface DockerEndpointSettings {
+  ipAddress?: string;
+  gateway?: string;
+  macAddress?: string;
+  networkId?: string;
+}
+
+export interface DockerMountInfo {
+  type?: string;
+  name?: string;
+  source?: string;
+  destination?: string;
+  mode?: string;
+  rw?: boolean;
+  propagation?: string;
+}
+
+export interface DockerContainerConfig {
+  image?: string;
+  cmd?: string[];
+  entrypoint?: string[];
+  workingDir?: string;
+  user?: string;
+  env?: string[];
+  labels?: Record<string, string>;
+}
+
+export interface DockerContainerState {
+  status?: string;
+  running: boolean;
+  paused?: boolean;
+  restarting?: boolean;
+  oomKilled?: boolean;
+  dead?: boolean;
+  pid?: number;
+  exitCode?: number;
+  error?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  health?: {
+    status?: string;
+  };
+}
+
+export interface DockerHostConfig {
+  restartPolicy?: DockerRestartPolicy;
+  memory?: number;
+  nanoCpus?: number;
+  cpuShares?: number;
+  networkMode?: string;
+  binds?: string[];
+  portBindings?: Record<string, DockerPortBindingHost[] | null>;
+}
+
+export interface DockerNetworkSettings {
+  ipAddress?: string;
+  gateway?: string;
+  macAddress?: string;
+  ports?: Record<string, DockerPortBindingHost[] | null>;
+  networks?: Record<string, DockerEndpointSettings>;
+}
+
+export interface DockerContainerInspectInfo {
+  id: string;
+  created?: string;
+  path?: string;
+  args?: string[];
+  name?: string;
+  image?: string;
+  config?: DockerContainerConfig;
+  state?: DockerContainerState;
+  hostConfig?: DockerHostConfig;
+  networkSettings?: DockerNetworkSettings;
+  mounts?: DockerMountInfo[];
+}
+
+export interface DockerContainerUpdateRequest {
+  nanoCpus?: number;
+  memory?: number;
+  memoryReservation?: number;
+  restartPolicy?: DockerRestartPolicy;
 }

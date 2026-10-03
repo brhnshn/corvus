@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.22] - 2026-10-03
+
+### Added
+- **Safe System Prune & Dry-Run Disk Audit (Package 3)**:
+  - **Dry-Run Analysis Engine:** Added `GET /api/containers/system-df` delegating to Docker Engine `GET /system/df` to inspect reclaimable space across stopped containers, unused images, unattached volumes, and build cache before deletion.
+  - **Selective Prune API:** Introduced `POST /api/containers/prune/selective` with `DockerSelectivePruneRequest` enabling targeted cleanup of specific container IDs, image IDs, and volume names.
+  - **Modular Dry-Run UI:** Overhauled the prune modal into an itemized 2-stage audit dialog (`SystemPruneModal.tsx`) featuring dedicated modular subcomponents (`PruneContainersTable`, `PruneImagesTable`, `PruneVolumesTable`, `PruneBuildCacheCard`).
+  - **Persistent Volume Safeguards:** Implemented persistent volume warnings and selective checkbox controls to prevent accidental loss of database or storage volumes.
+- **Container Detail & Live Configuration Management (Package 4)**:
+  - **Comprehensive Container Inspect:** Extended `DockerContainerInspectInfo` to deserialize full Docker inspect payload: commands, entrypoint, working directory, process user, timestamps, network endpoints, port bindings, and volume mounts.
+  - **Live Resource Updating API:** Added `POST /api/containers/{id}/update` invoking Docker Engine `POST /containers/{id}/update` to adjust CPU limits (`NanoCpus`), memory limits (`Memory`), and restart policies on-the-fly with zero container downtime.
+  - **Modular Container Detail Modal:** Created `ContainerDetailModal.tsx` and 5 modular sub-tabs (`ContainerOverviewTab`, `ContainerEnvTab`, `ContainerNetworkingTab`, `ContainerStorageTab`, `ContainerResourcesTab`).
+  - **Environment Variables Inspector:** Added searchable environment table with sensitive value masking toggle and single/bulk `.env` clipboard export.
+  - **Interactive Container Access:** Made container names clickable across list and stack views to directly open the detail modal, alongside a quick-access sliders action button.
+- **Test Suite Expansion:** Added comprehensive unit tests for inspect, update, and selective prune methods in `DockerServiceTests.cs` (all 223 tests passing).
+
+## [1.5.21] - 2026-10-03
+
+### Added
+- **Container Tags & Category Management (Package 2)**:
+  - **Backend & Native AOT DTO:** Introduced `UpdateContainerTagsRequest` and registered it in `CorvusJsonSerializerContext` for Native AOT source generation.
+  - **Database & Repository Layer:** Added `SaveContainerTagsAsync` and `GetAllContainerTagsAsync` to `ServicesRepository`, supporting atomic upsert into `service_overrides` and synchronization with the `services` table.
+  - **Docker Service Tag Merging:** Added `Tags` property to `DockerContainerInfo`. Enhanced `DockerService.GetContainersAsync` to aggregate labels (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`) with database overrides, with immediate cache eviction via `InvalidateContainersCache`.
+  - **Container Tag API Endpoint:** Added `PUT /api/containers/{id}/tags` (`[RequireAdmin]`) with validation, audit logging, and `container_tags_updated` SSE broadcasting.
+  - **Frontend Types & API:** Extended `DockerContainer` with `tags?: string[]` and implemented `containersApi.updateContainerTags`.
+  - **Reusable TagFilterBar Component:** Created `src/Corvus.Web/src/components/common/TagFilterBar.tsx` for real-time tag filtering across flat lists and Compose stack groups in `/containers`.
+  - **Modular ContainerTagsModal:** Added `src/Corvus.Web/src/pages/Containers/ContainerTagsModal.tsx` utilizing `TagInput` to easily add/edit container tags from cards, rows, or badge buttons.
+  - **Comprehensive Unit Tests:** Added 7 new unit tests verifying DTO serialization, repository operations, tag merging, and cache invalidation (all 221 tests green).
+
+## [1.5.20] - 2026-10-03
+
+### Fixed
+- **Web Terminal Pipe Deadlock Fix**: Removed blocking Win32 `FlushFileBuffers` triggered by `FlushAsync` on NamedPipeClientStream in `ContainersEndpoints.cs`, eliminating keyboard input lockup and lag during container terminal sessions.
+- **XTerm Input Stream Consolidation**: Removed redundant `term.onBinary` listener in `ContainerTerminalModal.tsx`, standardizing on unified UTF-8 `term.onData` streaming to eliminate keystroke duplication and conflicts.
+
+### Added
+- **Smart Shell Auto-Detection & Fallback Chain**: Added `auto` shell detection mode (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`) in `ContainersEndpoints.cs` and frontend shell dropdown. Missing container shells no longer drop terminal connections, gracefully falling back to available alternatives.
+- **Rich Terminal readline & Color Support**: Configured `"Env": ["TERM=xterm-256color"]` in Docker exec creation (`DockerHttpClient.cs`) for full readline interactivity, arrow-key navigation, and 256-color support.
+- **HTTP Exec Stream Status Validation**: Added explicit HTTP status checking (`101 UPGRADED` / `200 OK`) in `StartExecStreamAsync` to intercept Docker daemon failures early during shell fallback attempts.
+
 ## [1.5.19] - 2026-10-03
 
 ### Tags & Category Grouping (Phase 5 - Ticket 5.2)

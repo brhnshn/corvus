@@ -30,6 +30,11 @@ public interface IDockerHttpClient
     Task<DockerVolumesPruneResponse?> PruneVolumesAsync(CancellationToken cancellationToken = default);
     Task<DockerNetworksPruneResponse?> PruneNetworksAsync(CancellationToken cancellationToken = default);
     Task<DockerBuildCachePruneResponse?> PruneBuildCacheAsync(CancellationToken cancellationToken = default);
+    Task<DockerSystemDfResponse?> GetSystemDiskUsageAsync(CancellationToken cancellationToken = default);
+    Task<DockerActionResult> DeleteContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> DeleteImageAsync(string imageId, bool force = false, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> DeleteVolumeAsync(string volumeName, bool force = false, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default);
 }
 
 public class DockerHttpClient : IDockerHttpClient, IDisposable
@@ -513,6 +518,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
               "AttachStdout": true,
               "AttachStderr": true,
               "Tty": true,
+              "Env": ["TERM=xterm-256color"],
               "Cmd": [{{JsonSerializer.Serialize(shell, CorvusJsonSerializerContext.Default.String)}}]
             }
             """;
@@ -556,6 +562,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         await rawStream.FlushAsync(cancellationToken);
 
         // Docker'dan dönen HTTP yanıt başlığını oku (\r\n\r\n görene kadar)
+        using var headerMs = new MemoryStream();
         int matched = 0;
         byte[] matchSequence = "\r\n\r\n"u8.ToArray();
         byte[] singleByte = new byte[1];
@@ -569,6 +576,8 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
                 throw new InvalidOperationException("Docker daemon exec bağlantısını erken kapattı.");
             }
 
+            headerMs.WriteByte(singleByte[0]);
+
             if (singleByte[0] == matchSequence[matched])
             {
                 matched++;
@@ -577,6 +586,14 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
             {
                 matched = singleByte[0] == matchSequence[0] ? 1 : 0;
             }
+        }
+
+        string headerText = Encoding.ASCII.GetString(headerMs.ToArray());
+        var firstLine = headerText.Split("\r\n", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        if (!firstLine.Contains(" 101 ") && !firstLine.Contains(" 200 "))
+        {
+            rawStream.Dispose();
+            throw new InvalidOperationException($"Docker daemon exec başlatamadı: {firstLine.Trim()}");
         }
 
         return rawStream;
@@ -695,6 +712,110 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         {
             _logger.LogDebug(ex, "Docker build cache prune sırasında hata");
             return null;
+        }
+    }
+
+    public async Task<DockerSystemDfResponse?> GetSystemDiskUsageAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync("/system/df", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Docker system/df başarısız: {StatusCode}", response.StatusCode);
+                return null;
+            }
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerSystemDfResponse, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker system/df çağrısında hata");
+            return null;
+        }
+    }
+
+    public async Task<DockerActionResult> DeleteContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string url = $"/containers/{Uri.EscapeDataString(containerId)}?force={(force ? "true" : "false")}&v={(removeVolumes ? "true" : "false")}";
+            using var response = await _httpClient.DeleteAsync(url, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return new DockerActionResult(true, "Konteyner başarıyla silindi.");
+            }
+            string err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new DockerActionResult(false, $"Konteyner silinemedi ({response.StatusCode}): {err}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Container silinirken hata: {ContainerId}", containerId);
+            return new DockerActionResult(false, ex.Message);
+        }
+    }
+
+    public async Task<DockerActionResult> DeleteImageAsync(string imageId, bool force = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string url = $"/images/{Uri.EscapeDataString(imageId)}?force={(force ? "true" : "false")}";
+            using var response = await _httpClient.DeleteAsync(url, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return new DockerActionResult(true, "İmaj başarıyla silindi.");
+            }
+            string err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new DockerActionResult(false, $"İmaj silinemedi ({response.StatusCode}): {err}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "İmaj silinirken hata: {ImageId}", imageId);
+            return new DockerActionResult(false, ex.Message);
+        }
+    }
+
+    public async Task<DockerActionResult> DeleteVolumeAsync(string volumeName, bool force = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string url = $"/volumes/{Uri.EscapeDataString(volumeName)}?force={(force ? "true" : "false")}";
+            using var response = await _httpClient.DeleteAsync(url, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return new DockerActionResult(true, "Hacim başarıyla silindi.");
+            }
+            string err = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new DockerActionResult(false, $"Hacim silinemedi ({response.StatusCode}): {err}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Hacim silinirken hata: {VolumeName}", volumeName);
+            return new DockerActionResult(false, ex.Message);
+        }
+    }
+
+    public async Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string jsonBody = JsonSerializer.Serialize(request, CorvusJsonSerializerContext.Default.DockerContainerUpdateRequest);
+            using var content = new StringContent(jsonBody, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+            using var response = await _httpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/update", content, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new DockerActionResult(true, "Konteyner yapılandırması başarıyla güncellendi.");
+            }
+
+            string error = await ExtractDockerErrorMessageAsync(response, "Konteyner yapılandırması güncellenemedi.");
+            _logger.LogWarning("Docker container update hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            return new DockerActionResult(false, error, (int)response.StatusCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Container yapılandırması güncellenirken hata: {ContainerId}", containerId);
+            return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
 

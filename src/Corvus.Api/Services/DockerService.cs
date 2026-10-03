@@ -20,22 +20,32 @@ public interface IDockerService
     Task<Stream> StartExecStreamAsync(string execId, CancellationToken cancellationToken = default);
     Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default);
     Task<DockerPruneResult> ExecuteSystemPruneAsync(DockerPruneRequest request, CancellationToken cancellationToken = default);
+    Task<DockerSystemDfResponse?> GetSystemDiskUsageAsync(CancellationToken cancellationToken = default);
+    Task<DockerSelectivePruneResult> ExecuteSelectivePruneAsync(DockerSelectivePruneRequest request, CancellationToken cancellationToken = default);
+    Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default);
     bool ShouldIgnoreContainer(DockerContainerInfo container);
     Service MapContainerToService(DockerContainerInfo container, IEnumerable<string>? env = null);
+    void InvalidateContainersCache();
 }
 
 public class DockerService : IDockerService
 {
     private readonly IDockerHttpClient _client;
     private readonly ILogger<DockerService> _logger;
+    private readonly IServiceScopeFactory? _scopeFactory;
     private readonly ConcurrentDictionary<string, (DateTime Expiry, ContainerStatsDto Stats)> _statsCache = new();
     private (DateTime Expiry, List<DockerContainerInfo> Items) _cachedContainers;
     private readonly object _containersLock = new();
 
-    public DockerService(IDockerHttpClient client, ILogger<DockerService> logger)
+    public DockerService(
+        IDockerHttpClient client, 
+        ILogger<DockerService> logger, 
+        IServiceScopeFactory? scopeFactory = null)
     {
         _client = client;
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default) =>
@@ -56,6 +66,50 @@ public class DockerService : IDockerService
         }
 
         var list = await _client.ListContainersAsync(all: true, cancellationToken);
+
+        // service_overrides tablosundaki kayıtlı etiketleri yükle
+        Dictionary<string, List<string>>? overrideTags = null;
+        if (_scopeFactory != null)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var repo = scope.ServiceProvider.GetRequiredService<Corvus.Api.Data.IServicesRepository>();
+                overrideTags = await repo.GetAllContainerTagsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Container override etiketleri veritabanından yüklenemedi.");
+            }
+        }
+
+        foreach (var c in list)
+        {
+            var labelTags = ExtractTagsFromLabels(c.Labels);
+            List<string>? savedTags = null;
+            if (overrideTags != null)
+            {
+                if (overrideTags.TryGetValue(c.Id, out var directMatch))
+                {
+                    savedTags = directMatch;
+                }
+                else if (c.Id.Length >= 12 && overrideTags.TryGetValue(c.Id[..12], out var shortMatch))
+                {
+                    savedTags = shortMatch;
+                }
+            }
+
+            var merged = new List<string>(labelTags);
+            if (savedTags != null)
+            {
+                merged.AddRange(savedTags);
+            }
+
+            c.Tags = merged.Where(t => !string.IsNullOrWhiteSpace(t))
+                           .Distinct(StringComparer.OrdinalIgnoreCase)
+                           .ToList();
+        }
+
         lock (_containersLock)
         {
             _cachedContainers = (now.AddSeconds(10), list);
@@ -63,7 +117,7 @@ public class DockerService : IDockerService
         return list;
     }
 
-    private void InvalidateContainersCache()
+    public void InvalidateContainersCache()
     {
         lock (_containersLock)
         {
@@ -413,24 +467,7 @@ public class DockerService : IDockerService
             port = container.Ports[0].PrivatePort;
         }
 
-        var tags = new List<string>();
-        if (labels.TryGetValue("corvus.tags", out var lTags) && !string.IsNullOrWhiteSpace(lTags))
-        {
-            tags.AddRange(lTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-        }
-        if (labels.TryGetValue("environment", out var envTag) && !string.IsNullOrWhiteSpace(envTag))
-        {
-            tags.Add(envTag.Trim());
-        }
-        else if (labels.TryGetValue("env", out var shortEnvTag) && !string.IsNullOrWhiteSpace(shortEnvTag))
-        {
-            tags.Add(shortEnvTag.Trim());
-        }
-        if (labels.TryGetValue("com.docker.compose.project", out var cProj) && !string.IsNullOrWhiteSpace(cProj))
-        {
-            tags.Add(cProj.Trim());
-        }
-        tags = tags.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var tags = ExtractTagsFromLabels(labels);
 
         return new Service
         {
@@ -558,5 +595,128 @@ public class DockerService : IDockerService
         }
 
         return result;
+    }
+
+    public Task<DockerSystemDfResponse?> GetSystemDiskUsageAsync(CancellationToken cancellationToken = default) =>
+        _client.GetSystemDiskUsageAsync(cancellationToken);
+
+    public async Task<DockerSelectivePruneResult> ExecuteSelectivePruneAsync(DockerSelectivePruneRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = new DockerSelectivePruneResult { Success = true };
+
+        try
+        {
+            // 1. Silinecek konteynerler
+            if (request.ContainerIds != null && request.ContainerIds.Count > 0)
+            {
+                foreach (var cId in request.ContainerIds)
+                {
+                    var delRes = await _client.DeleteContainerAsync(cId, force: true, removeVolumes: false, cancellationToken);
+                    if (delRes.Success)
+                    {
+                        result.DeletedContainers.Add(cId);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(delRes.Message))
+                    {
+                        result.Errors.Add($"Container {cId[..Math.Min(12, cId.Length)]}: {delRes.Message}");
+                    }
+                }
+            }
+
+            // 2. Silinecek imajlar
+            if (request.ImageIds != null && request.ImageIds.Count > 0)
+            {
+                foreach (var imgId in request.ImageIds)
+                {
+                    var delRes = await _client.DeleteImageAsync(imgId, force: false, cancellationToken);
+                    if (delRes.Success)
+                    {
+                        result.DeletedImages.Add(imgId);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(delRes.Message))
+                    {
+                        result.Errors.Add($"Image {imgId[..Math.Min(12, imgId.Length)]}: {delRes.Message}");
+                    }
+                }
+            }
+
+            // 3. Silinecek hacimler
+            if (request.VolumeNames != null && request.VolumeNames.Count > 0)
+            {
+                foreach (var vName in request.VolumeNames)
+                {
+                    var delRes = await _client.DeleteVolumeAsync(vName, force: false, cancellationToken);
+                    if (delRes.Success)
+                    {
+                        result.DeletedVolumes.Add(vName);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(delRes.Message))
+                    {
+                        result.Errors.Add($"Volume {vName}: {delRes.Message}");
+                    }
+                }
+            }
+
+            // 4. Build cache
+            if (request.PruneBuildCache)
+            {
+                var bRes = await _client.PruneBuildCacheAsync(cancellationToken);
+                if (bRes != null)
+                {
+                    result.BuildCachePruned = true;
+                    result.TotalSpaceReclaimed += bRes.SpaceReclaimed;
+                }
+            }
+
+            // Konteyner önbelleğini temizle
+            InvalidateContainersCache();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Seçici prune sırasında hata");
+            result.Success = false;
+            result.Errors.Add(ex.Message);
+        }
+
+        return result;
+    }
+
+    public Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default) =>
+        _client.InspectContainerAsync(containerId, cancellationToken);
+
+    public async Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await _client.UpdateContainerAsync(containerId, request, cancellationToken);
+        if (result.Success)
+        {
+            InvalidateContainersCache();
+        }
+        return result;
+    }
+
+    public static List<string> ExtractTagsFromLabels(Dictionary<string, string>? labels)
+    {
+        var tags = new List<string>();
+        if (labels == null) return tags;
+
+        if (labels.TryGetValue("corvus.tags", out var lTags) && !string.IsNullOrWhiteSpace(lTags))
+        {
+            tags.AddRange(lTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+        if (labels.TryGetValue("environment", out var envTag) && !string.IsNullOrWhiteSpace(envTag))
+        {
+            tags.Add(envTag.Trim());
+        }
+        else if (labels.TryGetValue("env", out var shortEnvTag) && !string.IsNullOrWhiteSpace(shortEnvTag))
+        {
+            tags.Add(shortEnvTag.Trim());
+        }
+        if (labels.TryGetValue("com.docker.compose.project", out var cProj) && !string.IsNullOrWhiteSpace(cProj))
+        {
+            tags.Add(cProj.Trim());
+        }
+        return tags.Where(t => !string.IsNullOrWhiteSpace(t))
+                   .Distinct(StringComparer.OrdinalIgnoreCase)
+                   .ToList();
     }
 }

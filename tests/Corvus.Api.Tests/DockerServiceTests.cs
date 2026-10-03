@@ -7,7 +7,7 @@ namespace Corvus.Api.Tests;
 
 public class DockerServiceTests
 {
-    private class FakeDockerHttpClient : IDockerHttpClient
+    public class FakeDockerHttpClient : IDockerHttpClient
     {
         public virtual Task<bool> PingAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
         public virtual Task<DockerVersionInfo?> GetVersionAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerVersionInfo?>(new DockerVersionInfo { Version = "27.0.0" });
@@ -34,6 +34,16 @@ public class DockerServiceTests
             Task.FromResult<DockerNetworksPruneResponse?>(new DockerNetworksPruneResponse { NetworksDeleted = new List<string> { "net1" } });
         public virtual Task<DockerBuildCachePruneResponse?> PruneBuildCacheAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<DockerBuildCachePruneResponse?>(new DockerBuildCachePruneResponse { SpaceReclaimed = 20000000 });
+        public virtual Task<DockerSystemDfResponse?> GetSystemDiskUsageAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerSystemDfResponse?>(new DockerSystemDfResponse());
+        public virtual Task<DockerActionResult> DeleteContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(true, "Container deleted"));
+        public virtual Task<DockerActionResult> DeleteImageAsync(string imageId, bool force = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(true, "Image deleted"));
+        public virtual Task<DockerActionResult> DeleteVolumeAsync(string volumeName, bool force = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(true, "Volume deleted"));
+        public virtual Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(true, "Container updated"));
     }
 
     [Fact]
@@ -279,6 +289,15 @@ public class DockerServiceTests
         public Task<DockerVolumesPruneResponse?> PruneVolumesAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerVolumesPruneResponse?>(null);
         public Task<DockerNetworksPruneResponse?> PruneNetworksAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerNetworksPruneResponse?>(null);
         public Task<DockerBuildCachePruneResponse?> PruneBuildCacheAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerBuildCachePruneResponse?>(null);
+        public Task<DockerSystemDfResponse?> GetSystemDiskUsageAsync(CancellationToken cancellationToken = default) => Task.FromResult<DockerSystemDfResponse?>(null);
+        public Task<DockerActionResult> DeleteContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(false, "Delete container failed", 500));
+        public Task<DockerActionResult> DeleteImageAsync(string imageId, bool force = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(false, "Delete image failed", 500));
+        public Task<DockerActionResult> DeleteVolumeAsync(string volumeName, bool force = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(false, "Delete volume failed", 500));
+        public Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(false, "Update container failed", 500));
     }
 
     [Fact]
@@ -445,6 +464,16 @@ public class DockerServiceTests
     }
 
     [Fact]
+    public async Task CreateExecInstanceAsync_AcceptsCustomShells()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var execIdAsh = await dockerService.CreateExecInstanceAsync("container_1", "/bin/ash");
+        var execIdZsh = await dockerService.CreateExecInstanceAsync("container_1", "/bin/zsh");
+        Assert.Equal("exec_test_id", execIdAsh);
+        Assert.Equal("exec_test_id", execIdZsh);
+    }
+
+    [Fact]
     public async Task StartExecStreamAsync_ReturnsStreamSuccessfully()
     {
         var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
@@ -522,4 +551,109 @@ public class DockerServiceTests
         Assert.Equal(0, result.ContainersDeletedCount);
         Assert.Equal(0, result.ImagesDeletedCount);
     }
+
+    [Fact]
+    public void ExtractTagsFromLabels_ExtractsAllRecognizedLabels()
+    {
+        var labels = new Dictionary<string, string>
+        {
+            ["corvus.tags"] = "Web, API, Microservice",
+            ["environment"] = "Production",
+            ["com.docker.compose.project"] = "my_project"
+        };
+
+        var tags = DockerService.ExtractTagsFromLabels(labels);
+
+        Assert.Equal(5, tags.Count);
+        Assert.Contains("Web", tags);
+        Assert.Contains("API", tags);
+        Assert.Contains("Microservice", tags);
+        Assert.Contains("Production", tags);
+        Assert.Contains("my_project", tags);
+    }
+
+    [Fact]
+    public async Task GetContainersAsync_PopulatesTagsFromLabels()
+    {
+        var fakeClient = new FakeDockerHttpClientWithContainers(new List<DockerContainerInfo>
+        {
+            new DockerContainerInfo
+            {
+                Id = "11223344556677889900",
+                Names = new List<string> { "/frontend_app" },
+                State = "running",
+                Labels = new Dictionary<string, string>
+                {
+                    ["corvus.tags"] = "SPA, React",
+                    ["env"] = "staging"
+                }
+            }
+        });
+
+        var dockerService = new DockerService(fakeClient, NullLogger<DockerService>.Instance);
+        var containers = await dockerService.GetContainersAsync();
+
+        Assert.Single(containers);
+        var container = containers[0];
+        Assert.Contains("SPA", container.Tags);
+        Assert.Contains("React", container.Tags);
+        Assert.Contains("staging", container.Tags);
+    }
+
+    [Fact]
+    public async Task InvalidateContainersCache_ForcesRefetchOnNextCall()
+    {
+        var fakeClient = new CountingDockerHttpClient();
+        var dockerService = new DockerService(fakeClient, NullLogger<DockerService>.Instance);
+
+        // First call populates cache
+        await dockerService.GetContainersAsync();
+        Assert.Equal(1, fakeClient.ListCallCount);
+
+        // Second call within 10s uses cache
+        await dockerService.GetContainersAsync();
+        Assert.Equal(1, fakeClient.ListCallCount);
+
+        // Invalidate cache
+        dockerService.InvalidateContainersCache();
+
+        // Third call refetches from client
+        await dockerService.GetContainersAsync();
+        Assert.Equal(2, fakeClient.ListCallCount);
+    }
+
+    [Fact]
+    public async Task InspectContainerAsync_DelegatesToClient()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var result = await dockerService.InspectContainerAsync("container_1");
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task UpdateContainerAsync_DelegatesToClientAndInvalidatesCache()
+    {
+        var dockerService = new DockerService(new FakeDockerHttpClient(), NullLogger<DockerService>.Instance);
+        var req = new DockerContainerUpdateRequest
+        {
+            NanoCpus = 2000000000,
+            Memory = 1073741824,
+            RestartPolicy = new DockerRestartPolicy { Name = "unless-stopped" }
+        };
+
+        var result = await dockerService.UpdateContainerAsync("container_1", req);
+        Assert.True(result.Success);
+        Assert.Equal("Container updated", result.Message);
+    }
+}
+
+public class FakeDockerHttpClientWithContainers : DockerServiceTests.FakeDockerHttpClient
+{
+    private readonly List<DockerContainerInfo> _containers;
+    public FakeDockerHttpClientWithContainers(List<DockerContainerInfo> containers)
+    {
+        _containers = containers;
+    }
+    public override Task<List<DockerContainerInfo>> ListContainersAsync(bool all = true, CancellationToken cancellationToken = default)
+        => Task.FromResult(_containers);
 }

@@ -750,6 +750,43 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
         Assert.Contains("CustomProd", fetchedAfterSync.Tags);
     }
 
+    [Fact]
+    public async Task SaveContainerTagsAsync_CreatesOverrideAndUpdatesServices()
+    {
+        var repo = new ServicesRepository(_dbFactory);
+        string containerId = "c12345678901234567890";
+
+        // 1. Create a docker service linked to this container
+        var service = new Service
+        {
+            Id = $"docker_{containerId[..12]}",
+            Source = "docker",
+            ContainerId = containerId,
+            Name = "Web Container",
+            Tags = new List<string> { "InitialTag" }
+        };
+        await repo.UpsertDockerServiceAsync(service);
+
+        // 2. Save container tags via SaveContainerTagsAsync
+        await repo.SaveContainerTagsAsync(containerId, new List<string> { "Production", "Backend" });
+
+        // 3. Verify service_overrides has been populated
+        var tagsDict = await repo.GetAllContainerTagsAsync();
+        Assert.True(tagsDict.ContainsKey(containerId));
+        Assert.Contains("Production", tagsDict[containerId]);
+        Assert.Contains("Backend", tagsDict[containerId]);
+
+        // Short id should also resolve
+        Assert.True(tagsDict.ContainsKey(containerId[..12]));
+        Assert.Equal(tagsDict[containerId], tagsDict[containerId[..12]]);
+
+        // 4. Verify services table row was updated
+        var fetchedService = await repo.GetByIdAsync(service.Id);
+        Assert.NotNull(fetchedService);
+        Assert.Contains("Production", fetchedService.Tags);
+        Assert.Contains("Backend", fetchedService.Tags);
+    }
+
     public void Dispose()
     {
         try

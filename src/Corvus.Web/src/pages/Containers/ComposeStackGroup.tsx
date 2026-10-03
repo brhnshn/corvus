@@ -20,6 +20,10 @@ interface ComposeStackGroupProps {
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenLogs: (id: string, name: string) => void;
   onOpenTerminal?: (id: string, name: string) => void;
+  onEditTags?: (container: DockerContainer) => void;
+  onInspect?: (container: DockerContainer) => void;
+  selectedTag?: string | null;
+  onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
 }
 
@@ -40,6 +44,10 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
   onAction,
   onOpenLogs,
   onOpenTerminal,
+  onEditTags,
+  onInspect,
+  selectedTag,
+  onSelectTag,
   isAdmin = true
 }) => {
   return (
@@ -67,6 +75,10 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
               onAction={onAction}
               onOpenLogs={onOpenLogs}
               onOpenTerminal={onOpenTerminal}
+              onEditTags={onEditTags}
+              onInspect={onInspect}
+              selectedTag={selectedTag}
+              onSelectTag={onSelectTag}
               isAdmin={isAdmin}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}

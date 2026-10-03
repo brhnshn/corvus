@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api, type DockerContainer, type ContainerStats } from '../../api/client';
 import { RefreshCw, Boxes, Layers, List, Trash2 } from 'lucide-react';
 import { ContainerList } from './ContainerList';
 import { ComposeStackGroup } from './ComposeStackGroup';
 import { ContainerLogsModal } from './ContainerLogsModal';
 import { ContainerTerminalModal } from './ContainerTerminalModal';
+import { ContainerTagsModal, extractContainerTags } from './ContainerTagsModal';
 import { SystemPruneModal } from './SystemPruneModal';
+import { ContainerDetailModal } from './detail/ContainerDetailModal';
+import { TagFilterBar } from '../../components/common/TagFilterBar';
 import { useI18n } from '../../i18n';
 import { useEntityGrouping, deriveSmartGroup } from '../../utils/grouping';
 
@@ -21,6 +24,9 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
   const [actionInProgress, setActionInProgress] = useState<{ id: string; action: string } | null>(null);
   const [selectedLogsContainer, setSelectedLogsContainer] = useState<{ id: string; name: string } | null>(null);
   const [selectedTerminalContainer, setSelectedTerminalContainer] = useState<{ id: string; name: string } | null>(null);
+  const [selectedInspectContainer, setSelectedInspectContainer] = useState<DockerContainer | null>(null);
+  const [editingTagsContainer, setEditingTagsContainer] = useState<DockerContainer | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [showPruneModal, setShowPruneModal] = useState(false);
   
   // Görünüm Modu: Düz Liste vs Gruplanmış Görünüm (Compose & Akıllı Gruplar)
@@ -150,6 +156,37 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
     }
   };
 
+  // Dinamik etiket sayıları ve filtreleme
+  const tagsWithCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of containers) {
+      const tags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels);
+      for (const t of tags) {
+        counts[t] = (counts[t] || 0) + 1;
+      }
+    }
+    return Object.entries(counts)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  }, [containers]);
+
+  const filteredContainers = useMemo(() => {
+    if (!selectedTag) return containers;
+    const lower = selectedTag.toLowerCase();
+    return containers.filter((c) => {
+      const tags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels);
+      return tags.some((t) => t.toLowerCase() === lower);
+    });
+  }, [containers, selectedTag]);
+
+  const handleTagsUpdated = (updatedTags: string[]) => {
+    if (!editingTagsContainer) return;
+    const containerId = editingTagsContainer.Id;
+    setContainers((prev) =>
+      prev.map((c) => (c.Id === containerId ? { ...c, tags: updatedTags } : c))
+    );
+  };
+
   // Ortak Gruplandırma & Manuel Düzenleme Motoru
   const {
     groups,
@@ -164,7 +201,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
     handleDragLeave,
     handleDrop
   } = useEntityGrouping<DockerContainer>({
-    items: containers,
+    items: filteredContainers,
     getId: (c) => c.Id,
     getName: (c) => c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
     getCategory: (c) => {
@@ -229,6 +266,16 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
         </div>
       </div>
 
+      {/* Etiket Filtreleme Barı */}
+      {containers.length > 0 && tagsWithCounts.length > 0 && (
+        <TagFilterBar
+          tagsWithCounts={tagsWithCounts}
+          selectedTag={selectedTag}
+          onSelectTag={setSelectedTag}
+          totalCount={containers.length}
+        />
+      )}
+
       {loading && containers.length === 0 && (
         <div className="flex items-center justify-center h-64 text-[#9ca3af]">
           <RefreshCw className="w-6 h-6 animate-spin mr-2 text-indigo-400" />
@@ -245,20 +292,24 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
       )}
 
       {/* Düz Liste Görünümü */}
-      {containers.length > 0 && viewMode === 'flat' && (
+      {filteredContainers.length > 0 && viewMode === 'flat' && (
         <ContainerList
-          items={containers}
+          items={filteredContainers}
           statsMap={statsMap}
           actionInProgress={actionInProgress}
           onAction={handleAction}
           onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
           onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
+          onEditTags={(c) => setEditingTagsContainer(c)}
+          onInspect={(c) => setSelectedInspectContainer(c)}
+          selectedTag={selectedTag}
+          onSelectTag={setSelectedTag}
           isAdmin={isAdmin}
         />
       )}
 
       {/* Akıllı Gruplar & Compose Stack Görünümü */}
-      {containers.length > 0 && viewMode === 'compose' && (
+      {filteredContainers.length > 0 && viewMode === 'compose' && (
         <ComposeStackGroup
           groups={groups}
           collapsed={collapsed}
@@ -276,7 +327,41 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
           onAction={handleAction}
           onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
           onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
+          onEditTags={(c) => setEditingTagsContainer(c)}
+          onInspect={(c) => setSelectedInspectContainer(c)}
+          selectedTag={selectedTag}
+          onSelectTag={setSelectedTag}
           isAdmin={isAdmin}
+        />
+      )}
+
+      {/* Etiket filtresi sonucu eşleşen container bulunamadığında */}
+      {!loading && containers.length > 0 && filteredContainers.length === 0 && (
+        <div className="p-8 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] text-center max-w-md mx-auto space-y-3">
+          <Boxes className="w-10 h-10 text-[#9ca3af]/40 mx-auto" />
+          <h3 className="text-sm font-semibold text-[#e5e7eb]">
+            {t('containers.noMatchingContainers') || 'Seçilen etikete uygun konteyner bulunamadı'}
+          </h3>
+          <button
+            onClick={() => setSelectedTag(null)}
+            className="text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+          >
+            {t('containers.clearFilter') || 'Filtreyi Temizle'}
+          </button>
+        </div>
+      )}
+
+      {/* Konteyner Detay & Canlı Yapılandırma Modalı */}
+      {selectedInspectContainer && (
+        <ContainerDetailModal
+          containerId={selectedInspectContainer.Id}
+          containerSummary={selectedInspectContainer}
+          isOpen={!!selectedInspectContainer}
+          isAdmin={isAdmin}
+          onClose={() => setSelectedInspectContainer(null)}
+          onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
+          onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
+          onContainerActionSuccess={() => loadContainers()}
         />
       )}
 
@@ -303,6 +388,15 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
         <SystemPruneModal
           onClose={() => setShowPruneModal(false)}
           onSuccess={() => loadContainers()}
+        />
+      )}
+
+      {/* Konteyner Etiketleri Düzenleme Modalı */}
+      {editingTagsContainer && (
+        <ContainerTagsModal
+          container={editingTagsContainer}
+          onClose={() => setEditingTagsContainer(null)}
+          onSuccess={handleTagsUpdated}
         />
       )}
     </div>

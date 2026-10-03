@@ -24,6 +24,8 @@ public class StatusPageEndpointsTests
         public Task ReorderAsync(List<string> orderedServiceIds) => Task.CompletedTask;
         public Task UpdateSslInfoAsync(string serviceId, int sslExpiryDays, string? sslIssuer) => Task.CompletedTask;
         public Task UpdateStatusAsync(string id, string status) => Task.CompletedTask;
+        public Task SaveContainerTagsAsync(string containerId, List<string> tags) => Task.CompletedTask;
+        public Task<Dictionary<string, List<string>>> GetAllContainerTagsAsync() => Task.FromResult(new Dictionary<string, List<string>>());
     }
 
     private class FakeUptimeRepository : IUptimeRepository

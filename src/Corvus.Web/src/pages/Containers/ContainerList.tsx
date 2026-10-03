@@ -1,4 +1,5 @@
 import React from 'react';
+import { Plus } from 'lucide-react';
 import type { DockerContainer, ContainerStats } from '../../api/client';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ContainerStatsBadges } from './ContainerStatsBadges';
@@ -13,6 +14,10 @@ interface ContainerListProps {
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenLogs: (id: string, name: string) => void;
   onOpenTerminal?: (id: string, name: string) => void;
+  onEditTags?: (container: DockerContainer) => void;
+  onInspect?: (container: DockerContainer) => void;
+  selectedTag?: string | null;
+  onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
   onDragStart?: (e: React.DragEvent, id: string) => void;
   onDragEnd?: () => void;
@@ -38,6 +43,10 @@ export const ContainerList: React.FC<ContainerListProps> = ({
   onAction,
   onOpenLogs,
   onOpenTerminal,
+  onEditTags,
+  onInspect,
+  selectedTag,
+  onSelectTag,
   isAdmin = true,
   onDragStart,
   onDragEnd,
@@ -56,7 +65,7 @@ export const ContainerList: React.FC<ContainerListProps> = ({
           const isRunning = c.State.toLowerCase() === 'running';
           const isPaused = c.State.toLowerCase() === 'paused';
           const isDragging = draggingId === c.Id;
-          const containerTags = extractContainerTags(c.Labels);
+          const containerTags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels);
 
           return (
             <div 
@@ -71,10 +80,35 @@ export const ContainerList: React.FC<ContainerListProps> = ({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-semibold text-sm text-[#e5e7eb]">{cleanName}</h3>
+                    <h3 
+                      onClick={() => onInspect?.(c)}
+                      className="font-semibold text-sm text-[#e5e7eb] hover:text-indigo-400 cursor-pointer transition-colors"
+                    >
+                      {cleanName}
+                    </h3>
                     {containerTags.map((tag) => (
-                      <TagBadge key={tag} tag={tag} size="sm" />
+                      <TagBadge 
+                        key={tag} 
+                        tag={tag} 
+                        size="sm" 
+                        isActive={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                        onClick={onSelectTag ? () => onSelectTag(tag) : undefined}
+                      />
                     ))}
+                    {isAdmin && onEditTags && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditTags(c);
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] font-mono text-[#9ca3af] hover:text-indigo-400 px-1.5 py-0.5 rounded border border-dashed border-[#2a2e3f] hover:border-indigo-500/50 bg-[#0f1117] transition-all cursor-pointer"
+                        title={t('containers.manageTags') || 'Etiketleri Düzenle'}
+                      >
+                        <Plus className="w-2.5 h-2.5" />
+                        <span>{t('containers.addTag') || 'Etiket'}</span>
+                      </button>
+                    )}
                   </div>
                   <div className="text-xs font-mono text-[#9ca3af] mt-0.5">{shortId}</div>
                 </div>
@@ -108,6 +142,8 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                   onAction={onAction}
                   onOpenLogs={onOpenLogs}
                   onOpenTerminal={onOpenTerminal}
+                  onEditTags={onEditTags}
+                  onInspect={onInspect}
                   isAdmin={isAdmin}
                 />
               </div>
@@ -137,7 +173,7 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                 const isRunning = c.State.toLowerCase() === 'running';
                 const isPaused = c.State.toLowerCase() === 'paused';
                 const isDragging = draggingId === c.Id;
-                const containerTags = extractContainerTags(c.Labels);
+                const containerTags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels);
 
                 return (
                   <tr 
@@ -151,10 +187,36 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                   >
                     <td className="px-5 py-3.5">
                       <div className="font-medium text-[#e5e7eb] flex items-center gap-1.5 flex-wrap">
-                        <span>{cleanName}</span>
+                        <button
+                          type="button"
+                          onClick={() => onInspect?.(c)}
+                          className="font-medium text-[#e5e7eb] hover:text-indigo-400 text-left transition-colors cursor-pointer"
+                        >
+                          {cleanName}
+                        </button>
                         {containerTags.map((tag) => (
-                          <TagBadge key={tag} tag={tag} size="sm" />
+                          <TagBadge 
+                            key={tag} 
+                            tag={tag} 
+                            size="sm" 
+                            isActive={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                            onClick={onSelectTag ? () => onSelectTag(tag) : undefined}
+                          />
                         ))}
+                        {isAdmin && onEditTags && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditTags(c);
+                            }}
+                            className="inline-flex items-center gap-1 text-[10px] font-mono text-[#9ca3af] hover:text-indigo-400 px-1.5 py-0.5 rounded border border-dashed border-[#2a2e3f] hover:border-indigo-500/50 bg-[#0f1117] transition-all cursor-pointer"
+                            title={t('containers.manageTags') || 'Etiketleri Düzenle'}
+                          >
+                            <Plus className="w-2.5 h-2.5" />
+                            <span>{t('containers.addTag') || 'Etiket'}</span>
+                          </button>
+                        )}
                       </div>
                       <div className="text-xs font-mono text-[#9ca3af]">{shortId}</div>
                     </td>
@@ -194,6 +256,8 @@ export const ContainerList: React.FC<ContainerListProps> = ({
                         onAction={onAction}
                         onOpenLogs={onOpenLogs}
                         onOpenTerminal={onOpenTerminal}
+                        onEditTags={onEditTags}
+                        onInspect={onInspect}
                         isAdmin={isAdmin}
                       />
                     </td>

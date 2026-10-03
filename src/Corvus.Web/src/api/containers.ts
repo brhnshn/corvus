@@ -70,5 +70,43 @@ export const containersApi = {
     invalidateCache('/containers');
     invalidateCache('/dashboard');
     return res;
+  },
+
+  getSystemDf: () => 
+    fetchJson<import('../types').DockerSystemDfResponse>('/containers/system-df'),
+
+  selectivePrune: async (options: import('../types').DockerSelectivePruneRequest) => {
+    const res = await fetchJson<import('../types').DockerSelectivePruneResult>('/containers/prune/selective', {
+      method: 'POST',
+      body: JSON.stringify(options)
+    });
+    invalidateCache('/containers');
+    invalidateCache('/dashboard');
+    return res;
+  },
+
+  updateContainerTags: async (id: string, tags: string[]): Promise<boolean> => {
+    const res = await fetchJson<{ success: boolean; message?: string }>(`/containers/${id}/tags`, {
+      method: 'PUT',
+      body: JSON.stringify({ tags })
+    });
+    invalidateCache('/containers');
+    invalidateCache('/services');
+    invalidateCache('/dashboard');
+    return res.success;
+  },
+
+  inspectContainer: (id: string) =>
+    fetchJson<import('../types').DockerContainerInspectInfo>(`/containers/${id}/inspect`),
+
+  updateContainer: async (id: string, req: import('../types').DockerContainerUpdateRequest) => {
+    const res = await fetchJson<{ success: boolean; message?: string }>(`/containers/${id}/update`, {
+      method: 'POST',
+      body: JSON.stringify(req)
+    });
+    invalidateCache('/containers');
+    invalidateCache('/services');
+    invalidateCache('/dashboard');
+    return res;
   }
 };

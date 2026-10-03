@@ -21,11 +21,18 @@ interface ContainerTerminalModalProps {
   onClose: () => void;
 }
 
-const SHELL_OPTIONS = [
-  { value: '/bin/sh', label: '/bin/sh (POSIX / Alpine)' },
-  { value: '/bin/bash', label: '/bin/bash (Debian / Ubuntu)' },
-  { value: '/bin/ash', label: '/bin/ash (BusyBox)' },
-  { value: '/bin/zsh', label: '/bin/zsh (Zsh)' }
+interface ShellOption {
+  value: string;
+  labelKey?: string;
+  defaultLabel: string;
+}
+
+const SHELL_OPTIONS: ShellOption[] = [
+  { value: 'auto', labelKey: 'containers.terminalShellAuto', defaultLabel: 'Otomatik / Auto-Detect' },
+  { value: '/bin/sh', defaultLabel: '/bin/sh (POSIX / Alpine)' },
+  { value: '/bin/bash', defaultLabel: '/bin/bash (Debian / Ubuntu)' },
+  { value: '/bin/ash', defaultLabel: '/bin/ash (BusyBox)' },
+  { value: '/bin/zsh', defaultLabel: '/bin/zsh (Zsh)' }
 ];
 
 export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
@@ -41,7 +48,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
 
   const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [shell, setShell] = useState<string>('/bin/sh');
+  const [shell, setShell] = useState<string>('auto');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -168,12 +175,6 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
       }
     });
 
-    const binaryDisposable = term.onBinary((data) => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(data);
-      }
-    });
-
     // fitAddon resize dinleyicisi
     const resizeDisposable = term.onResize((size) => {
       sendResize(size.cols, size.rows);
@@ -181,7 +182,6 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
 
     return () => {
       dataDisposable.dispose();
-      binaryDisposable.dispose();
       resizeDisposable.dispose();
     };
   }, [containerId, shell, sendResize, t]);
@@ -314,7 +314,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
               >
                 {SHELL_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value} className="bg-[#1a1d29] text-[#e5e7eb]">
-                    {opt.label}
+                    {opt.labelKey ? t(opt.labelKey as any) : opt.defaultLabel}
                   </option>
                 ))}
               </select>

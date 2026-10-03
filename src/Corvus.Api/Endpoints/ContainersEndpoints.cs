@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
 
@@ -21,6 +22,43 @@ public static class ContainersEndpoints
             var containers = await docker.GetContainersAsync();
             return Results.Ok(containers);
         });
+
+        group.MapPut("/{id}/tags", async (
+            string id,
+            UpdateContainerTagsRequest request,
+            IServicesRepository repo,
+            IDockerService docker,
+            IEventBroadcaster broadcaster,
+            ILoggerFactory loggerFactory,
+            HttpContext httpContext) =>
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return Results.BadRequest(new GenericApiResponse(false, "Container ID boş olamaz."));
+            }
+
+            var tags = request.Tags ?? new List<string>();
+            var cleanTags = tags
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            await repo.SaveContainerTagsAsync(id, cleanTags);
+            docker.InvalidateContainersCache();
+
+            var username = httpContext.User.Identity?.Name ?? "admin";
+            var logger = loggerFactory.CreateLogger("ContainersEndpoints");
+            logger.LogInformation("Audit: User '{Username}' updated tags for container '{ContainerId}' to [{Tags}]",
+                username, id, string.Join(", ", cleanTags));
+
+            var tagsJson = JsonSerializer.Serialize(cleanTags, CorvusJsonSerializerContext.Default.ListString);
+            broadcaster.Broadcast("container_tags_updated", $"{{\"containerId\":\"{id}\",\"tags\":{tagsJson}}}");
+
+            return Results.Json(
+                new GenericApiResponse(true, "Konteyner etiketleri başarıyla güncellendi."),
+                CorvusJsonSerializerContext.Default.GenericApiResponse);
+        }).RequireAdmin();
 
         group.MapPost("/{id}/restart", async (string id, IDockerService docker) =>
         {
@@ -76,6 +114,20 @@ public static class ContainersEndpoints
         {
             var result = await docker.ExecuteSystemPruneAsync(request, ct);
             return Results.Json(result, CorvusJsonSerializerContext.Default.DockerPruneResult);
+        }).RequireAdmin();
+
+        group.MapGet("/system-df", async (IDockerService docker, CancellationToken ct) =>
+        {
+            var df = await docker.GetSystemDiskUsageAsync(ct);
+            return df != null 
+                ? Results.Json(df, CorvusJsonSerializerContext.Default.DockerSystemDfResponse)
+                : Results.Json(new GenericApiResponse(false, "Docker disk kullanım analizi alınamadı."), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 500);
+        }).RequireAdmin();
+
+        group.MapPost("/prune/selective", async (DockerSelectivePruneRequest request, IDockerService docker, CancellationToken ct) =>
+        {
+            var result = await docker.ExecuteSelectivePruneAsync(request, ct);
+            return Results.Json(result, CorvusJsonSerializerContext.Default.DockerSelectivePruneResult);
         }).RequireAdmin();
 
         group.MapGet("/stats-summary", async (IDockerService docker, CancellationToken ct) =>
@@ -185,35 +237,72 @@ public static class ContainersEndpoints
                 return Results.BadRequest("WebSocket isteği bekleniyor.");
             }
 
-            string shell = context.Request.Query["shell"].ToString();
-            if (string.IsNullOrWhiteSpace(shell) || (shell != "/bin/sh" && shell != "/bin/bash"))
+            string rawShell = context.Request.Query["shell"].ToString().Trim();
+            
+            // Güvenli kabuk aday listesi ve akıllı fallback zinciri (/bin/bash -> /bin/sh -> /bin/ash -> sh)
+            var defaultShells = new[] { "/bin/bash", "/bin/sh", "/bin/ash", "sh" };
+            var candidateShells = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(rawShell) && !rawShell.Equals("auto", StringComparison.OrdinalIgnoreCase))
             {
-                shell = "/bin/sh";
+                // Güvenlik: Kontrol karakterlerini ve aşırı uzun değerleri filtrele
+                if (!rawShell.Any(char.IsControl) && rawShell.Length <= 64)
+                {
+                    candidateShells.Add(rawShell);
+                }
+            }
+
+            foreach (var s in defaultShells)
+            {
+                if (!candidateShells.Contains(s, StringComparer.Ordinal))
+                {
+                    candidateShells.Add(s);
+                }
             }
 
             using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-            string? execId = await docker.CreateExecInstanceAsync(id, shell, context.RequestAborted);
-            if (string.IsNullOrWhiteSpace(execId))
+            string? activeExecId = null;
+            Stream? dockerStream = null;
+            string? activeShell = null;
+
+            foreach (var candidate in candidateShells)
             {
-                byte[] errBytes = Encoding.UTF8.GetBytes($"\r\n\x1b[31m[Hata] Konteyner içinde '{shell}' kabuğu başlatılamadı.\x1b[0m\r\n");
+                try
+                {
+                    string? execId = await docker.CreateExecInstanceAsync(id, candidate, context.RequestAborted);
+                    if (string.IsNullOrWhiteSpace(execId))
+                    {
+                        continue;
+                    }
+
+                    var stream = await docker.StartExecStreamAsync(execId, context.RequestAborted);
+                    activeExecId = execId;
+                    dockerStream = stream;
+                    activeShell = candidate;
+                    logger.LogInformation("Konteyner terminali başlatıldı: Container={ContainerId}, Shell={Shell}", id, candidate);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex, "Kabuk başlatılamadı, fallback deneniyor: Container={ContainerId}, Shell={Shell}", id, candidate);
+                }
+            }
+
+            if (dockerStream == null || string.IsNullOrWhiteSpace(activeExecId))
+            {
+                byte[] errBytes = Encoding.UTF8.GetBytes($"\r\n\x1b[31m[Hata] Konteyner içinde çalıştırılabilir bir kabuk ({string.Join(", ", candidateShells)}) bulunamadı.\x1b[0m\r\n");
                 await webSocket.SendAsync(errBytes, WebSocketMessageType.Text, true, CancellationToken.None);
-                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Exec failed", CancellationToken.None);
+                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Shell not found", CancellationToken.None);
                 return Results.Empty;
             }
 
-            Stream dockerStream;
-            try
+            if (!string.IsNullOrWhiteSpace(rawShell) && 
+                !rawShell.Equals("auto", StringComparison.OrdinalIgnoreCase) && 
+                !string.Equals(rawShell, activeShell, StringComparison.Ordinal))
             {
-                dockerStream = await docker.StartExecStreamAsync(execId, context.RequestAborted);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Docker exec stream başlatılamadı: {ContainerId}", id);
-                byte[] errBytes = Encoding.UTF8.GetBytes($"\r\n\x1b[31m[Hata] Docker TTY stream başlatılamadı: {ex.Message}\x1b[0m\r\n");
-                await webSocket.SendAsync(errBytes, WebSocketMessageType.Text, true, CancellationToken.None);
-                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Stream failed", CancellationToken.None);
-                return Results.Empty;
+                byte[] fallbackNotice = Encoding.UTF8.GetBytes($"\r\n\x1b[33m[Corvus] '{rawShell}' kabuğu bulunamadı, '{activeShell}' kabuğuna bağlanıldı.\x1b[0m\r\n");
+                await webSocket.SendAsync(fallbackNotice, WebSocketMessageType.Text, true, CancellationToken.None);
             }
 
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
@@ -278,15 +367,14 @@ public static class ContainersEndpoints
                                         {
                                             int cols = colsProp.GetInt32();
                                             int rows = rowsProp.GetInt32();
-                                            _ = docker.ResizeExecAsync(execId, cols, rows, ct);
+                                            _ = docker.ResizeExecAsync(activeExecId, cols, rows, ct);
                                         }
                                     }
                                     catch { }
                                 }
                                 else
                                 {
-                                    await dockerStream.WriteAsync(buffer, 0, result.Count, ct);
-                                    await dockerStream.FlushAsync(ct);
+                                    await dockerStream.WriteAsync(buffer.AsMemory(0, result.Count), ct);
                                 }
                             }
                         }
@@ -313,6 +401,24 @@ public static class ContainersEndpoints
 
                 return Results.Empty;
             }
+        }).RequireAdmin();
+
+        group.MapGet("/{id}/inspect", async (string id, IDockerService docker, CancellationToken ct) =>
+        {
+            var inspect = await docker.InspectContainerAsync(id, ct);
+            return inspect != null
+                ? Results.Json(inspect, CorvusJsonSerializerContext.Default.DockerContainerInspectInfo)
+                : Results.Json(new GenericApiResponse(false, "Container inspect verisi alınamadı."), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 404);
+        });
+
+        group.MapPost("/{id}/update", async (string id, DockerContainerUpdateRequest request, IDockerService docker, CancellationToken ct) =>
+        {
+            var result = await docker.UpdateContainerAsync(id, request, ct);
+            return result.Success
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container yapılandırması başarıyla güncellendi."))
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yapılandırması güncellenemedi."), 
+                               CorvusJsonSerializerContext.Default.GenericApiResponse, 
+                               statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
     }
 }

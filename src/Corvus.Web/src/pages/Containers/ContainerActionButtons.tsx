@@ -7,7 +7,9 @@ import {
   Pause, 
   PlayCircle, 
   RotateCw, 
-  Loader2 
+  Loader2,
+  Tag,
+  Sliders
 } from 'lucide-react';
 import type { DockerContainer } from '../../api/client';
 import { useI18n } from '../../i18n';
@@ -21,6 +23,8 @@ interface ContainerActionButtonsProps {
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenLogs: (id: string, name: string) => void;
   onOpenTerminal?: (id: string, name: string) => void;
+  onEditTags?: (container: DockerContainer) => void;
+  onInspect?: (container: DockerContainer) => void;
   isAdmin?: boolean;
 }
 
@@ -33,6 +37,8 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
   onAction,
   onOpenLogs,
   onOpenTerminal,
+  onEditTags,
+  onInspect,
   isAdmin = true
 }) => {
   const { t } = useI18n();
@@ -41,6 +47,30 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
 
   return (
     <div className="flex items-center gap-1.5">
+      {/* Konteyner Detay & Yapılandırma butonu */}
+      {onInspect && (
+        <button
+          onClick={() => onInspect(container)}
+          disabled={isCurrentBusy}
+          className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-white hover:border-slate-600 hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
+          title={t('containers.detailModalTitle') || 'Konteyner Detayları'}
+        >
+          <Sliders className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Etiketleri Düzenle butonu */}
+      {isAdmin && onEditTags && (
+        <button
+          onClick={() => onEditTags(container)}
+          disabled={isCurrentBusy}
+          className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-indigo-400 hover:border-indigo-500/40 hover:bg-indigo-500/10 transition-colors disabled:opacity-50 cursor-pointer"
+          title={t('containers.manageTags') || 'Etiketleri Düzenle'}
+        >
+          <Tag className="w-3.5 h-3.5" />
+        </button>
+      )}
+
       {/* Logs button */}
       <button
         onClick={() => onOpenLogs(container.Id, cleanName)}

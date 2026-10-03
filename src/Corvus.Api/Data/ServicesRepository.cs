@@ -17,6 +17,8 @@ public interface IServicesRepository
     Task<List<Service>> GetPublicServicesAsync();
     Task UpdateSslInfoAsync(string serviceId, int sslExpiryDays, string? sslIssuer);
     Task UpdateStatusAsync(string id, string status);
+    Task SaveContainerTagsAsync(string containerId, List<string> tags);
+    Task<Dictionary<string, List<string>>> GetAllContainerTagsAsync();
 }
 
 public class ServicesRepository : IServicesRepository
@@ -581,5 +583,49 @@ public class ServicesRepository : IServicesRepository
             SET status = @status, updated_at = @now
             WHERE id = @id";
         await conn.ExecuteAsync(sql, new { id, status, now = DateTime.UtcNow.ToString("o") });
+    }
+
+    public async Task SaveContainerTagsAsync(string containerId, List<string> tags)
+    {
+        using var conn = _db.CreateConnection();
+        string serialized = SerializeTags(tags);
+        string now = DateTime.UtcNow.ToString("o");
+
+        var sql = @"
+            INSERT INTO service_overrides (container_id, tags)
+            VALUES (@containerId, @serialized)
+            ON CONFLICT(container_id) DO UPDATE SET
+                tags = excluded.tags;
+
+            UPDATE services 
+            SET tags = @serialized, updated_at = @now
+            WHERE container_id = @containerId 
+               OR id = @containerId 
+               OR id = 'docker_' || substr(@containerId, 1, 12);";
+
+        await conn.ExecuteAsync(sql, new { containerId, serialized, now });
+    }
+
+    public record ContainerTagsDbRow(string container_id, string? tags);
+
+    public async Task<Dictionary<string, List<string>>> GetAllContainerTagsAsync()
+    {
+        using var conn = _db.CreateConnection();
+        var sql = "SELECT container_id, tags FROM service_overrides WHERE tags IS NOT NULL AND tags != '' AND tags != '[]'";
+        var rows = await conn.QueryAsync<ContainerTagsDbRow>(sql);
+        var dict = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in rows)
+        {
+            if (!string.IsNullOrWhiteSpace(row.container_id))
+            {
+                var parsed = ParseTags(row.tags);
+                dict[row.container_id] = parsed;
+                if (row.container_id.Length >= 12)
+                {
+                    dict[row.container_id[..12]] = parsed;
+                }
+            }
+        }
+        return dict;
     }
 }

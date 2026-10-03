@@ -57,6 +57,10 @@ public record UpdateServiceRequest(
     List<string>? Tags = null
 );
 
+public record UpdateContainerTagsRequest(
+    List<string> Tags
+);
+
 public record TestConnectionRequest(
     string? CheckType = "http",
     string? Url = null,
@@ -278,6 +282,30 @@ public record NotificationResult(
 [JsonSerializable(typeof(DockerVolumesPruneResponse))]
 [JsonSerializable(typeof(DockerNetworksPruneResponse))]
 [JsonSerializable(typeof(DockerBuildCachePruneResponse))]
+[JsonSerializable(typeof(UpdateContainerTagsRequest))]
+[JsonSerializable(typeof(DockerSystemDfResponse))]
+[JsonSerializable(typeof(DockerDfImageInfo))]
+[JsonSerializable(typeof(List<DockerDfImageInfo>))]
+[JsonSerializable(typeof(DockerDfContainerInfo))]
+[JsonSerializable(typeof(List<DockerDfContainerInfo>))]
+[JsonSerializable(typeof(DockerDfVolumeInfo))]
+[JsonSerializable(typeof(List<DockerDfVolumeInfo>))]
+[JsonSerializable(typeof(DockerDfVolumeUsage))]
+[JsonSerializable(typeof(DockerDfBuildCacheInfo))]
+[JsonSerializable(typeof(List<DockerDfBuildCacheInfo>))]
+[JsonSerializable(typeof(DockerSelectivePruneRequest))]
+[JsonSerializable(typeof(DockerSelectivePruneResult))]
+[JsonSerializable(typeof(DockerHostConfig))]
+[JsonSerializable(typeof(DockerPortBindingHost))]
+[JsonSerializable(typeof(List<DockerPortBindingHost>))]
+[JsonSerializable(typeof(DockerRestartPolicy))]
+[JsonSerializable(typeof(DockerNetworkSettings))]
+[JsonSerializable(typeof(DockerEndpointSettings))]
+[JsonSerializable(typeof(Dictionary<string, DockerEndpointSettings>))]
+[JsonSerializable(typeof(DockerMountInfo))]
+[JsonSerializable(typeof(List<DockerMountInfo>))]
+[JsonSerializable(typeof(DockerContainerUpdateRequest))]
+[JsonSerializable(typeof(DockerActionResult))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }
