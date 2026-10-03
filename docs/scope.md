@@ -38,7 +38,7 @@ Corvus is not tailored for a single individual or specific private infrastructur
 | Networking / VPN | Tailscale | Requires no specific VPN layer; functions identically across LAN, WireGuard, Tailscale, or the public Internet. |
 | Backup / Cron Monitoring | `/opt/scripts/backup.sh` | **Dead Man's Snitch** push infrastructure (`/api/push/{token}`). Automatically dispatches alerts when expected intervals and grace windows expire. |
 | Alerting & Notifications | — | Built-in multi-channel alerting: Discord, Telegram, Email (SMTP), Slack Webhooks, Ntfy/Gotify, and generic HTTP Webhooks with intelligent flapping suppression. |
-| Container Terminal & Prune | — | Browser-based interactive container web terminal (`/api/containers/{id}/terminal`) and one-click system prune (`/api/containers/prune`) via standard Docker API. |
+| Container Terminal, Prune & Lifecycle | — | Browser-based interactive container web terminal (`/api/containers/{id}/terminal`, shell fallback), two-stage dry-run system prune (`/api/containers/prune/selective`, volume protection), and container detail modal with live zero-downtime resource tuning (`/api/containers/{id}/update`). |
 | Telemetry Downsampling | — | Dual-stage retention (7d raw, 365d hourly rollup) maintaining lightweight SQLite database with fast 30d/90d/1y time-series charts. |
 | Environment Tags & Categorization | — | Multi-environment tag assignment (Prod, Staging, DB, Internal, API) with deterministic color hashing, chip inputs, real-time count filter bars, Docker label extraction (corvus.tags, environment, env), and persistent SQLite override safeguards. |
 | Real-Time Communication | — | Server-Sent Events (SSE) via `/api/stream/events` and real-time container log streaming (`/api/containers/{id}/logs/stream`). |

@@ -41,7 +41,7 @@ corvus/
 │   │   ├── Endpoints/             # Kaynak odaklı Minimal API uç noktaları (extension metodlar)
 │   │   │   ├── AuthEndpoints.cs          # Session auth, kayıt yönetimi ve Zero-Trust SSO
 │   │   │   ├── BackupEndpoints.cs        # Tek tıkla SQLite VACUUM INTO anlık yedek indirme
-│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, kontroller, Web Terminali (/terminal) ve Sistem Temizliği (/prune)
+│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, kontroller, Web Terminali (/terminal), Kuru Çalıştırmalı Temizlik (/system-df, /prune/selective), Detay (/inspect), Güncelleme (/update) ve Etiketler (/tags)
 │   │   │   ├── DashboardEndpoints.cs     # 2.5s in-memory önbellekli Dashboard KPI özeti
 │   │   │   ├── IncidentEndpoints.cs      # Sistem olayları ve planlı bakım CRUD & yaşam döngüsü
 │   │   │   ├── MetricsEndpoints.cs       # Sistem donanım metrikleri zaman serisi (1h-1y)
@@ -125,7 +125,7 @@ corvus/
 │       │   │   ├── http.ts         # fetchJson (merkezi corvus_unauthorized pencere olayı), in-memory SWR önbellek, invalidateCache
 │       │   │   ├── auth.ts         # Kimlik doğrulama uç noktaları
 │       │   │   ├── services.ts     # Servis CRUD ve sıralama
-│       │   │   ├── containers.ts   # Konteyner işlemleri, toplu stats (/stats-summary) ve loglar
+│       │   │   ├── containers.ts   # Konteyner işlemleri, toplu stats (/stats-summary), loglar, inspect ve update
 │       │   │   ├── uptime.ts       # Uptime kontrolleri ve push monitörleri
 │       │   │   ├── metrics.ts      # Donanım metrikleri
 │       │   │   ├── settings.ts     # Ayarlar ve yedekleme
@@ -142,6 +142,8 @@ corvus/
 │       │   │   ├── grouping.ts     # Docker Compose akıllı gruplama mantığı
 │       │   │   └── tagColor.ts     # FNV-1a hash pastel renk paleti ve anlamsal ortam ön ayarları
 │       │   ├── components/         # SADECE ortak/paylaşılan global UI bileşenleri
+│       │   │   ├── common/                   # Ortak paylaşılan çoklu bileşenler
+│       │   │   │   └── TagFilterBar.tsx      # Anlık sayaçlı yeniden kullanılabilir çoklu etiket filtre barı
 │       │   │   ├── Sidebar.tsx               # Masaüstü ray menü (hidden lg:flex)
 │       │   │   ├── BottomNav.tsx             # Mobil Cam Altbar — 7 sekmeli buzlu cam gezinti çubuğu
 │       │   │   ├── StatusBadge.tsx           # Sağlık durumu rozeti (healthy, degraded, down)
@@ -161,7 +163,20 @@ corvus/
 │       │       │   ├── ContainerActionButtons.tsx # Yaşam döngüsü butonları, log ve terminal tetikleyicisi
 │       │       │   ├── ContainerLogsModal.tsx   # Canlı konteyner log terminali modalı
 │       │       │   ├── ContainerTerminalModal.tsx # Tarayıcı içi interaktif web terminali (@xterm/xterm, shell seçici, PTY resize)
-│       │       │   └── SystemPruneModal.tsx     # Tek tıkla disk alanı temizliği (imaj, konteyner, hacim, ağ, derleme önbelleği)
+│       │       │   ├── ContainerTagsModal.tsx   # Konteyner ortam etiketi atama ve düzenleme modalı
+│       │       │   ├── SystemPruneModal.tsx     # Güvenli iki aşamalı kuru çalıştırmalı disk analizi ve temizlik modalı
+│       │       │   ├── detail/                  # Modüler konteyner detay sekmeleri
+│       │       │   │   ├── ContainerDetailModal.tsx # Üst denetleyici çok sekmeli konteyner inceleme penceresi
+│       │       │   │   ├── ContainerOverviewTab.tsx # ID, imaj, durum, tam komut satırı ve işlem çubuğu
+│       │       │   │   ├── ContainerEnvTab.tsx      # Arama filtreli ortam değişkenleri, maskeleme ve .env kopyalama
+│       │       │   │   ├── ContainerNetworkingTab.tsx # Port eşleştirmeleri ve bağlı Docker ağ detayları
+│       │       │   │   ├── ContainerStorageTab.tsx  # Hacim ve bağlama noktaları (RW/RO izinleri ile)
+│       │       │   │   └── ContainerResourcesTab.tsx # Sıfır kesintili CPU, RAM ve yeniden başlatma ilkesi güncelleme
+│       │       │   └── prune/                   # Modüler seçimli kuru çalıştırma tabloları
+│       │       │       ├── PruneContainersTable.tsx # Durdurulmuş konteynerler seçim tablosu
+│       │       │       ├── PruneImagesTable.tsx     # Kullanılmayan imajlar seçim tablosu
+│       │       │       ├── PruneVolumesTable.tsx    # Yetim hacimler (veri kaybı uyarılı) seçim tablosu
+│       │       │       └── PruneBuildCacheCard.tsx  # Derleme katman önbelleği temizleme kartı
 │       │       ├── Dashboard/
 │       │       │   ├── index.tsx             # Konsolide KPI özeti ve çalışan servisler
 │       │       │   ├── SystemPulseHero.tsx   # Canlı durum nabzı, ağ I/O ve güncelleme kontrol kartı
@@ -219,8 +234,9 @@ corvus/
 │       └── wwwroot/                # Üretime hazır derlenmiş arayüz paketi (Corvus.Api tarafından sunulur)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Paketi (213 Başarılı Test)
+│   └── Corvus.Api.Tests/           # xUnit Test Paketi (223 Başarılı Test)
 │       ├── AuthServiceTests.cs
+│       ├── ContainerTagsTests.cs     # Konteyner etiketleri CRUD, birleştirme ve kalıcılık testleri
 │       ├── DockerServiceTests.cs     # Konteyner işlemleri, sistem temizliği, micro-cache ve batch stats testleri
 │       ├── DockerLogDemuxerTests.cs
 │       ├── FlappingDetectorTests.cs  # Kayan pencere durum takibi ve dalgalanma alarm susturma testleri
@@ -354,20 +370,35 @@ Eski ham kontroller silinmeden hemen önce, her servis için günlük istatistik
 
 ---
 
-## 💻 Tarayıcı İçi Konteyner Web Terminali & Sistem Temizliği Mimarisi
+## 💻 Tarayıcı İçi Konteyner Web Terminali, Güvenli Kuru Çalıştırmalı Temizlik & Konteyner Yaşam Döngüsü Mimarisi
 
-### 1. Sıfır Bellek Tahsisatlı (Zero-Allocation) WebSocket Exec Proxy (`/terminal`)
+### 1. Sıfır Bellek Tahsisatlı (Zero-Allocation) İnteraktif WebSocket Exec Proxy (`/terminal`)
 - **Doğrudan Kabuk Erişimi:** Kullanıcılar tarayıcı üzerinden doğrudan çalışan Docker konteynerlerinin içine interaktif kabuk (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) başlatabilir.
 - **Çift Yönlü Proxy:** ASP.NET Core Native AOT arka ucu, Docker daemon ile HTTP 1.1 Upgrade bağlantısı (`/exec/{id}/start`) kurar ve bunu istemci WebSocket'ine sıfır kopya ile köprüler.
+- **Klavye Giriş Kilidinin Çözülmesi & Win32 Pipe Deadlock Çözümü:** Windows ortamında dosya olmayan adlandırılmış borularda (named pipes) oluşan `FlushFileBuffers` kilitlenmeleri çözüldü. `@xterm/xterm` `onData` olayı ile çift yönlü klavye, yön tuşları ve terminal kısayolları (`Ctrl+C`, `Ctrl+D`, `Tab`) akıcı hale getirildi.
+- **Otomatik Geri Çekilme Kabuk Zinciri (Fallback Shell Chain):** Minimal veya Scratch tabanlı imajlarda talep edilen kabuk bulunamadığında sunucu `/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh` zinciriyle otomatik olarak mevcut kabuğa bağlanır.
+- **Tam ANSI 256 Renk Desteği:** Renkli çıktılar, syntax vurgulamaları ve terminal uygulamaları (`htop`, `mc`, `vi`) için exec ortamına `TERM=xterm-256color` değişkeni geçirilir.
 - **Sıfır GC Yükü:** `ArrayPool<byte>.Shared` üzerinden kiralanan 8 KB'lık sabit tamponlar kullanılır; yoğun terminal oturumlarında bile heap üzerinde çöp bellek tahsisatı yapılmaz.
 - **Anında Kaynak İadesi:** İstemci ayrıldığında veya modal kapandığında Docker exec süreci derhal öldürülür, kiralanan bellekler iade edilir ve Corvus RAM tüketimi taban seviyesine (~30 MB) döner.
 - **Dinamik PTY Boyutlandırma:** İstemci `{type: "resize", cols, rows}` kontrol mesajları gönderir; bu mesajlar doğrudan Docker `/exec/{id}/resize` API çağrılarına dönüştürülür.
 - **RBAC Güvenliği:** Terminal erişimi `[RequireAdmin]` ile korunur (Gözlemci/Viewer rolleri için 403 Forbidden).
 
-### 2. Docker Sistem Temizliği & Disk Kurtarma (`/prune`)
-- **Doğrudan Daemon Orkestrasyonu:** `/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune` ve `/build/prune` uç noktaları üzerinden kapsamlı temizlik yürütür.
-- **Kalıcı Veri Koruması:** `Volumes` seçeneği varsayılan olarak kapalı tutulur ve seçildiğinde belirgin bir sarı uyarı şeridi sergilenir. Dangling vs tüm kullanılmayan imaj seçimi sunulur.
-- **Ayrıntılı Tasarruf Denetimi:** Kategorilere göre (İmajlar, Konteynerler, Hacimler, Ağlar, Derleme Önbelleği) kurtarılan baytları listeler ve toplam geri kazanımı raporlar (`1.42 GB serbest bırakıldı`).
+### 2. İki Aşamalı Kuru Çalıştırmalı Sistem Temizliği & Seçimli Silme (`/system-df` & `/prune/selective`)
+- **Önce Analiz, Sonra Onay (Dry-Run Audit):** Asla körü körüne silme yapılmaz. İlk aşamada Docker `GET /system/df` çağrılarak durdurulmuş konteynerler, kullanılmayan imajlar, sahipsiz volumeler ve build cache kalem kalem taranır ve kazanılacak alan hesaplanır.
+- **Ayrıntılı Seçim Tabloları:**
+  - **Durdurulmuş Konteynerler:** Konteyner adı, imajı ve oluşturulma tarihiyle tek tek seçilebilir tablo (`PruneContainersTable.tsx`).
+  - **Kullanılmayan İmajlar:** İmaj etiketi, ID'si ve kazanılacak MB/GB büyüklüğüyle bağımsız seçim (`PruneImagesTable.tsx`).
+  - **Yetim Hacimler (Volumes):** Kalıcı veri kaybını önlemek amacıyla **varsayılan olarak kapalı** ve veri kaybı uyarı banner'ı ile korunan seçim tablosu (`PruneVolumesTable.tsx`).
+  - **Build Cache:** Docker derleme katman önbelleğini temizleme seçeneği (`PruneBuildCacheCard.tsx`).
+- **Seçimli Silme Uç Noktası (`POST /api/containers/prune/selective`):** Yalnızca kullanıcının işaretlediği varlıkları siler; seçilmeyenlere dokunmaz. Kurtarılan disk alanını anlık olarak raporlar.
+
+### 3. Konteyner Detay İnceleme & Sıfır Kesintili Kaynak Yönetimi (`/inspect` & `/update`)
+- **Çok Sekmeli Detay Modalı (`ContainerDetailModal.tsx`):**
+  - **Genel Bakış Sekmesi:** Konteyner ID, imaj etiketi/özeti, çalışma durumu, sağlık denetimi sonucu, tam komut satırı (`Path + Args`) ve doğrudan eylem araç çubuğu (Başlat, Durdur, Yeniden Başlat, Duraklat/Sürdür, Terminal, Günlükler).
+  - **Ortam Değişkenleri Sekmesi:** Arama filtreli anahtar-değer tablosu, hassas anahtarlar için (`PASSWORD`, `SECRET`, `KEY`, `TOKEN`) tek tıkla maskeleme/açma ve tekil/toplu `.env` panoya kopyalama.
+  - **Ağ Sekmesi:** Yayınlanan port eşleştirmeleri (tıklanabilir `http://` bağlantıları) ve bağlı Docker ağları (IP, Ağ Geçidi, MAC adresi).
+  - **Depolama Bağlantıları Sekmesi:** Hacim (volume) ve host dizin bağlamaları (mounts), host kaynağı, konteyner hedefi ve Okuma/Yazma (RW/RO) izinleri.
+  - **Kaynak Ayarları Sekmesi (`POST /api/containers/{id}/update`):** Konteyneri durdurmadan veya yeniden oluşturmadan sıfır kesintiyle (zero-downtime) CPU çekirdek limiti (`NanoCpus`), RAM sınırı (`Memory`) ve Yeniden Başlatma İlkesi (Restart Policy) canlı güncelleme. İşlem sonrası bellek içi micro-cache otomatik temizlenir.
 
 ---
 

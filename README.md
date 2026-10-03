@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-213_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-223_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -69,6 +69,10 @@
   - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.
   - **Advanced Monitor Parameters (`AdvancedCheckOptions`):** Independent per-service check intervals (`check_interval`: 10s-300s), custom timeouts (`timeout_seconds`), failure tolerance (`max_retries` / `retry_interval`), ignore TLS errors (`ignore_tls`), accepted HTTP status codes (`accepted_status_codes`, e.g. `200-299, 401`), and HTTP method selection (GET/POST/HEAD).
   - **Native Docker Health Checks for Internal Containers:** Internal background services without exposed web ports are monitored via direct Docker daemon state (`checkType: 'docker'`).
+- **🏷️ Multi-Environment Tagging & Quick Filtering:**
+  - Assign environment and purpose tags (`Prod`, `Staging`, `DB`, `Internal`, `API`) to services and containers with deterministic FNV-1a pastel coloring.
+  - Hybrid tag ingestion: Merges container labels (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`) with SQLite-persisted user overrides (`PUT /api/containers/{id}/tags`).
+  - Real-time tag filter bars (`TagFilterBar`) across both Services and Containers pages with instant count badges.
 - **🦅 Pure Vector Brand Identity (Hex Sentinel):**
   - Crafted geometric logo fusing the Docker container hexagon, Corvus **C** monogram, and the vigilant raven sentinel.
   - Multi-resolution `favicon.ico`, pure vector `favicon.svg`, mobile PWA manifest, and comprehensive brand guidelines (`docs/branding/BRAND_GUIDELINES.md`).
@@ -81,16 +85,16 @@
   - Informative disk-growth advisories when selecting Unlimited mode.
   - Real-time database disk footprint tracking (`GET /api/settings/db-stats`).
   - Dynamic background cleaner (`RetentionCleanupService`) with SQLite `PRAGMA optimize;`.
-- **🪵 Real-Time Container Log Streaming & Web Terminal (Exec Shell):**
-  - **In-Browser Web Terminal (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`):** Interactive shell access directly into running containers via zero-allocation ASP.NET Core Native AOT WebSocket proxy (`ArrayPool<byte>`, 8 KB static buffer footprint).
-  - Dynamic PTY resizing via JSON control frames, ANSI/VT100 rendering with `@xterm/xterm`, and strict RBAC protection (`[RequireAdmin]`, 403 Forbidden).
+- **🪵 Interactive Web Terminal (Exec Shell) & Log Streaming:**
+  - **In-Browser Web Terminal (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`):** Interactive shell access directly into running containers via zero-allocation ASP.NET Core Native AOT WebSocket proxy (`ArrayPool<byte>`, 8 KB static buffer footprint).
+  - Unfrozen bidirectional keyboard streaming with Win32 pipe deadlocks resolved, automatic fallback shell chain, ANSI 256-color support (`TERM=xterm-256color`), dynamic PTY resizing, and strict RBAC protection (`[RequireAdmin]`, 403 Forbidden).
   - Zero-allocation multiplexed demuxer (`DockerLogDemuxer.cs`) for Docker stdout/stderr streams.
   - Real-time Server-Sent Events (`/api/containers/{id}/logs/stream`) with dark monospace terminal modal, keyword filtering, and auto-scroll.
-- **⚡ Container Stats, Lifecycle Controls & System Prune:**
-  - Live per-container CPU %, Memory (usage/limit), and Net I/O (Rx/Tx) via Docker Stats API.
-  - Lifecycle actions: **Start**, **Stop**, **Pause**, **Unpause**, and **Restart** with confirmation modals.
+- **⚡ Container Detail Inspection, Zero-Downtime Resource Tuning & Safe Dry-Run Prune:**
+  - **Container Detail Modal (`ContainerDetailModal.tsx`):** Click container names or the sliders button to inspect container configuration across 5 dedicated modular tabs: Overview, Environment Variables (with secret masking & `.env` export), Port Bindings & Networks, Storage Volume Mounts, and Resource Tuning.
+  - **Live Resource Updates (`POST /api/containers/{id}/update`):** Dynamically adjust CPU cores (`NanoCpus`), RAM limits (`Memory`), and Restart Policies without stopping or restarting the container.
+  - **Safe Dry-Run System Prune (`SystemPruneModal.tsx`):** Audits reclaimable disk space first via Docker `GET /system/df` with itemized tables for Stopped Containers, Unused Images, Orphaned Volumes (safeguarded by default with data-loss warnings), and Build Cache before selective deletion (`POST /api/containers/prune/selective`).
   - **Compose Stack Grouping:** Toggle between flat list and collapsible Docker Compose projects (`com.docker.compose.project`).
-  - **One-Click System Prune:** Clean dangling/unused images, stopped containers, orphan networks, and unused volumes with persistent data safeguards and detailed disk reclamation statistics.
 - **🔔 Multi-Channel Alerting Engine & Flapping Protection:**
   - Tabbed notification configuration: **Discord**, **Telegram**, **Email (SMTP)**, **Slack Webhooks**, **Ntfy / Gotify**, and **Generic Webhooks**.
   - **Intelligent Flapping Suppression (`IFlappingDetector`):** Sliding-window transition tracking suppresses alert spam during intermittent flapping, dispatching single warning (Amber) and resolved (Green) notifications.

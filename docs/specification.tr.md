@@ -212,8 +212,14 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | `GET /api/containers/{id}/stats` | Auth | Anlık konteyner CPU%, bellek kullanımı ve ağ I/O istatistikleri |
 | `GET /api/containers/{id}/logs` | Auth | Son 100 konteyner log satırını döner |
 | `GET /api/containers/{id}/logs/stream` | Auth | **SSE:** Gerçek zamanlı canlı konteyner log akışı |
-| `GET /api/containers/{id}/terminal` | Admin | **WebSocket Proxy:** Sıfır bellek tahsisli tarayıcı içi konteyner terminali (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) |
+| `GET /api/containers/{id}/terminal` | Admin | **WebSocket Proxy:** İnteraktif çift yönlü konteyner terminali (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`, ANSI 256 renk) |
+| `GET /api/containers/system-df` | Auth | **Disk Analizi:** Durdurulmuş konteynerler, kullanılmayan imajlar, hacimler ve derleme önbelleği dökümü |
 | `POST /api/containers/prune` | Admin | **Sistem Temizliği:** Disk alanı temizliği (imajlar, konteynerler, hacimler, ağlar, derleme önbelleği) |
+| `POST /api/containers/prune/selective` | Admin | **Seçimli Kuru Çalıştırmalı Temizlik:** Seçilen durdurulmuş konteyner, imaj, yetim hacim ve derleme önbelleklerini temizler |
+| `GET /api/containers/{id}/inspect` | Auth | **Konteyner Detayları:** Derinlemesine yapılandırma, ortam değişkenleri, portlar, ağlar ve disk bağlama noktaları |
+| `POST /api/containers/{id}/update` | Admin | **Sıfır Kesintili Kaynak Güncelleme:** Canlı CPU (`NanoCpus`), RAM (`Memory`) ve Yeniden Başlatma İlkesi düzenleme |
+| `GET /api/containers/tags` | Auth | Konteynerlere atanmış tüm tekil etiketleri listeler |
+| `PUT /api/containers/{id}/tags` | Admin | Konteyner ortam etiketlerini günceller (SQLite `service_overrides` ile kalıcı saklanır) |
 | `POST /api/containers/{id}/start` | Admin | Konteyneri başlatır |
 | `POST /api/containers/{id}/stop` | Admin | Konteyneri durdurur |
 | `POST /api/containers/{id}/pause` | Admin | Konteyneri duraklatır |
@@ -281,7 +287,7 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 |---|---|---|
 | **Dashboard** | `/` | Mobil-öncelikli 2 sütunlu KPI şeridi, tam genişlikte Disk barı, canlı sistem nabzı, GitHub sürüm rozeti ve aktif konteynerler widget'ı |
 | **Servisler** | `/services` | Servis kartları, durum rozetleri, TCP/ICMP PING port göstergeleri, HTTP gövde doğrulaması, SSL kalan gün rozeti, **ortam etiketleri (`TagBadge`)**, **anlık etiket filtreleme çubuğu (`TagFilterBar`)**, yukarı/aşağı sıralama butonları |
-| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, Start/Stop/Pause/Restart aksiyonları, Compose Stack akordeon gruplaması, canlı log terminali, **İnteraktif Web Terminali (`ContainerTerminalModal`)** ve **Sistem Temizliği (`SystemPruneModal`)** |
+| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, Start/Stop/Pause/Restart aksiyonları, Compose Stack akordeon gruplaması, canlı log terminali, **İnteraktif Web Terminali (`ContainerTerminalModal`)**, **Güvenli İki Aşamalı Kuru Çalıştırmalı Temizlik (`SystemPruneModal`)**, **Konteyner Detay & İnceleme Modalı (`ContainerDetailModal`)**, **Canlı Sıfır Kesintili Kaynak Güncelleme** ve **Konteyner Etiketleme & Filtreleme (`TagFilterBar`)** |
 | **Uptime & Snitch** | `/uptime` | 3 durumlu sağlık takibi, HTTP/TCP/Ping yanıt süreleri geçmişi, proaktif SSL alarmları, Dead Man's Snitch ve sistem olayları / planlı bakım duyuru sekmesi |
 | **Sistem Metrikleri**| `/metrics` | **1h, 6h, 12h, 24h, 7d, 30d, 90d ve 1y** aralıklarında saatlik rollup destekli CPU, RAM, Disk ve Ağ I/O grafikleri |
 | **Ayarlar** | `/settings` | Tek kolonlu (`max-w-4xl`) ferah düzen, başlık sürüm rozeti, sekmeli alarm yapılandırması (**Discord, Telegram, SMTP E-posta, Slack Webhook, Ntfy, Webhook**), çift yönlü yedekleme, **Dalgalanma Koruması** ve esnek veri saklama |
@@ -296,12 +302,13 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Native AOT + Docker.DotNet doğrulama ve custom SocketsHttpHandler istemcisi
 - [x] Dapper + Dapper.AOT + Microsoft.Data.Sqlite + DbUp veri katmanı (001-013)
 - [x] Docker socket multiplexed log demuxer ve canlı log akışı
-- [x] Konteyner İçi Web Terminali (Exec Shell, WebSocket Proxy & `@xterm/xterm`)
-- [x] Docker İmaj ve Sistem Temizliği (System Prune)
+- [x] Konteyner İçi Web Terminali (Exec Shell, WebSocket Proxy, çift yönlü akış düzeltmesi ve geri çekilme kabuk zinciri)
+- [x] İki Aşamalı Kuru Çalıştırmalı Sistem Temizliği (System Prune & Güvenli Hacim Koruması)
+- [x] Konteyner Detay İnceleme ve Sıfır Kesintili Kaynak Düzenleme (`/inspect`, `/update`)
 - [x] Çok kanallı alarm motoru (Discord, Telegram, SMTP E-posta, Slack, Ntfy, Webhook)
 - [x] Dalgalanma (Flapping) Engelleme ve Alarm Yorgunluğu Koruması
 - [x] Zaman Serisi Seyreltme (Hourly Rollup & 30d/90d/1y Grafikleri)
-- [x] Servis & Konteyner Ortam Etiketleme / Gruplama (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`)
+- [x] Servis & Konteyner Ortam Etiketleme / Gruplama (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`, konteyner etiketleri)
 - [x] HTTP Yanıt Gövdesi (Kelime & Regex) Doğrulaması
 - [x] Konteyner başına canlı kaynak kullanımı (Docker Stats: CPU, RAM, Net I/O)
 - [x] Genişletilmiş Uptime: TCP Port Ping, ICMP Ping ve SSL Sertifika erken uyarıları
@@ -333,4 +340,4 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Sistem Olayları & Planlı Bakım Yönetimi ile durum sayfasında canlı uyarı afişleri (`service_incidents`)
 - [x] Akıllı 24 saatlik retention (`is_transition`) ve 365 günlük SLA özet agregasyonu (`uptime_daily_stats`)
 - [x] "Hex Sentinel" profesyonel kurumsal kimlik, SVG master vektörleri ve web ikon seti (`docs/branding/`)
-- [x] 213/213 xUnit birim ve entegrasyon testi doğrulaması
+- [x] 223/223 xUnit birim ve entegrasyon testi doğrulaması

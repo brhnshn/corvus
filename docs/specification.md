@@ -212,8 +212,14 @@ Incoming push monitor heartbeat records.
 | `GET /api/containers/{id}/stats` | Auth | Live per-container CPU%, RAM usage, and Network I/O metrics |
 | `GET /api/containers/{id}/logs` | Auth | Snapshot of the last 100 log lines |
 | `GET /api/containers/{id}/logs/stream` | Auth | **SSE:** Live real-time container log stream |
-| `GET /api/containers/{id}/terminal` | Admin | **WebSocket Proxy:** Interactive zero-allocation container exec terminal (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) |
+| `GET /api/containers/{id}/terminal` | Admin | **WebSocket Proxy:** Interactive container exec terminal (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`, ANSI 256 colors) |
+| `GET /api/containers/system-df` | Auth | **Disk Usage Audit:** Returns detailed reclaimable space for stopped containers, unused images, volumes, and build cache |
 | `POST /api/containers/prune` | Admin | **System Prune:** Host disk space cleanup (images, containers, volumes, networks, build cache) |
+| `POST /api/containers/prune/selective` | Admin | **Selective Dry-Run Prune:** Granular deletion of chosen containers, images, volumes, and build cache |
+| `GET /api/containers/{id}/inspect` | Auth | **Inspect Details:** Complete low-level configuration, env vars, port mappings, networks, and storage mounts |
+| `POST /api/containers/{id}/update` | Admin | **Live Resource Tuning:** Zero-downtime CPU (`NanoCpus`), RAM (`Memory`), and Restart Policy update |
+| `GET /api/containers/tags` | Auth | List all unique environment tags applied to containers |
+| `PUT /api/containers/{id}/tags` | Admin | Update container environment tags (persisted in SQLite `service_overrides`) |
 | `POST /api/containers/{id}/start` | Admin | Start container |
 | `POST /api/containers/{id}/stop` | Admin | Stop container |
 | `POST /api/containers/{id}/pause` | Admin | Pause container |
@@ -281,7 +287,7 @@ Incoming push monitor heartbeat records.
 |---|---|---|
 | **Dashboard** | `/` | Mobile-first 2-column KPI strip, full-width Disk bar, live system pulse hero, GitHub update checker badge, and active containers widget |
 | **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, expected body assertion, SSL expiration badge, **environment tags (`TagBadge`)**, **real-time tag filter bar (`TagFilterBar`)**, and reordering controls |
-| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, Start/Stop/Pause/Restart actions, Compose stack accordion grouping, live log terminal, **Interactive Web Terminal (`ContainerTerminalModal`)**, and **System Prune (`SystemPruneModal`)** |
+| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, Start/Stop/Pause/Restart actions, Compose stack accordion grouping, live log terminal, **Interactive Web Terminal (`ContainerTerminalModal`)**, **Safe Two-Stage Dry-Run Prune (`SystemPruneModal`)**, **Container Detail & Inspection Modal (`ContainerDetailModal`)**, **Live Zero-Downtime Resource Tuning**, and **Container Tags & Filter Bar (`TagFilterBar`)** |
 | **Uptime** | `/uptime` | Service uptime monitors, ICMP Ping, proactive SSL alerts, Dead Man's Snitch monitors, historical check logs, and incident management |
 | **System Metrics** | `/metrics` | Time-series hardware utilization charts with **1h, 6h, 12h, 24h, 7d, 30d, 90d, and 1y** periods powered by hourly rollups |
 | **Settings** | `/settings` | Single-column (`max-w-4xl`) settings shell with general options, DB storage stats, backup snapshots, **SMTP Email**, **Slack Webhook**, and **Flapping Protection** |
@@ -329,8 +335,9 @@ Incoming push monitor heartbeat records.
 - [x] "Hex Sentinel" professional corporate identity, SVG master assets, and web icon set (`docs/branding/`)
 - [x] SMTP Email & Slack notification channels with interactive recipient pills and status color coding
 - [x] Flapping suppression engine (`IFlappingDetector`, `FlappingDetector`) with multi-channel amber/green alerts
-- [x] Web Container Exec Terminal (`/api/containers/{id}/terminal`, `@xterm/xterm`, zero-alloc WebSocket)
-- [x] System Prune for disk reclamation (`/api/containers/prune`, volumes protection)
+- [x] Web Container Exec Terminal (`/api/containers/{id}/terminal`, `@xterm/xterm`, bidirectional stream fix, fallback shell chain)
+- [x] Two-Stage Dry-Run System Prune (`/api/containers/system-df`, `/api/containers/prune/selective`, volume protection)
+- [x] Container Detail Inspection & Live Zero-Downtime Resource Tuning (`/api/containers/{id}/inspect`, `/api/containers/{id}/update`)
 - [x] Time-series metrics downsampling (`system_metrics_hourly`, dual retention, 30d/90d/1y ranges)
-- [x] Environment Tags & Category Grouping (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`)
-- [x] 213/213 passing xUnit test coverage
+- [x] Environment Tags & Category Grouping (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`, container tag overrides)
+- [x] 223/223 passing xUnit test coverage

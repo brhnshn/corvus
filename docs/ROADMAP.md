@@ -99,24 +99,42 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
 
 ### Ticket 4.1 — Web Container Exec Terminal [COMPLETED]
 * **Blocked by:** None.
-* **Objective:** Open interactive `sh`/`bash` terminal directly into containers from the browser.
+* **Objective:** Open interactive `sh`/`bash` terminal directly into containers from the browser with unfrozen keyboard input and automatic shell detection.
 * **Scope:**
   - Docker Exec API integration (POST `/containers/{id}/exec`, HTTP 1.1 Upgrade to `/exec/{id}/start`, and `/exec/{id}/resize`).
   - High-performance ASP.NET Core Native AOT WebSocket proxy endpoint `GET /api/containers/{id}/terminal` (zero-allocation with `ArrayPool<byte>`, 8 KB static buffer footprint, immediate garbage-free cleanup on disconnect).
+  - Resolved Win32 pipe deadlocks caused by `FlushFileBuffers` on non-file named pipes.
+  - Automatic fallback shell chain: `/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh` with `TERM=xterm-256color`.
   - RBAC protection: Exec terminal restricted strictly to `admin` role (`[RequireAdmin]`, 403 Forbidden).
-  - Modular frontend component `ContainerTerminalModal.tsx` built with `@xterm/xterm` & `@xterm/addon-fit` (VT100/ANSI rendering, fullscreen support, shell selector `/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`, real-time PTY resizing).
+  - Modular frontend component `ContainerTerminalModal.tsx` built with `@xterm/xterm` & `@xterm/addon-fit` (VT100/ANSI rendering, fullscreen support, shell selector, real-time PTY resizing).
   - Action button in `ContainerActionButtons.tsx` (only enabled/visible for running containers and admin users).
-* **Acceptance Criteria:** Run commands (`ls`, `ps`, `top`) interactively via web terminal; unit tests pass (203/203 green tests).
+* **Acceptance Criteria:** Run commands (`ls`, `ps`, `top`) interactively via web terminal; bidirectional typing and arrow keys work cleanly; unit tests pass (203/203 green tests).
 
-### Ticket 4.2 — System Prune (Images & Volumes) [COMPLETED]
+### Ticket 4.2 — Safe Two-Stage Dry-Run System Prune [COMPLETED]
 * **Blocked by:** None.
-* **Objective:** One-click cleanup of dangling images, stopped containers, orphan networks, and unused volumes to reclaim host disk space.
+* **Objective:** Safe, audit-first cleanup of stopped containers, unused images, orphan networks, and unused volumes without accidental data loss.
 * **Scope:**
-  - Docker Engine Prune API integration (`/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune`, `/build/prune`).
-  - Native AOT compliant `POST /api/containers/prune` endpoint with `[RequireAdmin]` authorization filter.
-  - Modular frontend component `SystemPruneModal.tsx` (safe defaults: volumes unselected by default with persistent data warning banner; granular category breakdown with reclaimed storage reporting).
-  - "System Cleanup" button on Containers page header (`Trash2` icon, privileged to admin users).
-* **Acceptance Criteria:** Reclaimed disk space accurately measured and reported in UI (`1.42 GB reclaimed`); unit test suite green (206/206 passing tests).
+  - First-stage dry-run audit via `GET /api/containers/system-df`: Returns estimated recoverable space, itemized list of stopped containers, unused images, volumes, and build cache.
+  - Modular itemized audit tables: `PruneContainersTable.tsx`, `PruneImagesTable.tsx`, `PruneVolumesTable.tsx`, `PruneBuildCacheCard.tsx`.
+  - Persistent volume safety: Volumes unselected by default with high-visibility data loss warning banner.
+  - Selective cleanup API: Native AOT compliant `POST /api/containers/prune/selective` with `[RequireAdmin]` authorization filter.
+  - Two-stage dialog in `SystemPruneModal.tsx` with live reclaimed space reporting.
+* **Acceptance Criteria:** Reclaimed disk space accurately measured and reported in UI; volumes protected by default; selective deletion verified; unit test suite green (206/206 passing tests).
+
+### Ticket 4.3 — Container Detail Inspection & Live Zero-Downtime Resource Tuning [COMPLETED]
+* **Blocked by:** None.
+* **Objective:** Inspect comprehensive container configuration and dynamically tune CPU, RAM, and restart policies without downtime.
+* **Scope:**
+  - Extended low-level inspect deserializer in `DockerModels.cs` and endpoint `GET /api/containers/{id}/inspect`.
+  - Zero-downtime resource update endpoint `POST /api/containers/{id}/update` (updating `NanoCpus`, `Memory`, and `RestartPolicy` on the running container and evicting in-memory micro-cache).
+  - Multi-tab orchestrator modal `ContainerDetailModal.tsx` in `pages/Containers/detail/`:
+    - `ContainerOverviewTab.tsx`: ID, image digest, status, command line, quick actions toolbar.
+    - `ContainerEnvTab.tsx`: Searchable env vars with secret masking toggle & bulk `.env` clipboard export.
+    - `ContainerNetworkingTab.tsx`: Published port links (`http://`) and Docker network details.
+    - `ContainerStorageTab.tsx`: Volume and bind mounts with RW/RO permissions.
+    - `ContainerResourcesTab.tsx`: Live sliders and presets for CPU cores, RAM MB, and restart policy.
+  - Clickable container names and quick-actions sliders button in `ContainerList.tsx` and `ComposeStackGroup.tsx`.
+* **Acceptance Criteria:** Inspect and modify running container resources on-the-fly; verify secret masking; all tests green.
 
 ---
 
@@ -134,13 +152,16 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Comprehensive unit test suite (`MetricsRepositoryTests.cs`, 211/211 passing tests).
 * **Acceptance Criteria:** Smooth 30-day, 90-day, and 1-year charts without database size inflation; all unit tests green (211/211 passing tests).
 
-### Ticket 5.2 — Tags & Category Grouping (COMPLETED)
+### Ticket 5.2 — Tags & Category Grouping [COMPLETED]
 * **Blocked by:** None.
 * **Objective:** Group and filter services and containers by environment tags (e.g. `Prod`, `Staging`, `DB`).
 * **Scope:**
   - `tags` column in `services` and `service_overrides` tables (`013_service_tags.sql`).
   - Native AOT model support with `List<string> Tags` and dual-format JSON/CSV parsing.
-  - Automatic tag extraction from container labels (`corvus.tags`, `environment`, `com.docker.compose.project`).
-  - Modular `TagBadge`, `TagInput`, and `TagFilterBar` components.
-  - Interactive filtering in `ServicesPage` with real-time tag counts.
-* **Acceptance Criteria:** Services and containers can be tagged and filtered dynamically; tag state is persistent across restarts and rediscovery; all unit tests pass (213/213).
+  - Automatic tag extraction from container labels (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`).
+  - Container-level custom tags: `PUT /api/containers/{id}/tags`, `GET /api/containers/tags`, persisted to SQLite `service_overrides`.
+  - Real-time Server-Sent Events broadcasting (`containers_updated`) on tag changes.
+  - Modular `TagBadge`, `TagInput`, and `TagFilterBar` components (shared across Services and Containers pages).
+  - Container tagging modal `ContainerTagsModal.tsx`.
+  - Unit test suite (`ContainerTagsTests.cs`, 223/223 passing tests).
+* **Acceptance Criteria:** Services and containers can be tagged and filtered dynamically; tag state is persistent across restarts and rediscovery; all unit tests pass (223/223).

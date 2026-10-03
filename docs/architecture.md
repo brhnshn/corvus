@@ -30,7 +30,7 @@ corvus/
 │   │   ├── Endpoints/             # Resource-oriented Minimal API endpoints (extension methods)
 │   │   │   ├── AuthEndpoints.cs          # Session auth, registration toggle, and Zero-Trust SSO
 │   │   │   ├── BackupEndpoints.cs        # One-click SQLite VACUUM INTO snapshot download
-│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, lifecycle, Web Terminal (/terminal), and System Prune (/prune)
+│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, lifecycle, Web Terminal (/terminal), Dry-Run Prune (/system-df, /prune/selective), Inspect (/inspect), Update (/update), and Tags (/tags)
 │   │   │   ├── DashboardEndpoints.cs     # Dashboard aggregated KPI summary
 │   │   │   ├── IncidentEndpoints.cs      # Incident and maintenance announcement CRUD & lifecycle
 │   │   │   ├── MetricsEndpoints.cs       # Host system metrics time-series (1h-1y)
@@ -79,7 +79,7 @@ corvus/
 │   │   │   ├── ServiceIncident.cs            # Incident announcement entity
 │   │   │   ├── ServiceOverride.cs            # Docker label override model
 │   │   │   ├── PushMonitor.cs                # Dead Man's Snitch entity
-│   │   │   ├── DockerModels.cs               # Docker Engine API schemas, prune requests/results, exec resize frames
+│   │   │   ├── DockerModels.cs               # Docker Engine API schemas, prune requests/results, exec resize frames, inspect models
 │   │   │   ├── DockerActionResult.cs         # Container action result response
 │   │   │   ├── SystemMetric.cs               # System hardware metrics sample
 │   │   │   ├── UptimeCheck.cs                # Health check audit log
@@ -114,7 +114,7 @@ corvus/
 │       │   │   ├── http.ts         # fetchJson (centralized corvus_unauthorized event), in-memory SWR cache, invalidateCache
 │       │   │   ├── auth.ts         # Authentication endpoints
 │       │   │   ├── services.ts     # Service CRUD and reordering
-│       │   │   ├── containers.ts   # Container operations, batch stats (/stats-summary), and logs
+│       │   │   ├── containers.ts   # Container operations, batch stats (/stats-summary), logs, inspect, and update
 │       │   │   ├── uptime.ts       # Uptime checks and push monitors
 │       │   │   ├── metrics.ts      # Hardware metrics
 │       │   │   ├── settings.ts     # Settings and backup
@@ -131,6 +131,8 @@ corvus/
 │       │   │   ├── grouping.ts     # Docker Compose intelligent grouping logic
 │       │   │   └── tagColor.ts     # FNV-1a hash pastel palette and semantic environment presets
 │       │   ├── components/         # Shared global UI components ONLY
+│       │   │   ├── common/                   # Shared cross-domain components
+│       │   │   │   └── TagFilterBar.tsx      # Reusable multi-tag filter bar with real-time counters
 │       │   │   ├── Sidebar.tsx               # Desktop rail menu (hidden lg:flex)
 │       │   │   ├── BottomNav.tsx             # Mobile Glass Bottom Navigation Bar — 7-tab frosted glass bar
 │       │   │   ├── StatusBadge.tsx           # Health indicator badge (healthy, degraded, down)
@@ -150,7 +152,20 @@ corvus/
 │       │       │   ├── ContainerActionButtons.tsx # Lifecycle controls, log viewer, and web terminal trigger
 │       │       │   ├── ContainerLogsModal.tsx   # Live container log streaming terminal
 │       │       │   ├── ContainerTerminalModal.tsx # Interactive in-browser web terminal (@xterm/xterm, shell selector, PTY resize)
-│       │       │   └── SystemPruneModal.tsx     # One-click host disk space cleanup (images, containers, volumes, networks, build cache)
+│       │       │   ├── ContainerTagsModal.tsx   # Container environment tag assignment modal
+│       │       │   ├── SystemPruneModal.tsx     # Safe two-stage dry-run disk space audit and cleanup dialog
+│       │       │   ├── detail/                  # Modular container detail tabs
+│       │       │   │   ├── ContainerDetailModal.tsx # Orchestrator multi-tab container inspection dialog
+│       │       │   │   ├── ContainerOverviewTab.tsx # ID, image, state, command, and quick actions toolbar
+│       │       │   │   ├── ContainerEnvTab.tsx      # Searchable env vars with secret masking toggle & .env copy
+│       │       │   │   ├── ContainerNetworkingTab.tsx # Port bindings and attached Docker network details
+│       │       │   │   ├── ContainerStorageTab.tsx  # Volume & bind mounts with RW/RO permissions
+│       │       │   │   └── ContainerResourcesTab.tsx # Zero-downtime CPU, RAM, and restart policy updater
+│       │       │   └── prune/                   # Modular selective dry-run prune tables
+│       │       │       ├── PruneContainersTable.tsx # Stopped containers audit table with checkboxes
+│       │       │       ├── PruneImagesTable.tsx     # Unused images audit table with size indicators
+│       │       │       ├── PruneVolumesTable.tsx    # Orphaned volumes table with data-loss warning banner
+│       │       │       └── PruneBuildCacheCard.tsx  # Docker build cache reclaim card
 │       │       ├── Dashboard/
 │       │       │   ├── index.tsx             # Consolidated KPI summary & active services
 │       │       │   ├── SystemPulseHero.tsx   # Live system pulse, network I/O & update checker
@@ -208,8 +223,9 @@ corvus/
 │       └── wwwroot/                # Production compiled bundle output (hosted by Corvus.Api)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Suite (213 Passing Tests)
+│   └── Corvus.Api.Tests/           # xUnit Test Suite (223 Passing Tests)
 │       ├── AuthServiceTests.cs
+│       ├── ContainerTagsTests.cs     # Container tags CRUD, merging, and persistence tests
 │       ├── DockerServiceTests.cs     # Container operations, system prune, micro-cache, and batch stats tests
 │       ├── DockerLogDemuxerTests.cs
 │       ├── FlappingDetectorTests.cs  # Sliding-window transition tracking and flapping alert debounce tests
@@ -343,20 +359,35 @@ High-frequency (15-second) system metrics can quickly accumulate hundreds of tho
 
 ---
 
-## 💻 In-Browser Container Web Terminal & System Prune Architecture
+## 💻 In-Browser Container Web Terminal, Safe Dry-Run Prune & Container Lifecycle Architecture
 
-### 1. Zero-Allocation WebSocket Exec Proxy (`/terminal`)
+### 1. Zero-Allocation Interactive WebSocket Exec Proxy (`/terminal`)
 - **Direct Shell Access:** Users can launch an interactive shell (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`) directly into running Docker containers from the browser.
 - **Bi-Directional Proxy:** The ASP.NET Core Native AOT backend establishes a hijacked HTTP 1.1 Upgrade connection to the Docker daemon (`/exec/{id}/start`) and bridges it to the client WebSocket.
+- **Unfrozen Keyboard Input & Win32 Pipe Deadlock Resolution:** Resolved Windows `FlushFileBuffers` deadlocks on non-file named pipes. Unified keyboard input streaming via `@xterm/xterm` `onData` handler for seamless typing, arrow navigation, and control shortcuts (`Ctrl+C`, `Ctrl+D`, `Tab`).
+- **Automatic Fallback Shell Chain:** If the requested shell is not available in minimal images (such as Alpine or Scratch-based distros), the server falls back smoothly across `/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`.
+- **Full ANSI 256-Color Support:** Explicitly passes `TERM=xterm-256color` in exec creation environment variables for syntax highlighting and terminal apps (`htop`, `mc`, `vi`).
 - **Zero GC Allocation:** Uses `ArrayPool<byte>.Shared` with static 8 KB buffers, avoiding heap pressure during high-throughput terminal sessions.
 - **Immediate Resource Cleanup:** Upon client disconnect or modal closure, the Docker exec process is terminated, rented buffers returned to the pool, and system RAM restored to baseline (~30 MB).
 - **Dynamic PTY Resizing:** The client transmits JSON control frames (`{type: "resize", cols, rows}`) which are automatically translated to Docker Engine `/exec/{id}/resize` API calls.
 - **RBAC Security:** Exec terminal access is strictly protected under `[RequireAdmin]` (403 Forbidden for viewer accounts).
 
-### 2. Docker System Prune & Storage Reclamation (`/prune`)
-- **Direct Daemon Orchestration:** Orchestrates cleanup across `/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune`, and `/build/prune`.
-- **Persistent Data Protection:** Safeguards against accidental volume loss by keeping `Volumes` unselected by default, accompanied by a prominent warning banner. Supports selective pruning of dangling vs all unused images.
-- **Granular Savings Audit:** Summarizes reclaimed bytes per category (Images, Containers, Volumes, Networks, Build Cache) and reports aggregate disk recovery (`1.42 GB reclaimed`).
+### 2. Two-Stage Dry-Run System Prune & Selective Deletion (`/system-df` & `/prune/selective`)
+- **Dry-Run Audit First:** Never deletes blindly. The first stage calls Docker `GET /system/df` to inspect reclaimable space across stopped containers, unused images, dangling volumes, and build cache.
+- **Granular Selection Tables:**
+  - **Stopped Containers:** Individual checkbox selection with container names, images, and created timestamps (`PruneContainersTable.tsx`).
+  - **Unused Images:** Individual checkbox selection with tags, IDs, and reclaimed MB/GB indicators (`PruneImagesTable.tsx`).
+  - **Orphaned Volumes:** Unselected by default with high-visibility warning banner protecting persistent data against accidental deletion (`PruneVolumesTable.tsx`).
+  - **Build Cache:** Selectable Docker build layer cache reclamation card (`PruneBuildCacheCard.tsx`).
+- **Selective Deletion Endpoint (`POST /api/containers/prune/selective`):** Targets only the selected resource IDs while avoiding deletions of untouched assets. Reports total reclaimed disk space in real time.
+
+### 3. Container Detail Inspection & Zero-Downtime Resource Tuning (`/inspect` & `/update`)
+- **Multi-Tab Inspection Dialog (`ContainerDetailModal.tsx`):**
+  - **Overview Tab:** Container ID, image tag/digest, status, health check summary, full command line (`Path + Args`), and direct action buttons (Start, Stop, Restart, Pause/Resume, Terminal, Logs).
+  - **Environment Variables Tab:** Key-value table with search filtering, secret masking toggle for credentials (`PASSWORD`, `SECRET`, `KEY`, `TOKEN`), and single-key or bulk `.env` clipboard export.
+  - **Networking Tab:** Published port bindings with direct one-click `http://` links, plus attached Docker networks with assigned IP addresses, Gateway, and MAC addresses.
+  - **Storage Mounts Tab:** Volume and bind mounts showing host source, container destination, and Read/Write (RW/RO) permission badges.
+  - **Resource Tuning Tab (`POST /api/containers/{id}/update`):** Live, zero-downtime CPU limits (`NanoCpus`), RAM limits (`Memory`), and Restart Policy modifications without restarting or rebuilding the container. In-memory micro-cache is evicted immediately upon update.
 
 ---
 

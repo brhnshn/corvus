@@ -99,24 +99,42 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
 
 ### Bilet 4.1 — Konteyner İçi Web Terminali (Exec Shell) [TAMAMLANDI]
 * **Önkoşul:** Yok.
-* **Amaç:** Tarayıcı üzerinden konteyner içine `sh`/`bash` terminali açabilmek.
+* **Amaç:** Tarayıcı üzerinden konteyner içine `sh`/`bash` terminali açabilmek, kilitlenmeyen çift yönlü klavye akışı ve otomatik kabuk tespiti sağlamak.
 * **Kapsam:**
   - Docker Exec API entegrasyonu (POST `/containers/{id}/exec`, HTTP 1.1 Upgrade ile `/exec/{id}/start` ve `/exec/{id}/resize`).
   - ASP.NET Core Native AOT uyumlu `GET /api/containers/{id}/terminal` WebSocket proxy (`ArrayPool<byte>` ile sıfır bellek ayırma, 8 KB sabit tampon, oturum kapandığında otomatik RAM iadesi).
+  - Windows dosya olmayan adlandırılmış borularında (named pipes) `FlushFileBuffers` kaynaklı oluşan deadlock giderildi; klavye girdileri akıcı hale getirildi.
+  - Otomatik geri çekilme kabuk zinciri: `/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh` ve `TERM=xterm-256color` ANSI renk desteği.
   - RBAC güvenliği: Terminal yalnızca `admin` rolüne açık (`[RequireAdmin]`, 403 Forbidden koruması).
-  - Frontend `@xterm/xterm` ve `@xterm/addon-fit` ile `ContainerTerminalModal.tsx` modüler bileşeni (tam ekran desteği, ANSI renkler, shell seçimi `/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`, dinamik TTY boyutlandırma).
-  - Konteyner aksiyon çubuğunda (`ContainerActionButtons.tsx`) log butonu yanında sadece çalışan (`running`) konteynerlerde aktif Web Terminali ikonu.
-* **Kabul Kriteri:** Tarayıcıdan konteyner içerisinde `ls`, `ps`, `top` gibi komutların gecikmesiz çalıştırılabilmesi; xUnit testlerinin yeşil olması (203/203 birim test).
+  - Frontend `@xterm/xterm` ve `@xterm/addon-fit` ile `ContainerTerminalModal.tsx` modüler bileşeni (tam ekran desteği, ANSI 256 renkler, dinamik TTY boyutlandırma).
+  - Konteyner aksiyon çubuğunda (`ContainerActionButtons.tsx`) çalışan (`running`) konteynerlerde aktif Web Terminali ikonu.
+* **Kabul Kriteri:** Tarayıcıdan konteyner içerisinde `ls`, `ps`, `top` gibi komutların gecikmesiz çalıştırılabilmesi; klavye, yön tuşları ve kısayolların akıcı çalışması; xUnit testlerinin yeşil olması (203/203 birim test).
 
-### Bilet 4.2 — İmaj ve Hacim Temizliği (System Prune) [TAMAMLANDI]
+### Bilet 4.2 — Güvenli İki Aşamalı Kuru Çalıştırmalı Sistem Temizliği (System Prune) [TAMAMLANDI]
 * **Önkoşul:** Yok.
-* **Amaç:** Sunucuda disk alanı tüketen dangling imaj, durdurulmuş konteyner, yetim ağ ve kullanılmayan hacimleri arayüzden tek tıkla temizlemek.
+* **Amaç:** Sunucuda disk alanı tüketen durdurulmuş konteyner, kullanılmayan imaj, yetim ağ ve hacimleri körü körüne silmeden önce analiz edip tablo tablo seçtirerek güvenle temizlemek.
 * **Kapsam:**
-  - Docker Engine Prune API entegrasyonu (`/containers/prune`, `/images/prune`, `/volumes/prune`, `/networks/prune`, `/build/prune`).
-  - Native AOT uyumlu `POST /api/containers/prune` uç noktası ve `[RequireAdmin]` rol koruması.
-  - Modüler `SystemPruneModal.tsx` bileşeni (güvenli varsayılanlar: hacimler varsayılan kapalı ve sarı veri kaybı uyarı şeritli; dangling vs tüm imaj seçimi; silinen kaynakların kategori döküm kartları).
-  - Konteynerler sayfası başlığında "Sistem Temizliği" butonu (`Trash2` ikonu, sadece admin durumunda aktif).
-* **Kabul Kriteri:** Prune çağrısıyla serbest bırakılan disk alanının arayüzde doğru formatta gösterilmesi (`1.42 GB serbest bırakıldı`), xUnit testlerinin yeşil olması (206/206 birim test).
+  - İlk aşama kuru çalıştırma analizi: `GET /api/containers/system-df` ile tahmini kurtarılacak alan, durdurulmuş konteynerler, kullanılmayan imajlar, sahipsiz volumeler ve build cache dökümü.
+  - Modüler seçim tabloları: `PruneContainersTable.tsx`, `PruneImagesTable.tsx`, `PruneVolumesTable.tsx`, `PruneBuildCacheCard.tsx`.
+  - Kalıcı veri kaybı koruması: Volumeler varsayılan olarak kapalı tutulur ve sarı renkli veri kaybı uyarı banner'ı ile korunur.
+  - Seçimli temizlik API'si: Native AOT uyumlu `POST /api/containers/prune/selective` uç noktası ve `[RequireAdmin]` rol koruması.
+  - Modüler iki aşamalı `SystemPruneModal.tsx` bileşeni ve anlık kurtarılan alan raporlama.
+* **Kabul Kriteri:** Prune çağrısıyla serbest bırakılan disk alanının arayüzde doğru formatta gösterilmesi (`1.42 GB serbest bırakıldı`); hacimlerin varsayılan korunması; xUnit testlerinin yeşil olması (206/206 birim test).
+
+### Bilet 4.3 — Konteyner Detay İnceleme & Sıfır Kesintili Canlı Kaynak Yönetimi [TAMAMLANDI]
+* **Önkoşul:** Yok.
+* **Amaç:** Konteynerin derinlemesine yapılandırmasını incelemek ve konteyneri durdurmadan CPU, RAM ve yeniden başlatma ilkelerini canlı düzenlemek.
+* **Kapsam:**
+  - `DockerModels.cs` içinde genişletilmiş Docker inspect model desteği ve `GET /api/containers/{id}/inspect` uç noktası.
+  - Sıfır kesintili kaynak güncelleme uç noktası `POST /api/containers/{id}/update` (canlı çalışan konteyner üzerinde `NanoCpus`, `Memory` ve `RestartPolicy` güncelleme ve in-memory micro-cache temizliği).
+  - `pages/Containers/detail/` altında çok sekmeli modüler `ContainerDetailModal.tsx`:
+    - `ContainerOverviewTab.tsx`: ID, imaj özeti, durum, tam komut satırı ve doğrudan işlem butonları.
+    - `ContainerEnvTab.tsx`: Arama filtreli ortam değişkenleri, hassas anahtarlar için tek tıkla maskeleme ve toplu `.env` kopyalama.
+    - `ContainerNetworkingTab.tsx`: Yayınlanan port bağlantıları (`http://`) ve bağlı Docker ağ detayları.
+    - `ContainerStorageTab.tsx`: Volume ve bind bağlama noktaları, host/konteyner yolları ve RW/RO izinleri.
+    - `ContainerResourcesTab.tsx`: Canlı CPU çekirdek slider'ı, hazır RAM ön ayarları ve restart policy seçici.
+  - Tıklanabilir konteyner isimleri ve hızlı işlem çubuğunda ayar (`Sliders`) butonu entegrasyonu.
+* **Kabul Kriteri:** Konteyner detaylarının eksiksiz görüntülenmesi, canlı kaynak limitlerinin konteyneri durdurmadan uygulanması; tüm testlerin başarılı olması.
 
 ---
 
@@ -134,13 +152,16 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - Kapsamlı xUnit test paketi (`MetricsRepositoryTests.cs`, 211/211 yeşil test).
 * **Kabul Kriteri:** 30 günlük, 90 günlük ve 1 yıllık grafiklerin veritabanı şişmeden milisaniyeler içinde akıcı çizilmesi; tüm birim testlerin geçmesi (211/211 yeşil test).
 
-### Bilet 5.2 — Servis & Konteyner Etiketleme / Gruplama (Tags) (TAMAMLANDI)
+### Bilet 5.2 — Servis & Konteyner Etiketleme / Gruplama (Tags) [TAMAMLANDI]
 * **Önkoşul:** Yok.
 * **Amaç:** Prod, Staging, DB gibi etiketlerle servisleri ve konteynerleri arayüzde filtreleyebilmek.
 * **Kapsam:**
   - `services` ve `service_overrides` tablolarına `tags` kolonu (`013_service_tags.sql`).
   - Native AOT uyumlu `List<string> Tags` modeli ve ikili JSON/CSV ayrıştırma motoru (`ParseTags`).
-  - Docker container etiketlerinden (`corvus.tags`, `environment`, `com.docker.compose.project`) otomatik etiket çıkarımı.
-  - Modüler `TagBadge`, `TagInput` ve `TagFilterBar` bileşenleri.
-  - `ServicesPage` üzerinde gerçek zamanlı sayaçlı etiket filtreleme çubuğu.
-* **Kabul Kriteri:** Servis ve konteynerlerin dinamik olarak etiketlenebilmesi ve süzülebilmesi; etiket durumunun yeniden başlatmalarda korunması; tüm birim testlerin geçmesi (213/213).
+  - Docker container etiketlerinden (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`) otomatik etiket çıkarımı.
+  - Konteyner bazında özel etiketleme: `PUT /api/containers/{id}/tags`, `GET /api/containers/tags`, SQLite `service_overrides` ile kalıcı saklama.
+  - Etiket değişimlerinde anlık Server-Sent Events yayını (`containers_updated`).
+  - Modüler `TagBadge`, `TagInput` ve `TagFilterBar` bileşenleri (hem Servisler hem Konteynerler sayfalarında ortak kullanım).
+  - Konteyner etiketleme modalı `ContainerTagsModal.tsx`.
+  - Birim test paketi (`ContainerTagsTests.cs`, 223/223 yeşil test).
+* **Kabul Kriteri:** Servis ve konteynerlerin dinamik olarak etiketlenebilmesi ve süzülebilmesi; etiket durumunun yeniden başlatmalarda korunması; tüm birim testlerin geçmesi (223/223).
