@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.20] - 2026-10-03
+## [1.5.19] - 2026-10-03
 
 ### Tags & Category Grouping (Phase 5 - Ticket 5.2)
 - **Database Schema Migration (`013_service_tags.sql`)**: Added `tags` text column to both `services` and `service_overrides` tables with non-blocking migration support.
@@ -24,8 +24,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Rendered tag pills in `QuickServicesGrid.tsx` (Dashboard) and `ContainerList.tsx` (mobile and desktop views).
 - **Comprehensive Test Coverage**: Added dedicated repository tests validating tag creation, updates, JSON/CSV parsing, and Docker override preservation (213/213 unit tests green).
 - **Bilingual Synchronization**: Fully aligned Turkish and English localization strings (`tr.ts`, `en.ts`).
-
-## [1.5.19] - 2026-10-02
 
 ### Telemetry, Downsampling & Metrics Rollup (Phase 5 - Ticket 5.1)
 - **Time-Series Metrics Downsampling (Hourly Rollups)**: Built an automated downsampling and compaction pipeline for system metrics, aggregating 15-second raw metrics (`system_metrics`) into hourly summary records (`system_metrics_hourly`).

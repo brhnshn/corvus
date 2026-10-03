@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Testler-211_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-213_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -99,6 +99,11 @@
   - 15 saniyelik ham metriklerin (`system_metrics`) saatlik ortalama özet kayıtlarına (`system_metrics_hourly`) otomatik dönüştürülmesi.
   - İkili veri saklama stratejisi: Yüksek çözünürlüklü ham veriler 7 gün saklanırken saatlik özetler 365 gün boyunca tutulur.
   - Veri boşluğu oluşturmayan birleşik SQLite CTE sorguları ile `30 Gün`, `90 Gün` ve `1 Yıl` zaman aralıklarında milisaniyelik akıcı grafikler.
+- **🏷️ Ortam Etiketleri & Kategori Gruplama (Tags):**
+  - Servis ve konteynerleri ortam etiketlerine göre (örn. `Prod`, `Staging`, `Database`, `Internal`, `API`) serbestçe etiketleyebilme ve gruplayabilme.
+  - Modüler `TagBadge` (deterministik pastel renk algoritması ve anlamsal ortam ön ayarları), `TagInput` (Enter/virgül ile ekleme, çip rozetler, hızlı öneriler) ve `TagFilterBar` (anlık sayaçlı tek tıkla çoklu etiket filtreleme çubuğu).
+  - Docker konteyner etiketlerinden (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`) otomatik etiket türetimi.
+  - Kalıcı geçersiz kılma (override) koruması: Docker servislerine atanan etiketler SQLite `service_overrides` tablosunda korunur ve periyodik container keşif döngülerinde kaybolmaz.
 - **⏱️ Genişletilmiş Uptime & SSL Takibi:**
   - **Kullanıcı Kontrollü (Opt-in) Uptime & Canlı Bağlantı Testi:** Docker'dan keşfedilen konteynerler kontrolsüzce pinglenmez; Uptime ekranında keşfedilenler havuzunda listelenir. Kullanıcı hedef adresi ve kontrol türünü belirler, dahili "Bağlantıyı Sına" (`POST /api/uptime/test-connection`) butonuyla anlık yanıt süresi ve HTTP/TCP durumunu test ederek onaylar.
   - **Ters Vekil (Reverse Proxy) Otomatik Algılama:** Traefik kuralları (`Host(...)`), Caddy etiketleri, `VIRTUAL_HOST`, `LETSENCRYPT_HOST` ve konteyner ortam değişkenleri (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) taranarak yerel `localhost` yerine gerçek alan adlarını otomatik bağlama.

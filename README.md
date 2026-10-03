@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-211_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-213_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -99,6 +99,11 @@
   - Automatic downsampling of 15-second raw metrics (`system_metrics`) into hourly summary records (`system_metrics_hourly`).
   - Dual retention policy: 7 days retention for high-frequency raw telemetry, 365 days retention for hourly rollups.
   - High-performance unified queries powering `30d`, `90d`, and `1y` time-series views with zero chart gaps.
+- **🏷️ Environment Tags & Category Grouping:**
+  - Group and filter services and containers by environment tags (e.g. `Prod`, `Staging`, `Database`, `Internal`, `API`).
+  - Modular `TagBadge` (deterministic pastel hash colors and semantic presets), `TagInput` (Enter/comma creation, chip pills, quick recommendations), and `TagFilterBar` (real-time counts, one-click multi-tag filtering).
+  - Automated tag derivation from Docker container labels (`corvus.tags`, `environment`, `env`, `com.docker.compose.project`).
+  - Persistent override retention: tags assigned to Docker services are safeguarded in SQLite `service_overrides` and never overwritten by rediscovery cycles.
 - **⏱️ Extended Endpoint Uptime & SSL Tracking:**
   - **User-Controlled (Opt-in) Uptime & Live Connection Testing:** Containers discovered from Docker are not blindly polled; they reside cleanly in an unmonitored pool on the Uptime page. Users configure target endpoints, verify reachability via an instant "Test Connection" button (`POST /api/uptime/test-connection`), and explicitly opt in.
   - **Automatic Reverse Proxy Domain Detection:** Parses Traefik rules (`Host(...)`), Caddy labels, `VIRTUAL_HOST`, `LETSENCRYPT_HOST`, and container environment variables (`NEXT_PUBLIC_SITE_URL`, `SITE_URL`, `APP_URL`) to bind public domains instead of unreachable host loopbacks.

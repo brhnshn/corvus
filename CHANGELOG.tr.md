@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.5.20] - 2026-10-03
+## [1.5.19] - 2026-10-03
 
 ### Servis & Konteyner Etiketleme / Gruplama (Faz 5 - Bilet 5.2)
 - **Veritabanı Şema Güncellemesi (`013_service_tags.sql`)**: `services` ve `service_overrides` tablolarına kesintisiz migration ile `tags TEXT DEFAULT ''` kolonu eklendi.
@@ -24,8 +24,6 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - `QuickServicesGrid.tsx` (Dashboard) ve `ContainerList.tsx` (mobil ve masaüstü) listelerinde etiket hapları görünür kılındı.
 - **Kapsamlı Birim Testleri**: Etiket oluşturma, güncelleme, JSON/CSV ayrıştırma ve Docker override kalıcılığını doğrulayan 2 yeni birim test eklendi (tüm 213 test başarılı).
 - **Çift Dilli Senkronizasyon**: Türkçe ve İngilizce dil dosyaları (`tr.ts`, `en.ts`) tam uyumlu hale getirildi.
-
-## [1.5.19] - 2026-10-02
 
 ### Telemetri, Seyreltme & Metrik Özeti (Faz 5 - Bilet 5.1)
 - **Zaman Serisi Metrik Seyreltme (Saatlik Rollup)**: 15 saniyelik ham sistem kaynak metriklerini (`system_metrics`) saatlik ortalama özet kayıtlarına (`system_metrics_hourly`) dönüştüren otomatik seyreltme hattı geliştirildi.

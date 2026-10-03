@@ -48,9 +48,8 @@ Corvus is an open-source, ultra-low resource consumption service launcher and un
 - Real-Time Communication: REST + **Server-Sent Events (SSE)** for live status broadcasts (`corvus_event` pub/sub channels)
 
 ### Persistence Layer
-### Persistence Layer
 - **SQLite (Microsoft.Data.Sqlite) + Dapper (Dapper.AOT)**: WAL mode with `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`, `PRAGMA cache_size = -64000;` and periodic `PRAGMA optimize;`
-- **DbUp**: Sequential SQL-first schema migrations (`001_init.sql` through `012_metrics_hourly_rollup.sql`)
+- **DbUp**: Sequential SQL-first schema migrations (`001_init.sql` through `013_service_tags.sql`)
 - Composite indexes on `system_metrics(recorded_at)`, `system_metrics_hourly(recorded_at)`, and `uptime_checks(service_id, checked_at)`
 - **Backup & Retention Engine**: Point-in-time lock-free SQLite snapshot downloads (`VACUUM INTO`), live database disk usage telemetry (`GET /api/settings/db-stats`), dynamic background retention cleaner with Unlimited mode, automated `VACUUM;` freelist reclamation
 
@@ -71,6 +70,7 @@ Unified table for auto-discovered and manually registered services.
 | url | TEXT (nullable) | Target URL for the "Open" launcher button |
 | icon | TEXT (nullable) | Icon name or URL |
 | category | TEXT (nullable) | Category grouping (Apps, Databases, etc.) |
+| tags | TEXT (nullable) | Comma-separated or JSON list of environment/category tags (e.g. "Prod,API") |
 | health_check_url | TEXT (nullable) | Distinct endpoint for health checking (defaults to `url` if empty) |
 | status | TEXT | `healthy` / `degraded` / `down` / `unknown` |
 | check_type | TEXT | `http`, `tcp`, `docker`, or `ping` (ICMP ping) |
@@ -91,6 +91,7 @@ User customization overrides for auto-discovered Docker containers.
 |---|---|---|
 | container_id | TEXT | Primary key matching `services.container_id` |
 | name, description, url, icon, category | TEXT (nullable) | User-overridden fields |
+| tags | TEXT (nullable) | User-overridden tags array/CSV for Docker service |
 | expected_body, expected_body_type | TEXT (nullable) | Expected response body assertions |
 | is_uptime_enabled | INTEGER (nullable) | Opt-in uptime tracking preference override |
 
@@ -279,7 +280,7 @@ Incoming push monitor heartbeat records.
 | Page | URL | Features |
 |---|---|---|
 | **Dashboard** | `/` | Mobile-first 2-column KPI strip, full-width Disk bar, live system pulse hero, GitHub update checker badge, and active containers widget |
-| **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, expected body assertion, SSL expiration badge, and reordering controls |
+| **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, expected body assertion, SSL expiration badge, **environment tags (`TagBadge`)**, **real-time tag filter bar (`TagFilterBar`)**, and reordering controls |
 | **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, Start/Stop/Pause/Restart actions, Compose stack accordion grouping, live log terminal, **Interactive Web Terminal (`ContainerTerminalModal`)**, and **System Prune (`SystemPruneModal`)** |
 | **Uptime** | `/uptime` | Service uptime monitors, ICMP Ping, proactive SSL alerts, Dead Man's Snitch monitors, historical check logs, and incident management |
 | **System Metrics** | `/metrics` | Time-series hardware utilization charts with **1h, 6h, 12h, 24h, 7d, 30d, 90d, and 1y** periods powered by hourly rollups |
@@ -293,7 +294,7 @@ Incoming push monitor heartbeat records.
 ## 8. Completed Roadmap Milestones
 
 - [x] Native AOT + custom SocketsHttpHandler direct socket client
-- [x] Dapper.AOT + Microsoft.Data.Sqlite + DbUp schema migrations (001-010)
+- [x] Dapper.AOT + Microsoft.Data.Sqlite + DbUp schema migrations (001-013)
 - [x] Docker socket multiplexed log demuxer and live log streaming
 - [x] Multi-channel alert engine (Discord, Telegram, Ntfy, Webhook) with system-language synchronization
 - [x] Live container resource stats (CPU, RAM, Net I/O)
@@ -326,4 +327,10 @@ Incoming push monitor heartbeat records.
 - [x] System Incidents & Scheduled Maintenance management with public alert banners (`service_incidents`)
 - [x] Intelligent 24-hour retention (`is_transition`) and 365-day daily SLA rollup (`uptime_daily_stats`)
 - [x] "Hex Sentinel" professional corporate identity, SVG master assets, and web icon set (`docs/branding/`)
-- [x] 169/169 passing xUnit test coverage
+- [x] SMTP Email & Slack notification channels with interactive recipient pills and status color coding
+- [x] Flapping suppression engine (`IFlappingDetector`, `FlappingDetector`) with multi-channel amber/green alerts
+- [x] Web Container Exec Terminal (`/api/containers/{id}/terminal`, `@xterm/xterm`, zero-alloc WebSocket)
+- [x] System Prune for disk reclamation (`/api/containers/prune`, volumes protection)
+- [x] Time-series metrics downsampling (`system_metrics_hourly`, dual retention, 30d/90d/1y ranges)
+- [x] Environment Tags & Category Grouping (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`)
+- [x] 213/213 passing xUnit test coverage

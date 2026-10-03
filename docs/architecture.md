@@ -72,7 +72,8 @@ corvus/
 │   │   │       ├── 009_uptime_rollup_and_transition.sql # Uptime daily rollup & transition state tracking
 │   │   │       ├── 010_user_sessions.sql         # Persistent user sessions table
 │   │   │       ├── 011_expected_body.sql         # HTTP response body keyword & regex validation
-│   │   │       └── 012_metrics_hourly_rollup.sql # Hourly telemetry rollup table and indexes
+│   │   │       ├── 012_metrics_hourly_rollup.sql # Hourly telemetry rollup table and indexes
+│   │   │       └── 013_service_tags.sql          # Environment tags column for services & overrides
 │   │   ├── Models/                 # DTOs and Database Entities
 │   │   │   ├── Service.cs                    # Service entity (check_type: http, tcp, ping, port, ssl, expected_body, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Incident announcement entity
@@ -127,11 +128,14 @@ corvus/
 │       │   ├── utils/              # Modular helper and utility functions
 │       │   │   ├── url.ts          # Service URL formatter and sanitization
 │       │   │   ├── format.ts       # Byte sizing (B, KB, MB, GB, TB) formatter
-│       │   │   └── grouping.ts     # Docker Compose intelligent grouping logic
+│       │   │   ├── grouping.ts     # Docker Compose intelligent grouping logic
+│       │   │   └── tagColor.ts     # FNV-1a hash pastel palette and semantic environment presets
 │       │   ├── components/         # Shared global UI components ONLY
 │       │   │   ├── Sidebar.tsx               # Desktop rail menu (hidden lg:flex)
 │       │   │   ├── BottomNav.tsx             # Mobile Glass Bottom Navigation Bar — 7-tab frosted glass bar
 │       │   │   ├── StatusBadge.tsx           # Health indicator badge (healthy, degraded, down)
+│       │   │   ├── TagBadge.tsx              # Reusable tag chip badge with pastel styles and click actions
+│       │   │   ├── TagInput.tsx              # Dynamic chip tag input component with auto-suggestions
 │       │   │   ├── LanguageSwitch.tsx        # Compact & full interface language switcher
 │       │   │   ├── EmailRecipientInput.tsx   # Interactive pills/tags multi-recipient email input component
 │       │   │   └── RegistrationPromptModal.tsx # Global first-admin prompt modal
@@ -165,10 +169,11 @@ corvus/
 │       │       │   ├── PublicStatusServiceBar.tsx    # Interactive 30-check latency status bar
 │       │       │   └── PublicStatusServiceCard.tsx   # Detailed service status card with uptime metrics
 │       │       ├── Services/
-│       │       │   ├── index.tsx             # Service launcher and drag & drop reordering
-│       │       │   ├── ServiceCard.tsx       # Service card (HTTP, TCP, PING, Docker badges)
-│       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services (with ICMP Ping & expected body options)
-│       │       │   ├── EditServiceModal.tsx  # Modular modal for service endpoint, reverse proxy domain & check type
+│       │       │   ├── index.tsx             # Service launcher, drag & drop reordering and tag filter
+│       │       │   ├── ServiceCard.tsx       # Service card (HTTP, TCP, PING, Docker & Tag badges)
+│       │       │   ├── TagFilterBar.tsx      # Real-time multi-tag filter bar with service counters
+│       │       │   ├── AddServiceModal.tsx   # Modal for creating manual services (with TagInput, ICMP Ping & body options)
+│       │       │   ├── EditServiceModal.tsx  # Modular modal for service endpoint, reverse proxy domain, check type & tags
 │       │       │   └── AdvancedCheckOptions.tsx # Modular accordion for check interval, retries, TLS, body assertion & status codes
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Unified single-column (max-w-4xl) settings shell with header version badge
@@ -203,7 +208,7 @@ corvus/
 │       └── wwwroot/                # Production compiled bundle output (hosted by Corvus.Api)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Suite (211 Passing Tests)
+│   └── Corvus.Api.Tests/           # xUnit Test Suite (213 Passing Tests)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Container operations, system prune, micro-cache, and batch stats tests
 │       ├── DockerLogDemuxerTests.cs
@@ -379,6 +384,26 @@ Services returning HTTP 200 may still be displaying an application error page or
 ### 2. Zero-Allocation 64 KB Memory Bounding & ReDoS Defense
 - Instead of buffering unbounded response bodies into heap memory, `HttpBodyValidator` streams payloads up to a strict 64 KB ceiling backed by `ArrayPool<byte>` buffers.
 - Regular expression evaluations are guarded with a 200ms strict timeout to prevent Regular Expression Denial of Service (ReDoS) vulnerabilities.
+
+---
+
+## 🏷️ Environment Tags & Category Grouping Engine
+
+Corvus incorporates a tag and category grouping system designed for granular workload segmentation without relational overhead:
+
+### 1. Zero-Allocation Dual-Format Parsing & Storage
+- **Schema Migration (`013_service_tags.sql`):** Adds `tags TEXT DEFAULT ''` column to both `services` and `service_overrides` tables.
+- **Hybrid Parser (`ServicesRepository.ParseTags`):** Efficiently parses both serialized JSON arrays (`["Prod","DB"]`) and standard comma-separated strings (`Prod, DB`), trimming whitespace, preserving casing, and filtering duplicates in a single allocation-conscious pass.
+- **Native AOT DTOs:** Integrates `List<string> Tags` within `Service`, `ServiceOverride`, `CreateServiceRequest`, and `UpdateServiceRequest` via source generation in `CorvusJsonSerializerContext`.
+
+### 2. Automatic Docker Label Derivation & Override Protection
+- **Label Mapping (`DockerService`):** Automatically extracts tags from container labels: `corvus.tags` (comma-separated), `environment`, `env`, and Compose project names (`com.docker.compose.project`).
+- **Persistent Override Retention:** Custom tags applied to Docker containers are stored in `service_overrides`. Periodic rediscovery cycles merge container lifecycle state without overwriting user-assigned tags.
+
+### 3. Modular UI Components & Deterministic Palette
+- **Semantic & Hash-Based Styling (`tagColor.ts`):** Environment keywords (`prod`, `staging`, `dev`, `internal`, `db`, `api`) receive predefined semantic color tokens. Custom arbitrary tags receive deterministic pastel backgrounds and border accents via FNV-1a string hashing.
+- **Interactive Multi-Tag Filter Bar (`TagFilterBar.tsx`):** Real-time service counters per tag with one-click multi-tag toggle and clear filters.
+- **Dynamic Chip Input (`TagInput.tsx`):** Keyboard-driven tag creation (Enter, comma, Tab), backspace-to-remove, and instant one-click suggestions.
 
 ---
 

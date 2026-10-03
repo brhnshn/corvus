@@ -48,9 +48,8 @@ Corvus, self-hosted sunucular için açık kaynak, düşük kaynak tüketimli, t
 - İletişim: REST + **Server-Sent Events (SSE)** üzerinden anlık durum yayını (`corvus_event` pub/sub kanalları)
 
 ### Veri katmanı
-### Veri katmanı
 - **SQLite (Microsoft.Data.Sqlite) + Dapper (Dapper.AOT)**: WAL modu, `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`, `PRAGMA cache_size = -64000;` ve periyodik `PRAGMA optimize;`
-- **DbUp**: SQL-first sıralı migration yönetimi (`001_init.sql` - `012_metrics_hourly_rollup.sql`)
+- **DbUp**: SQL-first sıralı migration yönetimi (`001_init.sql` - `013_service_tags.sql`)
 - Zaman serisi tablolarında kompozit performans indeksleri (`system_metrics(recorded_at)`, `system_metrics_hourly(recorded_at)`, `uptime_checks(service_id, checked_at)`)
 - **Yedekleme ve Saklama Motoru**: Kilitlenmesiz SQLite anlık görüntü indirme (`VACUUM INTO`), gerçek zamanlı veritabanı disk boyutu telemetrisi (`GET /api/settings/db-stats`), Sınırsız mod destekli dinamik retention temizleyicisi, günlük otomatik `VACUUM;` freelist temizliği
 
@@ -71,6 +70,7 @@ Otomatik algılanan veya manuel eklenen tüm servisler (launcher + durum takibi 
 | url | TEXT (nullable) | Launcher'da "Aç" butonunun gideceği adres |
 | icon | TEXT (nullable) | İkon adı/URL |
 | category | TEXT (nullable) | Gruplama için (Uygulamalar, Veritabanları, vb.) |
+| tags | TEXT (nullable) | Ortam/kategori etiketleri (JSON dizisi veya virgülle ayrılmış metin) |
 | health_check_url | TEXT (nullable) | Uptime kontrolü için ayrı endpoint (boşsa `url` kullanılır) |
 | status | TEXT | `healthy` / `degraded` / `down` / `unknown` |
 | check_type | TEXT | `http`, `tcp`, `docker` veya `ping` (ICMP ping) |
@@ -91,6 +91,7 @@ Docker'dan otomatik algılanan bir container için kullanıcının panel üzerin
 |---|---|---|
 | container_id | TEXT | Birincil anahtar, `services.container_id` ile eşleşir |
 | name, description, url, icon, category | TEXT (nullable) | Override edilen alanlar |
+| tags | TEXT (nullable) | Docker servisi için kullanıcı tarafından geçersiz kılınan etiketler |
 | expected_body, expected_body_type | TEXT (nullable) | Yanıt gövdesi arama doğrulama ayarları |
 | is_uptime_enabled | INTEGER (nullable) | Uptime takip tercihi override'ı |
 
@@ -279,7 +280,7 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | Sayfa | URL | Özellikler |
 |---|---|---|
 | **Dashboard** | `/` | Mobil-öncelikli 2 sütunlu KPI şeridi, tam genişlikte Disk barı, canlı sistem nabzı, GitHub sürüm rozeti ve aktif konteynerler widget'ı |
-| **Servisler** | `/services` | Servis kartları, durum rozetleri, TCP/ICMP PING port göstergeleri, HTTP gövde doğrulaması, SSL kalan gün rozeti, yukarı/aşağı sıralama butonları |
+| **Servisler** | `/services` | Servis kartları, durum rozetleri, TCP/ICMP PING port göstergeleri, HTTP gövde doğrulaması, SSL kalan gün rozeti, **ortam etiketleri (`TagBadge`)**, **anlık etiket filtreleme çubuğu (`TagFilterBar`)**, yukarı/aşağı sıralama butonları |
 | **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, Start/Stop/Pause/Restart aksiyonları, Compose Stack akordeon gruplaması, canlı log terminali, **İnteraktif Web Terminali (`ContainerTerminalModal`)** ve **Sistem Temizliği (`SystemPruneModal`)** |
 | **Uptime & Snitch** | `/uptime` | 3 durumlu sağlık takibi, HTTP/TCP/Ping yanıt süreleri geçmişi, proaktif SSL alarmları, Dead Man's Snitch ve sistem olayları / planlı bakım duyuru sekmesi |
 | **Sistem Metrikleri**| `/metrics` | **1h, 6h, 12h, 24h, 7d, 30d, 90d ve 1y** aralıklarında saatlik rollup destekli CPU, RAM, Disk ve Ağ I/O grafikleri |
@@ -293,13 +294,14 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 ## 8. Tamamlanan Yol Haritası Adımları
 
 - [x] Native AOT + Docker.DotNet doğrulama ve custom SocketsHttpHandler istemcisi
-- [x] Dapper + Dapper.AOT + Microsoft.Data.Sqlite + DbUp veri katmanı (001-012)
+- [x] Dapper + Dapper.AOT + Microsoft.Data.Sqlite + DbUp veri katmanı (001-013)
 - [x] Docker socket multiplexed log demuxer ve canlı log akışı
 - [x] Konteyner İçi Web Terminali (Exec Shell, WebSocket Proxy & `@xterm/xterm`)
 - [x] Docker İmaj ve Sistem Temizliği (System Prune)
 - [x] Çok kanallı alarm motoru (Discord, Telegram, SMTP E-posta, Slack, Ntfy, Webhook)
 - [x] Dalgalanma (Flapping) Engelleme ve Alarm Yorgunluğu Koruması
 - [x] Zaman Serisi Seyreltme (Hourly Rollup & 30d/90d/1y Grafikleri)
+- [x] Servis & Konteyner Ortam Etiketleme / Gruplama (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`)
 - [x] HTTP Yanıt Gövdesi (Kelime & Regex) Doğrulaması
 - [x] Konteyner başına canlı kaynak kullanımı (Docker Stats: CPU, RAM, Net I/O)
 - [x] Genişletilmiş Uptime: TCP Port Ping, ICMP Ping ve SSL Sertifika erken uyarıları
@@ -331,4 +333,4 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Sistem Olayları & Planlı Bakım Yönetimi ile durum sayfasında canlı uyarı afişleri (`service_incidents`)
 - [x] Akıllı 24 saatlik retention (`is_transition`) ve 365 günlük SLA özet agregasyonu (`uptime_daily_stats`)
 - [x] "Hex Sentinel" profesyonel kurumsal kimlik, SVG master vektörleri ve web ikon seti (`docs/branding/`)
-- [x] 169/169 xUnit birim ve entegrasyon testi doğrulaması
+- [x] 213/213 xUnit birim ve entegrasyon testi doğrulaması

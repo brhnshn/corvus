@@ -40,6 +40,7 @@ Corvus, belirli bir kişinin veya kurulumun paneli değildir. Açık kaynak bir 
 | Alarm ve Bildirim | — | Çok kanallı yerleşik bildirim motoru: Discord, Telegram, SMTP E-posta, Slack Webhook, Ntfy/Gotify ve Generic Webhook; akıllı dalgalanma (flapping) koruması. |
 | Konteyner Terminali & Temizlik | — | Tarayıcı üzerinden sıfır tahsisatlı Web Terminali (`/api/containers/{id}/terminal`) ve tek tıkla sistem temizliği (`/api/containers/prune`). |
 | Telemetri Seyreltme | — | Çift aşamalı veri saklama (7g ham, 365g saatlik rollup) ile hafif veritabanı ve akıcı 30g/90g/1y zaman serisi grafikleri. |
+| Ortam Etiketleri & Kategorilendirme | — | Çoklu ortam etiketleme (Prod, Staging, DB, Internal, API) ile deterministik renk algoritması, çip girişleri, anlık sayaçlı filtre çubuğu, Docker etiket çıkarımı (corvus.tags, environment, env) ve kalıcı SQLite override güvencesi. |
 | Canlı İletişim | — | Server-Sent Events (SSE) ile `/api/stream/events` ve gerçek zamanlı konteyner log akışı (`/api/containers/{id}/logs/stream`). |
 
 ---

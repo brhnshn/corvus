@@ -83,7 +83,8 @@ corvus/
 │   │   │       ├── 009_uptime_rollup_and_transition.sql # Uptime günlük özet ve durum geçiş takibi
 │   │   │       ├── 010_user_sessions.sql         # Kalıcı kullanıcı oturumları tablosu
 │   │   │       ├── 011_expected_body.sql         # HTTP yanıt gövdesi kelime ve Regex doğrulama şeması
-│   │   │       └── 012_metrics_hourly_rollup.sql # Saatlik telemetri özet tablosu ve indeksleri
+│   │   │       ├── 012_metrics_hourly_rollup.sql # Saatlik telemetri özet tablosu ve indeksleri
+│   │   │       └── 013_service_tags.sql          # Servis ve override ortam etiketleri şeması
 │   │   ├── Models/                 # DTO'lar ve Veritabanı Varlıkları
 │   │   │   ├── Service.cs                    # Servis modeli (check_type: http, tcp, ping, port, ssl, expected_body, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Sistem olay duyurusu modeli
@@ -138,11 +139,14 @@ corvus/
 │       │   ├── utils/              # Modüler yardımcı fonksiyonlar
 │       │   │   ├── url.ts          # Servis URL formatlama ve güvenli dönüştürme
 │       │   │   ├── format.ts       # Bayt dönüştürme (B, KB, MB, GB, TB) yardımcı modülü
-│       │   │   └── grouping.ts     # Docker Compose akıllı gruplama mantığı
+│       │   │   ├── grouping.ts     # Docker Compose akıllı gruplama mantığı
+│       │   │   └── tagColor.ts     # FNV-1a hash pastel renk paleti ve anlamsal ortam ön ayarları
 │       │   ├── components/         # SADECE ortak/paylaşılan global UI bileşenleri
 │       │   │   ├── Sidebar.tsx               # Masaüstü ray menü (hidden lg:flex)
 │       │   │   ├── BottomNav.tsx             # Mobil Cam Altbar — 7 sekmeli buzlu cam gezinti çubuğu
 │       │   │   ├── StatusBadge.tsx           # Sağlık durumu rozeti (healthy, degraded, down)
+│       │   │   ├── TagBadge.tsx              # Pastel renkli ve tıklanabilir etiket çip rozeti
+│       │   │   ├── TagInput.tsx              # Dinamik çip etiket ekleme bileşeni ve hızlı öneriler
 │       │   │   ├── LanguageSwitch.tsx        # Kompakt ve tam modlu arayüz dil değiştirici
 │       │   │   ├── EmailRecipientInput.tsx   # Etiket/çip tabanlı çoklu e-posta alıcı giriş bileşeni
 │       │   │   └── RegistrationPromptModal.tsx # İlk yönetici kayıt yönlendirme modalı
@@ -176,10 +180,11 @@ corvus/
 │       │       │   ├── PublicStatusServiceBar.tsx # Son 30 denetim etkileşimli durum çubuğu
 │       │       │   └── PublicStatusServiceCard.tsx # Detaylı servis durum ve uptime kartı
 │       │       ├── Services/
-│       │       │   ├── index.tsx             # Servis launcher ve sürükle-bırak sıralama
-│       │       │   ├── ServiceCard.tsx       # Servis kartı (HTTP, TCP, PING, Docker rozetleri)
-│       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı (ICMP Ping ve gövde doğrulama seçeneğiyle)
-│       │       │   ├── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL ve kontrol türü düzenleme modalı
+│       │       │   ├── index.tsx             # Servis launcher, sürükle-bırak sıralama ve etiket filtresi
+│       │       │   ├── ServiceCard.tsx       # Servis kartı (HTTP, TCP, PING, Docker & Etiket rozetleri)
+│       │       │   ├── TagFilterBar.tsx      # Anlık sayaçlı çoklu etiket filtreleme çubuğu
+│       │       │   ├── AddServiceModal.tsx   # Manuel servis ekleme modalı (TagInput, ICMP Ping ve gövde doğrulama seçeneğiyle)
+│       │       │   ├── EditServiceModal.tsx  # Servis uç noktası, ters proxy URL, kontrol türü ve etiket düzenleme modalı
 │       │       │   └── AdvancedCheckOptions.tsx # Bağımsız gelişmiş kontrol parametreleri akordiyonu (zaman aşımı, TLS, gövde, kodlar)
 │       │       ├── Settings/
 │       │       │   ├── index.tsx             # Tek kolonlu (max-w-4xl) modern ayarlar kabuğu ve başlık sürüm rozeti
@@ -214,7 +219,7 @@ corvus/
 │       └── wwwroot/                # Üretime hazır derlenmiş arayüz paketi (Corvus.Api tarafından sunulur)
 │
 ├── tests/
-│   └── Corvus.Api.Tests/           # xUnit Test Paketi (211 Başarılı Test)
+│   └── Corvus.Api.Tests/           # xUnit Test Paketi (213 Başarılı Test)
 │       ├── AuthServiceTests.cs
 │       ├── DockerServiceTests.cs     # Konteyner işlemleri, sistem temizliği, micro-cache ve batch stats testleri
 │       ├── DockerLogDemuxerTests.cs
@@ -390,6 +395,26 @@ HTTP 200 dönen servisler arka planda veritabanı bağlantı hatası veya uygula
 ### 2. Sıfır Bellek Tahsisli 64 KB Sınırı & ReDoS Koruması
 - Yanıt gövdesini sınırsızca belleğe çekmek yerine `HttpBodyValidator`, `ArrayPool<byte>` tamponları üzerinden en fazla 64 KB'a kadar akış okuması yapar.
 - Regex değerlendirmeleri, Regular Expression Denial of Service (ReDoS) açıklarını önlemek için katı bir 200ms zaman aşımı ile sınırlandırılmıştır.
+
+---
+
+## 🏷️ Ortam Etiketleri & Kategori Gruplama Motoru
+
+Corvus, ilişkisel veritabanı karmaşıklığı yaratmadan servisleri ve konteynerleri serbestçe kategorize etmek ve filtrelemek için modüler bir etiketleme mimarisi sunar:
+
+### 1. Sıfır Tahsisatlı İkili Format Ayrıştırma & Saklama
+- **Veritabanı Göçü (`013_service_tags.sql`):** `services` ve `service_overrides` tablolarına `tags TEXT DEFAULT ''` kolonu kesintisiz olarak eklenmiştir.
+- **Hibrit Ayrıştırıcı (`ServicesRepository.ParseTags`):** Hem JSON serileştirilmiş dizileri (`["Prod","DB"]`) hem de virgülle ayrılmış standart metinleri (`Prod, DB`) tek bir tahsisat-dostu döngüde ayrıştırır, boşlukları temizler, harf büyüklüğünü korur ve mükerrerleri eler.
+- **Native AOT DTO Desteği:** `Service`, `ServiceOverride`, `CreateServiceRequest` ve `UpdateServiceRequest` modellerine `List<string> Tags` eklenmiş ve `CorvusJsonSerializerContext` içinde derleme zamanında tip güvenliği sağlanmıştır.
+
+### 2. Otomatik Docker Etiket Çıkarımı & Override Koruması
+- **Etiket Eşleme (`DockerService`):** Konteyner etiketlerinden (`corvus.tags`, `environment`, `env` ve Compose proje adı `com.docker.compose.project`) otomatik olarak ortam etiketleri türetilir.
+- **Kalıcı Override Güvencesi:** Docker konteynerlerine arayüzden atanan özel etiketler `service_overrides` tablosunda saklanır; periyodik konteyner keşif döngülerinde kullanıcının belirlediği etiketler asla ezilmez.
+
+### 3. Modüler Arayüz Bileşenleri & Deterministik Renk Paleti
+- **Anlamsal ve Hash Bazlı Renklendirme (`tagColor.ts`):** `prod`, `staging`, `dev`, `internal`, `db`, `api` gibi yaygın ortam anahtar kelimeleri anlamsal özel renk temalarına sahiptir. Diğer tüm serbest etiketler FNV-1a dize hash algoritmasıyla deterministik ve göz yormayan pastel renklere bürünür.
+- **Etkileşimli Çoklu Filtre Çubuğu (`TagFilterBar.tsx`):** Etiket başına düşen servis sayısını anlık gösterir; tek tıkla çoklu etiket seçimi ve temizleme sunar.
+- **Dinamik Çip Girişi (`TagInput.tsx`):** Enter, virgül ve Tab tuşlarıyla etiket ekleme, Backspace ile silme ve tek tıkla hızlı öneri çipleri sunar.
 
 ---
 
