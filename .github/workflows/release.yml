@@ -131,12 +131,35 @@ jobs:
 
       - name: Trigger Server Deploy
         run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.DEPLOY_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '${{ secrets.DEPLOY_PAYLOAD }}')
-          echo "Deploy webhook triggered for release ${{ steps.resolve_version.outputs.tag }} (HTTP status: $HTTP_STATUS)"
-          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 400 ]; then
-            echo "::error::Deploy webhook returned status $HTTP_STATUS"
+          SUCCESS=0
+          for i in 1 2 3; do
+            echo "Attempt $i: Triggering server deploy webhook for release ${{ steps.resolve_version.outputs.tag }}..."
+            HTTP_STATUS=$(curl -s -w "%{http_code}" -o /tmp/deploy_response.txt -X POST "${{ secrets.DEPLOY_URL }}" \
+              -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d '${{ secrets.DEPLOY_PAYLOAD }}' \
+              --connect-timeout 15 \
+              --max-time 60 || echo "000")
+
+            echo "Deploy webhook attempt $i response status: $HTTP_STATUS"
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+              echo "Deploy webhook successfully triggered for ${{ steps.resolve_version.outputs.tag }}!"
+              cat /tmp/deploy_response.txt || true
+              echo ""
+              SUCCESS=1
+              break
+            else
+              echo "Attempt $i failed (Status: $HTTP_STATUS). Server response:"
+              cat /tmp/deploy_response.txt || true
+              echo ""
+              if [ $i -lt 3 ]; then
+                echo "Waiting 10 seconds before retry..."
+                sleep 10
+              fi
+            fi
+          done
+
+          if [ $SUCCESS -ne 1 ]; then
+            echo "::error::Deploy webhook failed after 3 attempts."
             exit 1
           fi

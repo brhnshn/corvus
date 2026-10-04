@@ -3,6 +3,13 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.22] - 2026-10-05
+
+### Düzeltilenler (Fixed)
+- **Dayanıklı CI/CD Dağıtım Webhook Mekanizması**: `ci.yml` ve `release.yml` dağıtım adımlarına 3 aşamalı yeniden deneme döngüsü (retry with backoff), 15 saniye bağlantı zaman aşımı ve ayrıntılı hata gövdesi kaydı eklendi. Sunucu tarafındaki webhook servisinin anlık yeniden başlama veya eşzamanlı istekler sırasında geçici olarak meşgul olması durumunda CI iş akışının hatalı kapanması engellendi.
+
+---
+
 ## [1.5.21] - 2026-10-04
 
 ### Eklenenler (Added)
