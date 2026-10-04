@@ -165,3 +165,17 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - Konteyner etiketleme modalı `ContainerTagsModal.tsx`.
   - Birim test paketi (`ContainerTagsTests.cs`, 223/223 yeşil test).
 * **Kabul Kriteri:** Servis ve konteynerlerin dinamik olarak etiketlenebilmesi ve süzülebilmesi; etiket durumunun yeniden başlatmalarda korunması; tüm birim testlerin geçmesi (223/223).
+
+---
+
+## Faz 6: Gelecek Mimari Planlar
+
+### Bilet 6.1 — Bağımsız Konteyner Detay & Telemetri Sayfası (`/containers/:id`) [PLANLANDI]
+* **Önkoşul:** Bilet 4.4 tamamlandı.
+* **Amaç:** Konteyner inceleme, canlı telemetri ve kaynak yönetimi deneyimini açılır modal yerine tam ekran, zengin ve bağımsız bir detay sayfasına (`/containers/:id`) dönüştürmek.
+* **Kapsam:**
+  - `/containers/:id` rotası ile bağımsız tam sayfa görünümü (`pages/ContainerDetail/`).
+  - Genel bakış, gerçek zamanlı telemetri grafikleri (anlık ve zaman serisi CPU, RAM, Ağ I/O), çevre değişkenleri düzenleme, ağ haritası ve depolama bağlama noktalarının tek bir gelişmiş dashboard'da sunulması.
+  - Çalışma zamanı cgroup kaynak sınırları (vCPU, RAM, OOM Killer koruması) ve yeniden başlatma ilkesi (restart policy) doğrudan sayfa üzerinden yönetimi.
+  - Konteyner kartlarından, satırlarından ve alt işlem çekmecesinden doğrudan bu sayfaya akıcı geçiş.
+* **Kabul Kriteri:** Modal sınırları olmadan konteynerin tüm metriklerinin ve ayarlarının bağımsız sayfada derinlemesine izlenip yönetilebilmesi.

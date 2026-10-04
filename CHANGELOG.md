@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.27] - 2026-10-05
+
+### Fixed
+- **Container Action Sheet Streamlining**:
+  - **Action Menu Simplification (`ContainerActionSheet.tsx`)**: Removed "Container details" and "Resource limits & telemetry" actions from the quick bottom sheet to align 1:1 with the clean HTML reference menu, keeping the sheet focused on logs, terminal, tagging, and container lifecycle operations (start/stop/pause/restart).
+- **Architecture Roadmap Alignment**:
+  - **Dedicated Container Detail & Telemetry Page (`/containers/:id`)**: Logged Phase 6 (Ticket 6.1) in project architecture roadmaps (`ROADMAP.md`, `ROADMAP.tr.md`) to transition container deep inspection and resource management from pop-up dialogs to a dedicated full-screen dashboard page (`/containers/:id`).
+
+---
+
 ## [1.5.26] - 2026-10-05
 
 ### Fixed

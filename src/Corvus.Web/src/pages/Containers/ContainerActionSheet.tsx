@@ -3,13 +3,11 @@ import { Sheet } from '../../components/ui/Sheet';
 import { 
   FileText, 
   Terminal, 
-  Sliders, 
   Tag, 
   Play, 
   Square, 
   RotateCw, 
-  Pause,
-  Layers
+  Pause 
 } from 'lucide-react';
 import type { DockerContainer } from '../../types';
 
@@ -21,7 +19,6 @@ export interface ContainerActionSheetProps {
   onOpenLogs: (id: string, name: string) => void;
   onOpenTerminal?: (id: string, name: string) => void;
   onEditTags?: (container: DockerContainer) => void;
-  onInspect?: (container: DockerContainer, initialTab?: 'overview' | 'resources') => void;
   isAdmin?: boolean;
 }
 
@@ -33,7 +30,6 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
   onOpenLogs,
   onOpenTerminal,
   onEditTags,
-  onInspect,
   isAdmin = true,
 }) => {
   if (!container) return null;
@@ -95,31 +91,6 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
           <span>Terminal</span>
         </button>
 
-        {/* Konteyner Detayları (Genel Bakış, Ağ, Depolama, Çevre Değişkenleri) */}
-        <button
-          type="button"
-          onClick={() => {
-            onClose();
-            onInspect?.(container, 'overview');
-          }}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#eceef6] hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors cursor-pointer text-left"
-        >
-          <Layers className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
-          <span>Konteyner detayları</span>
-        </button>
-
-        {/* Kaynak sınırları & Canlı Telemetri */}
-        <button
-          type="button"
-          onClick={() => {
-            onClose();
-            onInspect?.(container, 'resources');
-          }}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#eceef6] hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors cursor-pointer text-left"
-        >
-          <Sliders className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
-          <span>Kaynak sınırları & telemetri</span>
-        </button>
 
         {/* Etiket ekle */}
         <button

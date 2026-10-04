@@ -3,6 +3,16 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.27] - 2026-10-05
+
+### Düzeltilenler (Fixed)
+- **Konteyner Alt İşlem Çekmecesinin Sadeleştirilmesi**:
+  - **Çekmece Aksiyonlarının Arındırılması (`ContainerActionSheet.tsx`)**: HTML prototipinin saf ve sade yapısıyla tam uyumlu olacak şekilde, alt çekmecedeki "Konteyner detayları" ve "Kaynak sınırları & telemetri" butonları kaldırıldı. Çekmece doğrudan günlükler, terminal, etiketleme ve yaşam döngüsü eylemlerine (başlat/durdur/duraklat/yeniden başlat) odaklandı.
+- **Mimari Planlama (Roadmap Güncellemesi)**:
+  - **Bağımsız Konteyner Detay & Telemetri Sayfası (`/containers/:id`)**: Modal tabanlı inceleme ve kaynak yönetimi yerine gelecekte konteynerin derinlemesine telemetri ve yapılandırmasını barındıracak bağımsız bir tam ekran detay sayfası (`/containers/:id`) oluşturulması Faz 6 (Bilet 6.1) olarak mimari yol haritasına (`ROADMAP.md`, `ROADMAP.tr.md`) kaydedildi.
+
+---
+
 ## [1.5.26] - 2026-10-05
 
 ### Düzeltilenler (Fixed)

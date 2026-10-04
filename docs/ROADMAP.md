@@ -165,3 +165,17 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Container tagging modal `ContainerTagsModal.tsx`.
   - Unit test suite (`ContainerTagsTests.cs`, 223/223 passing tests).
 * **Acceptance Criteria:** Services and containers can be tagged and filtered dynamically; tag state is persistent across restarts and rediscovery; all unit tests pass (223/223).
+
+---
+
+## Phase 6: Future Architecture Plans
+
+### Ticket 6.1 — Dedicated Container Detail & Telemetry Page (`/containers/:id`) [PLANNED]
+* **Blocked by:** Ticket 4.4 completed.
+* **Objective:** Elevate container inspection, live telemetry, and resource management from a pop-up modal into a full-page, dedicated deep dashboard (`/containers/:id`).
+* **Scope:**
+  - Dedicated route `/containers/:id` with modular page architecture (`pages/ContainerDetail/`).
+  - Unified dashboard displaying overview status, real-time telemetry time-series charts (CPU, RAM, Net I/O), environment variables editor, network topology map, and storage mounts.
+  - Interactive runtime cgroup resource limit controls (vCPU cores, RAM limits, OOM protection) and restart policy adjustments.
+  - Deep-link navigation directly from container cards, table rows, and the quick action sheet.
+* **Acceptance Criteria:** Comprehensive container diagnostics and control operating on a dedicated page without modal constraints.
