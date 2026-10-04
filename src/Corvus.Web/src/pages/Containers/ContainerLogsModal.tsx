@@ -109,30 +109,30 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs select-none">
-      <div className="bg-[#0f1117] border border-[#2a2e3f] rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-xs select-none">
+      <div className="sheet-glass border border-white/10 rounded-[28px] w-full max-w-5xl h-[88vh] flex flex-col shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] overflow-hidden animate-in fade-in duration-200">
         
         {/* Terminal Header */}
-        <div className="h-14 px-4 sm:px-6 bg-[#1a1d29] border-b border-[#2a2e3f] flex items-center justify-between shrink-0">
+        <div className="h-16 px-5 sm:px-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/[0.02]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#0f1117] border border-[#2a2e3f] flex items-center justify-center text-[#d4d4d8]">
+            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-[#d5d5dc]">
               <Terminal className="w-4 h-4" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-[#e5e7eb] truncate max-w-[180px] sm:max-w-xs">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="font-bold text-sm sm:text-base text-[#eceef6] truncate max-w-[200px] sm:max-w-md">
                   {containerName}
                 </span>
-                <span className="text-[11px] font-mono text-[#9ca3af]">
+                <span className="text-[11px] font-mono text-[#9ba0b5]">
                   ({containerId.slice(0, 12)})
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsLive(!isLive)}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-mono cursor-pointer transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-mono cursor-pointer transition-colors ${
                     isLive 
-                      ? 'bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/30 animate-pulse' 
-                      : 'bg-[#6b7280]/15 text-[#9ca3af] border-[#2a2e3f]'
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 animate-pulse' 
+                      : 'bg-white/[0.06] text-[#9ba0b5] border-white/10'
                   }`}
                   title={isLive ? t('logsModal.pausedBadge') : t('logsModal.liveBadge')}
                 >
@@ -145,7 +145,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
 
           <button
             onClick={onClose}
-            className="text-[#9ca3af] hover:text-[#e5e7eb] p-1.5 rounded-lg hover:bg-[#2a2e3f]/60 transition-colors cursor-pointer"
+            className="text-[#9ba0b5] hover:text-[#eceef6] p-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
             title={t('common.close')}
           >
             <X className="w-5 h-5" />
@@ -153,16 +153,16 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
         </div>
 
         {/* Toolbar */}
-        <div className="p-3 bg-[#13151f] border-b border-[#2a2e3f] flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="px-4 py-3 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs bg-white/[0.01]">
           {/* Arama */}
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-[#9ba0b5] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder={t('logsModal.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#0a0c10] border border-[#2a2e3f] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#e5e7eb] placeholder-[#9ca3af] focus:outline-none focus:border-[#d4d4d8]"
+              className="w-full bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl pl-9 pr-3.5 py-1.5 text-xs text-[#eceef6] placeholder-[#9ba0b5] focus:outline-none focus:border-[#d5d5dc] transition-colors"
             />
           </div>
 
@@ -172,43 +172,43 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
             <select
               value={tailCount}
               onChange={(e) => setTailCount(Number(e.target.value))}
-              className="bg-[#0a0c10] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-xs text-[#9ca3af] focus:outline-none focus:border-[#d4d4d8] cursor-pointer"
+              className="bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl px-3 py-1.5 text-xs text-[#eceef6] focus:outline-none focus:border-[#d5d5dc] cursor-pointer transition-colors"
             >
-              <option value={50}>{t('logsModal.lines50')}</option>
-              <option value={100}>{t('logsModal.lines100')}</option>
-              <option value={250}>{t('logsModal.lines250')}</option>
-              <option value={500}>{t('logsModal.lines500')}</option>
+              <option value={50} className="bg-[#12141e] text-[#eceef6]">{t('logsModal.lines50')}</option>
+              <option value={100} className="bg-[#12141e] text-[#eceef6]">{t('logsModal.lines100')}</option>
+              <option value={250} className="bg-[#12141e] text-[#eceef6]">{t('logsModal.lines250')}</option>
+              <option value={500} className="bg-[#12141e] text-[#eceef6]">{t('logsModal.lines500')}</option>
             </select>
 
             {/* Otomatik Kaydırma */}
             <button
               onClick={() => setAutoScroll(!autoScroll)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
                 autoScroll
-                  ? 'bg-[#d4d4d8] text-[#0f1117] font-semibold border-transparent'
-                  : 'bg-[#0a0c10] border-[#2a2e3f] text-[#9ca3af] hover:text-[#e5e7eb]'
+                  ? 'bg-white text-black font-semibold border-white'
+                  : 'bg-white/[0.04] border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08]'
               }`}
             >
-              <ArrowDown className="w-3 h-3" />
+              <ArrowDown className="w-3.5 h-3.5" />
               <span>{t('logsModal.autoScroll')}</span>
             </button>
 
             {/* Temizle */}
             <button
               onClick={() => setLogs([])}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#2a2e3f] bg-[#0a0c10] text-[#9ca3af] hover:text-[#ef4444] transition-colors cursor-pointer"
+              className="flex items-center gap-1 p-2 rounded-xl border border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
               title={t('logsModal.clearTooltip')}
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
 
             {/* Yenile */}
             <button
               onClick={fetchInitialLogs}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#2a2e3f] bg-[#0a0c10] text-[#9ca3af] hover:text-[#e5e7eb] transition-colors cursor-pointer"
+              className="flex items-center gap-1 p-2 rounded-xl border border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
               title={t('logsModal.refreshTooltip')}
             >
-              <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -216,24 +216,24 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
         {/* Terminal Body */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 p-4 overflow-y-auto bg-[#0a0c10] font-mono text-xs leading-relaxed space-y-1 select-text"
+          className="flex-1 p-4 sm:p-5 overflow-y-auto bg-[#0a0c10]/95 font-mono text-xs leading-relaxed space-y-1 select-text"
         >
           {loading && logs.length === 0 && (
-            <div className="flex items-center justify-center h-48 text-[#9ca3af]">
+            <div className="flex items-center justify-center h-48 text-[#9ba0b5]">
               <RefreshCw className="w-5 h-5 animate-spin mr-2" />
               {t('logsModal.loading')}
             </div>
           )}
 
           {!loading && filteredLogs.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-48 text-[#9ca3af]/60">
+            <div className="flex flex-col items-center justify-center h-48 text-[#9ba0b5]/60">
               <Terminal className="w-8 h-8 mb-2 opacity-40" />
               <span>{t('logsModal.noLogs')}</span>
             </div>
           )}
 
           {filteredLogs.map((line, idx) => (
-            <div key={idx} className="hover:bg-[#1a1d29]/40 py-0.5 px-1 rounded break-all whitespace-pre-wrap">
+            <div key={idx} className="hover:bg-white/[0.04] py-0.5 px-1.5 rounded-md break-all whitespace-pre-wrap transition-colors">
               {formatLogLine(line)}
             </div>
           ))}
@@ -242,7 +242,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="h-8 px-4 bg-[#13151f] border-t border-[#2a2e3f] flex items-center justify-between text-[11px] text-[#9ca3af] font-mono">
+        <div className="h-9 px-5 border-t border-white/10 flex items-center justify-between text-[11px] text-[#9ba0b5] font-mono bg-white/[0.02]">
           <span>{t('logsModal.showingLines', { count: filteredLogs.length })}</span>
           <span>{t('logsModal.bufferStatus', { current: logs.length, max: 1000 })}</span>
         </div>

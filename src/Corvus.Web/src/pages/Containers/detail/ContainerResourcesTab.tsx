@@ -79,39 +79,39 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
   };
 
   return (
-    <form onSubmit={handleSave} className="space-y-6">
-      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
-        <h4 className="text-xs font-semibold text-slate-200">
+    <form onSubmit={handleSave} className="space-y-4">
+      <div className="p-4 surface border border-white/10 rounded-2xl space-y-1">
+        <h4 className="text-xs font-bold text-[#eceef6]">
           {t('containers.tabResources')}
         </h4>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-[#9ba0b5]">
           {t('containers.resourcesDesc')}
         </p>
       </div>
 
       {statusMessage && (
         <div
-          className={`p-3.5 rounded-xl border flex items-center gap-2.5 text-xs ${
+          className={`p-3.5 rounded-2xl border flex items-center gap-2.5 text-xs ${
             statusMessage.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-              : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
+              ? 'bg-emerald-500/10 border-emerald-500/25 text-[#34d399]'
+              : 'bg-rose-500/10 border-rose-500/25 text-[#f87171]'
           }`}
         >
           {statusMessage.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#34d399] shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-[#f87171] shrink-0" />
           )}
-          <span>{statusMessage.text}</span>
+          <span className="font-medium">{statusMessage.text}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* CPU Limits */}
-        <div className="p-4 bg-slate-900/40 border border-slate-800 rounded-xl space-y-3">
+        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-indigo-400" />
-            <label className="text-xs font-semibold text-slate-200">
+            <Cpu className="w-4 h-4 text-[#d5d5dc]" />
+            <label className="text-xs font-bold text-[#eceef6]">
               {t('containers.cpuLimitLabel')}
             </label>
           </div>
@@ -125,10 +125,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
               value={cpuCores}
               disabled={!isAdmin || saving}
               onChange={(e) => setCpuCores(e.target.value)}
-              placeholder="0 (Unlimited)"
-              className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+              placeholder="0 (Sınırsız)"
+              className="w-full px-3.5 py-2 text-xs font-mono bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl text-[#eceef6] focus:outline-none focus:border-[#d5d5dc] transition-colors disabled:opacity-50"
             />
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-[#9ba0b5]">
               {t('containers.cpuLimitHelp')}
             </p>
           </div>
@@ -141,13 +141,13 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
                   key={preset}
                   type="button"
                   onClick={() => setCpuCores(preset)}
-                  className={`px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
+                  className={`px-2.5 py-1 text-[11px] font-mono rounded-lg border transition-colors cursor-pointer ${
                     cpuCores === preset
-                      ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                      ? 'bg-white text-black font-bold border-white'
+                      : 'bg-white/[0.04] text-[#9ba0b5] border-white/10 hover:text-[#eceef6] hover:bg-white/[0.08]'
                   }`}
                 >
-                  {preset === '0' ? 'Unlimited' : `${preset} Core`}
+                  {preset === '0' ? 'Sınırsız' : `${preset} Çekirdek`}
                 </button>
               ))}
             </div>
@@ -155,10 +155,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
         </div>
 
         {/* Memory Limits */}
-        <div className="p-4 bg-slate-900/40 border border-slate-800 rounded-xl space-y-3">
+        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-purple-400" />
-            <label className="text-xs font-semibold text-slate-200">
+            <HardDrive className="w-4 h-4 text-[#d5d5dc]" />
+            <label className="text-xs font-bold text-[#eceef6]">
               {t('containers.memoryLimitLabel')}
             </label>
           </div>
@@ -171,10 +171,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
               value={memoryMb}
               disabled={!isAdmin || saving}
               onChange={(e) => setMemoryMb(e.target.value)}
-              placeholder="0 (Unlimited)"
-              className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
+              placeholder="0 (Sınırsız)"
+              className="w-full px-3.5 py-2 text-xs font-mono bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl text-[#eceef6] focus:outline-none focus:border-[#d5d5dc] transition-colors disabled:opacity-50"
             />
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-[#9ba0b5]">
               {t('containers.memoryLimitHelp')}
             </p>
           </div>
@@ -183,7 +183,7 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
           {isAdmin && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {[
-                { label: 'Unlimited', val: '0' },
+                { label: 'Sınırsız', val: '0' },
                 { label: '256 MB', val: '256' },
                 { label: '512 MB', val: '512' },
                 { label: '1 GB', val: '1024' },
@@ -194,10 +194,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
                   key={p.val}
                   type="button"
                   onClick={() => setMemoryMb(p.val)}
-                  className={`px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
+                  className={`px-2.5 py-1 text-[11px] font-mono rounded-lg border transition-colors cursor-pointer ${
                     memoryMb === p.val
-                      ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                      ? 'bg-white text-black font-bold border-white'
+                      : 'bg-white/[0.04] text-[#9ba0b5] border-white/10 hover:text-[#eceef6] hover:bg-white/[0.08]'
                   }`}
                 >
                   {p.label}
@@ -209,10 +209,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
       </div>
 
       {/* Restart Policy */}
-      <div className="p-4 bg-slate-900/40 border border-slate-800 rounded-xl space-y-3">
+      <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
         <div className="flex items-center gap-2">
-          <RotateCcw className="w-4 h-4 text-amber-400" />
-          <label className="text-xs font-semibold text-slate-200">
+          <RotateCcw className="w-4 h-4 text-[#d5d5dc]" />
+          <label className="text-xs font-bold text-[#eceef6]">
             {t('containers.restartPolicyLabel')}
           </label>
         </div>
@@ -226,10 +226,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
           ].map((item) => (
             <label
               key={item.id}
-              className={`p-3 rounded-lg border cursor-pointer transition-all ${
+              className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                 restartPolicy === item.id
-                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/30'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                  ? 'bg-white/[0.08] border-white/30 text-[#eceef6] shadow-sm'
+                  : 'bg-white/[0.02] border-white/10 text-[#9ba0b5] hover:border-white/20'
               }`}
             >
               <input
@@ -241,8 +241,8 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
                 onChange={() => setRestartPolicy(item.id)}
                 className="sr-only"
               />
-              <div className="font-semibold text-xs text-slate-200 mb-0.5">{item.label}</div>
-              <div className="text-[11px] leading-relaxed text-slate-400">{item.desc}</div>
+              <div className="font-bold text-xs text-[#eceef6] mb-0.5">{item.label}</div>
+              <div className="text-[11px] leading-relaxed text-[#9ba0b5]">{item.desc}</div>
             </label>
           ))}
         </div>
@@ -254,12 +254,12 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-black bg-white hover:bg-[#d5d5dc] rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer"
           >
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Updating...</span>
+                <span>Güncelleniyor...</span>
               </>
             ) : (
               <>

@@ -213,19 +213,19 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="flex flex-col bg-[#0f1117] border border-[#2a2e3f] shadow-2xl rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 select-none">
+      <div className="flex flex-col sheet-glass border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] rounded-[28px] w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Üst Başlık */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#1a1d29] border-b border-[#2a2e3f]">
+        <div className="flex items-center justify-between px-6 py-5 bg-white/[0.02] border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              <Trash2 className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-[#d5d5dc]">
+              <Trash2 className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-[#e5e7eb]">
+              <h2 className="text-base font-bold text-[#eceef6]">
                 {t('containers.pruneTitle') || 'Güvenli Sistem Analizi & Temizliği'}
               </h2>
-              <p className="text-xs text-[#9ca3af]">
+              <p className="text-xs text-[#9ba0b5]">
                 {t('containers.pruneSubtitle') || 'Disk kullanımını inceleyin ve silinecek öğeleri seçerek güvenle temizleyin'}
               </p>
             </div>
@@ -237,15 +237,15 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                 onClick={loadDiskUsage}
                 disabled={isLoadingDf || isExecuting}
                 title="Yeniden Tara"
-                className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-white hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
+                className="p-2 rounded-xl border border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
               >
-                <RefreshCw className={`w-4 h-4 ${isLoadingDf ? 'animate-spin text-indigo-400' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${isLoadingDf ? 'animate-spin text-[#d5d5dc]' : ''}`} />
               </button>
             )}
             <button
               onClick={onClose}
               disabled={isExecuting}
-              className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-white hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
+              className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -255,7 +255,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
         {/* Gövde */}
         <div className="p-6 overflow-y-auto space-y-5">
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2.5">
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <div>{error}</div>
             </div>
@@ -264,11 +264,11 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
           {/* 1. Aşama: Yükleniyor Ekranı */}
           {isLoadingDf && !result && (
             <div className="py-14 text-center space-y-3">
-              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mx-auto" />
-              <div className="text-sm font-medium text-[#e5e7eb]">
+              <Loader2 className="w-8 h-8 text-[#d5d5dc] animate-spin mx-auto" />
+              <div className="text-sm font-semibold text-[#eceef6]">
                 {t('containers.scanningDiskUsage') || 'Docker sistemi ve disk kullanımı taranıyor...'}
               </div>
-              <p className="text-xs text-[#9ca3af]">
+              <p className="text-xs text-[#9ba0b5]">
                 {t('containers.scanningDiskUsageDesc') || 'Durdurulmuş konteynerler, kullanılmayan imajlar ve sahipsiz hacimler analiz ediliyor.'}
               </p>
             </div>
@@ -277,60 +277,60 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
           {/* 2. Aşama: Sonuç Raporu */}
           {result && (
             <div className="space-y-6 text-center py-2 animate-in zoom-in-95 duration-200">
-              <div className="inline-flex p-3 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              <div className="inline-flex p-3 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-[#e5e7eb]">
+                <h3 className="text-lg font-bold text-[#eceef6]">
                   {t('containers.pruneSuccessTitle') || 'Temizlik Başarıyla Tamamlandı'}
                 </h3>
-                <p className="text-xs text-[#9ca3af] mt-1">
+                <p className="text-xs text-[#9ba0b5] mt-1">
                   {t('containers.pruneTotalReclaimed') || 'Sistemden geri kazanılan disk alanı:'}
                 </p>
-                <div className="text-3xl font-extrabold text-emerald-400 font-mono mt-2">
+                <div className="text-3xl font-extrabold text-[#34d399] font-mono mt-2">
                   {formatBytes(result.totalSpaceReclaimed)}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-left pt-2">
-                <div className="p-3 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
-                  <div className="text-[11px] text-[#9ca3af] flex items-center gap-1">
-                    <Boxes className="w-3.5 h-3.5 text-indigo-400" />
+                <div className="p-3.5 surface rounded-2xl border border-white/10">
+                  <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
+                    <Boxes className="w-3.5 h-3.5 text-[#d5d5dc]" />
                     <span>Konteyner</span>
                   </div>
-                  <div className="text-sm font-bold text-[#e5e7eb] mt-1 font-mono">
+                  <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
                     {result.deletedContainers.length} adet
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
-                  <div className="text-[11px] text-[#9ca3af] flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                <div className="p-3.5 surface rounded-2xl border border-white/10">
+                  <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5 text-[#d5d5dc]" />
                     <span>İmaj</span>
                   </div>
-                  <div className="text-sm font-bold text-[#e5e7eb] mt-1 font-mono">
+                  <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
                     {result.deletedImages.length} adet
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
-                  <div className="text-[11px] text-[#9ca3af] flex items-center gap-1">
-                    <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
+                <div className="p-3.5 surface rounded-2xl border border-white/10">
+                  <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
+                    <HardDrive className="w-3.5 h-3.5 text-[#d5d5dc]" />
                     <span>Hacim</span>
                   </div>
-                  <div className="text-sm font-bold text-[#e5e7eb] mt-1 font-mono">
+                  <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
                     {result.deletedVolumes.length} adet
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
-                  <div className="text-[11px] text-[#9ca3af] flex items-center gap-1">
-                    <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                <div className="p-3.5 surface rounded-2xl border border-white/10">
+                  <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
+                    <Cpu className="w-3.5 h-3.5 text-[#d5d5dc]" />
                     <span>Önbellek</span>
                   </div>
-                  <div className="text-sm font-bold text-[#e5e7eb] mt-1 font-mono">
-                    {result.buildCachePruned ? 'Temizlendi' : '-'}
+                  <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
+                    {result.buildCachePruned ? 'Temizlendi' : '—'}
                   </div>
                 </div>
               </div>
@@ -355,20 +355,20 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
           {!isLoadingDf && !result && dfData && (
             <div className="space-y-4">
               {/* Sekme Butonları */}
-              <div className="flex items-center gap-1.5 p-1 bg-[#131620] border border-[#2a2e3f] rounded-xl overflow-x-auto">
+              <div className="flex items-center gap-1.5 p-1 surface border border-white/10 rounded-2xl overflow-x-auto no-scrollbar">
                 <button
                   type="button"
                   onClick={() => setActiveTab('containers')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'containers'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d29]'
+                      ? 'bg-white text-black shadow-sm font-bold'
+                      : 'text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.04]'
                   }`}
                 >
                   <Boxes className="w-3.5 h-3.5" />
                   <span>Durdurulmuş Konteynerler</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    activeTab === 'containers' ? 'bg-indigo-700 text-white' : 'bg-[#1a1d29] text-[#9ca3af]'
+                    activeTab === 'containers' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>
                     {prunableContainers.length}
                   </span>
@@ -377,16 +377,16 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('images')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'images'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d29]'
+                      ? 'bg-white text-black shadow-sm font-bold'
+                      : 'text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.04]'
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
                   <span>Kullanılmayan İmajlar</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    activeTab === 'images' ? 'bg-indigo-700 text-white' : 'bg-[#1a1d29] text-[#9ca3af]'
+                    activeTab === 'images' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>
                     {prunableImages.length}
                   </span>
@@ -395,16 +395,16 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('volumes')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'volumes'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d29]'
+                      ? 'bg-white text-black shadow-sm font-bold'
+                      : 'text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.04]'
                   }`}
                 >
                   <HardDrive className="w-3.5 h-3.5" />
                   <span>Sahipsiz Hacimler</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    activeTab === 'volumes' ? 'bg-indigo-700 text-white' : 'bg-[#1a1d29] text-[#9ca3af]'
+                    activeTab === 'volumes' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>
                     {prunableVolumes.length}
                   </span>
@@ -413,16 +413,16 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('buildCache')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'buildCache'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d29]'
+                      ? 'bg-white text-black shadow-sm font-bold'
+                      : 'text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.04]'
                   }`}
                 >
                   <Cpu className="w-3.5 h-3.5" />
                   <span>Derleme Önbelleği</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    activeTab === 'buildCache' ? 'bg-indigo-700 text-white' : 'bg-[#1a1d29] text-[#9ca3af]'
+                    activeTab === 'buildCache' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>
                     {buildCacheEntries.length}
                   </span>
@@ -471,11 +471,11 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
         </div>
 
         {/* Alt Çubuk */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#1a1d29] border-t border-[#2a2e3f]">
+        <div className="flex items-center justify-between px-6 py-4 bg-white/[0.02] border-t border-white/10">
           {result ? (
             <button
               onClick={handleDone}
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-medium text-xs text-white transition-colors cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 font-medium text-xs text-[#0a0d14] transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
             >
               {t('containers.pruneDoneButton')}
             </button>
@@ -483,10 +483,10 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
             <>
               {/* Canlı Hesaplanan Geri Kazanım Özeti */}
               <div className="text-xs">
-                <span className="text-[#9ca3af]">Seçilen: </span>
-                <span className="font-semibold text-[#e5e7eb]">{selectedSummary.count} öge</span>
-                <span className="mx-2 text-[#2a2e3f]">|</span>
-                <span className="text-[#9ca3af]">Kazanılacak: </span>
+                <span className="text-[#9ba0b5]">Seçilen: </span>
+                <span className="font-semibold text-[#eceef6]">{selectedSummary.count} öge</span>
+                <span className="mx-2 text-white/20">|</span>
+                <span className="text-[#9ba0b5]">Kazanılacak: </span>
                 <span className="font-mono font-bold text-emerald-400">
                   {formatBytes(selectedSummary.bytes)}
                 </span>
@@ -497,7 +497,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   type="button"
                   onClick={onClose}
                   disabled={isExecuting}
-                  className="px-4 py-2 rounded-xl border border-[#2a2e3f] bg-[#0f1117] text-xs font-medium text-[#9ca3af] hover:text-white hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {t('common.cancel') || 'Vazgeç'}
                 </button>
@@ -506,7 +506,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   type="button"
                   onClick={handleExecuteSelectivePrune}
                   disabled={isExecuting || selectedSummary.count === 0}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:bg-rose-600/40 text-xs font-semibold text-white shadow-lg shadow-rose-600/20 transition-all disabled:cursor-not-allowed cursor-pointer"
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-xs font-semibold text-white shadow-lg shadow-rose-500/20 transition-all disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isExecuting ? (
                     <>

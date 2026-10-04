@@ -40,11 +40,11 @@ export const Sheet: React.FC<SheetProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center select-none">
+    <div className="fixed inset-0 z-50 flex items-end justify-center select-none p-0 sm:px-4">
       {/* Scrim (Karartma & Blur) */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity duration-300"
       />
 
       {/* Sheet Container */}
@@ -53,17 +53,17 @@ export const Sheet: React.FC<SheetProps> = ({
         aria-modal="true"
         className={`
           relative z-10 w-full ${maxWidth} sheet-glass overflow-hidden
-          rounded-t-[28px] lg:rounded-[28px] p-5 lg:p-6
-          pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] lg:pb-6
-          shadow-[0_20px_60px_rgba(0,0,0,.6),inset_0_1px_0_rgba(255,255,255,.15)]
-          transition-all duration-300 ease-[cubic-bezier(.22,1,.36,1)]
-          animate-in fade-in-0 slide-in-from-bottom-6 lg:zoom-in-95
-          max-h-[90vh] flex flex-col
+          rounded-t-[32px] p-5 sm:p-6
+          pb-[calc(1.75rem+env(safe-area-inset-bottom,0px))] sm:pb-7
+          shadow-[0_-10px_40px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.18)]
+          transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
+          animate-in fade-in-0 slide-in-from-bottom-8
+          max-h-[88vh] flex flex-col
           ${className}
         `}
       >
-        {/* Mobil Tutamaç Çubuğu */}
-        <div className="lg:hidden w-[38px] h-[5px] rounded-full bg-white/20 mx-auto mb-3 shrink-0" />
+        {/* Tutamaç Çubuğu (Drag / Pull Handle) */}
+        <div className="w-12 h-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors mx-auto mb-3.5 shrink-0" />
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-4 shrink-0">

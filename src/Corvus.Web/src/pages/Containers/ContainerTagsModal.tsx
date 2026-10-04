@@ -87,7 +87,7 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget && !saving) onClose();
       }}
@@ -95,20 +95,20 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
       aria-modal="true"
       aria-labelledby="container-tags-title"
     >
-      <div className="bg-[#131620] border border-[#2a2e3f] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col scale-100 transition-all">
+      <div className="sheet-glass border border-white/10 rounded-[28px] shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] w-full max-w-md overflow-hidden flex flex-col scale-100 transition-all">
         {/* Modal Başlığı */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2a2e3f] bg-[#1a1d29]/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <div className="flex items-center justify-between px-6 py-4.5 border-b border-white/10 bg-white/[0.02]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-[#d5d5dc]">
               <Tag className="w-4 h-4" />
             </div>
             <div>
-              <h2 id="container-tags-title" className="text-sm font-semibold text-[#e5e7eb]">
+              <h2 id="container-tags-title" className="text-sm font-bold text-[#eceef6]">
                 {t('containers.tagsModalTitle') || 'Konteyner Etiketleri'}
               </h2>
-              <div className="flex items-center gap-1.5 text-xs text-[#9ca3af]">
-                <span className="font-medium text-[#e5e7eb]">{cleanName}</span>
-                <span className="font-mono text-[10px] text-[#6b7280]">({shortId})</span>
+              <div className="flex items-center gap-1.5 text-xs text-[#9ba0b5] mt-0.5">
+                <span className="font-semibold text-[#eceef6]">{cleanName}</span>
+                <span className="font-mono text-[11px] text-[#9ba0b5]">({shortId})</span>
               </div>
             </div>
           </div>
@@ -116,7 +116,7 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="p-1 rounded-lg text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#2a2e3f]/60 transition-colors disabled:opacity-50 cursor-pointer"
+            className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
             aria-label={t('common.close') || 'Kapat'}
           >
             <X className="w-4 h-4" />
@@ -124,20 +124,20 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
         </div>
 
         {/* Modal Gövdesi */}
-        <form onSubmit={handleSave} className="p-5 space-y-4">
-          <p className="text-xs text-[#9ca3af] leading-relaxed">
+        <form onSubmit={handleSave} className="p-6 space-y-4">
+          <p className="text-xs text-[#9ba0b5] leading-relaxed">
             {t('containers.tagsModalDesc') ||
               'Bu konteyner için filtreleme ve gruplamada kullanılacak özel etiketleri belirleyin.'}
           </p>
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400">
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-400">
               {error}
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[#e5e7eb]">
+            <label className="text-xs font-semibold text-[#eceef6]">
               {t('services.formTags') || 'Etiketler'}
             </label>
             <TagInput
@@ -150,19 +150,19 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
           </div>
 
           {/* Modal Alt Butonları */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#2a2e3f]">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-3.5 py-1.5 rounded-lg border border-[#2a2e3f] bg-[#1a1d29] text-xs font-medium text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#202434] transition-colors disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
             >
               {t('common.cancel') || 'İptal'}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white shadow-sm shadow-indigo-500/20 transition-colors disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-white text-black hover:bg-[#d5d5dc] text-xs font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
             >
               {saving ? (
                 <>

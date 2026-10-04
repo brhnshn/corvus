@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.23] - 2026-10-05
+
+### Fixed
+- **Container Action Sheet & Modal Architecture Overhaul**:
+  - **True Bottom Action Drawer (`Sheet.tsx` & `ContainerActionSheet.tsx`)**: Replaced the desktop-centered pop-up modal with an elegant, responsive bottom sheet drawer across all viewports. Features a smooth drag handle indicator, container status Pill header with image badge, and cleanly categorized two-tier action cards (*Inspection & Dev Tools* and *Lifecycle Actions*).
+  - **Midnight v2 Modal Redesign**: Modernized all container-related dialogs to eliminate legacy hardcoded `#1a1d29` and `slate-*` palettes:
+    - **Container Logs Modal (`ContainerLogsModal.tsx`)**: Glass backdrop (`sheet-glass rounded-[28px] border-white/10`), live SSE indicator pulse, modernized search filter, and monospace log viewer.
+    - **Container Web Terminal (`ContainerTerminalModal.tsx`)**: Midnight v2 shell selector, connection status pill, and full-screen controls.
+    - **Container Tags Modal (`ContainerTagsModal.tsx`)**: Streamlined tag management modal with unified input and action buttons.
+    - **Container Detail & Live Config (`ContainerDetailModal.tsx`)**: Elevated 5-tab dialog with active tab indicators, and modernized sub-tabs (`ContainerOverviewTab`, `ContainerEnvTab`, `ContainerNetworkingTab`, `ContainerStorageTab`, `ContainerResourcesTab`).
+    - **Safe System Prune Modal (`SystemPruneModal.tsx`)**: Overhauled disk audit dialog, dry-run tables (`PruneContainersTable`, `PruneImagesTable`, `PruneVolumesTable`, `PruneBuildCacheCard`), and selective prune action footer.
+
+---
+
 ## [1.5.22] - 2026-10-05
 
 ### Fixed

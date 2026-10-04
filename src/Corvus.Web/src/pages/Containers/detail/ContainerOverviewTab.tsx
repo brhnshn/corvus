@@ -55,11 +55,11 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
   const entrypointStr = inspect.config?.entrypoint ? inspect.config.entrypoint.join(' ') : '—';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Quick Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-900/60 border border-slate-800 rounded-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 surface rounded-2xl border border-white/10">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-[#9ba0b5] uppercase tracking-wider">
             {t('containers.quickActions')}:
           </span>
           {isAdmin && (
@@ -69,7 +69,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
                   type="button"
                   onClick={onStart}
                   disabled={actionLoading}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#34d399] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
                   {t('containers.start')}
@@ -79,7 +79,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
                   type="button"
                   onClick={onStop}
                   disabled={actionLoading}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#f87171] bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <Square className="w-3.5 h-3.5" />
                   {t('containers.stop')}
@@ -90,9 +90,9 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
                 type="button"
                 onClick={onRestart}
                 disabled={actionLoading}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#eceef6] bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
               >
-                <RotateCw className="w-3.5 h-3.5" />
+                <RotateCw className="w-3.5 h-3.5 text-[#9ba0b5]" />
                 {t('containers.restart')}
               </button>
 
@@ -102,7 +102,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
                     type="button"
                     onClick={onUnpause}
                     disabled={actionLoading}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#34d399] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5" />
                     {t('containers.resume')}
@@ -112,7 +112,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
                     type="button"
                     onClick={onPause}
                     disabled={actionLoading}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#fbbf24] bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <Pause className="w-3.5 h-3.5" />
                     {t('containers.pause')}
@@ -128,7 +128,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
             <button
               type="button"
               onClick={onOpenTerminal}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 rounded-xl transition-colors cursor-pointer"
             >
               <Terminal className="w-3.5 h-3.5" />
               {t('containers.openTerminal')}
@@ -138,65 +138,65 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
           <button
             type="button"
             onClick={onOpenLogs}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#eceef6] bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-xl transition-colors cursor-pointer"
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileText className="w-3.5 h-3.5 text-[#9ba0b5]" />
             {t('containers.viewLogs')}
           </button>
         </div>
       </div>
 
       {/* Grid of details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {/* Full ID Card */}
-        <div className="p-3.5 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="p-4 surface rounded-2xl border border-white/10 space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-[#9ba0b5]">
             <span>{t('containers.containerIdFull')}</span>
             <button
               type="button"
               onClick={handleCopyId}
-              className="text-slate-400 hover:text-white transition-colors"
-              title="Copy"
+              className="text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer"
+              title="Kopyala"
             >
               {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
           </div>
-          <div className="font-mono text-xs text-slate-200 break-all select-all">
+          <div className="font-mono text-xs text-[#eceef6] break-all select-all">
             {inspect.id}
           </div>
         </div>
 
         {/* Image Card */}
-        <div className="p-3.5 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-1">
-          <div className="text-xs text-slate-400">{t('containers.image')}</div>
-          <div className="font-mono text-xs text-blue-400 break-all font-medium">
+        <div className="p-4 surface rounded-2xl border border-white/10 space-y-1.5">
+          <div className="text-xs text-[#9ba0b5]">{t('containers.image')}</div>
+          <div className="font-mono text-xs text-[#eceef6] break-all font-semibold">
             {inspect.config?.image || inspect.image || '—'}
           </div>
         </div>
 
         {/* State & Health */}
-        <div className="p-3.5 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-2">
-          <div className="text-xs text-slate-400">{t('containers.statusHeader')}</div>
-          <div className="flex items-center gap-2">
+        <div className="p-4 surface rounded-2xl border border-white/10 space-y-2">
+          <div className="text-xs text-[#9ba0b5]">{t('containers.statusHeader')}</div>
+          <div className="flex items-center gap-2 flex-wrap">
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${
                 isRunning
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/25'
               }`}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+              <span className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
               {statusStr}
             </span>
 
             {inspect.state?.health?.status && (
-              <span className="text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
-                Health: {inspect.state.health.status}
+              <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                Sağlık: {inspect.state.health.status}
               </span>
             )}
 
             {inspect.state?.exitCode !== undefined && inspect.state.exitCode !== 0 && (
-              <span className="text-xs font-mono text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
+              <span className="text-xs font-mono text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
                 Exit: {inspect.state.exitCode}
               </span>
             )}
@@ -204,56 +204,56 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
         </div>
 
         {/* Restart Policy */}
-        <div className="p-3.5 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-1">
-          <div className="text-xs text-slate-400">{t('containers.restartPolicyLabel')}</div>
-          <div className="text-xs font-semibold text-slate-200">
+        <div className="p-4 surface rounded-2xl border border-white/10 space-y-1.5">
+          <div className="text-xs text-[#9ba0b5]">{t('containers.restartPolicyLabel')}</div>
+          <div className="text-xs font-bold text-[#eceef6]">
             {inspect.hostConfig?.restartPolicy?.name || 'no'}
           </div>
         </div>
       </div>
 
       {/* Execution Environment */}
-      <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-3">
-        <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-          Runtime Configuration
+      <div className="p-5 surface rounded-2xl border border-white/10 space-y-3">
+        <h4 className="text-xs font-bold text-[#eceef6] uppercase tracking-wider">
+          Çalışma Zamanı Yapılandırması
         </h4>
         <div className="space-y-2.5 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-slate-800/60 pb-2">
-            <span className="text-slate-400">{t('containers.command')}</span>
-            <span className="md:col-span-3 font-mono text-slate-200 break-all">{commandStr}</span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-white/10 pb-2">
+            <span className="text-[#9ba0b5]">{t('containers.command')}</span>
+            <span className="md:col-span-3 font-mono text-[#eceef6] break-all">{commandStr}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-slate-800/60 pb-2">
-            <span className="text-slate-400">{t('containers.entrypoint')}</span>
-            <span className="md:col-span-3 font-mono text-slate-200 break-all">{entrypointStr}</span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-white/10 pb-2">
+            <span className="text-[#9ba0b5]">{t('containers.entrypoint')}</span>
+            <span className="md:col-span-3 font-mono text-[#eceef6] break-all">{entrypointStr}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-slate-800/60 pb-2">
-            <span className="text-slate-400">{t('containers.workdir')}</span>
-            <span className="md:col-span-3 font-mono text-slate-200">{inspect.config?.workingDir || '—'}</span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-white/10 pb-2">
+            <span className="text-[#9ba0b5]">{t('containers.workdir')}</span>
+            <span className="md:col-span-3 font-mono text-[#eceef6]">{inspect.config?.workingDir || '—'}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4">
-            <span className="text-slate-400">{t('containers.user')}</span>
-            <span className="md:col-span-3 font-mono text-slate-200">{inspect.config?.user || 'root (default)'}</span>
+            <span className="text-[#9ba0b5]">{t('containers.user')}</span>
+            <span className="md:col-span-3 font-mono text-[#eceef6]">{inspect.config?.user || 'root (varsayılan)'}</span>
           </div>
         </div>
       </div>
 
       {/* Timestamps */}
-      <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-2.5 text-xs">
-        <h4 className="font-semibold text-slate-300 uppercase tracking-wider">
-          Timestamps
+      <div className="p-5 surface rounded-2xl border border-white/10 space-y-3 text-xs">
+        <h4 className="font-bold text-[#eceef6] uppercase tracking-wider">
+          Zaman Damgaları
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <span className="text-slate-400 block">{t('containers.createdTime')}</span>
-            <span className="text-slate-200 font-mono">{formatDate(inspect.created)}</span>
+            <span className="text-[#9ba0b5] block mb-0.5">{t('containers.createdTime')}</span>
+            <span className="text-[#eceef6] font-mono">{formatDate(inspect.created)}</span>
           </div>
           <div>
-            <span className="text-slate-400 block">{t('containers.startedTime')}</span>
-            <span className="text-slate-200 font-mono">{formatDate(inspect.state?.startedAt)}</span>
+            <span className="text-[#9ba0b5] block mb-0.5">{t('containers.startedTime')}</span>
+            <span className="text-[#eceef6] font-mono">{formatDate(inspect.state?.startedAt)}</span>
           </div>
           <div>
-            <span className="text-slate-400 block">{t('containers.finishedTime')}</span>
-            <span className="text-slate-200 font-mono">{formatDate(inspect.state?.finishedAt)}</span>
+            <span className="text-[#9ba0b5] block mb-0.5">{t('containers.finishedTime')}</span>
+            <span className="text-[#eceef6] font-mono">{formatDate(inspect.state?.finishedAt)}</span>
           </div>
         </div>
       </div>

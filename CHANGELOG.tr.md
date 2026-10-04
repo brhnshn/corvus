@@ -3,6 +3,20 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.23] - 2026-10-05
+
+### Düzeltilenler (Fixed)
+- **Konteyner Alt Aksiyon Çekmecesi ve Modal Mimarisi Yenilemesi**:
+  - **Gerçek Alt Çekmece (Bottom Sheet) Deneyimi (`Sheet.tsx` & `ContainerActionSheet.tsx`)**: Masaüstünde ortalanmış sıradan modal yerine tüm ekran boyutlarında sayfa altından yukarı kayarak açılan modern alt çekmece (drawer) mimarisi sağlandı. Sürükleme tutamacı (drag handle), konteyner durum hapı (Pill), imaj rozeti ve iki aşamalı eylem kartları (*İnceleme & Geliştirici Araçları* ve *Yaşam Döngüsü Eylemleri*) entegre edildi.
+  - **Konteyner Modallarının Midnight v2 Tasarımına Geçişi**: Eski temadan kalan `#1a1d29` ve `slate-*` renkleri temizlenerek projenin güncel Midnight v2 tasarım sistemine uyarlandı:
+    - **Canlı Günlükler Modalı (`ContainerLogsModal.tsx`)**: `sheet-glass` cam katmanı (`rounded-[28px] border-white/10`), canlı SSE akış rozeti, modern filtreleme girdisi ve okunabilir monospace log alanı.
+    - **Web Terminal Modalı (`ContainerTerminalModal.tsx`)**: Midnight v2 kabuk (shell) seçici, bağlantı durum hapı ve tam ekran kontrolleri.
+    - **Etiket Yönetim Modalı (`ContainerTagsModal.tsx`)**: Temiz Midnight v2 etiket giriş alanı ve aksiyon butonları.
+    - **Konteyner Detay & Canlı Yapılandırma (`ContainerDetailModal.tsx`)**: 5 sekmeli detay modalı ve alt bileşenleri (`ContainerOverviewTab`, `ContainerEnvTab`, `ContainerNetworkingTab`, `ContainerStorageTab`, `ContainerResourcesTab`) cam sekmeler ve `surface` kartları ile yenilendi.
+    - **Güvenli Sistem Analizi & Temizliği (`SystemPruneModal.tsx`)**: Disk analiz raporu, alt tablolar (`PruneContainersTable`, `PruneImagesTable`, `PruneVolumesTable`, `PruneBuildCacheCard`) ve alt işlem çubuğu Midnight v2'ye taşındı.
+
+---
+
 ## [1.5.22] - 2026-10-05
 
 ### Düzeltilenler (Fixed)

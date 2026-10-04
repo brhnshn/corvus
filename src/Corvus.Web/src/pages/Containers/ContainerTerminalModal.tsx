@@ -252,25 +252,25 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-xs select-none">
       <div 
-        className={`flex flex-col bg-[#0f1117] border border-[#2a2e3f] shadow-2xl rounded-2xl overflow-hidden transition-all duration-200 ${
+        className={`flex flex-col sheet-glass border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] overflow-hidden transition-all duration-200 ${
           isFullscreen 
             ? 'w-full h-full rounded-none border-none' 
-            : 'w-full max-w-5xl h-[85vh] max-h-[800px]'
+            : 'w-full max-w-5xl h-[86vh] max-h-[820px] rounded-[28px]'
         }`}
       >
         {/* Üst Başlık ve Kontrol Çubuğu */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[#1a1d29] border-b border-[#2a2e3f] select-none">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-6 h-16 bg-white/[0.02] border-b border-white/10 select-none shrink-0">
           {/* Sol: İkon, İsim ve Bağlantı Durumu */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
-              <SquareTerminal className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-[#d5d5dc] shrink-0">
+              <SquareTerminal className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-[#e5e7eb] truncate">{containerName}</h2>
-                <span className="text-xs font-mono text-[#9ca3af]">({containerId.slice(0, 12)})</span>
+                <h2 className="text-sm sm:text-base font-bold text-[#eceef6] truncate">{containerName}</h2>
+                <span className="text-xs font-mono text-[#9ba0b5]">({containerId.slice(0, 12)})</span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 {connectionState === 'connecting' && (
@@ -286,7 +286,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
                   </span>
                 )}
                 {connectionState === 'disconnected' && (
-                  <span className="flex items-center gap-1.5 text-xs text-[#9ca3af]">
+                  <span className="flex items-center gap-1.5 text-xs text-[#9ba0b5]">
                     <span className="w-2 h-2 rounded-full bg-gray-500" />
                     {t('containers.terminalDisconnected')}
                   </span>
@@ -304,16 +304,16 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
           {/* Sağ: Shell Seçimi ve Aksiyon Butonları */}
           <div className="flex items-center gap-2">
             {/* Shell Seçici */}
-            <div className="flex items-center gap-1.5 bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2 py-1 text-xs">
-              <span className="text-[#9ca3af] hidden sm:inline">{t('containers.terminalShell')}:</span>
+            <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/10 rounded-xl px-2.5 py-1 text-xs">
+              <span className="text-[#9ba0b5] hidden sm:inline">{t('containers.terminalShell')}:</span>
               <select
                 value={shell}
                 onChange={(e) => setShell(e.target.value)}
-                className="bg-transparent text-[#e5e7eb] font-mono text-xs focus:outline-none cursor-pointer"
+                className="bg-transparent text-[#eceef6] font-mono text-xs focus:outline-none cursor-pointer"
                 title={t('containers.terminalShell')}
               >
                 {SHELL_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-[#1a1d29] text-[#e5e7eb]">
+                  <option key={opt.value} value={opt.value} className="bg-[#12141e] text-[#eceef6]">
                     {opt.labelKey ? t(opt.labelKey as any) : opt.defaultLabel}
                   </option>
                 ))}
@@ -323,7 +323,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             {/* Yeniden Bağlan */}
             <button
               onClick={handleReconnect}
-              className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors cursor-pointer"
+              className="p-2 rounded-xl border border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
               title={t('containers.terminalReconnect')}
             >
               <RefreshCw className="w-4 h-4" />
@@ -332,7 +332,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             {/* Ekranı Temizle */}
             <button
               onClick={handleClear}
-              className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors cursor-pointer"
+              className="p-2 rounded-xl border border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
               title={t('containers.terminalClear')}
             >
               <Trash2 className="w-4 h-4" />
@@ -341,10 +341,10 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             {/* İpucu / Yardım */}
             <button
               onClick={() => setShowHelp(!showHelp)}
-              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
                 showHelp 
-                  ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-300' 
-                  : 'border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130]'
+                  ? 'border-[#d5d5dc]/40 bg-white/10 text-white' 
+                  : 'border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08]'
               }`}
               title="Bilgi"
             >
@@ -354,7 +354,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             {/* Tam Ekran Toggle */}
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors cursor-pointer hidden sm:block"
+              className="p-2 rounded-xl border border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer hidden sm:block"
               title={isFullscreen ? t('containers.terminalExitFullscreen') : t('containers.terminalFullscreen')}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -363,21 +363,21 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             {/* Kapat Butonu */}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors cursor-pointer ml-1"
-              title="ESC"
+              className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors cursor-pointer ml-1"
+              title="Kapat"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Yardım Bilgi Şeridi */}
         {showHelp && (
-          <div className="px-4 py-2 bg-indigo-950/30 border-b border-indigo-500/20 flex items-center justify-between text-xs text-indigo-300">
+          <div className="px-5 py-2.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between text-xs text-[#9ba0b5]">
             <span>{t('containers.terminalHelpTip')}</span>
             <button 
               onClick={() => setShowHelp(false)} 
-              className="text-indigo-400 hover:text-indigo-200 underline text-[11px] ml-4 cursor-pointer"
+              className="text-[#eceef6] hover:underline text-[11px] ml-4 cursor-pointer font-medium"
             >
               Gizle
             </button>
@@ -387,19 +387,19 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
         {/* xterm.js Terminal Tuvali */}
         <div 
           ref={terminalElementRef} 
-          className="flex-1 w-full h-full bg-[#0a0c10] p-2.5 overflow-hidden font-mono focus:outline-none"
+          className="flex-1 w-full h-full bg-[#0a0c10] p-3 overflow-hidden font-mono focus:outline-none"
           onClick={() => xtermRef.current?.focus()}
         />
 
         {/* Alt Bilgi Çubuğu */}
-        <div className="flex items-center justify-between px-4 py-1.5 bg-[#12151f] border-t border-[#2a2e3f] text-[11px] text-[#9ca3af] select-none">
+        <div className="flex items-center justify-between px-5 py-2 bg-white/[0.02] border-t border-white/10 text-[11px] text-[#9ba0b5] select-none shrink-0">
           <div className="flex items-center gap-3">
-            <span>Konteyner: <strong className="text-[#e5e7eb] font-mono">{containerName}</strong></span>
-            <span>Kabuk: <strong className="text-indigo-400 font-mono">{shell}</strong></span>
+            <span>Konteyner: <strong className="text-[#eceef6] font-mono">{containerName}</strong></span>
+            <span>Kabuk: <strong className="text-[#d5d5dc] font-mono">{shell}</strong></span>
           </div>
           <div className="flex items-center gap-3 font-mono text-[10px]">
             <span>VT100 / xterm-256color</span>
-            <span className="text-[#4b5563]">|</span>
+            <span className="text-white/20">|</span>
             <span>Zero-Allocation WebSocket</span>
           </div>
         </div>
