@@ -144,6 +144,8 @@ corvus/
 │       │   ├── components/         # SADECE ortak/paylaşılan global UI bileşenleri
 │       │   │   ├── common/                   # Ortak paylaşılan çoklu bileşenler
 │       │   │   │   └── TagFilterBar.tsx      # Anlık sayaçlı yeniden kullanılabilir çoklu etiket filtre barı
+│       │   │   ├── ui/                       # Evrensel tasarım sistemi primitifleri
+│       │   │   │   └── Sheet.tsx             # Akıcı CSS cubic-bezier fiziklerine sahip evrensel alt çekmece (drawer/sheet)
 │       │   │   ├── Sidebar.tsx               # Masaüstü ray menü (hidden lg:flex)
 │       │   │   ├── BottomNav.tsx             # Mobil Cam Altbar — 7 sekmeli buzlu cam gezinti çubuğu
 │       │   │   ├── StatusBadge.tsx           # Sağlık durumu rozeti (healthy, degraded, down)
@@ -161,6 +163,7 @@ corvus/
 │       │       │   ├── ComposeStackGroup.tsx # Docker Compose stack projeleri için akordiyon bileşeni
 │       │       │   ├── ContainerStatsBadges.tsx # CPU, RAM ve Ağ canlı rozetleri
 │       │       │   ├── ContainerActionButtons.tsx # Yaşam döngüsü butonları, log ve terminal tetikleyicisi
+│       │       │   ├── ContainerActionSheet.tsx # HTML prototipiyle 1:1 uyumlu akıcı alt çekmece eylem menüsü
 │       │       │   ├── ContainerLogsModal.tsx   # Canlı konteyner log terminali modalı
 │       │       │   ├── ContainerTerminalModal.tsx # Tarayıcı içi interaktif web terminali (@xterm/xterm, shell seçici, PTY resize)
 │       │       │   ├── ContainerTagsModal.tsx   # Konteyner ortam etiketi atama ve düzenleme modalı
@@ -171,7 +174,7 @@ corvus/
 │       │       │   │   ├── ContainerEnvTab.tsx      # Arama filtreli ortam değişkenleri, maskeleme ve .env kopyalama
 │       │       │   │   ├── ContainerNetworkingTab.tsx # Port eşleştirmeleri ve bağlı Docker ağ detayları
 │       │       │   │   ├── ContainerStorageTab.tsx  # Hacim ve bağlama noktaları (RW/RO izinleri ile)
-│       │       │   │   └── ContainerResourcesTab.tsx # Sıfır kesintili CPU, RAM ve yeniden başlatma ilkesi güncelleme
+│       │       │   │   └── ContainerResourcesTab.tsx # Canlı telemetri (CPU, RAM, Ağ I/O), dinamik progress bar ve Docker Compose farkındalıklı kaynak yönetimi
 │       │       │   └── prune/                   # Modüler seçimli kuru çalıştırma tabloları
 │       │       │       ├── PruneContainersTable.tsx # Durdurulmuş konteynerler seçim tablosu
 │       │       │       ├── PruneImagesTable.tsx     # Kullanılmayan imajlar seçim tablosu

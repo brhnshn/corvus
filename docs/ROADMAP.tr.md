@@ -132,7 +132,7 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
     - `ContainerEnvTab.tsx`: Arama filtreli ortam değişkenleri, hassas anahtarlar için tek tıkla maskeleme ve toplu `.env` kopyalama.
     - `ContainerNetworkingTab.tsx`: Yayınlanan port bağlantıları (`http://`) ve bağlı Docker ağ detayları.
     - `ContainerStorageTab.tsx`: Volume ve bind bağlama noktaları, host/konteyner yolları ve RW/RO izinleri.
-    - `ContainerResourcesTab.tsx`: Canlı CPU çekirdek slider'ı, hazır RAM ön ayarları ve restart policy seçici.
+    - `ContainerResourcesTab.tsx`: Canlı telemetri (CPU/RAM/Ağ I/O), dinamik progress bar, host kapasite karşılaştırması, compose bilgilendirmesi ve hazır limit ön ayarları.
   - Tıklanabilir konteyner isimleri ve hızlı işlem çubuğunda ayar (`Sliders`) butonu entegrasyonu.
 * **Kabul Kriteri:** Konteyner detaylarının eksiksiz görüntülenmesi, canlı kaynak limitlerinin konteyneri durdurmadan uygulanması; tüm testlerin başarılı olması.
 

@@ -132,7 +132,7 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
     - `ContainerEnvTab.tsx`: Searchable env vars with secret masking toggle & bulk `.env` clipboard export.
     - `ContainerNetworkingTab.tsx`: Published port links (`http://`) and Docker network details.
     - `ContainerStorageTab.tsx`: Volume and bind mounts with RW/RO permissions.
-    - `ContainerResourcesTab.tsx`: Live sliders and presets for CPU cores, RAM MB, and restart policy.
+    - `ContainerResourcesTab.tsx`: Live telemetry (CPU/RAM/Net I/O), dynamic progress bars, host capacity context, Compose awareness, and resource presets.
   - Clickable container names and quick-actions sliders button in `ContainerList.tsx` and `ComposeStackGroup.tsx`.
 * **Acceptance Criteria:** Inspect and modify running container resources on-the-fly; verify secret masking; all tests green.
 

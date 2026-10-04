@@ -133,6 +133,8 @@ corvus/
 │       │   ├── components/         # Shared global UI components ONLY
 │       │   │   ├── common/                   # Shared cross-domain components
 │       │   │   │   └── TagFilterBar.tsx      # Reusable multi-tag filter bar with real-time counters
+│       │   │   ├── ui/                       # Universal design system primitives
+│       │   │   │   └── Sheet.tsx             # Universal bottom drawer/sheet with fluid CSS cubic-bezier physics
 │       │   │   ├── Sidebar.tsx               # Desktop rail menu (hidden lg:flex)
 │       │   │   ├── BottomNav.tsx             # Mobile Glass Bottom Navigation Bar — 7-tab frosted glass bar
 │       │   │   ├── StatusBadge.tsx           # Health indicator badge (healthy, degraded, down)
@@ -150,6 +152,7 @@ corvus/
 │       │       │   ├── ComposeStackGroup.tsx # Collapsible Docker Compose stack accordions
 │       │       │   ├── ContainerStatsBadges.tsx # Real-time CPU, RAM, Net I/O badges
 │       │       │   ├── ContainerActionButtons.tsx # Lifecycle controls, log viewer, and web terminal trigger
+│       │       │   ├── ContainerActionSheet.tsx # 1:1 HTML prototype-aligned fluid bottom action sheet
 │       │       │   ├── ContainerLogsModal.tsx   # Live container log streaming terminal
 │       │       │   ├── ContainerTerminalModal.tsx # Interactive in-browser web terminal (@xterm/xterm, shell selector, PTY resize)
 │       │       │   ├── ContainerTagsModal.tsx   # Container environment tag assignment modal
@@ -160,7 +163,7 @@ corvus/
 │       │       │   │   ├── ContainerEnvTab.tsx      # Searchable env vars with secret masking toggle & .env copy
 │       │       │   │   ├── ContainerNetworkingTab.tsx # Port bindings and attached Docker network details
 │       │       │   │   ├── ContainerStorageTab.tsx  # Volume & bind mounts with RW/RO permissions
-│       │       │   │   └── ContainerResourcesTab.tsx # Zero-downtime CPU, RAM, and restart policy updater
+│       │       │   │   └── ContainerResourcesTab.tsx # Live telemetry (CPU, RAM, Net I/O), dynamic progress bars, and Compose-aware resource limits manager
 │       │       │   └── prune/                   # Modular selective dry-run prune tables
 │       │       │       ├── PruneContainersTable.tsx # Stopped containers audit table with checkboxes
 │       │       │       ├── PruneImagesTable.tsx     # Unused images audit table with size indicators
