@@ -115,18 +115,18 @@ export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
     <div className="space-y-1.5">
       <div
         onClick={() => inputRef.current?.focus()}
-        className={`w-full min-h-[42px] bg-[#0f1117] border rounded-lg p-1.5 flex flex-wrap gap-1.5 items-center transition-colors cursor-text ${
+        className={`w-full min-h-[42px] bg-white/[0.04] border rounded-xl p-1.5 flex flex-wrap gap-1.5 items-center transition-colors cursor-text ${
           inputError
-            ? 'border-red-500/80 focus-within:border-red-500'
-            : 'border-[#2a2e3f] focus-within:border-indigo-500'
+            ? 'border-rose-500/80 focus-within:border-rose-500'
+            : 'border-white/10 focus-within:border-white/30 focus-within:ring-1 focus-within:ring-white/20'
         } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
       >
         {emails.map((email, idx) => (
           <span
             key={idx}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-[#1a1d29] border border-indigo-500/30 text-indigo-300 shadow-2xs group animate-in fade-in zoom-in-95 duration-150"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-medium bg-white/[0.08] border border-white/15 text-white shadow-2xs group animate-in fade-in zoom-in-95 duration-150"
           >
-            <Mail className="w-3 h-3 text-indigo-400 shrink-0" />
+            <Mail className="w-3 h-3 text-white/70 shrink-0" />
             <span>{email}</span>
             {!disabled && (
               <button
@@ -135,7 +135,7 @@ export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
                   e.stopPropagation();
                   removeEmail(idx);
                 }}
-                className="text-slate-400 hover:text-red-400 transition-colors p-0.5 rounded cursor-pointer"
+                className="text-white/40 hover:text-rose-400 transition-colors p-0.5 rounded cursor-pointer"
                 title={t('common.delete') || 'Sil'}
               >
                 <X className="w-3 h-3" />

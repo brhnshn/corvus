@@ -33,12 +33,12 @@ export const RegistrationPromptModal: React.FC<RegistrationPromptModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs select-none">
-      <div className="bg-[#1a1d29] border border-[#2a2e3f] rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm select-none">
+      <div className="sheet-glass border border-white/10 rounded-[28px] max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-[#9ca3af] hover:text-[#e5e7eb] p-1 rounded-lg transition-colors cursor-pointer"
+          className="absolute right-4 top-4 text-white/50 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
           title={t('common.close')}
         >
           <X className="w-5 h-5" />
@@ -46,22 +46,22 @@ export const RegistrationPromptModal: React.FC<RegistrationPromptModalProps> = (
 
         {/* Icon & Title */}
         <div className="flex items-center gap-3.5 mb-4">
-          <div className="w-11 h-11 rounded-xl bg-[#f59e0b]/15 text-[#f59e0b] border border-[#f59e0b]/30 flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-[#e5e7eb]">{t('regModal.title')}</h3>
-            <p className="text-xs text-[#9ca3af]">{t('regModal.subtitle')}</p>
+            <h3 className="text-base font-semibold text-white">{t('regModal.title')}</h3>
+            <p className="text-xs text-white/50">{t('regModal.subtitle')}</p>
           </div>
         </div>
 
         {/* Content */}
-        <p className="text-sm text-[#9ca3af] leading-relaxed mb-6">
+        <p className="text-xs text-white/70 leading-relaxed mb-5">
           {t('regModal.desc')}
         </p>
 
-        <div className="p-3 bg-[#0f1117] border border-[#2a2e3f] rounded-xl text-xs text-[#9ca3af] mb-6 flex items-start gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-[#22c55e] shrink-0 mt-0.5" />
+        <div className="p-3.5 bg-white/[0.03] border border-white/10 rounded-2xl text-xs text-white/70 mb-6 flex items-start gap-2.5">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
           <span>
             {t('regModal.hint')}
           </span>
@@ -73,7 +73,7 @@ export const RegistrationPromptModal: React.FC<RegistrationPromptModalProps> = (
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 text-xs font-semibold text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#2a2e3f]/50 rounded-lg transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.04] rounded-xl border border-white/10 transition-colors cursor-pointer"
           >
             {t('regModal.keepOpenBtn')}
           </button>
@@ -81,10 +81,10 @@ export const RegistrationPromptModal: React.FC<RegistrationPromptModalProps> = (
             type="button"
             onClick={handleDisableRegistration}
             disabled={loading}
-            className="px-4 py-2 bg-[#d4d4d8] hover:bg-[#e4e4e7] text-[#0f1117] text-xs font-bold rounded-lg transition-colors shadow flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 bg-white hover:bg-white/90 text-black text-xs font-semibold rounded-xl transition-all shadow flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
-              <span className="inline-block w-3.5 h-3.5 border-2 border-[#0f1117] border-t-transparent rounded-full animate-spin" />
+              <span className="inline-block w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <ShieldAlert className="w-3.5 h-3.5" />

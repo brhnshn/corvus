@@ -28,7 +28,7 @@ src/
 │   ├── LanguageSwitch.tsx # Bilingual EN/TR language switcher
 │   └── RegistrationPromptModal.tsx # Global first-admin prompt
 ├── pages/              # Feature-scoped views (each view has its own sub-components)
-│   ├── Dashboard/      # SystemPulseHero, SystemKpiStrip, AttentionRequiredCard, ActiveContainersWidget
+│   ├── Dashboard/      # DashboardHeader, DashboardKpis, AttentionAlerts, DockerOverviewSection, TopResourcesCard, RecentEventsCard, SystemBanner
 │   ├── Containers/     # ContainerList, ComposeStackGroup, ContainerStatsBadges, ContainerLogsModal
 │   ├── Services/       # Service cards, AddServiceModal, and drag-and-drop reorder list
 │   ├── Uptime/         # PingUptimeTab, PushMonitorsTab, AddSnitchModal, UptimeBar

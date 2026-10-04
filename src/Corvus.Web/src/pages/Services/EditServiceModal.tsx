@@ -127,27 +127,27 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-[#1a1d29] border border-[#2a2e3f] rounded-2xl p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto">
-        <div className="flex items-center justify-between border-b border-[#2a2e3f] pb-3">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+      <div className="sheet-glass border border-white/10 rounded-[28px] p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div>
-            <h3 className="font-semibold text-[#e5e7eb] text-base">
+            <h3 className="font-semibold text-white text-base">
               {t('services.editModalTitle')}
             </h3>
-            <p className="text-xs text-[#9ca3af] mt-0.5">
+            <p className="text-xs text-white/50 mt-0.5">
               {service.source === 'docker' ? `${service.name} (Docker Konteyneri)` : service.name}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-[#9ca3af] hover:text-white p-1 rounded-lg cursor-pointer transition-colors"
+            className="text-white/50 hover:text-white p-1 rounded-lg cursor-pointer transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {errorMsg && (
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -156,7 +156,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         <form onSubmit={handleSave} className="space-y-3.5 text-sm">
           {/* Servis Adı */}
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+            <label className="block text-xs font-medium text-white/60 mb-1">
               {t('services.formName')}
             </label>
             <input
@@ -164,20 +164,20 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
               required
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
-              className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-indigo-500 text-xs sm:text-sm font-medium"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm font-medium"
             />
           </div>
 
           {/* Kontrol Türü (Check Type) */}
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1.5">
+            <label className="block text-xs font-medium text-white/60 mb-1.5">
               {t('services.formCheckType')}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
+              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
                 formCheckType === 'http'
-                  ? 'bg-indigo-500/10 border-indigo-500 text-white font-medium shadow-xs'
-                  : 'bg-[#0f1117] border-[#2a2e3f] text-[#9ca3af] hover:border-[#3f4458]'
+                  ? 'bg-white text-black font-semibold border-white shadow-xs'
+                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
               }`}>
                 <input
                   type="radio"
@@ -190,10 +190,10 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 <span>HTTP / HTTPS</span>
               </label>
 
-              <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
+              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
                 formCheckType === 'tcp'
-                  ? 'bg-indigo-500/10 border-indigo-500 text-white font-medium shadow-xs'
-                  : 'bg-[#0f1117] border-[#2a2e3f] text-[#9ca3af] hover:border-[#3f4458]'
+                  ? 'bg-white text-black font-semibold border-white shadow-xs'
+                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
               }`}>
                 <input
                   type="radio"
@@ -206,10 +206,10 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 <span>TCP Port</span>
               </label>
 
-              <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
+              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
                 formCheckType === 'ping'
-                  ? 'bg-indigo-500/10 border-indigo-500 text-white font-medium shadow-xs'
-                  : 'bg-[#0f1117] border-[#2a2e3f] text-[#9ca3af] hover:border-[#3f4458]'
+                  ? 'bg-white text-black font-semibold border-white shadow-xs'
+                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
               }`}>
                 <input
                   type="radio"
@@ -222,10 +222,10 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 <span>ICMP Ping</span>
               </label>
 
-              <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
+              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
                 formCheckType === 'docker'
-                  ? 'bg-indigo-500/10 border-indigo-500 text-white font-medium shadow-xs'
-                  : 'bg-[#0f1117] border-[#2a2e3f] text-[#9ca3af] hover:border-[#3f4458]'
+                  ? 'bg-white text-black font-semibold border-white shadow-xs'
+                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
               }`}>
                 <input
                   type="radio"
@@ -238,10 +238,10 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 <span>Docker Durumu</span>
               </label>
 
-              <label className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer text-xs transition-all ${
+              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
                 formCheckType === 'none'
-                  ? 'bg-indigo-500/10 border-indigo-500 text-white font-medium shadow-xs'
-                  : 'bg-[#0f1117] border-[#2a2e3f] text-[#9ca3af] hover:border-[#3f4458]'
+                  ? 'bg-white text-black font-semibold border-white shadow-xs'
+                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
               }`}>
                 <input
                   type="radio"
@@ -260,7 +260,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           {formCheckType === 'http' && (
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                <label className="block text-xs font-medium text-white/60 mb-1">
                   {t('services.formUrl')} (Reverse Proxy Alan Adı veya URL)
                 </label>
                 <input
@@ -268,15 +268,15 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   placeholder="https://app.example.com veya http://localhost:5010"
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
-                  className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
                 />
-                <p className="text-[11px] text-[#9ca3af]/70 mt-1">
+                <p className="text-[11px] text-white/40 mt-1">
                   Nginx veya ters proxy yapılandırmanızdaki gerçek domain adresini girin (örn: https://burhanlife.com).
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                <label className="block text-xs font-medium text-white/60 mb-1">
                   {t('services.formHealthUrl')}
                 </label>
                 <input
@@ -284,7 +284,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   placeholder="https://app.example.com/health veya /api/health"
                   value={formHealth}
                   onChange={(e) => setFormHealth(e.target.value)}
-                  className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
                 />
               </div>
             </div>
@@ -294,7 +294,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           {formCheckType === 'tcp' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                <label className="block text-xs font-medium text-white/60 mb-1">
                   {t('services.formHost')}
                 </label>
                 <input
@@ -302,11 +302,11 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   placeholder="localhost veya IP"
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
-                  className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                <label className="block text-xs font-medium text-white/60 mb-1">
                   {t('services.formPort')}
                 </label>
                 <input
@@ -314,7 +314,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   placeholder="5010"
                   value={formPort}
                   onChange={(e) => setFormPort(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
                 />
               </div>
             </div>
@@ -323,7 +323,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           {/* ICMP Ping Ayarları */}
           {formCheckType === 'ping' && (
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-white/60 mb-1">
                 {t('services.formPingHost')}
               </label>
               <input
@@ -332,16 +332,16 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 placeholder={t('services.formPingHostPlaceholder')}
                 value={formUrl}
                 onChange={(e) => setFormUrl(e.target.value)}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
               />
-              <p className="text-[11px] text-[#9ca3af]/70 mt-1">
+              <p className="text-[11px] text-white/40 mt-1">
                 Hedef IP adresi veya hostname girin (örn: 1.1.1.1 veya router.local). Port ve HTTP gerektirmez.
               </p>
             </div>
           )}
 
           {formCheckType === 'docker' && (
-            <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300">
+            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-white/70">
               Bu servis doğrudan Docker daemon üzerinden izlenecektir. Konteyner çalışma durumu (running / exited) üzerinden otomatik Uptime kontrolü kaydedilir.
             </div>
           )}
@@ -349,7 +349,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           {/* Kategori ve İkon */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-white/60 mb-1">
                 {t('services.formCategory')}
               </label>
               <input
@@ -357,11 +357,11 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 placeholder={t('services.defaultCategory')}
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-indigo-500 text-xs sm:text-sm"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-white/60 mb-1">
                 {t('services.formIcon')} (Emoji / Metin)
               </label>
               <input
@@ -370,14 +370,14 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 placeholder="🌐 veya 🚀"
                 value={formIcon}
                 onChange={(e) => setFormIcon(e.target.value)}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-indigo-500 text-xs sm:text-sm"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
               />
             </div>
           </div>
 
           {/* Etiketler (Ortam / Grup) */}
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+            <label className="block text-xs font-medium text-white/60 mb-1">
               {t('services.formTags') || 'Etiketler (Ortam / Grup)'}
             </label>
             <TagInput
@@ -389,7 +389,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
           {/* Açıklama */}
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+            <label className="block text-xs font-medium text-white/60 mb-1">
               {t('services.formDescription')}
             </label>
             <textarea
@@ -397,7 +397,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
               placeholder="Servis açıklaması..."
               value={formDesc}
               onChange={(e) => setFormDesc(e.target.value)}
-              className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-indigo-500 text-xs resize-none"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs resize-none"
             />
           </div>
 
@@ -424,30 +424,30 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
           {/* Genel Durum Sayfası Görünürlüğü */}
           <div className="pt-1">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-white/80">
               <input
                 type="checkbox"
                 checked={formIsPublic}
                 onChange={(e) => setFormIsPublic(e.target.checked)}
-                className="w-4 h-4 rounded-sm bg-[#0f1117] border-[#2a2e3f] text-indigo-500 focus:ring-0 focus:ring-offset-0"
+                className="accent-white rounded"
               />
               <span>{t('services.formIsPublic')}</span>
             </label>
           </div>
 
           {/* Butonlar */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2a2e3f]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-white hover:bg-[#0f1117] transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl border border-white/10 text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 shadow-md shadow-indigo-600/20"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shadow-md"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{saving ? t('common.saving') : t('common.save')}</span>

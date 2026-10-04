@@ -32,9 +32,9 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar select-none">
-      <div className="flex items-center gap-1.5 text-xs text-[#9ca3af] shrink-0 mr-1">
-        <Layers className="w-3.5 h-3.5 text-indigo-400" />
-        <span className="font-medium text-[11px] uppercase tracking-wider text-[#6b7280]">
+      <div className="flex items-center gap-1.5 text-xs text-white/60 shrink-0 mr-1">
+        <Layers className="w-3.5 h-3.5 text-white/50" />
+        <span className="font-medium text-[11px] uppercase tracking-wider text-white/40">
           {label || t('services.filterByTag') || t('containers.filterByTag') || 'Etiket'}:
         </span>
       </div>
@@ -45,15 +45,15 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
         onClick={() => onSelectTag(null)}
         className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
           selectedTag === null
-            ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm shadow-indigo-500/20 font-semibold'
-            : 'bg-[#1a1d29] border-[#2a2e3f] text-[#9ca3af] hover:text-[#e5e7eb] hover:border-[#3f4458]'
+            ? 'bg-white border-white text-black shadow-xs font-semibold'
+            : 'bg-white/[0.03] border-white/10 text-white/60 hover:text-white hover:border-white/20'
         }`}
       >
         <span>{t('common.all') || 'Tümü'}</span>
         {typeof effectiveTotalCount === 'number' && (
           <span
             className={`text-[9px] px-1.5 py-0.2 rounded-full ${
-              selectedTag === null ? 'bg-white/20 text-white' : 'bg-black/30 text-[#9ca3af]'
+              selectedTag === null ? 'bg-black/15 text-black font-bold' : 'bg-white/10 text-white/60'
             }`}
           >
             {effectiveTotalCount}

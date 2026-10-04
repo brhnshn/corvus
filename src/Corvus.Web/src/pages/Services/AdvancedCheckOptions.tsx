@@ -49,25 +49,25 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
   }
 
   return (
-    <div className="border border-[#2a2e3f] rounded-xl overflow-hidden bg-[#0f1117]/60">
+    <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02]">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 text-xs font-semibold text-[#e5e7eb] hover:bg-[#1a1d29] transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between p-3.5 text-xs font-semibold text-white/90 hover:bg-white/[0.04] transition-colors cursor-pointer"
       >
         <span className="flex items-center gap-2">
-          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+          <Sliders className="w-3.5 h-3.5 text-white/70" />
           <span>{t('services.advancedOptionsTitle')}</span>
         </span>
-        {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-[#9ca3af]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af]" />}
+        {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-white/50" /> : <ChevronDown className="w-3.5 h-3.5 text-white/50" />}
       </button>
 
       {isOpen && (
-        <div className="p-3.5 border-t border-[#2a2e3f] space-y-3.5 bg-[#141721]/50 text-xs">
+        <div className="p-4 border-t border-white/10 space-y-4 bg-black/20 text-xs">
           {/* Periyot ve Zaman Aşımı */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-white/60 mb-1">
                 {t('services.checkIntervalLabel')} (sn)
               </label>
               <input
@@ -77,13 +77,13 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                 placeholder="60"
                 value={checkInterval}
                 onChange={(e) => onChangeCheckInterval(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
               />
-              <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.checkIntervalHelp')}</p>
+              <p className="text-[10px] text-white/40 mt-1">{t('services.checkIntervalHelp')}</p>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-white/60 mb-1">
                 {t('services.timeoutSecondsLabel')} (sn)
               </label>
               <input
@@ -93,16 +93,16 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                 placeholder="5"
                 value={timeoutSeconds}
                 onChange={(e) => onChangeTimeoutSeconds(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
               />
-              <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.timeoutSecondsHelp')}</p>
+              <p className="text-[10px] text-white/40 mt-1">{t('services.timeoutSecondsHelp')}</p>
             </div>
           </div>
 
           {/* Yeniden Deneme Sayısı ve Aralığı */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-white/60 mb-1">
                 {t('services.maxRetriesLabel')}
               </label>
               <input
@@ -112,13 +112,13 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                 placeholder="1"
                 value={maxRetries}
                 onChange={(e) => onChangeMaxRetries(e.target.value !== '' ? Number(e.target.value) : '')}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
               />
-              <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.maxRetriesHelp')}</p>
+              <p className="text-[10px] text-white/40 mt-1">{t('services.maxRetriesHelp')}</p>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-white/60 mb-1">
                 {t('services.retryIntervalLabel')} (sn)
               </label>
               <input
@@ -128,24 +128,24 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                 placeholder="30"
                 value={retryInterval}
                 onChange={(e) => onChangeRetryInterval(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
               />
-              <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.retryIntervalHelp')}</p>
+              <p className="text-[10px] text-white/40 mt-1">{t('services.retryIntervalHelp')}</p>
             </div>
           </div>
 
           {/* Sadece HTTP/HTTPS İçin Özel Ayarlar */}
           {checkType === 'http' && (
-            <div className="space-y-3 pt-1 border-t border-[#2a2e3f]/60">
+            <div className="space-y-3 pt-3 border-t border-white/10">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                  <label className="block text-xs font-medium text-white/60 mb-1">
                     {t('services.httpMethodLabel')}
                   </label>
                   <select
                     value={httpMethod || 'GET'}
                     onChange={(e) => onChangeHttpMethod(e.target.value)}
-                    className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 cursor-pointer"
                   >
                     <option value="GET">GET</option>
                     <option value="POST">POST</option>
@@ -154,7 +154,7 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                  <label className="block text-xs font-medium text-white/60 mb-1">
                     {t('services.acceptedStatusCodesLabel')}
                   </label>
                   <input
@@ -162,14 +162,14 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                     placeholder="200-299, 301, 302"
                     value={acceptedStatusCodes}
                     onChange={(e) => onChangeAcceptedStatusCodes(e.target.value)}
-                    className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
                   />
-                  <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.acceptedStatusCodesHelp')}</p>
+                  <p className="text-[10px] text-white/40 mt-1">{t('services.acceptedStatusCodesHelp')}</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                <label className="block text-xs font-medium text-white/60 mb-1">
                   {t('services.expectedBodyLabel')}
                 </label>
                 <input
@@ -177,25 +177,25 @@ export const AdvancedCheckOptions: React.FC<AdvancedCheckOptionsProps> = ({
                   placeholder={t('services.expectedBodyPlaceholder')}
                   value={expectedBody}
                   onChange={(e) => onChangeExpectedBody?.(e.target.value)}
-                  className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-[#e5e7eb] font-mono text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
                 />
-                <p className="text-[10px] text-[#9ca3af]/70 mt-0.5">{t('services.expectedBodyHelp')}</p>
+                <p className="text-[10px] text-white/40 mt-1">{t('services.expectedBodyHelp')}</p>
               </div>
 
               <div>
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-white/70">
                   <input
                     type="checkbox"
                     checked={ignoreTls}
                     onChange={(e) => onChangeIgnoreTls(e.target.checked)}
-                    className="w-4 h-4 rounded-sm bg-[#0f1117] border-[#2a2e3f] text-indigo-500 focus:ring-0 focus:ring-offset-0"
+                    className="accent-white rounded"
                   />
                   <span className="flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
                     <span>{t('services.ignoreTlsLabel')}</span>
                   </span>
                 </label>
-                <p className="text-[10px] text-[#9ca3af]/70 ml-6 mt-0.5">
+                <p className="text-[10px] text-white/40 ml-6 mt-1">
                   {t('services.ignoreTlsHelp')}
                 </p>
               </div>

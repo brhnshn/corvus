@@ -42,12 +42,12 @@ export const PushMonitorsTab: React.FC<PushMonitorsTabProps> = ({
       {/* Header and Add Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-[#e5e7eb]">{t('uptime.pushSectionTitle')}</h2>
-          <p className="text-xs text-[#9ca3af]">{t('uptime.pushSectionDesc')}</p>
+          <h2 className="text-base font-bold text-[#eceef6]">{t('uptime.pushSectionTitle')}</h2>
+          <p className="text-xs text-[#9ba0b5] mt-0.5">{t('uptime.pushSectionDesc')}</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#d4d4d8] text-[#0f1117] text-xs font-semibold hover:bg-[#e4e4e7] transition-colors cursor-pointer self-start sm:self-auto"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-black font-semibold text-xs hover:bg-[#eceef6] transition-colors cursor-pointer self-start sm:self-auto shadow-sm"
         >
           <Plus className="w-4 h-4" />
           {t('uptime.addPushMonitor')}
@@ -55,20 +55,20 @@ export const PushMonitorsTab: React.FC<PushMonitorsTabProps> = ({
       </div>
 
       {loading && snitches.length === 0 && (
-        <div className="flex items-center justify-center h-48 text-[#9ca3af]">
-          <RefreshCw className="w-6 h-6 animate-spin mr-2 text-indigo-400" />
+        <div className="flex items-center justify-center h-48 text-[#9ba0b5]">
+          <RefreshCw className="w-5 h-5 animate-spin mr-2 text-[#d5d5dc]" />
           {t('common.loading')}
         </div>
       )}
 
       {!loading && snitches.length === 0 && (
-        <div className="p-10 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] text-center max-w-md mx-auto space-y-3">
-          <Radio className="w-10 h-10 text-[#9ca3af]/40 mx-auto" />
-          <h3 className="text-base font-semibold text-[#e5e7eb]">{t('uptime.noPushMonitors')}</h3>
-          <p className="text-xs text-[#9ca3af]">{t('uptime.noPushMonitorsDesc')}</p>
+        <div className="p-10 rounded-2xl surface border border-white/10 text-center max-w-md mx-auto space-y-3">
+          <Radio className="w-10 h-10 text-[#9ba0b5]/40 mx-auto" />
+          <h3 className="text-base font-semibold text-[#eceef6]">{t('uptime.noPushMonitors')}</h3>
+          <p className="text-xs text-[#9ba0b5]">{t('uptime.noPushMonitorsDesc')}</p>
           <button
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#d4d4d8] text-[#0f1117] text-xs font-semibold hover:bg-[#e4e4e7] cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-black font-semibold text-xs hover:bg-[#eceef6] cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             {t('uptime.createPushMonitor')}
@@ -77,7 +77,7 @@ export const PushMonitorsTab: React.FC<PushMonitorsTabProps> = ({
       )}
 
       {snitches.length > 0 && (
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {snitches.map((snitch) => {
             const isHealthy = snitch.status === 'healthy';
             const isDown = snitch.status === 'down';
@@ -85,26 +85,26 @@ export const PushMonitorsTab: React.FC<PushMonitorsTabProps> = ({
             return (
               <div
                 key={snitch.id}
-                className="p-5 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] hover:border-[#3f4458] transition-all space-y-4"
+                className="p-5 rounded-2xl surface border border-white/10 hover:border-white/20 transition-all space-y-4"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Radio className="w-4 h-4 text-indigo-400 shrink-0" />
-                      <h3 className="font-semibold text-[#e5e7eb] text-sm">{snitch.name}</h3>
+                      <Radio className="w-4 h-4 text-[#d5d5dc] shrink-0" />
+                      <h3 className="font-semibold text-[#eceef6] text-sm">{snitch.name}</h3>
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
                           isHealthy
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                             : isDown
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            : 'bg-white/[0.06] text-[#9ba0b5] border border-white/10'
                         }`}
                       >
                         {isHealthy ? t('uptime.signalReceiving') : isDown ? t('uptime.signalTimeout') : t('uptime.signalWaiting')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[#9ca3af] mt-1 font-mono">
+                    <div className="flex items-center gap-3 text-xs text-[#9ba0b5] mt-1 font-mono">
                       <span>{t('uptime.expectedPeriodLabel', { interval: snitch.expectedIntervalMinutes, grace: snitch.gracePeriodMinutes })}</span>
                     </div>
                   </div>
@@ -112,7 +112,7 @@ export const PushMonitorsTab: React.FC<PushMonitorsTabProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleDeleteSnitch(snitch.id, snitch.name)}
-                      className="p-1.5 rounded-lg text-[#9ca3af] hover:text-[#ef4444] hover:bg-[#0f1117] transition-colors cursor-pointer"
+                      className="p-1.5 rounded-xl text-[#9ba0b5] hover:text-[#f87171] hover:bg-white/[0.06] transition-colors cursor-pointer"
                       title={t('common.delete')}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -121,22 +121,22 @@ export const PushMonitorsTab: React.FC<PushMonitorsTabProps> = ({
                 </div>
 
                 {/* Son Görülme & Sinyal Komutu */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[#2a2e3f]/60 text-xs">
-                  <div className="flex items-center gap-2 text-[#9ca3af]">
-                    <Clock className="w-4 h-4 text-slate-500 shrink-0" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-white/10 text-xs">
+                  <div className="flex items-center gap-2 text-[#9ba0b5]">
+                    <Clock className="w-4 h-4 text-[#9ba0b5] shrink-0" />
                     <span>{t('uptime.lastSignal')}</span>
-                    <span className="text-[#e5e7eb] font-mono">
+                    <span className="text-[#eceef6] font-mono">
                       {snitch.lastSeenAt ? new Date(snitch.lastSeenAt).toLocaleString() : t('uptime.noSignalYet')}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-1.5">
-                    <span className="font-mono text-[11px] text-slate-400 truncate max-w-[200px] sm:max-w-xs">
+                  <div className="flex items-center justify-between bg-white/[0.04] border border-white/10 rounded-xl px-3 py-1.5">
+                    <span className="font-mono text-[11px] text-[#9ba0b5] truncate max-w-[200px] sm:max-w-xs">
                       curl .../api/push/{snitch.token}
                     </span>
                     <button
                       onClick={() => handleCopyCurl(snitch.token)}
-                      className="p-1 text-[#9ca3af] hover:text-[#e5e7eb] transition-colors cursor-pointer"
+                      className="p-1 text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer"
                       title={t('uptime.copyCurlTooltip')}
                     >
                       {copiedToken === snitch.token ? (

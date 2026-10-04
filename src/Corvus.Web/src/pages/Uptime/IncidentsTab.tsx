@@ -157,54 +157,54 @@ export const IncidentsTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top action bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 rounded-2xl surface border border-white/10">
         <div className="flex items-center gap-2">
           {/* Sub filter buttons */}
           <button
             onClick={() => setSubFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
               subFilter === 'all'
-                ? 'bg-indigo-600 text-white'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb] bg-[#0f1117] border border-[#2a2e3f]'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-[#9ba0b5] hover:text-[#eceef6] bg-white/[0.04] border border-white/10'
             }`}
           >
             {t('common.all')} ({incidents.length})
           </button>
           <button
             onClick={() => setSubFilter('active')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
               subFilter === 'active'
-                ? 'bg-indigo-600 text-white'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb] bg-[#0f1117] border border-[#2a2e3f]'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-[#9ba0b5] hover:text-[#eceef6] bg-white/[0.04] border border-white/10'
             }`}
           >
             {t('incidents.activeTab')} ({activeIncidents.length})
           </button>
           <button
             onClick={() => setSubFilter('resolved')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
               subFilter === 'resolved'
-                ? 'bg-indigo-600 text-white'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb] bg-[#0f1117] border border-[#2a2e3f]'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-[#9ba0b5] hover:text-[#eceef6] bg-white/[0.04] border border-white/10'
             }`}
           >
             {t('incidents.resolvedTab')} ({resolvedIncidents.length})
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={fetchIncidents}
             disabled={loading}
-            className="p-2 rounded-lg bg-[#0f1117] border border-[#2a2e3f] text-[#9ca3af] hover:text-[#e5e7eb] transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
             title={t('common.refresh')}
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#d5d5dc]' : ''}`} />
           </button>
 
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-black hover:bg-[#eceef6] rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" />
             {t('incidents.newIncident')}
@@ -213,29 +213,29 @@ export const IncidentsTab: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm">
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm">
           {error}
         </div>
       )}
 
       {/* Incidents List */}
       {loading && incidents.length === 0 ? (
-        <div className="text-center py-16 text-[#9ca3af] flex flex-col items-center gap-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-indigo-400" />
+        <div className="text-center py-16 text-[#9ba0b5] flex flex-col items-center gap-3">
+          <RefreshCw className="w-6 h-6 animate-spin text-[#d5d5dc]" />
           <p className="text-sm">{t('common.loading')}</p>
         </div>
       ) : filteredIncidents.length === 0 ? (
-        <div className="text-center py-16 bg-[#1a1d29] border border-[#2a2e3f] rounded-2xl p-8 space-y-3">
-          <Info className="w-10 h-10 text-[#9ca3af] mx-auto opacity-50" />
-          <h4 className="text-sm font-semibold text-[#e5e7eb]">
+        <div className="text-center py-16 surface border border-white/10 rounded-2xl p-8 space-y-3">
+          <Info className="w-10 h-10 text-[#9ba0b5] mx-auto opacity-50" />
+          <h4 className="text-sm font-semibold text-[#eceef6]">
             {subFilter === 'resolved' ? t('incidents.noResolvedIncidents') : t('incidents.noActiveIncidents')}
           </h4>
-          <p className="text-xs text-[#9ca3af] max-w-sm mx-auto">
+          <p className="text-xs text-[#9ba0b5] max-w-sm mx-auto">
             {t('incidents.subtitle')}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredIncidents.map((incident) => {
             const style = getSeverityStyle(incident.severity);
             const isResolved = incident.status === 'resolved';
@@ -243,30 +243,30 @@ export const IncidentsTab: React.FC = () => {
             return (
               <div
                 key={incident.id}
-                className={`p-5 rounded-2xl bg-[#1a1d29] border ${style.border} space-y-3 shadow-md transition-all`}
+                className={`p-5 rounded-2xl surface border ${style.border} space-y-3 shadow-sm transition-all`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="p-1.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f]">
+                    <span className="p-1.5 rounded-xl bg-white/[0.06] border border-white/10">
                       {style.icon}
                     </span>
-                    <h3 className="font-semibold text-base text-[#e5e7eb]">
+                    <h3 className="font-bold text-base text-[#eceef6]">
                       {incident.title}
                     </h3>
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${style.badge}`}>
+                    <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${style.badge}`}>
                       {getSeverityText(incident.severity)}
                     </span>
                     <span
-                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                      className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
                         isResolved
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                          : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                          : 'bg-white/[0.08] text-[#d5d5dc] border-white/15'
                       }`}
                     >
                       {getStatusText(incident.status)}
                     </span>
                     {incident.isPinned && (
-                      <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      <span className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                         <Pin className="w-3 h-3" />
                         {t('incidents.pinnedBadge')}
                       </span>
@@ -278,7 +278,7 @@ export const IncidentsTab: React.FC = () => {
                     {!isResolved && (
                       <button
                         onClick={() => handleResolve(incident.id)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-medium transition-colors cursor-pointer"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-colors cursor-pointer"
                         title={t('incidents.resolve')}
                       >
                         <Check className="w-3.5 h-3.5" />
@@ -287,14 +287,14 @@ export const IncidentsTab: React.FC = () => {
                     )}
                     <button
                       onClick={() => openEditModal(incident)}
-                      className="p-1.5 rounded-lg bg-[#0f1117] hover:bg-[#2a2e3f] border border-[#2a2e3f] text-[#9ca3af] hover:text-[#e5e7eb] transition-colors cursor-pointer"
+                      className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer"
                       title={t('common.edit')}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(incident.id)}
-                      className="p-1.5 rounded-lg bg-[#0f1117] hover:bg-rose-500/20 border border-[#2a2e3f] hover:border-rose-500/30 text-[#9ca3af] hover:text-rose-300 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-xl bg-white/[0.04] hover:bg-rose-500/15 border border-white/10 hover:border-rose-500/30 text-[#9ba0b5] hover:text-rose-300 transition-colors cursor-pointer"
                       title={t('common.delete')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -302,18 +302,18 @@ export const IncidentsTab: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-sm text-[#9ca3af] leading-relaxed whitespace-pre-line break-words pl-0 sm:pl-10">
+                <p className="text-sm text-[#9ba0b5] leading-relaxed whitespace-pre-line break-words pl-0 sm:pl-10">
                   {incident.message}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-4 text-xs text-[#9ca3af] pt-2 border-t border-[#2a2e3f]/60 pl-0 sm:pl-10">
+                <div className="flex flex-wrap items-center gap-4 text-xs text-[#9ba0b5] pt-2 border-t border-white/10 pl-0 sm:pl-10">
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-[#9ca3af]" />
+                    <Clock className="w-3.5 h-3.5 text-[#9ba0b5]" />
                     {t('incidents.createdAt')}: {formatDate(incident.createdAt)}
                   </span>
                   {incident.resolvedAt && (
                     <span className="flex items-center gap-1 text-emerald-400">
-                      <CheckCircle2 className="w-3 h-3" />
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                       {t('incidents.resolvedAt')}: {formatDate(incident.resolvedAt)}
                     </span>
                   )}

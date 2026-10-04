@@ -101,13 +101,13 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 autoFocus
-                className="px-2 py-0.5 bg-[#0f1117] border border-indigo-500 rounded text-xs font-mono text-[#e5e7eb] focus:outline-none"
+                className="px-2 py-0.5 bg-white/[0.04] border border-white/20 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-white/40"
                 placeholder={t('groups.newGroupName')}
               />
               <button
                 type="submit"
                 disabled={saving}
-                className="p-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer"
+                className="p-1 rounded-lg bg-white text-black hover:bg-white/90 cursor-pointer shadow-xs"
                 title={t('common.save')}
               >
                 <Check className="w-3 h-3" />
@@ -115,7 +115,7 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="p-1 rounded bg-[#2a2e3f] hover:bg-[#3b4252] text-[#9ca3af] cursor-pointer"
+                className="p-1 rounded-lg bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] text-white/70 cursor-pointer"
                 title={t('common.cancel')}
               >
                 <X className="w-3 h-3" />

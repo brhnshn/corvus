@@ -167,11 +167,14 @@ corvus/
 │       │       │       ├── PruneVolumesTable.tsx    # Orphaned volumes table with data-loss warning banner
 │       │       │       └── PruneBuildCacheCard.tsx  # Docker build cache reclaim card
 │       │       ├── Dashboard/
-│       │       │   ├── index.tsx             # Consolidated KPI summary & active services
-│       │       │   ├── SystemPulseHero.tsx   # Live system pulse, network I/O & update checker
-│       │       │   ├── SystemKpiStrip.tsx    # 2-column compact KPI strip & full-width Disk bar
-│       │       │   ├── AttentionRequiredCard.tsx # Degraded services and SSL certificate warning card
-│       │       │   └── ActiveContainersWidget.tsx # 2-column responsive active containers card
+│       │       │   ├── index.tsx             # Consolidated Midnight v2 Dashboard orchestrator
+│       │       │   ├── DashboardHeader.tsx   # Greeting, live clock, status dot, and refresh control
+│       │       │   ├── DashboardKpis.tsx     # 4-card metric strip (Services, Containers, Memory, CPU)
+│       │       │   ├── AttentionAlerts.tsx   # Critical attention and warning cards
+│       │       │   ├── DockerOverviewSection.tsx # Host telemetry, container health, and top resources
+│       │       │   ├── RecentEventsCard.tsx  # Chronological security and container audit log feed
+│       │       │   ├── TopResourcesCard.tsx  # Top memory & CPU consumer rankings
+│       │       │   └── SystemBanner.tsx      # System health and update notice banner
 │       │       ├── Profile/
 │       │       │   ├── index.tsx             # Profile and user management page shell
 │       │       │   ├── ProfileSecurityTab.tsx # Self-service password change and 2FA tab

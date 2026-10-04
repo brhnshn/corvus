@@ -85,23 +85,23 @@ export const AddIncidentModal: React.FC<AddIncidentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-[#1a1d29] border border-[#2a2e3f] rounded-2xl p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto">
-        <div className="flex items-center justify-between border-b border-[#2a2e3f] pb-3">
-          <h3 className="font-semibold text-[#e5e7eb] text-base">
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto select-none">
+      <div className="sheet-glass border border-white/10 rounded-[28px] p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto space-y-4 shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] my-auto">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <h3 className="font-bold text-[#eceef6] text-base">
             {incident ? t('incidents.editIncident') : t('incidents.newIncident')}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#9ca3af] hover:text-white p-1 rounded-lg cursor-pointer"
+            className="text-[#9ba0b5] hover:text-[#eceef6] p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-lg text-xs flex items-center gap-2">
+          <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -109,7 +109,7 @@ export const AddIncidentModal: React.FC<AddIncidentModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+            <label className="block text-xs font-medium text-[#9ba0b5] mb-1.5">
               {t('incidents.incidentTitle')}
             </label>
             <input
@@ -118,12 +118,12 @@ export const AddIncidentModal: React.FC<AddIncidentModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('incidents.incidentTitlePlaceholder')}
-              className="w-full px-3 py-2 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] focus:outline-none focus:border-indigo-500"
+              className="w-full px-3.5 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-[#eceef6] placeholder:text-[#9ba0b5]/50 focus:outline-none focus:border-white/20 transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+            <label className="block text-xs font-medium text-[#9ba0b5] mb-1.5">
               {t('incidents.incidentMessage')}
             </label>
             <textarea
@@ -132,74 +132,74 @@ export const AddIncidentModal: React.FC<AddIncidentModalProps> = ({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t('incidents.incidentMessagePlaceholder')}
-              className="w-full px-3 py-2 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] focus:outline-none focus:border-indigo-500 resize-y"
+              className="w-full px-3.5 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-[#eceef6] placeholder:text-[#9ba0b5]/50 focus:outline-none focus:border-white/20 transition-colors resize-y"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-[#9ba0b5] mb-1.5">
                 {t('incidents.severity')}
               </label>
               <select
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value as any)}
-                className="w-full px-3 py-2 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-[#eceef6] focus:outline-none focus:border-white/20 transition-colors"
               >
-                <option value="info">{t('incidents.severities.info')}</option>
-                <option value="warning">{t('incidents.severities.warning')}</option>
-                <option value="critical">{t('incidents.severities.critical')}</option>
-                <option value="maintenance">{t('incidents.severities.maintenance')}</option>
+                <option value="info" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.severities.info')}</option>
+                <option value="warning" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.severities.warning')}</option>
+                <option value="critical" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.severities.critical')}</option>
+                <option value="maintenance" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.severities.maintenance')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+              <label className="block text-xs font-medium text-[#9ba0b5] mb-1.5">
                 {t('incidents.status')}
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full px-3 py-2 bg-[#0f1117] border border-[#2a2e3f] rounded-lg text-sm text-[#e5e7eb] focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-[#eceef6] focus:outline-none focus:border-white/20 transition-colors"
               >
-                <option value="investigating">{t('incidents.statuses.investigating')}</option>
-                <option value="identified">{t('incidents.statuses.identified')}</option>
-                <option value="monitoring">{t('incidents.statuses.monitoring')}</option>
-                <option value="resolved">{t('incidents.statuses.resolved')}</option>
+                <option value="investigating" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.statuses.investigating')}</option>
+                <option value="identified" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.statuses.identified')}</option>
+                <option value="monitoring" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.statuses.monitoring')}</option>
+                <option value="resolved" className="bg-[#1b1d2a] text-[#eceef6]">{t('incidents.statuses.resolved')}</option>
               </select>
             </div>
           </div>
 
-          <div className="p-3 bg-[#0f1117] border border-[#2a2e3f] rounded-xl flex items-start gap-3">
+          <div className="p-3.5 bg-white/[0.03] border border-white/10 rounded-2xl flex items-start gap-3">
             <input
               type="checkbox"
               id="isPinned"
               checked={isPinned}
               onChange={(e) => setIsPinned(e.target.checked)}
-              className="mt-0.5 rounded border-[#2a2e3f] text-indigo-600 focus:ring-indigo-500 bg-[#1a1d29] cursor-pointer"
+              className="mt-0.5 rounded border-white/20 text-white bg-white/5 focus:ring-0 cursor-pointer"
             />
             <label htmlFor="isPinned" className="text-xs cursor-pointer select-none">
-              <span className="font-medium text-[#e5e7eb] block">
+              <span className="font-semibold text-[#eceef6] block">
                 {t('incidents.isPinned')}
               </span>
-              <span className="text-[#9ca3af] block mt-0.5">
+              <span className="text-[#9ba0b5] block mt-0.5">
                 {t('incidents.isPinnedHelp')}
               </span>
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-[#2a2e3f]">
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-[#9ca3af] hover:text-white transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-white text-black text-xs font-semibold hover:bg-[#eceef6] transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
             >
               {saving ? t('common.saving') : t('common.save')}
             </button>

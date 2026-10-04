@@ -52,7 +52,7 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
         <button
           onClick={() => onInspect(container)}
           disabled={isCurrentBusy}
-          className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-white hover:border-slate-600 hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
+          className="p-1.5 rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
           title={t('containers.detailModalTitle') || 'Konteyner Detayları'}
         >
           <Sliders className="w-3.5 h-3.5" />
@@ -64,7 +64,7 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
         <button
           onClick={() => onEditTags(container)}
           disabled={isCurrentBusy}
-          className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-indigo-400 hover:border-indigo-500/40 hover:bg-indigo-500/10 transition-colors disabled:opacity-50 cursor-pointer"
+          className="p-1.5 rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
           title={t('containers.manageTags') || 'Etiketleri Düzenle'}
         >
           <Tag className="w-3.5 h-3.5" />
@@ -75,7 +75,7 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
       <button
         onClick={() => onOpenLogs(container.Id, cleanName)}
         disabled={isCurrentBusy}
-        className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
+        className="p-1.5 rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
         title={t('containers.inspectLogs')}
       >
         <ScrollText className="w-3.5 h-3.5" />
@@ -88,8 +88,8 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
           disabled={isCurrentBusy || !isAdmin}
           className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
             isAdmin 
-              ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300' 
-              : 'border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af]/40 cursor-not-allowed opacity-50'
+              ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' 
+              : 'border-white/10 bg-white/[0.02] text-white/30 cursor-not-allowed opacity-50'
           }`}
           title={isAdmin ? t('containers.terminal') : t('containers.terminalAdminOnly')}
         >
@@ -160,7 +160,7 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
       <button
         onClick={() => onAction('restart', container.Id, cleanName)}
         disabled={isCurrentBusy}
-        className="p-1.5 rounded-lg border border-[#2a2e3f] bg-[#0f1117] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors disabled:opacity-50 cursor-pointer"
+        className="p-1.5 rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
         title={t('containers.restart')}
       >
         <RotateCw className={`w-3.5 h-3.5 ${currentAction === 'restart' ? 'animate-spin' : ''}`} />

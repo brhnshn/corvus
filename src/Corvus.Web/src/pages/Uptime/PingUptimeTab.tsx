@@ -106,10 +106,10 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
     <div className="space-y-8">
       {/* 1. Aktif İzlenen Servisler Bölümü */}
       {monitoredServices.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] text-center max-w-lg mx-auto space-y-3">
-          <Server className="w-10 h-10 text-[#9ca3af]/40 mx-auto" />
-          <h3 className="text-base font-semibold text-[#e5e7eb]">Aktif Uptime İzlemesi Yok</h3>
-          <p className="text-xs text-[#9ca3af] leading-relaxed">
+        <div className="p-8 rounded-2xl surface border border-white/10 text-center max-w-lg mx-auto space-y-3">
+          <Server className="w-10 h-10 text-white/40 mx-auto" />
+          <h3 className="text-base font-semibold text-white">Aktif Uptime İzlemesi Yok</h3>
+          <p className="text-xs text-white/50 leading-relaxed">
             Şu anda Uptime takibi açık bir servis bulunmuyor. Aşağıdaki keşfedilen konteynerleri izlemeye alabilir veya manuel servis ekleyebilirsiniz.
           </p>
         </div>
@@ -131,23 +131,23 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
               {/* Header & Range Selector */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] flex items-center justify-center text-[#d4d4d8] font-bold text-sm shrink-0">
+                  <div className="w-10 h-10 rounded-xl surface border border-white/10 flex items-center justify-center text-white font-bold text-sm shrink-0">
                     {selectedService.icon ? (
                       <span>{selectedService.icon}</span>
                     ) : (
-                      <Server className="w-5 h-5 text-[#9ca3af]" />
+                      <Server className="w-5 h-5 text-white/70" />
                     )}
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-[#e5e7eb] flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
                       <span>{selectedService.name}</span>
                       {selectedService.category && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a1d29] border border-[#2a2e3f] text-[#9ca3af] font-normal">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-normal">
                           {selectedService.category}
                         </span>
                       )}
                     </h2>
-                    <span className="text-xs text-[#9ca3af] font-mono">
+                    <span className="text-xs text-white/50 font-mono">
                       {selectedService.checkType === 'docker' || (selectedService.source === 'docker' && !selectedService.url && !selectedService.healthCheckUrl)
                         ? 'Docker Daemon Kontrolü'
                         : selectedService.checkType === 'tcp'
@@ -161,15 +161,15 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center p-0.5 rounded-lg bg-[#1a1d29] border border-[#2a2e3f] self-start sm:self-auto">
+                <div className="flex items-center gap-0.5 p-1 rounded-xl bg-white/[0.03] border border-white/10 self-start sm:self-auto">
                   {(['24h', '7d', '30d'] as const).map((r) => (
                     <button
                       key={r}
                       onClick={() => setRange(r)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                         range === r
-                          ? 'bg-[#0f1117] text-white shadow-sm'
-                          : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+                          ? 'bg-white text-black font-semibold shadow-xs'
+                          : 'text-white/60 hover:text-white'
                       }`}
                     >
                       {rangeLabels[r]}
@@ -191,16 +191,16 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
                   />
 
                   {/* SLA Timeline */}
-                  <div className="p-5 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] space-y-3">
+                  <div className="p-5 rounded-2xl surface border border-white/10 space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-[#e5e7eb] flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                         <span>{t('uptime.historyTimeline')}</span>
-                        <span className="text-xs text-[#9ca3af] font-normal font-mono">
+                        <span className="text-xs text-white/50 font-normal font-mono">
                           ({rangeLabels[range]})
                         </span>
                       </h3>
                       {loadingChecks && (
-                        <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                        <RefreshCw className="w-3.5 h-3.5 text-white/60 animate-spin" />
                       )}
                     </div>
                     <UptimeBar checks={checks} maxBlocks={45} />

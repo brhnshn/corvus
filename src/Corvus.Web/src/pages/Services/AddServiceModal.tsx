@@ -97,64 +97,64 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-[#1a1d29] border border-[#2a2e3f] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto">
-        <div className="flex items-center justify-between border-b border-[#2a2e3f] pb-3">
-          <h3 className="font-semibold text-[#e5e7eb] text-base">{t('services.modalTitle')}</h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+      <div className="sheet-glass border border-white/10 rounded-[28px] p-5 sm:p-6 w-full max-w-md max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <h3 className="font-semibold text-white text-base">{t('services.modalTitle')}</h3>
           <button
             onClick={onClose}
-            className="text-[#9ca3af] hover:text-white p-1 rounded-lg cursor-pointer"
+            className="text-white/50 hover:text-white p-1 rounded-lg cursor-pointer transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleAdd} className="space-y-3 text-sm">
+        <form onSubmit={handleAdd} className="space-y-3.5 text-sm">
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">{t('services.formName')}</label>
+            <label className="block text-xs font-medium text-white/60 mb-1">{t('services.formName')}</label>
             <input
               type="text"
               required
               placeholder={t('services.formNamePlaceholder')}
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
-              className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">{t('services.formCheckType')}</label>
+            <label className="block text-xs font-medium text-white/60 mb-1.5">{t('services.formCheckType')}</label>
             <div className="flex items-center gap-4 py-1 flex-wrap">
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-white/80">
                 <input
                   type="radio"
                   name="checkType"
                   value="http"
                   checked={formCheckType === 'http'}
                   onChange={() => setFormCheckType('http')}
-                  className="accent-indigo-500"
+                  className="accent-white"
                 />
                 <span>{t('services.checkTypeHttp')}</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-white/80">
                 <input
                   type="radio"
                   name="checkType"
                   value="tcp"
                   checked={formCheckType === 'tcp'}
                   onChange={() => setFormCheckType('tcp')}
-                  className="accent-indigo-500"
+                  className="accent-white"
                 />
                 <span>{t('services.checkTypeTcp')}</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-white/80">
                 <input
                   type="radio"
                   name="checkType"
                   value="ping"
                   checked={formCheckType === 'ping'}
                   onChange={() => setFormCheckType('ping')}
-                  className="accent-indigo-500"
+                  className="accent-white"
                 />
                 <span>{t('services.checkTypePing')}</span>
               </label>
@@ -163,20 +163,20 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
 
           {formCheckType === 'tcp' && (
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">{t('services.formPort')}</label>
+              <label className="block text-xs font-medium text-white/60 mb-1">{t('services.formPort')}</label>
               <input
                 type="number"
                 required
                 placeholder={t('services.formPortPlaceholder')}
                 value={formPort}
                 onChange={(e) => setFormPort(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+            <label className="block text-xs font-medium text-white/60 mb-1">
               {formCheckType === 'http'
                 ? t('services.formUrl')
                 : formCheckType === 'ping'
@@ -195,23 +195,23 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
               }
               value={formUrl}
               onChange={(e) => setFormUrl(e.target.value)}
-              className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">{t('services.formCategory')}</label>
+            <label className="block text-xs font-medium text-white/60 mb-1">{t('services.formCategory')}</label>
             <input
               type="text"
               placeholder={t('services.formCategoryPlaceholder')}
               value={formCategory}
               onChange={(e) => setFormCategory(e.target.value)}
-              className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+            <label className="block text-xs font-medium text-white/60 mb-1">
               {t('services.formTags') || 'Etiketler (Ortam / Grup)'}
             </label>
             <TagInput
@@ -222,25 +222,25 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">{t('services.formDescription')}</label>
+            <label className="block text-xs font-medium text-white/60 mb-1">{t('services.formDescription')}</label>
             <input
               type="text"
               placeholder={t('services.formDescriptionPlaceholder')}
               value={formDesc}
               onChange={(e) => setFormDesc(e.target.value)}
-              className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"
+              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
             />
           </div>
 
           {formCheckType === 'http' && (
             <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">{t('services.formHealthUrl')}</label>
+              <label className="block text-xs font-medium text-white/60 mb-1">{t('services.formHealthUrl')}</label>
               <input
                 type="url"
                 placeholder={t('services.formHealthUrlPlaceholder')}
                 value={formHealth}
                 onChange={(e) => setFormHealth(e.target.value)}
-                className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-2 text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8]"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
               />
             </div>
           )}
@@ -266,29 +266,29 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
           />
 
           <div className="pt-2">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-white/80">
               <input
                 type="checkbox"
                 checked={formIsPublic}
                 onChange={(e) => setFormIsPublic(e.target.checked)}
-                className="accent-indigo-500 rounded"
+                className="accent-white rounded"
               />
               <span>{t('services.formIsPublic')}</span>
             </label>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-[#2a2e3f]">
+          <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-[#2a2e3f] text-xs font-medium text-[#9ca3af] hover:text-[#e5e7eb] cursor-pointer"
+              className="px-4 py-2 rounded-xl border border-white/10 text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 rounded-lg bg-[#d4d4d8] text-[#0f1117] text-xs font-semibold hover:bg-[#e4e4e7] disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-white text-black text-xs font-semibold hover:bg-white/90 disabled:opacity-50 transition-all cursor-pointer"
             >
               {saving ? t('common.saving') : t('common.save')}
             </button>

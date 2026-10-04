@@ -3,6 +3,18 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.25] - 2026-10-05
+
+### Düzeltilenler (Fixed)
+- **Eksiksiz Midnight v2 Modernizasyonu ve Eski Tasarım Sisteminin Tamamen Kaldırılması**:
+  - **Uptime İzleme Ekranları ve Modalları**: Push Monitörleri (`PushMonitorsTab.tsx`), Snitch ekleme modalı (`AddSnitchModal.tsx`), Olaylar / Duyurular sekmesi (`IncidentsTab.tsx`), Olay ekleme penceresi (`AddIncidentModal.tsx`), Ping Uptime sekmesi (`PingUptimeTab.tsx`), Son Kontroller tablosu (`UptimeRecentChecks.tsx`) ve yardımcı pencereler (`DisableUptimeDialog`, `EnableUptimeModal`, `DiscoveredServicesSection`) Midnight v2 `sheet-glass` cam morfolojisi ve `surface` standartlarına taşındı.
+  - **Servis Yönetimi ve Modalları**: Servis ekleme penceresi (`AddServiceModal.tsx`), gelişmiş kontrol parametreleri (`AdvancedCheckOptions.tsx`), servis düzenleme modalı (`EditServiceModal.tsx`), ilk yönetici kayıt istemi (`RegistrationPromptModal.tsx`) ve servis boş durum kartı (`ServicesEmptyState.tsx`) modern köşe kavisli girdiler ve Midnight v2 eylem butonlarıyla yenilendi.
+  - **Ayarlar ve Bildirim Kanalları**: Bildirim kanalı sekme çubuğu, 6 adet entegrasyon paneli (Discord, Telegram, Slack, Webhook, SMTP E-Posta, Ntfy), Kararsızlık (Flapping) koruma kartı ve olay filtreleme kutuları Midnight v2 tasarım diline geçirildi. Yedekleme sekmesi (`BackupSettingsTab.tsx`) karanlık kod önizleme alanı ve kopyalama düğmeleriyle modernize edildi.
+  - **Kullanılmayan Ölü Kodların Temizlenmesi**: Projede unutulmuş ve kullanılmayan 6 eski dashboard bileşeni (`ActiveContainersWidget`, `AttentionRequiredCard`, `OperationsWidget`, `QuickServicesGrid`, `SystemKpiStrip`, `SystemPulseHero`) projeden tamamen kaldırılarak mimari dokümanları güncellendi.
+  - **Eski Renk Kodlarının Sıfırlanması**: Kod tabanında kalan tüm eski renk kodları (`#1a1d29`, `#0f1117`, `#2a2e3f` vb.); `App.tsx`, `LanguageSwitch.tsx`, `TagFilterBar.tsx`, `TagInput.tsx`, `GroupSection.tsx` ve `ContainerActionButtons.tsx` genelinde tamamen temizlendi.
+
+---
+
 ## [1.5.24] - 2026-10-05
 
 ### Düzeltilenler (Fixed)

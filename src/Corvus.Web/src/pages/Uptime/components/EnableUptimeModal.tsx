@@ -87,20 +87,20 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg rounded-2xl bg-[#14161f] border border-[#2a2e3f] shadow-2xl overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2e3f] bg-[#1a1d29]/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs select-none overflow-y-auto">
+      <div className="w-full max-w-lg rounded-[28px] sheet-glass border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] overflow-hidden flex flex-col my-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-              <Zap className="w-5 h-5" />
+            <div className="p-2 rounded-xl bg-white/[0.06] border border-white/10 text-[#eceef6]">
+              <Zap className="w-5 h-5 text-[#d5d5dc]" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#e5e7eb]">Uptime Takibine Al</h3>
-              <p className="text-xs text-[#9ca3af]">{service.name}</p>
+              <h3 className="text-base font-bold text-[#eceef6]">Uptime Takibine Al</h3>
+              <p className="text-xs text-[#9ba0b5]">{service.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#2a2e3f]/50 transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1.5 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors cursor-pointer">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -113,44 +113,44 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Servis Adı</label>
+            <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Servis Adı</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Denetim Türü</label>
+              <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Denetim Türü</label>
               <select
                 value={checkType}
                 onChange={(e) => setCheckType(e.target.value as 'http' | 'tcp' | 'ping')}
-                className="w-full px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
               >
-                <option value="http">HTTP / HTTPS</option>
-                <option value="tcp">TCP Port</option>
-                <option value="ping">ICMP Ping</option>
+                <option value="http" className="bg-[#1b1d2a] text-[#eceef6]">HTTP / HTTPS</option>
+                <option value="tcp" className="bg-[#1b1d2a] text-[#eceef6]">TCP Port</option>
+                <option value="ping" className="bg-[#1b1d2a] text-[#eceef6]">ICMP Ping</option>
               </select>
             </div>
             {checkType !== 'ping' ? (
               <div>
-                <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Port (Opsiyonel)</label>
+                <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Port (Opsiyonel)</label>
                 <input
                   type="number"
                   value={port ?? ''}
                   onChange={(e) => setPort(e.target.value ? parseInt(e.target.value, 10) : undefined)}
                   placeholder="Örn: 8080"
-                  className="w-full px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
                 />
               </div>
             ) : (
               <div>
-                <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">Protokol</label>
-                <div className="w-full px-3 py-2 rounded-xl bg-[#1a1d29]/50 border border-[#2a2e3f] text-cyan-400 text-xs font-mono flex items-center h-[38px]">
+                <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Protokol</label>
+                <div className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-xs font-mono flex items-center h-[38px]">
                   ICMP Echo Request
                 </div>
               </div>
@@ -158,7 +158,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">
+            <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">
               {checkType === 'http' ? 'Hedef URL' : checkType === 'ping' ? 'Hedef Host / IP' : 'Hedef Host'}
             </label>
             <div className="flex gap-2">
@@ -173,15 +173,15 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
                     ? '1.1.1.1 veya router.local'
                     : '192.168.1.50'
                 }
-                className="flex-1 px-3 py-2 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] text-[#e5e7eb] text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
               />
               <button
                 type="button"
                 onClick={handleTestConnection}
                 disabled={testing}
-                className="px-3 py-2 rounded-xl bg-[#2a2e3f] hover:bg-[#34394f] text-[#e5e7eb] text-xs font-medium flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-50"
+                className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[#eceef6] text-xs font-medium flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {testing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5" />}
+                {testing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-[#d5d5dc]" />}
                 <span>Sına</span>
               </button>
             </div>
@@ -200,7 +200,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-[#9ca3af] mb-1.5">
+            <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">
               Kontrol Aralığı (Saniye): {checkInterval}s
             </label>
             <input
@@ -210,19 +210,19 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
               step="10"
               value={checkInterval}
               onChange={(e) => setCheckInterval(parseInt(e.target.value, 10))}
-              className="w-full accent-indigo-500 cursor-pointer"
+              className="w-full accent-white cursor-pointer"
             />
           </div>
 
-          <div className="pt-2 border-t border-[#2a2e3f] space-y-2">
+          <div className="pt-2 border-t border-white/10 space-y-2">
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
-                className="rounded border-[#2a2e3f] text-indigo-600 focus:ring-indigo-500/20"
+                className="rounded border-white/20 bg-white/5 text-white focus:ring-0"
               />
-              <span className="text-xs text-[#e5e7eb]">Genel Durum Sayfasında (Status Page) Göster</span>
+              <span className="text-xs text-[#eceef6]">Genel Durum Sayfasında (Status Page) Göster</span>
             </label>
 
             <label className="flex items-center gap-2.5 cursor-pointer">
@@ -230,24 +230,24 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
                 type="checkbox"
                 checked={ignoreTls}
                 onChange={(e) => setIgnoreTls(e.target.checked)}
-                className="rounded border-[#2a2e3f] text-indigo-600 focus:ring-indigo-500/20"
+                className="rounded border-white/20 bg-white/5 text-white focus:ring-0"
               />
-              <span className="text-xs text-[#9ca3af]">Kendinden İmzalı SSL/TLS Hatalarını Yoksay</span>
+              <span className="text-xs text-[#9ba0b5]">Kendinden İmzalı SSL/TLS Hatalarını Yoksay</span>
             </label>
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-4">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d29] transition-colors"
+              className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-white text-black text-xs font-semibold hover:bg-[#eceef6] shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
               <span>İzlemeye Al</span>

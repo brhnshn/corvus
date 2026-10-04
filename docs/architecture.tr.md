@@ -178,11 +178,14 @@ corvus/
 │       │       │       ├── PruneVolumesTable.tsx    # Yetim hacimler (veri kaybı uyarılı) seçim tablosu
 │       │       │       └── PruneBuildCacheCard.tsx  # Derleme katman önbelleği temizleme kartı
 │       │       ├── Dashboard/
-│       │       │   ├── index.tsx             # Konsolide KPI özeti ve çalışan servisler
-│       │       │   ├── SystemPulseHero.tsx   # Canlı durum nabzı, ağ I/O ve güncelleme kontrol kartı
-│       │       │   ├── SystemKpiStrip.tsx    # 2 sütunlu kompakt KPI şeridi ve tam genişlikte Disk çubuğu
-│       │       │   ├── AttentionRequiredCard.tsx # Kritik arızalar ve SSL uyarıları kartı
-│       │       │   └── ActiveContainersWidget.tsx # 2 sütunlu duyarlı aktif konteynerler kartı
+│       │       │   ├── index.tsx             # Konsolide Midnight v2 Dashboard orkestratörü
+│       │       │   ├── DashboardHeader.tsx   # Karşılama, canlı saat, durum nabzı ve yenileme denetimi
+│       │       │   ├── DashboardKpis.tsx     # 4 kartlık metrik şeridi (Servisler, Konteynerler, Bellek, CPU)
+│       │       │   ├── AttentionAlerts.tsx   # Kritik arızalar ve SSL uyarıları kartı
+│       │       │   ├── DockerOverviewSection.tsx # Sunucu telemetrisi, konteyner sağlığı ve kaynak kullanımı
+│       │       │   ├── RecentEventsCard.tsx  # Kronolojik güvenlik ve konteyner denetim akışı
+│       │       │   ├── TopResourcesCard.tsx  # En yüksek bellek & CPU tüketen konteyner sıralaması
+│       │       │   └── SystemBanner.tsx      # Sistem sağlığı ve sürüm güncelleme bildirim şeridi
 │       │       ├── Profile/
 │       │       │   ├── index.tsx             # Profil ve kullanıcı yönetimi sayfası kabuğu
 │       │       │   ├── ProfileSecurityTab.tsx # Şifre değiştirme ve 2FA güvenlik sekmesi

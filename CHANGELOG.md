@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.25] - 2026-10-05
+
+### Fixed
+- **Full Midnight v2 Modernization & Legacy Design System Purge**:
+  - **Uptime Monitoring Overhaul**: Modernized Push Monitors (`PushMonitorsTab.tsx`), Add Snitch modal (`AddSnitchModal.tsx`), Incidents / Announcements tab (`IncidentsTab.tsx`), Add Incident dialog (`AddIncidentModal.tsx`), Ping Uptime tab (`PingUptimeTab.tsx`), Recent Checks monitor table (`UptimeRecentChecks.tsx`), and Uptime helper dialogs (`DisableUptimeDialog`, `EnableUptimeModal`, `DiscoveredServicesSection`) to Midnight v2 `sheet-glass` and `surface` design standards.
+  - **Services & Modals Modernization**: Upgraded manual service creation (`AddServiceModal.tsx`), advanced health-check configuration (`AdvancedCheckOptions.tsx`), service edit dialog (`EditServiceModal.tsx`), initial registration prompt (`RegistrationPromptModal.tsx`), and empty state card (`ServicesEmptyState.tsx`) with rounded input tokens, active segment controls, and Midnight v2 action buttons.
+  - **Settings & Notification Channels Overhaul**: Upgraded Notification channel tabs and all 6 alert channel panels (Discord, Telegram, Slack, Webhook, SMTP Email, Ntfy) along with Flapping Protection card and notification event filters to Midnight v2 aesthetics. Modernized Backup tab (`BackupSettingsTab.tsx`) with dark monospace snippet preview and copy buttons.
+  - **Dead Code Purge**: Removed 6 obsolete, unused legacy dashboard widgets (`ActiveContainersWidget`, `AttentionRequiredCard`, `OperationsWidget`, `QuickServicesGrid`, `SystemKpiStrip`, `SystemPulseHero`), eliminating dead code and updating architecture docs.
+  - **Zero-Tolerance Legacy Palette Hex Purge**: Cleaned all lingering legacy hex colors (`#1a1d29`, `#0f1117`, `#2a2e3f`, etc.) across `App.tsx`, `LanguageSwitch.tsx`, `TagFilterBar.tsx`, `TagInput.tsx`, `GroupSection.tsx`, and `ContainerActionButtons.tsx`.
+
+---
+
 ## [1.5.24] - 2026-10-05
 
 ### Fixed

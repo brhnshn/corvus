@@ -20,14 +20,14 @@ export const LanguageSwitch: React.FC<LanguageSwitchProps> = ({ variant = 'compa
 
   if (variant === 'full') {
     return (
-      <div className={`inline-flex items-center p-1 rounded-xl bg-[#0f1117] border border-[#2a2e3f] ${className}`}>
+      <div className={`inline-flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/10 ${className}`}>
         <button
           type="button"
           onClick={() => handleToggle('en')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
             language === 'en'
-              ? 'bg-[#d4d4d8] text-[#0f1117] font-semibold shadow-sm'
-              : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+              ? 'bg-white text-black font-semibold shadow-xs'
+              : 'text-white/60 hover:text-white'
           }`}
         >
           <span>English</span>
@@ -37,8 +37,8 @@ export const LanguageSwitch: React.FC<LanguageSwitchProps> = ({ variant = 'compa
           onClick={() => handleToggle('tr')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
             language === 'tr'
-              ? 'bg-[#d4d4d8] text-[#0f1117] font-semibold shadow-sm'
-              : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+              ? 'bg-white text-black font-semibold shadow-xs'
+              : 'text-white/60 hover:text-white'
           }`}
         >
           <span>Türkçe</span>
@@ -49,8 +49,8 @@ export const LanguageSwitch: React.FC<LanguageSwitchProps> = ({ variant = 'compa
 
   // Compact variant for sidebar or headers
   return (
-    <div className={`inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] text-[11px] font-mono ${className}`}>
-      <span className="pl-1.5 pr-0.5 text-[#9ca3af]/60">
+    <div className={`inline-flex items-center gap-1 p-0.5 rounded-lg bg-white/[0.04] border border-white/10 text-[11px] font-mono ${className}`}>
+      <span className="pl-1.5 pr-0.5 text-white/40">
         <Globe className="w-3 h-3" />
       </span>
       <button
@@ -58,21 +58,21 @@ export const LanguageSwitch: React.FC<LanguageSwitchProps> = ({ variant = 'compa
         onClick={() => handleToggle('en')}
         className={`px-1.5 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
           language === 'en'
-            ? 'bg-[#d4d4d8] text-[#0f1117]'
-            : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+            ? 'bg-white text-black shadow-xs'
+            : 'text-white/60 hover:text-white'
         }`}
         title="Switch to English"
       >
         EN
       </button>
-      <span className="text-[#2a2e3f]">/</span>
+      <span className="text-white/20">/</span>
       <button
         type="button"
         onClick={() => handleToggle('tr')}
         className={`px-1.5 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
           language === 'tr'
-            ? 'bg-[#d4d4d8] text-[#0f1117]'
-            : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+            ? 'bg-white text-black shadow-xs'
+            : 'text-white/60 hover:text-white'
         }`}
         title="Türkçe'ye Geç"
       >
