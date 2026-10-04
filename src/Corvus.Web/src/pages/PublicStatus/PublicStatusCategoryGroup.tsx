@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
+import { ChevronDown, Layers } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import type { PublicService } from '../../types';
 import { PublicStatusServiceCard } from './PublicStatusServiceCard';
+import { Pill } from '../../components/ui/Pill';
 
 interface PublicStatusCategoryGroupProps {
   category: string;
@@ -24,50 +25,44 @@ export function PublicStatusCategoryGroup({
   const isAllOperational = issuesCount === 0;
 
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-900/30 overflow-hidden shadow-sm transition-colors">
+    <div className="surface rounded-[22px] overflow-hidden border border-white/10 shadow-sm transition-colors">
       {/* Category Header Accordion Button */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full px-5 py-4 flex items-center justify-between gap-3 bg-slate-900/50 hover:bg-slate-800/40 transition-colors text-left cursor-pointer border-b border-slate-800/40"
+        className="w-full px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors text-left cursor-pointer border-b border-white/10"
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <Layers className="w-4 h-4 text-indigo-400 shrink-0" />
-          <h3 className="font-semibold text-white text-base tracking-tight truncate">
+          <Layers className="w-4 h-4 text-[#d5d5dc] shrink-0" />
+          <h3 className="font-semibold text-[#eceef6] text-sm tracking-tight truncate">
             {category}
           </h3>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700/60 text-slate-400 font-medium">
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded-[8px] bg-white/[0.06] border border-white/10 text-[#9ba0b5] font-medium">
             {services.length}
           </span>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           {/* Group health status badge */}
           {isAllOperational ? (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 font-medium">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t('publicStatus.allOperationalInGroup')}</span>
-            </span>
+            <Pill status="ok" label={t('publicStatus.allOperationalInGroup') || 'Tümü Operasyonel'} />
           ) : (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5 font-medium">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>{t('publicStatus.issuesInGroup', { count: issuesCount })}</span>
-            </span>
+            <Pill status="err" label={t('publicStatus.issuesInGroup', { count: issuesCount }) || `${issuesCount} Sorun`} />
           )}
 
           <ChevronDown
-            className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+            className={`w-4 h-4 text-[#9ba0b5] transition-transform duration-200 ${
               isOpen ? 'rotate-180' : ''
             }`}
           />
         </div>
       </button>
 
-      {/* Services List in Category */}
+      {/* Services List Inside Accordion */}
       {isOpen && (
-        <div className="p-4 sm:p-5 space-y-3 bg-slate-950/40">
-          {services.map((svc) => (
-            <PublicStatusServiceCard key={svc.id} service={svc} />
+        <div className="p-3.5 sm:p-4 space-y-2.5 bg-black/10">
+          {services.map((service) => (
+            <PublicStatusServiceCard key={service.id} service={service} />
           ))}
         </div>
       )}

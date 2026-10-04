@@ -43,7 +43,8 @@ export const UptimePage: React.FC = () => {
     if (isMountedRef.current) setLoadingSnitches(true);
     try {
       const data = await api.getPushMonitors();
-      if (isMountedRef.current) setSnitches(data);
+      if (!isMountedRef.current) return;
+      setSnitches(data);
     } catch (err) {
       if (isMountedRef.current) console.error('Push monitörleri yüklenemedi:', err);
     } finally {
@@ -55,7 +56,7 @@ export const UptimePage: React.FC = () => {
     isMountedRef.current = true;
     if (activeTab === 'uptime') {
       fetchServices();
-    } else {
+    } else if (activeTab === 'snitch') {
       fetchSnitches();
     }
 
@@ -63,7 +64,7 @@ export const UptimePage: React.FC = () => {
       if (!document.hidden && isMountedRef.current) {
         if (activeTab === 'uptime') {
           fetchServices();
-        } else {
+        } else if (activeTab === 'snitch') {
           fetchSnitches();
         }
       }
@@ -73,7 +74,7 @@ export const UptimePage: React.FC = () => {
       if (!document.hidden && isMountedRef.current) {
         if (activeTab === 'uptime') {
           fetchServices();
-        } else {
+        } else if (activeTab === 'snitch') {
           fetchSnitches();
         }
       }
@@ -101,44 +102,45 @@ export const UptimePage: React.FC = () => {
     };
   }, [activeTab, fetchServices, fetchSnitches]);
 
+  const tabs = [
+    { id: 'uptime' as const, label: t('uptime.tabPing') || 'Uptime & SSL', icon: Activity },
+    { id: 'snitch' as const, label: t('uptime.tabPush') || 'Push İzleme', icon: Radio },
+    { id: 'incidents' as const, label: t('uptime.tabIncidents') || 'Olay Kayıtları', icon: Megaphone }
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 animate-rv">
       {/* Header and Tab Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[#e5e7eb]">{t('uptime.title')}</h1>
-          <p className="text-sm text-[#9ca3af]">{t('uptime.subtitle')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6]">
+            {t('uptime.title') || 'Gelişmiş Uptime & SSL Takibi'}
+          </h1>
+          <p className="text-[13px] text-[#9ba0b5] mt-0.5">
+            {t('uptime.subtitle') || 'Yüksek hassasiyetli erişilebilirlik ve güvenlik sertifikası izleme'}
+          </p>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex items-center p-0.5 rounded-lg bg-[#1a1d29] border border-[#2a2e3f] self-start sm:self-auto">
-          <button
-            onClick={() => setActiveTab('uptime')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === 'uptime' ? 'bg-[#0f1117] text-white shadow-sm' : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5 text-indigo-400" />
-            {t('uptime.tabPing')}
-          </button>
-          <button
-            onClick={() => setActiveTab('snitch')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === 'snitch' ? 'bg-[#0f1117] text-white shadow-sm' : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-            }`}
-          >
-            <Radio className="w-3.5 h-3.5 text-indigo-400" />
-            {t('uptime.tabPush')}
-          </button>
-          <button
-            onClick={() => setActiveTab('incidents')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === 'incidents' ? 'bg-[#0f1117] text-white shadow-sm' : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-            }`}
-          >
-            <Megaphone className="w-3.5 h-3.5 text-indigo-400" />
-            {t('uptime.tabIncidents')}
-          </button>
+        {/* Tab Segment Controls */}
+        <div className="glass rounded-[19px] p-[3px] flex gap-0.5 self-start sm:self-auto max-w-full overflow-x-auto no-scrollbar">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-[16px] text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#d5d5dc] text-[#1b1d2a] shadow-xs'
+                    : 'text-[#9ba0b5] hover:text-[#eceef6]'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#1b1d2a]' : 'text-[#9ba0b5]'}`} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

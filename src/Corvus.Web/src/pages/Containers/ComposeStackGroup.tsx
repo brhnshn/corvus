@@ -3,7 +3,7 @@ import type { DockerContainer, ContainerStats } from '../../api/client';
 import { ContainerList } from './ContainerList';
 import { GroupSection } from '../../components/GroupSection';
 
-interface ComposeStackGroupProps {
+export interface ComposeStackGroupProps {
   groups: { name: string; items: DockerContainer[] }[];
   collapsed: Record<string, boolean>;
   onToggleCollapse: (groupName: string) => void;
@@ -18,9 +18,7 @@ interface ComposeStackGroupProps {
   statsMap: Record<string, ContainerStats>;
   actionInProgress: { id: string; action: string } | null;
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
-  onOpenLogs: (id: string, name: string) => void;
-  onOpenTerminal?: (id: string, name: string) => void;
-  onEditTags?: (container: DockerContainer) => void;
+  onOpenSheet: (container: DockerContainer) => void;
   onInspect?: (container: DockerContainer) => void;
   selectedTag?: string | null;
   onSelectTag?: (tag: string) => void;
@@ -33,25 +31,22 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
   onToggleCollapse,
   onRenameGroup,
   dragOverGroup,
-  onDragStart,
-  onDragEnd,
+  onDragStart: _onDragStart,
+  onDragEnd: _onDragEnd,
   onDragOver,
   onDragLeave,
   onDrop,
-  draggingId,
+  draggingId: _draggingId,
   statsMap,
   actionInProgress,
   onAction,
-  onOpenLogs,
-  onOpenTerminal,
-  onEditTags,
+  onOpenSheet,
   onInspect,
-  selectedTag,
   onSelectTag,
-  isAdmin = true
+  isAdmin = true,
 }) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3.5">
       {groups.map((group) => {
         if (group.items.length === 0) return null;
 
@@ -73,16 +68,10 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
               statsMap={statsMap}
               actionInProgress={actionInProgress}
               onAction={onAction}
-              onOpenLogs={onOpenLogs}
-              onOpenTerminal={onOpenTerminal}
-              onEditTags={onEditTags}
+              onOpenSheet={onOpenSheet}
               onInspect={onInspect}
-              selectedTag={selectedTag}
               onSelectTag={onSelectTag}
               isAdmin={isAdmin}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-              draggingId={draggingId}
             />
           </GroupSection>
         );

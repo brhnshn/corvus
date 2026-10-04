@@ -17,14 +17,20 @@ interface BucketData {
 export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) => {
   if (checks.length === 0) {
     return (
-      <div className="flex gap-1 py-2">
-        {Array.from({ length: maxBlocks }).map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 h-8 rounded-xs bg-[#2a2e3f]/40 transition-colors"
-            title="Veri yok"
-          />
-        ))}
+      <div className="surface rounded-[22px] p-4 sm:p-5 space-y-2">
+        <div className="flex gap-1 py-1">
+          {Array.from({ length: maxBlocks }).map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 h-8 rounded-[3px] bg-white/[0.06] transition-colors"
+              title="Veri yok"
+            />
+          ))}
+        </div>
+        <div className="flex items-center justify-between text-[11px] text-[#9ba0b5] font-mono px-0.5">
+          <span>Veri toplanıyor...</span>
+          <span>Şimdi</span>
+        </div>
       </div>
     );
   }
@@ -78,31 +84,28 @@ export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) 
   const lastDate = new Date(checks[checks.length - 1].checkedAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
 
   return (
-    <div className="space-y-2">
+    <div className="surface rounded-[22px] p-4 sm:p-5 space-y-2.5">
       <div className="flex items-center gap-1 py-1">
         {buckets.map((b, idx) => {
-          let bgClass = 'bg-[#2a2e3f]/40';
-          if (b.status === 'up') bgClass = 'bg-emerald-500 hover:bg-emerald-400';
-          else if (b.status === 'down') bgClass = 'bg-rose-500 hover:bg-rose-400';
-          else if (b.status === 'degraded') bgClass = 'bg-amber-500 hover:bg-amber-400';
+          let bgClass = 'bg-white/[0.06]';
+          if (b.status === 'up') bgClass = 'bg-[#34d399] hover:brightness-110';
+          else if (b.status === 'down') bgClass = 'bg-[#f87171] hover:brightness-110';
+          else if (b.status === 'degraded') bgClass = 'bg-[#fbbf24] hover:brightness-110';
 
           return (
             <div
               key={idx}
-              className={`flex-1 h-7 rounded-[2px] transition-all cursor-pointer ${bgClass}`}
+              className={`flex-1 h-8 rounded-[3px] transition-all cursor-pointer ${bgClass}`}
               title={b.label}
             />
           );
         })}
       </div>
 
-      <div className="flex items-center justify-between text-[11px] text-[#9ca3af] font-mono px-0.5">
+      <div className="flex items-center justify-between text-[11px] text-[#9ba0b5] font-mono px-0.5">
         <span>{firstDate}</span>
-        <span className="flex items-center gap-1.5 text-xs text-emerald-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Canlı Takip</span>
-        </span>
-        <span>{lastDate} (Bugün)</span>
+        <span className="text-white/40">Geçmiş Zaman Çizgisi</span>
+        <span>{lastDate} (Şimdi)</span>
       </div>
     </div>
   );

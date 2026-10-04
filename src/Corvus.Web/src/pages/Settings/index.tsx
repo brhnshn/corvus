@@ -10,6 +10,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { Button } from '../../components/ui/Button';
 import { GeneralSettingsTab } from './GeneralSettingsTab';
 import { NotificationSettingsTab, type ChannelType } from './NotificationSettingsTab';
 import { BackupSettingsTab } from './BackupSettingsTab';
@@ -161,16 +162,24 @@ export const SettingsPage: React.FC = () => {
     setTimeout(() => setCopiedBackupCmd(false), 2000);
   };
 
+  const tabs = [
+    { id: 'general' as const, label: t('settings.tabGeneral') || 'Genel & Güvenlik', icon: Shield },
+    { id: 'notifications' as const, label: t('settings.tabNotifications') || 'Bildirim Kanalları', icon: Bell },
+    { id: 'backup' as const, label: t('settings.tabBackup') || 'Yedekleme & SQLite', icon: Database }
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 animate-rv">
       {/* Üst Başlık & Hızlı Kaydet Butonu */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2a2e3f]/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold text-[#e5e7eb]">{t('settings.title')}</h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6]">
+              {t('settings.title') || 'Sistem Ayarları'}
+            </h1>
             {versionInfo && (
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-[#1a1d29] border border-[#2a2e3f] text-[#d4d4d8] font-semibold">
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded-[12px] bg-white/[0.07] border border-white/10 text-[#eceef6] font-semibold">
                   v{versionInfo.currentVersion}
                 </span>
                 {versionInfo.isUpdateAvailable ? (
@@ -178,91 +187,70 @@ export const SettingsPage: React.FC = () => {
                     href={versionInfo.releaseUrl || "https://github.com/brhnshn/corvus/releases"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors font-medium cursor-pointer"
-                    title={t('settings.versionUpdateAvailable', { version: `v${versionInfo.latestVersion}` })}
+                    className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-[12px] bg-[#34d399]/15 border border-[#34d399]/30 text-[#34d399] hover:bg-[#34d399]/25 transition-colors font-medium cursor-pointer"
+                    title={t('settings.versionUpdateAvailable', { version: `v${versionInfo.latestVersion}` }) || `v${versionInfo.latestVersion} hazır`}
                   >
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-dot-pulse" />
                     <span>v{versionInfo.latestVersion}</span>
                     <ExternalLink className="w-2.5 h-2.5" />
                   </a>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-[#1a1d29] border border-[#2a2e3f] text-[#22c55e]">
-                    <Check className="w-3 h-3" />
-                    <span className="text-[#9ca3af]">{t('settings.versionUpToDate')}</span>
+                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-[12px] bg-white/[0.04] border border-white/10 text-[#9ba0b5]">
+                    <Check className="w-3 h-3 text-[#34d399]" />
+                    <span>{t('settings.versionUpToDate') || 'Güncel'}</span>
                   </span>
                 )}
               </div>
             )}
           </div>
-          <p className="text-xs text-[#9ca3af] mt-1">{t('settings.subtitle')}</p>
+          <p className="text-[13px] text-[#9ba0b5] mt-0.5">
+            {t('settings.subtitle') || 'Sistem parametreleri, güvenlik tercihleri ve entegrasyonlar'}
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
           {saved && (
-            <span className="flex items-center gap-1.5 text-xs text-[#22c55e] font-medium bg-[#22c55e]/10 border border-[#22c55e]/30 px-3 py-1.5 rounded-lg animate-in fade-in duration-200">
-              <Check className="w-4 h-4" />
-              {t('settings.savedToast')}
+            <span className="flex items-center gap-1.5 text-xs text-[#34d399] font-medium bg-[#34d399]/15 border border-[#34d399]/30 px-3 py-1.5 rounded-[12px]">
+              <Check className="w-3.5 h-3.5" />
+              {t('settings.savedToast') || 'Kaydedildi'}
             </span>
           )}
-          <button
+          <Button
+            variant="primary"
             onClick={() => handleSave()}
             disabled={saving}
-            type="button"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#d4d4d8] text-[#0f1117] text-xs font-semibold hover:bg-[#e4e4e7] transition-colors disabled:opacity-50 cursor-pointer shadow-md"
+            icon={saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           >
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>{saving ? t('common.saving') : t('settings.saveBtn')}</span>
-          </button>
+            {saving ? (t('common.saving') || 'Kaydediliyor...') : (t('settings.saveBtn') || 'Ayarları Kaydet')}
+          </Button>
         </div>
       </div>
 
       {/* Sekme Navigasyonu */}
-      <div className="flex items-center p-1 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'general'
-              ? 'bg-[#0f1117] text-white shadow-sm border border-[#2a2e3f]'
-              : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-          }`}
-        >
-          <Shield className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{t('settings.tabGeneral')}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('notifications')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'notifications'
-              ? 'bg-[#0f1117] text-white shadow-sm border border-[#2a2e3f]'
-              : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-          }`}
-        >
-          <Bell className="w-3.5 h-3.5 text-indigo-400" />
-          <span>{t('settings.tabNotifications')}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('backup')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'backup'
-              ? 'bg-[#0f1117] text-white shadow-sm border border-[#2a2e3f]'
-              : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-          }`}
-        >
-          <Database className="w-3.5 h-3.5 text-emerald-400" />
-          <span>{t('settings.tabBackup')}</span>
-        </button>
+      <div className="glass rounded-[19px] p-[3px] flex gap-0.5 overflow-x-auto no-scrollbar">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-[16px] text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? 'bg-[#d5d5dc] text-[#1b1d2a] shadow-xs'
+                  : 'text-[#9ba0b5] hover:text-[#eceef6]'
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#1b1d2a]' : 'text-[#9ba0b5]'}`} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Aktif Sekme İçeriği */}
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} className="space-y-4">
         {activeTab === 'general' && (
           <GeneralSettingsTab
             settings={settings}

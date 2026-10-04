@@ -32,7 +32,7 @@ export const SystemMetricsPage: React.FC = () => {
 
     const interval = setInterval(() => {
       if (!document.hidden && isMountedRef.current) loadData();
-    }, 25000);
+    }, 15000);
 
     const onVisible = () => {
       if (!document.hidden && isMountedRef.current) loadData();
@@ -47,14 +47,14 @@ export const SystemMetricsPage: React.FC = () => {
   }, [loadData]);
 
   const ranges = [
-    { id: '1h', label: t('metrics.range1h') },
-    { id: '6h', label: t('metrics.range6h') },
-    { id: '12h', label: t('metrics.range12h') },
-    { id: '24h', label: t('metrics.range24h') },
-    { id: '7d', label: t('metrics.range7d') },
-    { id: '30d', label: t('metrics.range30d') },
-    { id: '90d', label: t('metrics.range90d') },
-    { id: '1y', label: t('metrics.range1y') }
+    { id: '1h', label: t('metrics.range1h') || '1 Saat' },
+    { id: '6h', label: t('metrics.range6h') || '6 Saat' },
+    { id: '12h', label: t('metrics.range12h') || '12 Saat' },
+    { id: '24h', label: t('metrics.range24h') || '24 Saat' },
+    { id: '7d', label: t('metrics.range7d') || '7 Gün' },
+    { id: '30d', label: t('metrics.range30d') || '30 Gün' },
+    { id: '90d', label: t('metrics.range90d') || '90 Gün' },
+    { id: '1y', label: t('metrics.range1y') || '1 Yıl' }
   ];
 
   const isMultiDay = range === '24h' || range === '7d' || range === '30d' || range === '90d' || range === '1y';
@@ -80,42 +80,49 @@ export const SystemMetricsPage: React.FC = () => {
   const latest = metrics.length > 0 ? metrics[metrics.length - 1] : null;
 
   return (
-    <div className="space-y-6">
-      {/* Header and Time Range Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-3 sm:space-y-4 animate-rv">
+      {/* Başlık ve Zaman Aralığı Seçici */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold text-[#e5e7eb]">{t('metrics.title')}</h1>
-            <span className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6]">
+              {t('metrics.title') || 'Sistem Metrikleri'}
+            </h1>
+            <span className="font-mono font-semibold text-[11px] px-2.5 py-0.5 rounded-[12px] bg-emerald-400/15 text-[#34d399] inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-dot-pulse" />
               <span>15s</span>
             </span>
           </div>
-          <p className="text-sm text-[#9ca3af]">{t('metrics.subtitle')}</p>
+          <p className="text-[13px] text-[#9ba0b5] mt-0.5">
+            {t('metrics.subtitle') || 'Zaman serisi sistem kaynağı tüketim grafikleri'}
+          </p>
         </div>
 
-        {/* Range Buttons */}
-        <div className="flex items-center gap-1 bg-[#1a1d29] p-1 rounded-xl border border-[#2a2e3f] overflow-x-auto max-w-full">
-          {ranges.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setRange(r.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shrink-0 cursor-pointer ${
-                range === r.id
-                  ? 'bg-[#d4d4d8] text-[#0f1117] font-semibold shadow-xs'
-                  : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+        {/* Range Segment */}
+        <div className="glass rounded-[19px] p-[3px] flex gap-0.5 overflow-x-auto max-w-full">
+          {ranges.map((r) => {
+            const isActive = range === r.id;
+            return (
+              <button
+                key={r.id}
+                onClick={() => setRange(r.id)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-[16px] transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#d5d5dc] text-[#1b1d2a] shadow-xs'
+                    : 'text-[#9ba0b5] hover:text-[#eceef6]'
+                }`}
+              >
+                {r.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {loading && metrics.length === 0 && (
-        <div className="flex items-center justify-center h-64 text-[#9ca3af]">
-          <RefreshCw className="w-6 h-6 animate-spin mr-2 text-indigo-400" />
-          {t('common.loading')}
+        <div className="surface rounded-[22px] p-12 flex flex-col items-center justify-center text-[#9ba0b5] gap-3">
+          <RefreshCw className="w-6 h-6 animate-spin text-[#d5d5dc]" />
+          <span className="text-xs font-mono">{t('common.loading') || 'Veriler yükleniyor...'}</span>
         </div>
       )}
 
@@ -123,7 +130,7 @@ export const SystemMetricsPage: React.FC = () => {
       <SystemKpiCards metrics={metrics} latestMetric={latest} />
 
       {/* 2. CPU ve RAM Grafikleri Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5">
         <CpuMetricsChart 
           data={chartData} 
           currentCpu={latest ? latest.cpuPercent : 0} 
@@ -145,5 +152,3 @@ export const SystemMetricsPage: React.FC = () => {
     </div>
   );
 };
-
-export default SystemMetricsPage;

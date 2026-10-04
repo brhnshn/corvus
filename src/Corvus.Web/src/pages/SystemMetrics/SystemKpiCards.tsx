@@ -2,6 +2,8 @@ import React from 'react';
 import { Cpu, HardDrive, Database } from 'lucide-react';
 import type { SystemMetric } from '../../api/client';
 import { useI18n } from '../../i18n';
+import { Pill } from '../../components/ui/Pill';
+import { ProgressBar } from '../../components/ui/ProgressBar';
 
 interface SystemKpiCardsProps {
   metrics: SystemMetric[];
@@ -37,93 +39,69 @@ export const SystemKpiCards: React.FC<SystemKpiCardsProps> = ({ metrics, latestM
     : 0;
   const diskFreeGb = Math.max(0, current.diskTotalGb - current.diskUsedGb);
 
-  const getStatusBadge = (percent: number) => {
-    if (percent >= 90) {
-      return (
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 font-medium">
-          {t('metrics.critical')}
-        </span>
-      );
-    }
-    if (percent >= 75) {
-      return (
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">
-          {t('metrics.warning')}
-        </span>
-      );
-    }
-    return (
-      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">
-        {t('metrics.optimal')}
-      </span>
-    );
+  const getStatus = (percent: number, warn = 70, crit = 90): { status: 'ok' | 'warn' | 'err'; label: string } => {
+    if (percent >= crit) return { status: 'err', label: t('metrics.critical') || 'Kritik' };
+    if (percent >= warn) return { status: 'warn', label: t('metrics.warning') || 'Yüksek' };
+    return { status: 'ok', label: t('metrics.optimal') || 'Normal' };
   };
 
+  const cpuStatus = getStatus(current.cpuPercent, 70, 90);
+  const ramStatus = getStatus(ramPercent, 80, 90);
+  const diskStatus = getStatus(diskPercent, 80, 90);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
       {/* CPU Kartı */}
-      <div className="p-5 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] flex flex-col justify-between space-y-4 hover:border-[#3f4458] transition-all">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-              <Cpu className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs text-[#9ca3af] block">{t('metrics.cpuUsage')}</span>
-              <span className="text-2xl font-bold font-mono text-[#e5e7eb]">
-                %{current.cpuPercent}
-              </span>
-            </div>
+      <div className="surface rounded-[22px] p-4 flex flex-col justify-between gap-3 hover:bg-white/[0.1] transition-colors">
+        <div className="flex items-center gap-3">
+          <span className="w-[38px] h-[38px] rounded-[12px] border border-white/10 bg-white/[0.07] flex items-center justify-center shrink-0">
+            <Cpu className="w-4 h-4 text-[#eceef6]" />
+          </span>
+          <div>
+            <small className="block text-xs text-[#9ba0b5] font-medium leading-none mb-1">
+              {t('metrics.cpuUsage') || 'CPU Kullanımı'}
+            </small>
+            <b className="text-2xl font-bold tracking-tight text-[#eceef6] leading-none">
+              %{current.cpuPercent.toFixed(1)}
+            </b>
           </div>
-          {getStatusBadge(current.cpuPercent)}
+          <div className="ml-auto">
+            <Pill status={cpuStatus.status} label={cpuStatus.label} showDot={false} />
+          </div>
         </div>
 
-        {/* Min / Max / Ort */}
-        <div className="space-y-2 pt-2 border-t border-[#2a2e3f]/60">
-          <div className="w-full bg-[#0f1117] h-2 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${
-                current.cpuPercent >= 90 ? 'bg-rose-500' : current.cpuPercent >= 75 ? 'bg-amber-500' : 'bg-cyan-400'
-              }`}
-              style={{ width: `${Math.min(100, Math.max(2, current.cpuPercent))}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-[#9ca3af] font-mono">
-            <span>{t('metrics.minUsage', { value: minCpu })}</span>
-            <span>{t('metrics.avgUsage', { value: avgCpu })}</span>
-            <span>{t('metrics.maxUsage', { value: maxCpu })}</span>
+        <div className="space-y-1.5">
+          <ProgressBar value={current.cpuPercent} variant={cpuStatus.status} />
+          <div className="flex justify-between font-mono text-[11px] text-[#9ba0b5]">
+            <span>{t('metrics.minUsage', { value: minCpu.toFixed(1) }) || `Min: %${minCpu.toFixed(1)}`}</span>
+            <span>{t('metrics.avgUsage', { value: avgCpu.toFixed(0) }) || `Ort: %${avgCpu.toFixed(0)}`}</span>
+            <span>{t('metrics.maxUsage', { value: maxCpu.toFixed(1) }) || `Max: %${maxCpu.toFixed(1)}`}</span>
           </div>
         </div>
       </div>
 
       {/* RAM Kartı */}
-      <div className="p-5 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] flex flex-col justify-between space-y-4 hover:border-[#3f4458] transition-all">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-              <Database className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs text-[#9ca3af] block">{t('metrics.ramUsage')}</span>
-              <span className="text-2xl font-bold font-mono text-[#e5e7eb]">
-                %{ramPercent}
-              </span>
-            </div>
+      <div className="surface rounded-[22px] p-4 flex flex-col justify-between gap-3 hover:bg-white/[0.1] transition-colors">
+        <div className="flex items-center gap-3">
+          <span className="w-[38px] h-[38px] rounded-[12px] border border-white/10 bg-white/[0.07] flex items-center justify-center shrink-0">
+            <Database className="w-4 h-4 text-[#eceef6]" />
+          </span>
+          <div>
+            <small className="block text-xs text-[#9ba0b5] font-medium leading-none mb-1">
+              {t('metrics.ramUsage') || 'Bellek (RAM) Kullanımı'}
+            </small>
+            <b className="text-2xl font-bold tracking-tight text-[#eceef6] leading-none">
+              %{ramPercent}
+            </b>
           </div>
-          {getStatusBadge(ramPercent)}
+          <div className="ml-auto">
+            <Pill status={ramStatus.status} label={ramStatus.label} showDot={false} />
+          </div>
         </div>
 
-        {/* Doluluk ve GB */}
-        <div className="space-y-2 pt-2 border-t border-[#2a2e3f]/60">
-          <div className="w-full bg-[#0f1117] h-2 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${
-                ramPercent >= 90 ? 'bg-rose-500' : ramPercent >= 75 ? 'bg-amber-500' : 'bg-purple-400'
-              }`}
-              style={{ width: `${Math.min(100, Math.max(2, ramPercent))}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-[#9ca3af] font-mono">
+        <div className="space-y-1.5">
+          <ProgressBar value={ramPercent} variant={ramStatus.status} />
+          <div className="flex justify-between font-mono text-[11px] text-[#9ba0b5]">
             <span>{ramUsedGb} GB kullanılan</span>
             <span>{ramFreeGb} GB boş ({ramTotalGb} GB)</span>
           </div>
@@ -131,33 +109,27 @@ export const SystemKpiCards: React.FC<SystemKpiCardsProps> = ({ metrics, latestM
       </div>
 
       {/* Disk Kartı */}
-      <div className="p-5 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] flex flex-col justify-between space-y-4 hover:border-[#3f4458] transition-all">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <HardDrive className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs text-[#9ca3af] block">{t('metrics.diskUsage')}</span>
-              <span className="text-2xl font-bold font-mono text-[#e5e7eb]">
-                %{diskPercent}
-              </span>
-            </div>
+      <div className="surface rounded-[22px] p-4 flex flex-col justify-between gap-3 hover:bg-white/[0.1] transition-colors">
+        <div className="flex items-center gap-3">
+          <span className="w-[38px] h-[38px] rounded-[12px] border border-white/10 bg-white/[0.07] flex items-center justify-center shrink-0">
+            <HardDrive className="w-4 h-4 text-[#eceef6]" />
+          </span>
+          <div>
+            <small className="block text-xs text-[#9ba0b5] font-medium leading-none mb-1">
+              {t('metrics.diskUsage') || 'Disk Kullanımı'}
+            </small>
+            <b className="text-2xl font-bold tracking-tight text-[#eceef6] leading-none">
+              %{diskPercent}
+            </b>
           </div>
-          {getStatusBadge(diskPercent)}
+          <div className="ml-auto">
+            <Pill status={diskStatus.status} label={diskStatus.label} showDot={false} />
+          </div>
         </div>
 
-        {/* Disk Doluluk Çubuğu */}
-        <div className="space-y-2 pt-2 border-t border-[#2a2e3f]/60">
-          <div className="w-full bg-[#0f1117] h-2 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${
-                diskPercent >= 90 ? 'bg-rose-500' : diskPercent >= 75 ? 'bg-amber-500' : 'bg-emerald-400'
-              }`}
-              style={{ width: `${Math.min(100, Math.max(2, diskPercent))}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-[#9ca3af] font-mono">
+        <div className="space-y-1.5">
+          <ProgressBar value={diskPercent} variant={diskStatus.status} />
+          <div className="flex justify-between font-mono text-[11px] text-[#9ba0b5]">
             <span>{current.diskUsedGb} GB kullanılan</span>
             <span>{diskFreeGb} GB boş ({current.diskTotalGb} GB)</span>
           </div>

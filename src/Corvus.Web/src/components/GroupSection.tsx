@@ -83,7 +83,7 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
       {/* Group Header Bar */}
       <div 
         onClick={onToggleCollapse}
-        className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-[#1a1d29]/60 cursor-pointer transition-colors group select-none"
+        className="surface flex items-center justify-between px-3 py-2 rounded-[16px] border border-white/10 hover:bg-white/[0.10] cursor-pointer transition-colors group select-none font-mono text-xs font-semibold uppercase tracking-[0.8px] text-[#9ba0b5]"
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <button
@@ -123,12 +123,12 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
             </form>
           ) : (
             <div className="flex items-center gap-2 min-w-0">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#e5e7eb] font-mono flex items-center gap-2 truncate">
-                <Layers className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <h2 className="text-xs font-semibold uppercase tracking-[0.8px] text-[#eceef6] font-mono flex items-center gap-2 truncate">
+                <Layers className="w-3.5 h-3.5 text-[#9ba0b5] shrink-0" />
                 <span className="truncate">{title}</span>
               </h2>
 
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#1a1d29] text-[#9ca3af] border border-[#2a2e3f]">
+              <span className="not-italic text-[11px] px-2 py-0.5 rounded-[10px] bg-white/10 text-[#9ba0b5] font-mono">
                 {count}
               </span>
 

@@ -11,22 +11,23 @@ export function PublicStatusServiceBar({ checks = [], totalSlots = 30 }: PublicS
   const { t } = useI18n();
 
   const slots = useMemo(() => {
-    const padded = [...Array(Math.max(0, totalSlots - checks.length)).fill(null), ...checks.slice(-totalSlots)];
+    const list = checks || [];
+    const padded = [...Array(Math.max(0, totalSlots - list.length)).fill(null), ...list.slice(-totalSlots)];
     return padded;
   }, [checks, totalSlots]);
 
   const getStatusColor = (status?: string | null) => {
-    if (!status) return 'bg-slate-800/80 border-slate-700/60 hover:bg-slate-700';
-    if (status === 'up' || status === 'healthy') return 'bg-emerald-500 hover:bg-emerald-400 border-emerald-400/40';
-    if (status === 'degraded') return 'bg-amber-500 hover:bg-amber-400 border-amber-400/40';
-    return 'bg-rose-500 hover:bg-rose-400 border-rose-400/40';
+    if (!status) return 'bg-white/[0.06] border-white/5 hover:bg-white/10';
+    if (status === 'up' || status === 'healthy') return 'bg-[#34d399] hover:brightness-110 border-[#34d399]/40';
+    if (status === 'degraded') return 'bg-[#fbbf24] hover:brightness-110 border-[#fbbf24]/40';
+    return 'bg-[#f87171] hover:brightness-110 border-[#f87171]/40';
   };
 
   const getStatusText = (status?: string | null) => {
-    if (!status) return t('publicStatus.noData');
-    if (status === 'up' || status === 'healthy') return t('publicStatus.statusHealthy');
-    if (status === 'degraded') return t('publicStatus.statusDegraded');
-    return t('publicStatus.statusDown');
+    if (!status) return t('publicStatus.noData') || 'Veri yok';
+    if (status === 'up' || status === 'healthy') return t('publicStatus.statusHealthy') || 'Çalışıyor';
+    if (status === 'degraded') return t('publicStatus.statusDegraded') || 'Aksaklık';
+    return t('publicStatus.statusDown') || 'Kesinti';
   };
 
   return (
@@ -54,30 +55,30 @@ export function PublicStatusServiceBar({ checks = [], totalSlots = 30 }: PublicS
               <div
                 className={`absolute bottom-full mb-2 hidden group-hover:flex flex-col z-30 pointer-events-none whitespace-nowrap ${alignClass}`}
               >
-                <div className="bg-slate-900/95 backdrop-blur-md text-slate-200 text-[11px] rounded-lg py-1.5 px-2.5 shadow-xl border border-slate-700/80 flex flex-col gap-0.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-white">
+                <div className="surface text-[#eceef6] text-[11px] rounded-[10px] py-1.5 px-2.5 shadow-xl border border-white/15 flex flex-col gap-0.5 font-mono">
+                  <div className="flex items-center gap-1.5 font-semibold text-[#eceef6]">
                     <span
                       className={`w-2 h-2 rounded-full ${
                         !check
-                          ? 'bg-slate-500'
+                          ? 'bg-[#9ba0b5]'
                           : check.status === 'up' || check.status === 'healthy'
-                          ? 'bg-emerald-400'
+                          ? 'bg-[#34d399]'
                           : check.status === 'degraded'
-                          ? 'bg-amber-400'
-                          : 'bg-rose-400'
+                          ? 'bg-[#fbbf24]'
+                          : 'bg-[#f87171]'
                       }`}
                     />
                     <span>{getStatusText(check?.status)}</span>
                     {check?.responseTimeMs !== undefined && check?.responseTimeMs !== null && (
-                      <span className="text-slate-400 font-normal ml-1">({check.responseTimeMs} ms)</span>
+                      <span className="text-[#9ba0b5] font-normal ml-1">({check.responseTimeMs} ms)</span>
                     )}
                   </div>
                   {check?.checkedAt ? (
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-[#9ba0b5]">
                       {new Date(check.checkedAt).toLocaleString()}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-slate-500">{t('publicStatus.noData')}</span>
+                    <span className="text-[10px] text-[#9ba0b5]">{t('publicStatus.noData') || 'Veri yok'}</span>
                   )}
                 </div>
               </div>
@@ -87,10 +88,10 @@ export function PublicStatusServiceBar({ checks = [], totalSlots = 30 }: PublicS
       </div>
 
       {/* Legend / Timeline labels */}
-      <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium px-0.5">
-        <span>{t('publicStatus.checksAgo', { count: totalSlots })}</span>
-        <div className="h-px bg-slate-800/80 flex-1 mx-3" />
-        <span>{t('publicStatus.now')}</span>
+      <div className="flex items-center justify-between text-[11px] text-[#9ba0b5] font-mono px-0.5">
+        <span>{t('publicStatus.checksAgo', { count: totalSlots }) || `${totalSlots} kontrol önce`}</span>
+        <div className="h-px bg-white/10 flex-1 mx-3" />
+        <span>{t('publicStatus.now') || 'Şimdi'}</span>
       </div>
     </div>
   );

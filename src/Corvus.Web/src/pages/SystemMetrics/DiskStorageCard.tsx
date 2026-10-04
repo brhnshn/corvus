@@ -1,6 +1,8 @@
 import React from 'react';
-import { HardDrive, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { HardDrive } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { Pill, type StatusType } from '../../components/ui/Pill';
+import { ProgressBar } from '../../components/ui/ProgressBar';
 
 interface DiskStorageCardProps {
   diskUsedGb: number;
@@ -12,80 +14,74 @@ export const DiskStorageCard: React.FC<DiskStorageCardProps> = ({ diskUsedGb, di
 
   const diskFreeGb = Math.max(0, diskTotalGb - diskUsedGb);
   const percentUsed = diskTotalGb > 0 ? Math.round((diskUsedGb / diskTotalGb) * 100) : 0;
-  const isWarning = percentUsed >= 75 && percentUsed < 90;
-  const isCritical = percentUsed >= 90;
+  
+  const status: StatusType = percentUsed >= 90 ? 'err' : percentUsed >= 80 ? 'warn' : 'ok';
+  const statusLabel = percentUsed >= 90 
+    ? (t('metrics.critical') || 'Kritik') 
+    : percentUsed >= 80 
+    ? (t('metrics.warning') || 'Yüksek') 
+    : (t('metrics.optimal') || 'Normal');
 
   return (
-    <div className="p-5 sm:p-6 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-            <HardDrive className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-[#e5e7eb]">{t('metrics.diskChartTitle')}</h2>
-            <span className="text-[11px] text-[#9ca3af] font-mono">Birincil Sabit Disk / Bölüm</span>
-          </div>
+    <section className="surface rounded-[22px] p-4 sm:p-5 flex flex-col gap-3.5">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <span className="w-[38px] h-[38px] rounded-[12px] bg-white/[0.07] border border-white/10 flex items-center justify-center shrink-0">
+          <HardDrive className="w-4 h-4 text-[#eceef6]" />
+        </span>
+        <div>
+          <h2 className="text-[15px] font-semibold text-[#eceef6] leading-tight">
+            {t('metrics.diskChartTitle') || 'Disk Depolama Durumu'}
+          </h2>
+          <small className="font-mono text-[11px] text-[#9ba0b5]">Birincil Sabit Disk / Bölüm</small>
         </div>
-
-        <div className="flex items-center gap-2">
-          {isCritical ? (
-            <span className="flex items-center gap-1.5 text-xs text-rose-400 font-medium px-2.5 py-1 rounded-md bg-rose-500/10 border border-rose-500/30">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              {t('metrics.critical')}
-            </span>
-          ) : isWarning ? (
-            <span className="flex items-center gap-1.5 text-xs text-amber-400 font-medium px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              {t('metrics.warning')}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {t('metrics.optimal')}
-            </span>
-          )}
+        <div className="ml-auto">
+          <Pill status={status} label={statusLabel} showDot={false} />
         </div>
       </div>
 
-      {/* Büyük Görsel Doluluk Çubuğu */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-mono">
-          <span className="text-[#e5e7eb] font-semibold">
-            %{percentUsed} Dolu
-          </span>
-          <span className="text-[#9ca3af]">
-            {diskUsedGb} GB / {diskTotalGb} GB
-          </span>
-        </div>
-
-        <div className="w-full bg-[#0f1117] h-3.5 rounded-full overflow-hidden p-0.5 border border-[#2a2e3f]">
-          <div 
-            className={`h-full rounded-full transition-all duration-700 ${
-              isCritical ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-400'
-            }`}
-            style={{ width: `${Math.min(100, Math.max(2, percentUsed))}%` }}
-          />
-        </div>
+      {/* Doluluk Bilgisi */}
+      <div className="flex items-center justify-between font-mono text-[11px] text-[#9ba0b5]">
+        <b className="text-[13px] font-bold text-[#eceef6]">
+          %{percentUsed} Dolu
+        </b>
+        <span>
+          {diskUsedGb} GB / {diskTotalGb} GB
+        </span>
       </div>
 
-      {/* Bölüm Dağılımı ve Kartlar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-        <div className="p-3 rounded-xl bg-[#0f1117] border border-[#2a2e3f]">
-          <span className="text-[#9ca3af] block text-[11px] mb-1">{t('metrics.usedDisk')}</span>
-          <span className="text-base font-bold font-mono text-[#e5e7eb]">{diskUsedGb} GB</span>
+      {/* Progress Bar */}
+      <ProgressBar value={percentUsed} variant={status} />
+
+      {/* Kullanılan / Boş / Toplam 3'lü Kutucuklar */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+        <div className="rounded-[16px] bg-white/[0.06] border border-white/10 p-3">
+          <small className="text-[11px] text-[#9ba0b5] block mb-1">
+            {t('metrics.usedDisk') || 'Kullanılan Alan'}
+          </small>
+          <b className="font-mono text-[17px] font-bold text-[#eceef6]">
+            {diskUsedGb} GB
+          </b>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#0f1117] border border-[#2a2e3f]">
-          <span className="text-[#9ca3af] block text-[11px] mb-1">{t('metrics.freeDisk')}</span>
-          <span className="text-base font-bold font-mono text-emerald-400">{diskFreeGb} GB</span>
+        <div className="rounded-[16px] bg-white/[0.06] border border-white/10 p-3">
+          <small className="text-[11px] text-[#9ba0b5] block mb-1">
+            {t('metrics.freeDisk') || 'Kalan Boş Alan'}
+          </small>
+          <b className="font-mono text-[17px] font-bold text-[#34d399]">
+            {diskFreeGb} GB
+          </b>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#0f1117] border border-[#2a2e3f]">
-          <span className="text-[#9ca3af] block text-[11px] mb-1">{t('metrics.totalDisk')}</span>
-          <span className="text-base font-bold font-mono text-[#d4d4d8]">{diskTotalGb} GB</span>
+        <div className="rounded-[16px] bg-white/[0.06] border border-white/10 p-3">
+          <small className="text-[11px] text-[#9ba0b5] block mb-1">
+            {t('metrics.totalDisk') || 'Toplam Kapasite'}
+          </small>
+          <b className="font-mono text-[17px] font-bold text-[#eceef6]">
+            {diskTotalGb} GB
+          </b>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

@@ -1,103 +1,108 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { api, type DockerContainer, type ContainerStats } from '../../api/client';
-import { RefreshCw, Boxes, Layers, List, Trash2 } from 'lucide-react';
+import { RefreshCw, Boxes, Layers, List } from 'lucide-react';
 import { ContainerList } from './ContainerList';
 import { ComposeStackGroup } from './ComposeStackGroup';
 import { ContainerLogsModal } from './ContainerLogsModal';
 import { ContainerTerminalModal } from './ContainerTerminalModal';
-import { ContainerTagsModal, extractContainerTags } from './ContainerTagsModal';
+import { ContainerTagsModal } from './ContainerTagsModal';
 import { SystemPruneModal } from './SystemPruneModal';
 import { ContainerDetailModal } from './detail/ContainerDetailModal';
-import { TagFilterBar } from '../../components/common/TagFilterBar';
+import { ContainerActionSheet } from './ContainerActionSheet';
+import { ContainersHeader } from './ContainersHeader';
+import { ContainersStats } from './ContainersStats';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { Segment } from '../../components/ui/Segment';
+import { FilterChip } from '../../components/ui/FilterChip';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { Button } from '../../components/ui/Button';
+import { useToast } from '../../components/ui/Toast';
+import { tagHue } from '../../utils/tagHue';
 import { useI18n } from '../../i18n';
 import { useEntityGrouping, deriveSmartGroup } from '../../utils/grouping';
+import { extractContainerTags } from './ContainerRow';
 
-interface ContainersPageProps {
+export interface ContainersPageProps {
   isAdmin?: boolean;
 }
 
 export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }) => {
   const { t } = useI18n();
+  const toast = useToast();
+
   const [containers, setContainers] = useState<DockerContainer[]>([]);
   const [statsMap, setStatsMap] = useState<Record<string, ContainerStats>>({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+
   const [actionInProgress, setActionInProgress] = useState<{ id: string; action: string } | null>(null);
   const [selectedLogsContainer, setSelectedLogsContainer] = useState<{ id: string; name: string } | null>(null);
   const [selectedTerminalContainer, setSelectedTerminalContainer] = useState<{ id: string; name: string } | null>(null);
   const [selectedInspectContainer, setSelectedInspectContainer] = useState<DockerContainer | null>(null);
   const [editingTagsContainer, setEditingTagsContainer] = useState<DockerContainer | null>(null);
+  const [sheetContainer, setSheetContainer] = useState<DockerContainer | null>(null);
+
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedState, setSelectedState] = useState<string | null>(null);
   const [showPruneModal, setShowPruneModal] = useState(false);
   
   // Görünüm Modu: Düz Liste vs Gruplanmış Görünüm (Compose & Akıllı Gruplar)
-  const [viewMode, setViewMode] = useState<'flat' | 'compose'>('compose');
+  const [viewMode, setViewMode] = useState<'flat' | 'compose'>('flat');
+  const isMountedRef = useRef(true);
 
-  // Çalışan container'lar için canlı stats özetini tek bir batch sorgu ile al
-  const fetchStatsBackground = async (runningContainers: DockerContainer[]) => {
+  // Çalışan container'lar için canlı stats özetini al
+  const fetchStatsBackground = useCallback(async (runningContainers: DockerContainer[]) => {
     if (runningContainers.length === 0) return;
     try {
       const summary = await api.getContainersStatsSummary();
-      if (summary) {
+      if (summary && isMountedRef.current) {
         setStatsMap(summary);
       }
     } catch {
-      // stats alınamazsa sessizce geç
+      // stats arka planda sessizce geç
     }
-  };
+  }, []);
 
-  const loadContainers = async () => {
+  const loadContainers = useCallback(async (isManual = false) => {
+    if (isManual && isMountedRef.current) setRefreshing(true);
     try {
       const data = await api.getContainers();
+      if (!isMountedRef.current) return;
       setContainers(data);
 
-      const runningContainers = data.filter(c => c.State.toLowerCase() === 'running');
+      const runningContainers = data.filter((c) => c.State.toLowerCase() === 'running');
       fetchStatsBackground(runningContainers);
     } catch (err) {
-      console.error('Container listesi alınamadı', err);
+      if (isMountedRef.current) {
+        console.error('Container listesi alınamadı', err);
+        toast.error('Konteyner listesi alınamadı');
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        if (isManual) setRefreshing(false);
+      }
     }
-  };
+  }, [fetchStatsBackground, toast]);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const safeLoadContainers = async () => {
-      try {
-        const data = await api.getContainers();
-        if (!isMounted) return;
-        setContainers(data);
-        setLoading(false);
-
-        const runningContainers = data.filter(c => c.State.toLowerCase() === 'running');
-        if (runningContainers.length === 0) return;
-        const summary = await api.getContainersStatsSummary();
-        if (!isMounted) return;
-        if (summary) {
-          setStatsMap(summary);
-        }
-      } catch (err) {
-        if (isMounted) console.error('Container listesi alınamadı', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    safeLoadContainers();
+    isMountedRef.current = true;
+    loadContainers();
 
     const interval = setInterval(() => {
-      if (!document.hidden && isMounted) safeLoadContainers();
-    }, 25000);
+      if (!document.hidden && isMountedRef.current) loadContainers();
+    }, 20000);
 
     const onVisible = () => {
-      if (!document.hidden && isMounted) safeLoadContainers();
+      if (!document.hidden && isMountedRef.current) loadContainers();
     };
 
     const handleCorvusEvent = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       const type: string | undefined = detail?.eventType || detail?.type;
-      if (type?.includes('container') && isMounted) {
-        safeLoadContainers();
+      if (type?.includes('container') && isMountedRef.current) {
+        loadContainers();
       }
     };
 
@@ -105,28 +110,30 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
     window.addEventListener('corvus_event', handleCorvusEvent);
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('corvus_event', handleCorvusEvent);
     };
-  }, []);
+  }, [loadContainers]);
 
   // Container Yaşam Döngüsü Eylemleri
-  const handleAction = async (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => {
+  const handleAction = async (
+    action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart',
+    id: string,
+    name: string
+  ) => {
     const actionLabels: Record<string, string> = {
-      start: t('containers.actionStart'),
-      stop: t('containers.actionStop'),
-      pause: t('containers.actionPause'),
-      unpause: t('containers.actionResume'),
-      restart: t('containers.actionRestart')
+      start: 'başlatılıyor',
+      stop: 'durduruluyor',
+      pause: 'duraklatılıyor',
+      unpause: 'devam ettiriliyor',
+      restart: 'yeniden başlatılıyor',
     };
 
-    if (action === 'stop' || action === 'restart') {
-      if (!confirm(t('containers.confirmAction', { action: actionLabels[action], name }))) return;
-    }
-
     setActionInProgress({ id, action });
+    toast.info(`"${name}" ${actionLabels[action]}…`);
+
     try {
       if (action === 'start') await api.startContainer(id);
       else if (action === 'stop') await api.stopContainer(id);
@@ -135,22 +142,34 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
       else if (action === 'restart') await api.restartContainer(id);
 
       // Optimistic update: yerel container durumunu anında yansıt
-      setContainers(prev => prev.map(c => {
-        if (c.Id === id) {
-          let newState = c.State;
-          let newStatus = c.Status;
-          if (action === 'start') { newState = 'running'; newStatus = 'Up (just now)'; }
-          else if (action === 'stop') { newState = 'exited'; newStatus = 'Exited (just now)'; }
-          else if (action === 'pause') { newState = 'paused'; newStatus = 'Paused'; }
-          else if (action === 'unpause') { newState = 'running'; newStatus = 'Up'; }
-          return { ...c, State: newState, Status: newStatus };
-        }
-        return c;
-      }));
+      setContainers((prev) =>
+        prev.map((c) => {
+          if (c.Id === id) {
+            let newState = c.State;
+            let newStatus = c.Status;
+            if (action === 'start') {
+              newState = 'running';
+              newStatus = 'Up (just now)';
+            } else if (action === 'stop') {
+              newState = 'exited';
+              newStatus = 'Exited (just now)';
+            } else if (action === 'pause') {
+              newState = 'paused';
+              newStatus = 'Paused';
+            } else if (action === 'unpause') {
+              newState = 'running';
+              newStatus = 'Up';
+            }
+            return { ...c, State: newState, Status: newStatus };
+          }
+          return c;
+        })
+      );
 
+      toast.success(`"${name}" işlemi tamamlandı`);
       await loadContainers();
     } catch (err: unknown) {
-      alert(`${t('common.error')}: ${err instanceof Error ? err.message : 'Error'}`);
+      toast.error(err instanceof Error ? err.message : 'İşlem gerçekleştirilemedi');
     } finally {
       setActionInProgress(null);
     }
@@ -170,14 +189,39 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
       .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
   }, [containers]);
 
+  // Filtrelenmiş konteynerler
   const filteredContainers = useMemo(() => {
-    if (!selectedTag) return containers;
-    const lower = selectedTag.toLowerCase();
     return containers.filter((c) => {
+      const rawName = c.Names?.[0] || c.Id;
+      const cleanName = rawName.replace(/^\//, '').toLowerCase();
+      const image = c.Image.toLowerCase();
+      const q = search.toLowerCase();
+
+      // Port araması
+      const hasPort = c.Ports?.some(
+        (p) =>
+          String(p.PrivatePort).includes(q) ||
+          (p.PublicPort && String(p.PublicPort).includes(q))
+      );
+
+      const matchesSearch = !q || cleanName.includes(q) || image.includes(q) || hasPort;
+
+      // Etiket filtrelemesi
       const tags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels);
-      return tags.some((t) => t.toLowerCase() === lower);
+      const matchesTag =
+        !selectedTag || tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase());
+
+      // Durum filtrelemesi
+      const state = c.State.toLowerCase();
+      const matchesState =
+        !selectedState ||
+        (selectedState === 'running' && state === 'running') ||
+        (selectedState === 'paused' && state === 'paused') ||
+        (selectedState === 'stopped' && ['exited', 'dead', 'created'].includes(state));
+
+      return matchesSearch && matchesTag && matchesState;
     });
-  }, [containers, selectedTag]);
+  }, [containers, search, selectedTag, selectedState]);
 
   const handleTagsUpdated = (updatedTags: string[]) => {
     if (!editingTagsContainer) return;
@@ -185,21 +229,21 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
     setContainers((prev) =>
       prev.map((c) => (c.Id === containerId ? { ...c, tags: updatedTags } : c))
     );
+    toast.success('Etiketler güncellendi');
   };
 
-  // Ortak Gruplandırma & Manuel Düzenleme Motoru
+  // Ortak Gruplandırma & Compose Stack Motoru
   const {
     groups,
     collapsed,
     toggleCollapse,
     renameGroup,
-    draggingId,
     dragOverGroup,
     handleDragStart,
     handleDragEnd,
     handleDragOver,
     handleDragLeave,
-    handleDrop
+    handleDrop,
   } = useEntityGrouping<DockerContainer>({
     items: filteredContainers,
     getId: (c) => c.Id,
@@ -210,97 +254,134 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
       const cleanName = rawName.replace(/^\//, '');
       return deriveSmartGroup(cleanName, composeProject);
     },
-    storageKey: 'corvus_container_groups'
+    storageKey: 'corvus_container_groups',
   });
 
   return (
-    <div className="space-y-6">
-      {/* Başlık ve Görünüm Kontrolleri */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-[#e5e7eb]">{t('containers.title')}</h1>
-          <p className="text-sm text-[#9ca3af]">{t('containers.subtitle')}</p>
+    <div className="space-y-3.5 sm:space-y-4">
+      {/* 1. Başlık & Hızlı İşlemler */}
+      <ContainersHeader
+        onPruneClick={() => setShowPruneModal(true)}
+        onRefreshClick={() => loadContainers(true)}
+        refreshing={refreshing}
+      />
+
+      {/* 2. KPI İstatistik Şeridi */}
+      <ContainersStats
+        containers={containers}
+        selectedState={selectedState}
+        onFilterState={(st) => setSelectedState((prev) => (prev === st ? null : st))}
+      />
+
+      {/* 3. Arama Çubuğu & Görünüm Segmenti (Midnight v2 .tools) */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap animate-rv">
+        <div className="flex-1 min-w-[200px]">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="İsim, imaj veya port ara…"
+          />
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          {/* Görünüm Seçici (Düz Liste vs Compose / Akıllı Gruplar) */}
-          <div className="flex items-center p-0.5 rounded-lg bg-[#1a1d29] border border-[#2a2e3f]">
-            <button
-              onClick={() => setViewMode('compose')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                viewMode === 'compose' ? 'bg-[#0f1117] text-white shadow-sm' : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Gruplar</span>
-            </button>
-            <button
-              onClick={() => setViewMode('flat')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                viewMode === 'flat' ? 'bg-[#0f1117] text-white shadow-sm' : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>{t('containers.viewFlat')}</span>
-            </button>
-          </div>
-
-          {isAdmin && (
-            <button
-              onClick={() => setShowPruneModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors cursor-pointer"
-              title={t('containers.systemPrune')}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t('containers.systemPrune')}</span>
-            </button>
-          )}
-
-          <button
-            onClick={loadContainers}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#2a2e3f] bg-[#1a1d29] text-xs font-medium text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1e2130] transition-colors cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>{t('common.refresh')}</span>
-          </button>
-        </div>
+        <Segment
+          value={viewMode}
+          onChange={(v) => setViewMode(v as 'flat' | 'compose')}
+          options={[
+            {
+              value: 'flat',
+              label: 'Liste',
+              icon: <List className="w-3.5 h-3.5" />,
+            },
+            {
+              value: 'compose',
+              label: 'Gruplar',
+              icon: <Layers className="w-3.5 h-3.5" />,
+            },
+          ]}
+        />
       </div>
 
-      {/* Etiket Filtreleme Barı */}
-      {containers.length > 0 && tagsWithCounts.length > 0 && (
-        <TagFilterBar
-          tagsWithCounts={tagsWithCounts}
-          selectedTag={selectedTag}
-          onSelectTag={setSelectedTag}
-          totalCount={containers.length}
+      {/* 4. Filtre Çipleri (Etiketler + Tümü) */}
+      {(tagsWithCounts.length > 0 || selectedTag || selectedState) && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none animate-rv">
+          <FilterChip
+            label="Tümü"
+            count={containers.length}
+            selected={!selectedTag && !selectedState}
+            onClick={() => {
+              setSelectedTag(null);
+              setSelectedState(null);
+            }}
+          />
+
+          {tagsWithCounts.map(({ tag, count }) => {
+            const h = tagHue(tag);
+            return (
+              <FilterChip
+                key={tag}
+                label={tag}
+                count={count}
+                dotColor={`hsl(${h} 80% 65%)`}
+                selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                onClick={() =>
+                  setSelectedTag((prev) => (prev?.toLowerCase() === tag.toLowerCase() ? null : tag))
+                }
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Yükleniyor Durumu */}
+      {loading && containers.length === 0 && (
+        <div className="flex flex-col items-center justify-center h-64 text-[#9ba0b5]">
+          <RefreshCw className="w-7 h-7 animate-spin text-[#d5d5dc] mb-3" />
+          <span className="text-xs font-mono tracking-wider">{t('common.loading')}</span>
+        </div>
+      )}
+
+      {/* Boş Durum */}
+      {!loading && containers.length === 0 && (
+        <EmptyState
+          icon={<Boxes className="w-6 h-6" />}
+          title={t('containers.noContainersFound')}
+          description={t('containers.noContainersDesc')}
+          action={
+            <Button variant="secondary" onClick={() => loadContainers(true)}>
+              Listeyi Yenile
+            </Button>
+          }
         />
       )}
 
-      {loading && containers.length === 0 && (
-        <div className="flex items-center justify-center h-64 text-[#9ca3af]">
-          <RefreshCw className="w-6 h-6 animate-spin mr-2 text-indigo-400" />
-          <span>{t('common.loading')}</span>
-        </div>
+      {/* Filtre Sonucu Boş Durumu */}
+      {!loading && containers.length > 0 && filteredContainers.length === 0 && (
+        <EmptyState
+          title="Eşleşen konteyner bulunamadı"
+          description="Arama kriterlerinize veya seçilen filtrelere uyan bir konteyner bulunmuyor."
+          action={
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearch('');
+                setSelectedTag(null);
+                setSelectedState(null);
+              }}
+            >
+              Filtreleri Temizle
+            </Button>
+          }
+        />
       )}
 
-      {!loading && containers.length === 0 && (
-        <div className="p-12 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] text-center max-w-md mx-auto space-y-3">
-          <Boxes className="w-12 h-12 text-[#9ca3af]/40 mx-auto" />
-          <h3 className="text-base font-semibold text-[#e5e7eb]">{t('containers.noContainersFound')}</h3>
-          <p className="text-xs text-[#9ca3af]">{t('containers.noContainersDesc')}</p>
-        </div>
-      )}
-
-      {/* Düz Liste Görünümü */}
+      {/* 5. Konteyner Listesi: Düz Liste vs Gruplanmış Görünüm */}
       {filteredContainers.length > 0 && viewMode === 'flat' && (
         <ContainerList
           items={filteredContainers}
           statsMap={statsMap}
           actionInProgress={actionInProgress}
           onAction={handleAction}
-          onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
-          onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
-          onEditTags={(c) => setEditingTagsContainer(c)}
+          onOpenSheet={(c) => setSheetContainer(c)}
           onInspect={(c) => setSelectedInspectContainer(c)}
           selectedTag={selectedTag}
           onSelectTag={setSelectedTag}
@@ -308,7 +389,6 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
         />
       )}
 
-      {/* Akıllı Gruplar & Compose Stack Görünümü */}
       {filteredContainers.length > 0 && viewMode === 'compose' && (
         <ComposeStackGroup
           groups={groups}
@@ -321,13 +401,10 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          draggingId={draggingId}
           statsMap={statsMap}
           actionInProgress={actionInProgress}
           onAction={handleAction}
-          onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
-          onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
-          onEditTags={(c) => setEditingTagsContainer(c)}
+          onOpenSheet={(c) => setSheetContainer(c)}
           onInspect={(c) => setSelectedInspectContainer(c)}
           selectedTag={selectedTag}
           onSelectTag={setSelectedTag}
@@ -335,21 +412,18 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
         />
       )}
 
-      {/* Etiket filtresi sonucu eşleşen container bulunamadığında */}
-      {!loading && containers.length > 0 && filteredContainers.length === 0 && (
-        <div className="p-8 rounded-2xl bg-[#1a1d29] border border-[#2a2e3f] text-center max-w-md mx-auto space-y-3">
-          <Boxes className="w-10 h-10 text-[#9ca3af]/40 mx-auto" />
-          <h3 className="text-sm font-semibold text-[#e5e7eb]">
-            {t('containers.noMatchingContainers') || 'Seçilen etikete uygun konteyner bulunamadı'}
-          </h3>
-          <button
-            onClick={() => setSelectedTag(null)}
-            className="text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
-          >
-            {t('containers.clearFilter') || 'Filtreyi Temizle'}
-          </button>
-        </div>
-      )}
+      {/* Konteyner İşlemler Paneli (Midnight v2 Sheet) */}
+      <ContainerActionSheet
+        container={sheetContainer}
+        isOpen={!!sheetContainer}
+        onClose={() => setSheetContainer(null)}
+        onAction={handleAction}
+        onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
+        onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
+        onEditTags={(c) => setEditingTagsContainer(c)}
+        onInspect={(c) => setSelectedInspectContainer(c)}
+        isAdmin={isAdmin}
+      />
 
       {/* Konteyner Detay & Canlı Yapılandırma Modalı */}
       {selectedInspectContainer && (

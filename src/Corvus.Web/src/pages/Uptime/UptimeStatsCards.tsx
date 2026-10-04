@@ -1,7 +1,9 @@
 import React from 'react';
-import { ShieldCheck, Pencil, Container, PowerOff } from 'lucide-react';
+import { Pencil, Container, PowerOff } from 'lucide-react';
 import type { Service, UptimeCheckItem } from '../../types';
-import { StatusBadge } from '../../components/StatusBadge';
+import { Pill, type StatusType } from '../../components/ui/Pill';
+import { Button } from '../../components/ui/Button';
+import { SslBadge } from '../../components/ui/SslBadge';
 import { useI18n } from '../../i18n';
 
 interface UptimeStatsCardsProps {
@@ -31,58 +33,66 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
   const isDockerCheck = selectedService.checkType === 'docker' || 
     (selectedService.source === 'docker' && !selectedService.url && !selectedService.healthCheckUrl);
 
+  const serviceStatusType: StatusType = 
+    selectedService.status === 'healthy' ? 'ok' :
+    selectedService.status === 'down' ? 'err' : 'warn';
+
+  const serviceStatusLabel =
+    selectedService.status === 'healthy' ? 'Çalışıyor' :
+    selectedService.status === 'down' ? 'Kesinti' : 'Aksaklık';
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       {/* İstatistik Kartları */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
-          <span className="text-xs text-[#9ca3af] block">{t('uptime.statusCard')}</span>
-          <div className="mt-2 flex items-center gap-2">
-            <StatusBadge status={selectedService.status} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
+        <div className="surface rounded-[20px] p-4 flex flex-col justify-between gap-2">
+          <span className="text-xs text-[#9ba0b5] block font-medium">{t('uptime.statusCard') || 'Mevcut Durum'}</span>
+          <div className="flex items-center gap-2">
+            <Pill status={serviceStatusType} label={serviceStatusLabel} />
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
-          <span className="text-xs text-[#9ca3af] block">
-            {t('uptime.uptimeRatio', { range: rangeLabel })}
+        <div className="surface rounded-[20px] p-4 flex flex-col justify-between gap-2">
+          <span className="text-xs text-[#9ba0b5] block font-medium">
+            {t('uptime.uptimeRatio', { range: rangeLabel }) || `Erişilebilirlik (${rangeLabel})`}
           </span>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="flex items-baseline gap-2">
             {uptimePercent !== null ? (
               <>
                 <span
-                  className={`text-2xl font-bold font-mono ${
+                  className={`text-2xl font-bold font-mono tracking-tight ${
                     uptimePercent >= 99
-                      ? 'text-emerald-400'
+                      ? 'text-[#34d399]'
                       : uptimePercent >= 95
-                      ? 'text-amber-400'
-                      : 'text-rose-400'
+                      ? 'text-[#fbbf24]'
+                      : 'text-[#f87171]'
                   }`}
                 >
                   %{uptimePercent}
                 </span>
-                <span className="text-[11px] text-[#9ca3af]">
-                  ({upChecks.length}/{checks.length} başarılı)
+                <span className="text-[11px] text-[#9ba0b5] font-mono">
+                  ({upChecks.length}/{checks.length})
                 </span>
               </>
             ) : (
               <>
-                <span className="text-2xl font-bold font-mono text-[#9ca3af]">
+                <span className="text-2xl font-bold font-mono text-[#9ba0b5]">
                   —
                 </span>
-                <span className="text-[11px] text-[#9ca3af]">
-                  ({t('uptime.noChecksYet')})
+                <span className="text-[11px] text-[#9ba0b5]">
+                  ({t('uptime.noChecksYet') || 'Henüz veri yok'})
                 </span>
               </>
             )}
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#1a1d29] border border-[#2a2e3f]">
-          <span className="text-xs text-[#9ca3af] block">{t('uptime.avgLatency')}</span>
-          <div className="text-2xl font-bold font-mono text-[#e5e7eb] mt-1">
+        <div className="surface rounded-[20px] p-4 flex flex-col justify-between gap-2">
+          <span className="text-xs text-[#9ba0b5] block font-medium">{t('uptime.avgLatency') || 'Ort. Yanıt Süresi'}</span>
+          <div className="text-2xl font-bold font-mono tracking-tight text-[#eceef6]">
             {isDockerCheck ? (
-              <span className="text-sm font-sans font-medium text-indigo-400 flex items-center gap-1.5">
-                <Container className="w-4 h-4" />
+              <span className="text-sm font-sans font-medium text-[#d5d5dc] flex items-center gap-1.5">
+                <Container className="w-4 h-4 text-[#9ba0b5]" />
                 <span>Docker Socket</span>
               </span>
             ) : avgLatency > 0 ? (
@@ -95,18 +105,18 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
       </div>
 
       {/* Hedef Bilgisi, SSL Rozeti ve Düzenleme Butonu */}
-      <div className="p-4 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="surface rounded-[20px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="min-w-0">
-          <span className="text-xs text-[#9ca3af] block mb-0.5">
+          <span className="text-xs text-[#9ba0b5] block mb-0.5 font-medium">
             {isDockerCheck
               ? 'Kontrol Edilen Hedef'
               : selectedService.checkType === 'tcp'
-              ? t('uptime.targetTcp')
+              ? t('uptime.targetTcp') || 'TCP Soket'
               : selectedService.checkType === 'ping'
-              ? t('uptime.targetPing')
-              : t('uptime.targetUrl')}
+              ? t('uptime.targetPing') || 'ICMP Ping'
+              : t('uptime.targetUrl') || 'HTTP(S) Uç Noktası'}
           </span>
-          <span className="text-sm font-mono text-[#e5e7eb] break-all">
+          <span className="text-sm font-mono text-[#eceef6] break-all">
             {isDockerCheck
               ? `Docker Daemon (${selectedService.name}) — Konteyner Durum Takibi`
               : selectedService.checkType === 'tcp'
@@ -117,46 +127,32 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
           {selectedService.sslExpiryDays !== null && selectedService.sslExpiryDays !== undefined && (
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span
-                className={`text-xs px-2.5 py-1 rounded-md border font-mono flex items-center gap-1.5 ${
-                  selectedService.sslExpiryDays <= 7
-                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                    : selectedService.sslExpiryDays <= 14
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                {t('uptime.sslExpiresIn', { days: selectedService.sslExpiryDays })}
-              </span>
-            </div>
+            <SslBadge daysRemaining={selectedService.sslExpiryDays} />
           )}
 
           {onEditService && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => onEditService(selectedService)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] hover:border-indigo-500/50 hover:bg-[#1e2130] text-xs text-[#9ca3af] hover:text-white transition-all cursor-pointer shadow-xs"
-              title={t('uptime.editEndpoint')}
+              icon={<Pencil className="w-3.5 h-3.5" />}
             >
-              <Pencil className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{t('uptime.editEndpoint')}</span>
-            </button>
+              {t('uptime.editEndpoint') || 'Hedefi Düzenle'}
+            </Button>
           )}
 
           {onDisableUptime && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => onDisableUptime(selectedService)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] hover:border-amber-500/50 hover:bg-[#1e2130] text-xs text-[#9ca3af] hover:text-amber-400 transition-all cursor-pointer shadow-xs"
-              title="Uptime Takibini Kapat"
+              icon={<PowerOff className="w-3.5 h-3.5 text-[#fbbf24]" />}
+              className="text-[#fbbf24] hover:text-[#fbbf24] hover:bg-[#fbbf24]/10"
             >
-              <PowerOff className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden sm:inline">Takibi Kapat</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>

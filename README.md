@@ -35,6 +35,11 @@
 
 ## ✨ Key Features
 
+- **🎨 Midnight v2 Unified Design System & Collapsible Command Layout:**
+  - **Unified Architectural Layout (`AppLayout.tsx`):** MVC-like central layout with a desktop collapsible sidebar that remembers its open/closed state in `localStorage`, complete with an animated floating Corvus pill button to smoothly restore the sidebar when collapsed.
+  - **Strict Threshold-Driven Color Semantics:** Replaced arbitrary cyan/purple gradients with strict operational threshold colors across charts and progress bars (<70% green `#34d399`, 70-89% amber `#fbbf24`, >=90% rose `#f87171`).
+  - **Modular UI Component Library (`src/components/ui/`):** Enterprise-grade, type-safe components adhering to the zero-monolith clean architecture rule: `Button`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
+  - **Flat Midnight Backdrop & Glass Surfaces:** Refined `#0d0e15` base with high-contrast, semi-transparent `surface` cards (`rgba(27,29,42,0.9)`), single accent `#d5d5dc` indicator, and smooth entrance transitions (`animate-rv`).
 - **🔐 Role-Based Access Control (RBAC) & Persistent Sessions:**
   - Granular `admin` (full mutations) and `viewer` (read-only) roles protected at the endpoint level via `RequireAdminAttribute`.
   - Persistent SQLite session store (`user_sessions` table): Ensures user sessions survive container upgrades, restarts, and redeployments without losing sub-microsecond in-memory verification.

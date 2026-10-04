@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { api, type AuthStatus, invalidateCache } from './api/client';
-import { Sidebar, type PageId } from './components/Sidebar';
-import { BottomNav } from './components/BottomNav';
+import { AppLayout } from './components/layout/AppLayout';
+import type { PageId } from './components/Sidebar';
 import { RegistrationPromptModal } from './components/RegistrationPromptModal';
 import { RefreshCw } from 'lucide-react';
 import { useI18n } from './i18n';
@@ -359,31 +359,18 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-[#e5e7eb] flex flex-col lg:flex-row">
-      {/* Sidebar (Desktop kalıcı) */}
-      <Sidebar 
-        currentPage={currentPage} 
-        onSelectPage={navigateTo} 
-        username={authStatus?.username}
-        role={authStatus?.role}
-        onLogout={authStatus?.authEnabled ? handleLogout : undefined}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pb-28 lg:pb-8">
-          <div className="max-w-7xl mx-auto">
-            <ChunkErrorBoundary>
-              <Suspense fallback={<PageLoader />}>
-                {renderPage()}
-              </Suspense>
-            </ChunkErrorBoundary>
-          </div>
-        </main>
-      </div>
-
-      {/* Mobil Cam Altbar (lg altında aktif, genişleyen hap + kayan gösterge) */}
-      <BottomNav currentPage={currentPage} onSelectPage={navigateTo} />
+    <AppLayout
+      currentPage={currentPage}
+      onSelectPage={navigateTo}
+      username={authStatus?.username}
+      role={authStatus?.role}
+      onLogout={authStatus?.authEnabled ? handleLogout : undefined}
+    >
+      <ChunkErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          {renderPage()}
+        </Suspense>
+      </ChunkErrorBoundary>
 
       {/* Kayıtları kapatma öneri modalı */}
       <RegistrationPromptModal
@@ -391,7 +378,7 @@ export const App: React.FC = () => {
         onClose={() => setShowRegPrompt(false)}
         onDisabled={handleRegistrationDisabled}
       />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.21] - 2026-10-04
+
+### Added
+- **Midnight v2 Unified Frontend Design System**:
+  - **Shared Design Tokens & Utilities**: Integrated `#0d0e15` backdrop, `surface` cards (`rgba(27,29,42,0.9)`), single accent `#d5d5dc` indicator, and semantic status colors (`ok`: `#34d399`, `warn`: `#fbbf24`, `err`: `#f87171`, `neutral-bar`: `rgba(213,213,220,0.55)`). Added `@utility surface`, `@utility glass`, `@utility sheet-glass`, and animations (`animate-rv`, `animate-dot-pulse`).
+  - **Modular UI Component Library (`src/components/ui/`)**: Built reusable, type-safe components: `Button`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast` (with `ToastProvider` & `useToast`), `EmptyState`, `SslBadge`, `HistoryBars`.
+  - **Unified Collapsible Layout (`AppLayout.tsx`)**: Replaced fragmented inline containers with a centralized layout supporting collapsible sidebar with persistent state in `localStorage`, floating Corvus logo trigger button, and responsive bottom bar.
+  - **Dashboard Modernization**: Redesigned KPI cards with `StatTile`, memory badge, `AttentionAlerts` for degraded/critical containers and expiring SSLs, top RAM usage container bars, and 24h event timeline.
+  - **Services & Containers Modernization**: Updated service cards, group headers, and container list/stack views with single-color threshold indicators, `SearchInput`, `FilterChip`, and `ContainerActionSheet`.
+  - **System Metrics Overhaul**: Converted Recharts area charts to strictly threshold-driven single colors (eliminating arbitrary gradients), added time-range `Segment` control, and modernized storage card with 3-box capacity breakdown.
+  - **Uptime & Settings Redesign**: Overhauled Uptime monitoring tabs, service selector, and system settings with Midnight v2 glass tabs and consistent surface cards.
+  - **Profile & User Management Modernization**: Redesigned `/profile` security tab, team user management, and `AddUserModal` using `surface` cards and `Button` components.
+  - **Auth & Onboarding Overhaul**: Modernized `/auth` (Login & Register) screen with flat Midnight backdrop, centered `surface` card, glass tab selector, and accessible form inputs.
+  - **Public Status Page Overhaul**: Upgraded public-facing status page (`/status`), category accordions, service bars, and incident banners to Midnight v2 styling.
+
+### Changed
+- **Threshold-Driven Progress & Metrics**: Removed purple/cyan decorative gradients across all progress bars and charts, ensuring colors strictly represent operational health thresholds (<70% ok, 70-89% warning, >=90% critical).
+- **Independent Terminology**: Standardized terminology across the entire frontend adhering to Corvus branding ethics.
+
+---
+
 ## [1.5.20] - 2026-10-03
 
 ### Added

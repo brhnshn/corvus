@@ -3,6 +3,27 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.21] - 2026-10-04
+
+### Eklenenler (Added)
+- **Midnight v2 Bütünleşik Ön Yüz Tasarım Sistemi**:
+  - **Paylaşımlı Tasarım Değişkenleri & Yardımcı Sınıflar**: Düz `#0d0e15` arka plan, `surface` kart katmanı (`rgba(27,29,42,0.9)`), tekil açık gri `#d5d5dc` odak rengi ve anlamsal durum renkleri (`ok`: `#34d399`, `warn`: `#fbbf24`, `err`: `#f87171`, `neutral-bar`: `rgba(213,213,220,0.55)`) entegre edildi. `@utility surface`, `@utility glass`, `@utility sheet-glass` ve `animate-rv`, `animate-dot-pulse` anahtar kare animasyonları tanımlandı.
+  - **Modüler Arayüz Bileşen Kütüphanesi (`src/components/ui/`)**: Temiz mimari ve modüler ayrım kuralı uyarınca tekrar kullanılabilir tip güvenli bileşenler inşa edildi: `Button`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast` (`ToastProvider` & `useToast`), `EmptyState`, `SslBadge`, `HistoryBars`.
+  - **Merkezi Katlanabilir Yerleşim Düzeni (`AppLayout.tsx`)**: Sayfa bazında tekrarlayan sarmalayıcılar yerine MVC benzeri merkezi bir yerleşim geliştirildi. Sol panelin (Sidebar) katlanabilmesi, katlanma durumunun `localStorage`'da saklanması, katlandığında sol üstte beliren Corvus logolu animasyonlu hap tetikleyici buton ve mobil uyumlu alt navigasyon barı sağlandı.
+  - **Genel Bakış (Dashboard) Yenilemesi**: `StatTile` tabanlı KPI kartları, canlı bellek tüketim rozeti, kritik/uyarı durumundaki konteynerler ve süresi yaklaşan SSL sertifikaları için dikkat paneli (`AttentionAlerts`), en çok RAM tüketen ilk 5 konteyner çubuğu ve 24 saatlik olay zaman çizelgesi modernleştirildi.
+  - **Servisler & Konteynerler Sayfaları**: Servis kartları, grup başlıkları ve konteyner liste/küme görünümleri tek renkli eşik çubukları, `SearchInput`, `FilterChip` ve alt çekmece aksiyon menüsü (`ContainerActionSheet`) ile yenilendi.
+  - **Sistem Metrikleri Sayfası**: Recharts alan grafikleri rastgele camgöbeği/mor degradelerden arındırılarak kesin eşik renklerine bağlandı, zaman aralığı `Segment` bileşeni entegre edildi ve disk depolama kartı 3'lü kapasite kutucuklarıyla modernize edildi.
+  - **Uptime & Sistem Ayarları Sayfaları**: Uptime izleme sekmeleri, servis arama/filtreleme seçicisi ve sistem ayarları Midnight v2 cam sekmeleri ve uyumlu `surface` kartları ile dönüştürüldü.
+  - **Profil & Kullanıcı Yönetimi Yenilemesi**: `/profile` güvenlik sekmesi, ekip yetkilendirmesi ve `AddUserModal` bileşeni `surface` kartları ve `Button` kütüphanemizle modernize edildi.
+  - **Giriş & İlk Kurulum Ekranı (/auth)**: Giriş ve kayıt ekranı Midnight düz zemini, şık `surface` form kartı, cam tab geçişi ve erişilebilir form elemanları ile yenilendi.
+  - **Herkese Açık Durum Sayfası (/status)**: Dışa dönük sistem durum sayfası, kategori akordeonları, servis çubukları ve olay/bakım duyuru panoları Midnight v2 görsel çizgisine kavuşturuldu.
+
+### Değiştirilenler (Changed)
+- **Eşik Tabanlı İlerleme & Metrik Renklendirmesi**: Tüm ilerleme çubukları ve zaman serisi grafiklerindeki mor/camgöbeği süsleme degradeleri kaldırıldı; renklerin sistem kaynak yük eşiklerini kesin ve doğru biçimde yansıtması sağlandı (<%70 normal, %70-89 yüksek, >=%90 kritik).
+- **Özgün Marka Kimliği & Terminoloji**: Arayüz metinlerinde üçüncü taraf araç adları yerine bağımsız ve endüstri standardı mühendislik terminolojisi kullanıldı.
+
+---
+
 ## [1.5.20] - 2026-10-03
 
 ### Eklenenler (Added)

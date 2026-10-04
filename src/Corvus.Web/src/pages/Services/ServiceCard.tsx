@@ -1,8 +1,10 @@
 import React from 'react';
-import { Server, ShieldCheck, ShieldAlert, ArrowUp, ArrowDown, ExternalLink, Trash2, Pencil } from 'lucide-react';
+import { Server, ArrowUp, ArrowDown, ExternalLink, Trash2, Pencil } from 'lucide-react';
 import type { Service } from '../../types';
-import { StatusBadge } from '../../components/StatusBadge';
-import { TagBadge } from '../../components/common/TagBadge';
+import { Pill } from '../../components/ui/Pill';
+import { TagChip } from '../../components/ui/TagChip';
+import { SslBadge } from '../../components/ui/SslBadge';
+import { HistoryBars } from '../../components/ui/HistoryBars';
 import { formatServiceUrl } from '../../utils/url';
 import { useI18n } from '../../i18n';
 
@@ -31,149 +33,155 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   onMove,
   onDelete,
   onEdit,
-  onSelectTag
+  onSelectTag,
 }) => {
   const { t } = useI18n();
+
+  const statusType: 'ok' | 'warn' | 'err' =
+    service.status === 'healthy' ? 'ok' : service.status === 'degraded' ? 'warn' : 'err';
+
+  const statusLabel =
+    service.status === 'healthy'
+      ? 'Çalışıyor'
+      : service.status === 'degraded'
+      ? 'Yavaş'
+      : service.status === 'down'
+      ? 'Erişilemiyor'
+      : 'Bilinmiyor';
 
   return (
     <div
       draggable={true}
       onDragStart={(e) => onDragStart(e, service.id)}
       onDragEnd={onDragEnd}
-      className={`p-5 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] hover:border-[#3f4458] hover:bg-[#1e2130] transition-all flex flex-col justify-between group cursor-grab active:cursor-grabbing ${
-        isDragging ? 'opacity-30 scale-95 border-indigo-500/50 shadow-inner' : ''
-      }`}
+      className={`
+        surface rounded-[22px] p-4 sm:p-5 flex flex-col justify-between gap-3.5 transition-all duration-200 select-none group cursor-grab active:cursor-grabbing hover:bg-white/[0.10]
+        ${isDragging ? 'opacity-30 scale-95 border-white/30 shadow-inner' : ''}
+      `}
     >
-      <div>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#0f1117] border border-[#2a2e3f] flex items-center justify-center text-[#d4d4d8] shrink-0 font-bold text-xs">
+      <div className="space-y-3">
+        {/* Üst Kısım: İkon + İsim & URL + Durum Hapı */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-[13px] border border-white/10 bg-white/[0.07] flex items-center justify-center text-[#eceef6] shrink-0 font-bold text-sm">
               {service.icon ? (
-                <span className="text-sm">{service.icon}</span>
+                <span>{service.icon}</span>
               ) : (
-                <Server className="w-4 h-4 text-[#9ca3af]" />
+                <Server className="w-5 h-5 text-[#9ba0b5]" />
               )}
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-[#e5e7eb] group-hover:text-white flex items-center gap-1.5">
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-semibold text-[#eceef6] truncate leading-snug">
                 {service.name}
               </h3>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[10px] text-[#9ca3af] font-mono uppercase">
-                  {service.source}
-                </span>
-                {service.checkType === 'tcp' && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-mono">
-                    TCP {service.port ? `:${service.port}` : ''}
-                  </span>
+              <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[11px] text-[#9ba0b5] truncate">
+                <span className="uppercase">{service.source}</span>
+                {service.url && (
+                  <>
+                    <span>·</span>
+                    <span className="truncate">{service.url.replace(/^https?:\/\//, '')}</span>
+                  </>
                 )}
-                {service.checkType === 'ping' && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono">
-                    ICMP PING
+                {service.checkType === 'tcp' && (
+                  <span className="text-[#818cf8]">
+                    · TCP {service.port ? `:${service.port}` : ''}
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <StatusBadge status={service.status} />
+
+          <Pill status={statusType} label={statusLabel} />
         </div>
 
         {service.description && (
-          <p className="text-xs text-[#9ca3af] line-clamp-2 mt-2">
+          <p className="text-xs text-[#9ba0b5] line-clamp-2 leading-relaxed">
             {service.description}
           </p>
         )}
 
-        {/* SSL Expiry Rozeti */}
-        {service.sslExpiryDays !== null && service.sslExpiryDays !== undefined && (
-          <div className="mt-2">
-            <span
-              className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-full border ${
-                service.sslExpiryDays <= 7
-                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 font-semibold animate-pulse shadow-xs shadow-rose-950'
-                  : service.sslExpiryDays <= 14
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-medium'
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-              }`}
-              title={`Sertifika Sağlayıcı: ${service.sslIssuer || 'Bilinmiyor'}`}
-            >
-              {service.sslExpiryDays <= 14 ? (
-                <ShieldAlert className="w-3 h-3 shrink-0" />
-              ) : (
-                <ShieldCheck className="w-3 h-3 shrink-0" />
-              )}
-              <span>
-                {t('services.sslRemaining', { days: service.sslExpiryDays })}
-              </span>
-            </span>
-          </div>
-        )}
+        {/* Meta Rozetleri: Deterministik Etiketler & SSL */}
+        <div className="flex flex-wrap items-center gap-1.5 min-h-[26px]">
+          {service.tags?.map((tag) => (
+            <TagChip
+              key={tag}
+              name={tag}
+              onClick={onSelectTag ? () => onSelectTag(tag) : undefined}
+            />
+          ))}
 
-        {/* Etiket Rozetleri (Tags) */}
-        {service.tags && service.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-            {service.tags.map((tag) => (
-              <TagBadge
-                key={tag}
-                tag={tag}
-                onClick={onSelectTag ? () => onSelectTag(tag) : undefined}
-                size="sm"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between border-t border-[#2a2e3f] pt-4 mt-4">
-        {/* Sıralama Butonları (Yukarı / Aşağı) */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onMove(globalIndex, 'up')}
-            disabled={globalIndex === 0 || reordering}
-            className="p-1.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d29] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            title="Yukarı Taşı"
-          >
-            <ArrowUp className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove(globalIndex, 'down')}
-            disabled={globalIndex === totalServices - 1 || reordering}
-            className="p-1.5 rounded-lg bg-[#0f1117] border border-[#2a2e3f] text-[#9ca3af] hover:text-[#e5e7eb] hover:bg-[#1a1d29] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            title="Aşağı Taşı"
-          >
-            <ArrowDown className="w-3 h-3" />
-          </button>
+          {service.sslExpiryDays !== null && service.sslExpiryDays !== undefined && (
+            <SslBadge daysRemaining={service.sslExpiryDays} />
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {service.url && (
+        {/* 22 Çubukluk Sağlık & Tepki Süresi Geçmişi */}
+        <HistoryBars
+          count={22}
+          history={Array(22).fill(statusType)}
+          latestLatencyMs={service.status === 'healthy' ? 42 : service.status === 'degraded' ? 480 : 0}
+        />
+      </div>
+
+      {/* Alt Aksiyon Çubuğu (Midnight v2 ActionBar) */}
+      <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-1">
+        {/* Sol: Hızlı Aç Butonu */}
+        <div>
+          {service.url ? (
             <a
               href={formatServiceUrl(service.url)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-[#9ca3af] hover:text-[#e5e7eb] font-medium py-1 px-2 rounded-lg bg-[#0f1117] border border-[#2a2e3f] hover:border-[#3b4252] transition-colors"
+              className="h-8 px-3 rounded-full border border-white/10 bg-white/[0.08] text-xs font-semibold text-[#eceef6] hover:bg-white/[0.14] inline-flex items-center gap-1.5 transition-colors"
             >
-              <span>{t('dashboard.quickLaunch')}</span>
-              <ExternalLink className="w-3 h-3" />
+              <span>Aç</span>
+              <ExternalLink className="w-3 h-3 text-[#9ba0b5]" />
             </a>
+          ) : (
+            <div />
           )}
+        </div>
+
+        {/* Sağ: Sıralama & Düzenle & Sil */}
+        <div className="flex items-center gap-1.5">
+          {/* Sıralama */}
+          <div className="flex items-center gap-1 mr-1">
+            <button
+              type="button"
+              onClick={() => onMove(globalIndex, 'up')}
+              disabled={globalIndex === 0 || reordering}
+              className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              title="Yukarı Taşı"
+            >
+              <ArrowUp className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onMove(globalIndex, 'down')}
+              disabled={globalIndex === totalServices - 1 || reordering}
+              className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              title="Aşağı Taşı"
+            >
+              <ArrowDown className="w-3 h-3" />
+            </button>
+          </div>
 
           <button
+            type="button"
             onClick={() => onEdit(service)}
-            className="p-1.5 text-[#9ca3af] hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+            className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.10] transition-colors cursor-pointer"
             title={t('common.edit')}
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
 
           <button
+            type="button"
             onClick={() => onDelete(service.id, service.name)}
-            className="p-1.5 text-[#9ca3af] hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+            className="p-2 rounded-full text-[#9ba0b5] hover:text-[#f87171] hover:bg-rose-500/10 transition-colors cursor-pointer"
             title={t('common.delete')}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

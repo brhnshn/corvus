@@ -27,114 +27,90 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className="p-4 sm:p-6 rounded-xl bg-[#1a1d29] border border-[#2a2e3f] space-y-5">
+    <div className="surface rounded-[22px] p-5 sm:p-6 space-y-6">
       {/* Dil Seçimi */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2a2e3f]/60">
-        <div className="flex items-center gap-2.5">
-          <Globe className="w-4 h-4 text-[#d4d4d8]" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <span className="w-9 h-9 rounded-[12px] bg-white/[0.07] border border-white/10 flex items-center justify-center shrink-0">
+            <Globe className="w-4 h-4 text-[#eceef6]" />
+          </span>
           <div>
-            <h2 className="text-sm font-semibold text-[#e5e7eb]">{t('settings.languageSectionTitle')}</h2>
-            <p className="text-xs text-[#9ca3af]">{t('settings.languageSectionDesc')}</p>
+            <h2 className="text-sm font-semibold text-[#eceef6]">{t('settings.languageSectionTitle') || 'Sistem Dili'}</h2>
+            <p className="text-xs text-[#9ba0b5]">{t('settings.languageSectionDesc') || 'Arayüzün varsayılan dilini belirleyin'}</p>
           </div>
         </div>
         <LanguageSwitch variant="full" />
       </div>
 
       {/* Kullanıcı Kayıtları (Açık/Kapalı) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2a2e3f]/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#e5e7eb]">
-            <Lock className="w-4 h-4 text-[#d4d4d8]" />
-            <h2>{t('settings.userRegistration')}</h2>
+          <div className="flex items-center gap-2.5 text-sm font-semibold text-[#eceef6]">
+            <span className="w-9 h-9 rounded-[12px] bg-white/[0.07] border border-white/10 flex items-center justify-center shrink-0">
+              <Lock className="w-4 h-4 text-[#eceef6]" />
+            </span>
+            <div>
+              <h2>{t('settings.userRegistration') || 'Kullanıcı Kayıtları'}</h2>
+              <p className="text-xs text-[#9ba0b5] font-normal max-w-lg leading-relaxed mt-0.5">
+                {t('settings.regDesc') || 'Giriş ekranında yeni kullanıcı oluşturma formunu açın veya kapatın'}
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-[#9ca3af] max-w-lg leading-relaxed">
-            {t('settings.regDesc')}
-          </p>
         </div>
 
         <button
           type="button"
           disabled={togglingReg}
           onClick={onToggleRegistration}
-          className={`self-start sm:self-auto px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer shrink-0 ${
+          className={`self-start sm:self-auto px-4 py-2 rounded-[14px] text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             isRegistrationOpen
-              ? 'bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 hover:bg-[#22c55e]/25'
-              : 'bg-[#ef4444]/15 text-[#ef4444] border border-[#ef4444]/30 hover:bg-[#ef4444]/25'
+              ? 'bg-[#34d399]/15 text-[#34d399] border border-[#34d399]/30 hover:bg-[#34d399]/25'
+              : 'bg-[#f87171]/15 text-[#f87171] border border-[#f87171]/30 hover:bg-[#f87171]/25'
           }`}
         >
-          <span className={`w-2 h-2 rounded-full ${isRegistrationOpen ? 'bg-[#22c55e]' : 'bg-[#ef4444]'}`} />
-          <span>{isRegistrationOpen ? t('settings.regOpenBtn') : t('settings.regClosedBtn')}</span>
+          <span className={`w-2 h-2 rounded-full ${isRegistrationOpen ? 'bg-[#34d399]' : 'bg-[#f87171]'}`} />
+          <span>{isRegistrationOpen ? 'Kayıtlar Açık' : 'Kayıtlar Kapalı'}</span>
         </button>
       </div>
 
-
-      {/* Veri Saklama Süresi */}
-      <div className="space-y-3 pt-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm font-semibold text-[#e5e7eb] flex-wrap">
-              <Database className="w-4 h-4 text-[#d4d4d8]" />
-              <h2>{t('settings.retentionTitle')}</h2>
-              {dbStats && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#0f1117] border border-[#2a2e3f] text-xs font-mono text-[#9ca3af]">
-                  <span>{t('settings.dbSize')}: <strong className="text-white">{dbStats.formattedSize}</strong></span>
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-[#9ca3af] max-w-lg">
-              {t('settings.retentionDesc')}
+      {/* Veri Saklama Süresi (Retention Days) */}
+      <div className="space-y-3 pb-5 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <span className="w-9 h-9 rounded-[12px] bg-white/[0.07] border border-white/10 flex items-center justify-center shrink-0">
+            <Database className="w-4 h-4 text-[#eceef6]" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-[#eceef6]">Veri Saklama Süresi</h2>
+            <p className="text-xs text-[#9ba0b5]">
+              Geçmiş metrik ve logların veritabanında saklanacağı süre
             </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-            <select
-              value={isCustomDays ? 'custom' : (settings['retention_days'] ?? '30')}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === 'custom') {
-                  setIsCustomDays(true);
-                } else {
-                  setIsCustomDays(false);
-                  setSettings({ ...settings, retention_days: val });
-                }
-              }}
-              className="bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-3 py-1.5 text-xs text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8] cursor-pointer"
-            >
-              <option value="7">{t('settings.retentionPresets.d7')}</option>
-              <option value="15">{t('settings.retentionPresets.d15')}</option>
-              <option value="30">{t('settings.retentionPresets.d30')}</option>
-              <option value="60">{t('settings.retentionPresets.d60')}</option>
-              <option value="90">{t('settings.retentionPresets.d90')}</option>
-              <option value="180">{t('settings.retentionPresets.d180')}</option>
-              <option value="365">{t('settings.retentionPresets.d365')}</option>
-              <option value="0">{t('settings.retentionPresets.unlimited')}</option>
-              <option value="custom">{t('settings.retentionPresets.custom')}</option>
-            </select>
-
-            {isCustomDays && (
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  min="1"
-                  max="3650"
-                  value={settings['retention_days'] || ''}
-                  onChange={(e) => setSettings({ ...settings, retention_days: e.target.value })}
-                  placeholder="Gün"
-                  className="w-20 bg-[#0f1117] border border-[#2a2e3f] rounded-lg px-2.5 py-1.5 text-xs text-[#e5e7eb] focus:outline-none focus:border-[#d4d4d8] text-center font-mono"
-                />
-                <span className="text-xs text-[#9ca3af]">gün</span>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Sınırsız Mod Risk Uyarısı */}
-        {settings['retention_days'] === '0' && !isCustomDays && (
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-            <div className="leading-relaxed">
-              {t('settings.retentionUnlimitedWarning')}
-            </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+          {['7', '15', '30', '90'].map((days) => (
+            <button
+              key={days}
+              type="button"
+              onClick={() => {
+                setIsCustomDays(false);
+                setSettings(prev => ({ ...prev, retention_days: days }));
+              }}
+              className={`p-3 rounded-[14px] border text-xs font-semibold transition-all text-center cursor-pointer ${
+                !isCustomDays && settings['retention_days'] === days
+                  ? 'bg-[#d5d5dc] text-[#1b1d2a] border-[#d5d5dc] shadow-xs'
+                  : 'bg-white/[0.04] border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08]'
+              }`}
+            >
+              {days} Gün
+            </button>
+          ))}
+        </div>
+
+        {dbStats && (
+          <div className="flex items-center gap-2 text-xs font-mono text-[#9ba0b5] pt-1">
+            <AlertCircle className="w-3.5 h-3.5 text-[#34d399]" />
+            <span>Mevcut Veritabanı Boyutu: <strong className="text-[#eceef6]">{dbStats.formattedSize}</strong></span>
           </div>
         )}
       </div>

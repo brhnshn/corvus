@@ -35,6 +35,11 @@
 
 ## ✨ Temel Özellikler
 
+- **🎨 Midnight v2 Bütünleşik Tasarım Sistemi & Katlanabilir Komuta Düzeni:**
+  - **Merkezi Mimari Yerleşim (`AppLayout.tsx`):** MVC benzeri merkezi yerleşim mimarisi; masaüstünde tek tıkla katlanabilen, açık/kapalı durumunu `localStorage`'da hatırlayan ve kapandığında sol üstte beliren Corvus logolu animasyonlu hap butonla akıcı şekilde geri açılabilen sidebar.
+  - **Kesin Eşik Tabanlı Renk Semantiği:** Grafik ve ilerleme çubuklarındaki süsleme mor/camgöbeği degradeler kaldırıldı; renkler doğrudan operasyonel sağlık eşiklerine bağlandı (<%70 yeşil `#34d399`, %70-89 kehribar sarı `#fbbf24`, >=%90 gül kırmızısı `#f87171`).
+  - **Modüler UI Bileşen Kütüphanesi (`src/components/ui/`):** Tek dosyaya kod yığma yasağına ve temiz mimariye tam uyumlu, tip güvenli bileşenler: `Button`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
+  - **Düz Midnight Zemini & Cam Katmanlar:** `#0d0e15` düz zemin, yüksek kontrastlı yarı saydam `surface` kartları (`rgba(27,29,42,0.9)`), tekil açık gri `#d5d5dc` odak rengi ve akıcı giriş animasyonları (`animate-rv`).
 - **🔐 Rol Tabanlı Yetkilendirme (RBAC) & Kalıcı Oturumlar (Session Store):**
   - `admin` (tam yetki) ve `viewer` (salt okuma) rolleri ile uç nokta düzeyinde RBAC koruması (`RequireAdminAttribute`).
   - Kalıcı SQLite oturum deposu (`user_sessions` tablosu): Konteyner yeniden başladığında veya güncellendiğinde oturumun düşmesini önler; bellek üzerinde mikrosaniye seviyesinde doğrulama hızını korur.

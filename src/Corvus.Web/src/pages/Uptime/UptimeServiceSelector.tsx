@@ -1,7 +1,8 @@
 import React from 'react';
-import { Search } from 'lucide-react';
 import type { Service } from '../../types';
 import { useI18n } from '../../i18n';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { FilterChip } from '../../components/ui/FilterChip';
 
 interface UptimeServiceSelectorProps {
   services: Service[];
@@ -27,59 +28,42 @@ export const UptimeServiceSelector: React.FC<UptimeServiceSelectorProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className="bg-[#1a1d29] border border-[#2a2e3f] rounded-2xl p-4 space-y-3">
+    <div className="surface rounded-[22px] p-4 space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Arama Kutusu */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
-          <input
-            type="text"
-            placeholder={t('uptime.searchPlaceholder')}
+        <div className="flex-1 max-w-md">
+          <SearchInput
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-[#0f1117] border border-[#2a2e3f] rounded-lg pl-9 pr-3 py-1.5 text-xs text-[#e5e7eb] placeholder:text-[#9ca3af]/60 focus:outline-none focus:border-[#d4d4d8] transition-colors"
+            onChange={onSearchChange}
+            placeholder={t('uptime.searchPlaceholder') || 'İzlenen servislerde ara...'}
           />
         </div>
 
         {/* Statü Filtreleri */}
-        <div className="flex items-center gap-1 self-start sm:self-auto text-xs">
-          <button
+        <div className="flex items-center gap-1.5 self-start sm:self-auto overflow-x-auto no-scrollbar">
+          <FilterChip
+            selected={statusFilter === 'all'}
             onClick={() => onStatusFilterChange('all')}
-            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
-              statusFilter === 'all'
-                ? 'bg-[#0f1117] text-[#e5e7eb] border border-[#2a2e3f]'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-            }`}
-          >
-            {t('common.all')} ({services.length})
-          </button>
-          <button
+            label={t('common.all') || 'Tümü'}
+            count={services.length}
+          />
+          <FilterChip
+            selected={statusFilter === 'healthy'}
             onClick={() => onStatusFilterChange('healthy')}
-            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
-              statusFilter === 'healthy'
-                ? 'bg-[#0f1117] text-emerald-400 border border-[#2a2e3f]'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>Sağlıklı</span>
-          </button>
-          <button
+            label="Sağlıklı"
+            dotColor="#34d399"
+          />
+          <FilterChip
+            selected={statusFilter === 'down'}
             onClick={() => onStatusFilterChange('down')}
-            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
-              statusFilter === 'down'
-                ? 'bg-[#0f1117] text-rose-400 border border-[#2a2e3f]'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            <span>Kesintide</span>
-          </button>
+            label="Kesintide"
+            dotColor="#f87171"
+          />
         </div>
       </div>
 
-      {/* Servis Kartları / Butonları */}
-      <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pt-1">
+      {/* Servis Seçim Hapları */}
+      <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pt-1 no-scrollbar">
         {filteredServices.map((s) => {
           const isSelected = selectedServiceId === s.id;
           const isHealthy = s.status === 'healthy';
@@ -89,28 +73,19 @@ export const UptimeServiceSelector: React.FC<UptimeServiceSelectorProps> = ({
             <button
               key={s.id}
               onClick={() => onSelectService(s.id)}
-              className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[12px] text-xs font-medium border transition-all flex items-center gap-2 cursor-pointer ${
                 isSelected
-                  ? 'bg-[#0f1117] border-[#d4d4d8] text-white shadow-sm'
-                  : 'bg-[#0f1117]/60 border-[#2a2e3f] text-[#9ca3af] hover:text-[#e5e7eb] hover:border-[#3f4458]'
+                  ? 'bg-white/[0.12] border-white/25 text-[#eceef6] shadow-xs'
+                  : 'bg-white/[0.04] border-white/8 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08]'
               }`}
             >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
-                  isHealthy ? 'bg-emerald-500' : isDown ? 'bg-rose-500 animate-pulse' : 'bg-slate-500'
+                  isHealthy ? 'bg-[#34d399]' : isDown ? 'bg-[#f87171] animate-dot-pulse' : 'bg-[#9ba0b5]'
                 }`}
               />
-              <span className="truncate max-w-[140px] sm:max-w-[180px]">{s.name}</span>
-              {s.checkType === 'tcp' && (
-                <span className="text-[9px] px-1 rounded bg-indigo-500/20 text-indigo-300 font-mono">
-                  TCP
-                </span>
-              )}
-              {s.checkType === 'ping' && (
-                <span className="text-[9px] px-1 rounded bg-cyan-500/20 text-cyan-300 font-mono">
-                  PING
-                </span>
-              )}
+              <span className="font-semibold">{s.name}</span>
+              {s.port && <span className="font-mono text-[10px] text-[#9ba0b5]">:{s.port}</span>}
             </button>
           );
         })}
