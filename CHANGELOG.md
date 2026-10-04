@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [1.5.22] - 2026-10-05
 
 ### Fixed
-- **Resilient CI/CD Deploy Webhook**: Added a 3-attempt exponential retry loop with 10-second sleep intervals, 15-second connect timeout, and verbose response body logging to `ci.yml` and `release.yml`. Prevents spurious CI deployment failures when the server webhook daemon is momentarily busy or restarting due to concurrent release triggers.
+- **Resilient & Privacy-Hardened Deploy Webhook**: Added a 3-attempt exponential retry loop with 10-second sleep intervals and 15-second connect timeout to `ci.yml` and `release.yml`. Response output is directed to `/dev/null` and only the numeric HTTP status is evaluated/logged, preventing server diagnostic bodies or internal paths from leaking into open-source public logs.
 
 ---
 

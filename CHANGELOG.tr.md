@@ -6,7 +6,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 ## [1.5.22] - 2026-10-05
 
 ### Düzeltilenler (Fixed)
-- **Dayanıklı CI/CD Dağıtım Webhook Mekanizması**: `ci.yml` ve `release.yml` dağıtım adımlarına 3 aşamalı yeniden deneme döngüsü (retry with backoff), 15 saniye bağlantı zaman aşımı ve ayrıntılı hata gövdesi kaydı eklendi. Sunucu tarafındaki webhook servisinin anlık yeniden başlama veya eşzamanlı istekler sırasında geçici olarak meşgul olması durumunda CI iş akışının hatalı kapanması engellendi.
+- **Dayanıklı ve Gizlilik Korumalı Dağıtım Webhook Mekanizması**: `ci.yml` ve `release.yml` dağıtım adımlarına 3 aşamalı yeniden deneme döngüsü (retry with backoff) ve 15 saniye bağlantı zaman aşımı eklendi. Açık kaynak repository loglarında sunucu hata yanıtlarının, IP veya iç dizin bilgilerinin sızmasını engellemek için curl çıktısı `/dev/null`'a yönlendirildi; yalnızca sayısal HTTP durum kodunun izlenmesi sağlanarak tam güvenlik ve gizlilik sağlandı.
 
 ---
 
