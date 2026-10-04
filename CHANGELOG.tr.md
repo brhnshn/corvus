@@ -3,6 +3,16 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.24] - 2026-10-05
+
+### Düzeltilenler (Fixed)
+- **HTML Referans Çekmecesi ile 1:1 Birebir Uyumluluk (`Corvus – Konteynerler.html`)**:
+  - **Akıcı Çekmece Fiziği (`Sheet.tsx`)**: Statik Tailwind açılışı yerine HTML prototipindeki `transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)` eğrisi ile ekranın tamamen altından (`translate(-50%, 105%)`'ten `translate(-50%, 0)`'a) kayarak açılma ve yumuşak karartma (scrim) animasyonu sağlandı.
+  - **Alt Kenara Sıfırlanma ve Kompakt Genişlik**: Panel masaüstünde de dahil olmak üzere `bottom: 0`, `w-[min(100%, 460px)]` ve `rounded-t-[28px]` ile alt kenara tam oturtuldu, kenarlardaki yüzen boşluklar kaldırıldı.
+  - **Sade Tek Sütunlu Menü (`ContainerActionSheet.tsx`)**: Kaba 2 sütunlu kartlar ve uzun paragraflar kaldırılarak HTML tasarımındaki `.mi` dikey buton listesi formatına (Loglar, Terminal, Kaynak sınırları, Etiket ekle, Yeniden Başlat, Duraklat/Devam ettir, Durdur/Başlat) dönüştürüldü.
+
+---
+
 ## [1.5.23] - 2026-10-05
 
 ### Düzeltilenler (Fixed)

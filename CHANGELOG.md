@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.24] - 2026-10-05
+
+### Fixed
+- **1:1 HTML Reference Bottom Sheet Alignment (`Corvus – Konteynerler.html`)**:
+  - **Fluid Drawer Physics (`Sheet.tsx`)**: Replaced static Tailwind pop-in fade with the exact `transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)` sliding physics from `translate(-50%, 105%)` to `translate(-50%, 0)`.
+  - **Viewport Flush & Compact Width**: Pinned sheet directly to `bottom: 0` with `w-[min(100%, 460px)]` and `rounded-t-[28px]`, eliminating floating gap margins on desktop viewports.
+  - **Sleek Single-Column Menu (`ContainerActionSheet.tsx`)**: Replaced bulky 2-column cards and descriptions with the exact `.mi` vertical action list from the HTML prototype (Loglar, Terminal, Kaynak sınırları, Etiket ekle, Yeniden Başlat, Duraklat/Devam ettir, Durdur/Başlat).
+
+---
+
 ## [1.5.23] - 2026-10-05
 
 ### Fixed
