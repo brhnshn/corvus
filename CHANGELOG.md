@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.26] - 2026-10-05
+
+### Fixed
+- **Container Resource Limits & Live Telemetry Enhancement**:
+  - **Real-Time Telemetry & Performance Gauges (`ContainerResourcesTab.tsx`)**: Transformed the previously static resource limits tab into an active telemetry dashboard. Integrated real-time CPU utilization (%), memory consumption (MB/GB and %), configured core/RAM limits, dynamic adaptive progress bars (emerald / amber / rose), and live network I/O (Rx/Tx) traffic metrics with a 2.5-second polling cycle.
+  - **Host Hardware Context & Docker Compose Persistence Awareness**: Provided real-time comparisons between container cgroup limits and physical host RAM/CPU capacity. Added intelligent Docker Compose stack detection with informative guidance on persistent limits via `deploy.resources.limits`.
+  - **Deep-Tab Routing & Sheet Action Decoupling (`ContainerActionSheet.tsx` & `ContainerDetailModal.tsx`)**: Upgraded container action sheet with explicit "Container details" (overview) and "Resource limits & telemetry" actions with seamless `initialTab` deep-linking.
+
+---
+
 ## [1.5.25] - 2026-10-05
 
 ### Fixed

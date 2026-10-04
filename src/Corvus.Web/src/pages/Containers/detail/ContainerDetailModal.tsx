@@ -7,11 +7,13 @@ import { ContainerEnvTab } from './ContainerEnvTab';
 import { ContainerNetworkingTab } from './ContainerNetworkingTab';
 import { ContainerStorageTab } from './ContainerStorageTab';
 import { ContainerResourcesTab } from './ContainerResourcesTab';
-import type { DockerContainerInspectInfo, DockerContainer } from '../../../types';
+import type { DockerContainerInspectInfo, DockerContainer, ContainerStats } from '../../../types';
 
 interface ContainerDetailModalProps {
   containerId: string | null;
   containerSummary?: DockerContainer;
+  initialTab?: TabType;
+  liveStats?: ContainerStats;
   isOpen: boolean;
   isAdmin: boolean;
   onClose: () => void;
@@ -25,6 +27,8 @@ type TabType = 'overview' | 'env' | 'networking' | 'storage' | 'resources';
 export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   containerId,
   containerSummary,
+  initialTab = 'overview',
+  liveStats,
   isOpen,
   isAdmin,
   onClose,
@@ -33,7 +37,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   onContainerActionSuccess
 }) => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [inspectData, setInspectData] = useState<DockerContainerInspectInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,12 +60,12 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   useEffect(() => {
     if (isOpen && containerId) {
       loadInspectData();
-      setActiveTab('overview');
+      setActiveTab(initialTab || 'overview');
     } else {
       setInspectData(null);
       setError(null);
     }
-  }, [isOpen, containerId, loadInspectData]);
+  }, [isOpen, containerId, initialTab, loadInspectData]);
 
   if (!isOpen || !containerId) return null;
 
@@ -262,6 +266,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
                 <ContainerResourcesTab
                   inspect={inspectData}
                   isAdmin={isAdmin}
+                  initialStats={liveStats}
                   onUpdated={() => {
                     loadInspectData();
                     if (onContainerActionSuccess) {

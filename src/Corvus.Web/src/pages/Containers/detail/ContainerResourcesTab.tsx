@@ -1,23 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useI18n } from '../../../i18n';
-import { Cpu, HardDrive, RotateCcw, Save, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { 
+  Cpu, 
+  HardDrive, 
+  RotateCcw, 
+  Save, 
+  AlertCircle, 
+  CheckCircle2, 
+  Loader2, 
+  ArrowDownUp, 
+  Layers 
+} from 'lucide-react';
 import { containersApi } from '../../../api/containers';
-import type { DockerContainerInspectInfo, DockerContainerUpdateRequest } from '../../../types';
+import { formatBytes } from '../../../utils/format';
+import type { 
+  DockerContainerInspectInfo, 
+  DockerContainerUpdateRequest, 
+  ContainerStats 
+} from '../../../types';
 
 interface ContainerResourcesTabProps {
   inspect: DockerContainerInspectInfo;
   isAdmin: boolean;
+  initialStats?: ContainerStats;
   onUpdated: () => void;
 }
 
 export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
   inspect,
   isAdmin,
+  initialStats,
   onUpdated
 }) => {
   const { t } = useI18n();
 
-  // Initial values from inspect
+  // Canlı Stats State'i & Polling
+  const [stats, setStats] = useState<ContainerStats | null>(initialStats || null);
+  const isMountedRef = useRef(true);
+
+  const isRunning = inspect.state?.running === true;
+
+  // Başlangıç değerleri (Inspect'ten)
   const initialNanoCpus = inspect.hostConfig?.nanoCpus || 0;
   const initialCores = initialNanoCpus > 0 ? (initialNanoCpus / 1_000_000_000).toString() : '0';
 
@@ -32,6 +55,39 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
 
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Canlı telemetri verilerini çek
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    // Eğer konteyner çalışıyorsa 2.5 saniyede bir stats güncelle
+    if (!isRunning || !inspect.id) return;
+
+    let timer: ReturnType<typeof setInterval>;
+
+    const fetchLiveStats = async () => {
+      try {
+        const live = await containersApi.getContainerStats(inspect.id);
+        if (isMountedRef.current && live) {
+          setStats(live);
+        }
+      } catch (err) {
+        // Sessiz hata (arka plan telemetrisi)
+      }
+    };
+
+    // İlk stats boşsa hemen çek
+    if (!stats) {
+      fetchLiveStats();
+    }
+
+    timer = setInterval(fetchLiveStats, 2500);
+
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(timer);
+    };
+  }, [inspect.id, isRunning]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,17 +134,140 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
     }
   };
 
+  // Compose bilgisi
+  const composeProject = inspect.config?.labels?.['com.docker.compose.project'];
+  const composeService = inspect.config?.labels?.['com.docker.compose.service'];
+
+  // CPU Bar Rengi
+  const cpuPercent = stats?.cpuPercent || 0;
+  const cpuBarColor = cpuPercent > 80 ? 'bg-rose-500' : cpuPercent > 50 ? 'bg-amber-400' : 'bg-emerald-400';
+
+  // RAM Bar Rengi
+  const memPercent = stats?.memoryPercent || 0;
+  const memBarColor = memPercent > 85 ? 'bg-rose-500' : memPercent > 65 ? 'bg-amber-400' : 'bg-emerald-400';
+
   return (
     <form onSubmit={handleSave} className="space-y-4">
-      <div className="p-4 surface border border-white/10 rounded-2xl space-y-1">
-        <h4 className="text-xs font-bold text-[#eceef6]">
-          {t('containers.tabResources')}
-        </h4>
-        <p className="text-xs text-[#9ba0b5]">
-          {t('containers.resourcesDesc')}
-        </p>
+      {/* Başlık ve Canlı Durum Rozeti */}
+      <div className="p-4 surface border border-white/10 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h4 className="text-xs font-bold text-[#eceef6]">
+              {t('containers.tabResources')} & Canlı Telemetri
+            </h4>
+            {isRunning ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Canlı Veri (2.5s)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Konteyner Durdu
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-[#9ba0b5] mt-0.5">
+            Çalışma zamanı cgroup kaynak kısıtlamalarını yönetin ve anlık CPU, bellek ile I/O tüketimini izleyin.
+          </p>
+        </div>
+
+        {/* Canlı Trafik Özet Rozeti */}
+        {isRunning && stats && (
+          <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px] font-mono shrink-0">
+            <div className="flex items-center gap-1 text-[#9ba0b5]">
+              <ArrowDownUp className="w-3.5 h-3.5 text-sky-400" />
+              <span>Ağ:</span>
+            </div>
+            <span className="text-emerald-400 font-medium">↓ {formatBytes(stats.networkRxBytes)}</span>
+            <span className="text-sky-400 font-medium">↑ {formatBytes(stats.networkTxBytes)}</span>
+          </div>
+        )}
       </div>
 
+      {/* CANLI PERFORMANS KARTLARI (GERÇEK VERİLER) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* CPU Canlı Telemetri Kartı */}
+        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-sky-400" />
+              <span className="text-xs font-bold text-[#eceef6]">Anlık CPU Kullanımı</span>
+            </div>
+            <span className="text-xs font-mono font-bold text-[#eceef6]">
+              {isRunning && stats ? `${stats.cpuPercent.toFixed(1)}%` : isRunning ? 'Hesaplanıyor...' : '0.0%'}
+            </span>
+          </div>
+
+          {/* Dinamik CPU İlerleme Çubuğu */}
+          <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-500 rounded-full ${cpuBarColor}`}
+              style={{ width: `${Math.min(100, Math.max(0, stats?.cpuPercent || 0))}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-[#9ba0b5]">
+            <span>Aktif Sınır:</span>
+            <span className="font-mono text-[#eceef6] font-medium">
+              {initialNanoCpus > 0 
+                ? `${(initialNanoCpus / 1_000_000_000).toFixed(1)} vCPU Çekirdek` 
+                : 'Sınırsız (Tüm Host Çekirdekleri)'}
+            </span>
+          </div>
+        </div>
+
+        {/* Bellek (RAM) Canlı Telemetri Kartı */}
+        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-purple-400" />
+              <span className="text-xs font-bold text-[#eceef6]">Anlık Bellek (RAM) Kullanımı</span>
+            </div>
+            <span className="text-xs font-mono font-bold text-[#eceef6]">
+              {isRunning && stats 
+                ? `${formatBytes(stats.memoryUsageBytes)} (${stats.memoryPercent.toFixed(1)}%)`
+                : isRunning ? 'Hesaplanıyor...' : '0 B (0%)'}
+            </span>
+          </div>
+
+          {/* Dinamik RAM İlerleme Çubuğu */}
+          <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-500 rounded-full ${memBarColor}`}
+              style={{ width: `${Math.min(100, Math.max(0, stats?.memoryPercent || 0))}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-[#9ba0b5]">
+            <span>{initialMemoryBytes > 0 ? 'Yapılandırılmış Limit:' : 'Host Toplam RAM:'}</span>
+            <span className="font-mono text-[#eceef6] font-medium">
+              {initialMemoryBytes > 0 
+                ? formatBytes(initialMemoryBytes) 
+                : stats?.memoryLimitBytes 
+                  ? `${formatBytes(stats.memoryLimitBytes)} (Sınırsız)`
+                  : 'Sınırsız'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Compose Bildirimi (Varsa) */}
+      {composeProject && (
+        <div className="p-3.5 rounded-2xl border border-sky-500/20 bg-sky-500/5 flex items-start gap-3 text-xs">
+          <Layers className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-medium text-[#eceef6]">
+              Docker Compose Yığın Üyesi: <span className="font-mono text-sky-300">{composeProject}</span> {composeService && `(${composeService})`}
+            </p>
+            <p className="text-[11px] text-[#9ba0b5] leading-relaxed">
+              Bu formdan uygulanan limitler anında çalışan konteynere yansıtılır. Konteyner silinip <code className="text-sky-300 font-mono">docker compose up</code> ile yeniden oluşturulduğunda sınırların kalıcı olması için projenin compose dosyasında <code className="text-sky-300 font-mono">deploy.resources.limits</code> belirtmeniz önerilir.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Durum Mesajı (Başarı / Hata) */}
       {statusMessage && (
         <div
           className={`p-3.5 rounded-2xl border flex items-center gap-2.5 text-xs ${
@@ -106,13 +285,14 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
         </div>
       )}
 
+      {/* Girdi Alanları (CPU & Memory Limits) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* CPU Limits */}
+        {/* CPU Limits Formu */}
         <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-[#d5d5dc]" />
             <label className="text-xs font-bold text-[#eceef6]">
-              {t('containers.cpuLimitLabel')}
+              {t('containers.cpuLimitLabel')} (vCPU Çekirdek)
             </label>
           </div>
 
@@ -154,12 +334,12 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
           )}
         </div>
 
-        {/* Memory Limits */}
+        {/* Memory Limits Formu */}
         <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
             <HardDrive className="w-4 h-4 text-[#d5d5dc]" />
             <label className="text-xs font-bold text-[#eceef6]">
-              {t('containers.memoryLimitLabel')}
+              {t('containers.memoryLimitLabel')} (MB)
             </label>
           </div>
 
@@ -188,7 +368,8 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
                 { label: '512 MB', val: '512' },
                 { label: '1 GB', val: '1024' },
                 { label: '2 GB', val: '2048' },
-                { label: '4 GB', val: '4096' }
+                { label: '4 GB', val: '4096' },
+                { label: '8 GB', val: '8192' }
               ].map((p) => (
                 <button
                   key={p.val}
@@ -208,7 +389,7 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
         </div>
       </div>
 
-      {/* Restart Policy */}
+      {/* Restart Policy Formu */}
       <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
         <div className="flex items-center gap-2">
           <RotateCcw className="w-4 h-4 text-[#d5d5dc]" />
@@ -248,7 +429,7 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
         </div>
       </div>
 
-      {/* Submit button */}
+      {/* Kaydet Butonu */}
       {isAdmin && (
         <div className="flex justify-end pt-2">
           <button

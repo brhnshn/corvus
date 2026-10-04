@@ -40,6 +40,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
   const [selectedLogsContainer, setSelectedLogsContainer] = useState<{ id: string; name: string } | null>(null);
   const [selectedTerminalContainer, setSelectedTerminalContainer] = useState<{ id: string; name: string } | null>(null);
   const [selectedInspectContainer, setSelectedInspectContainer] = useState<DockerContainer | null>(null);
+  const [inspectInitialTab, setInspectInitialTab] = useState<'overview' | 'resources'>('overview');
   const [editingTagsContainer, setEditingTagsContainer] = useState<DockerContainer | null>(null);
   const [sheetContainer, setSheetContainer] = useState<DockerContainer | null>(null);
 
@@ -421,7 +422,10 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
         onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
         onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
         onEditTags={(c) => setEditingTagsContainer(c)}
-        onInspect={(c) => setSelectedInspectContainer(c)}
+        onInspect={(c, tab = 'overview') => {
+          setSelectedInspectContainer(c);
+          setInspectInitialTab(tab);
+        }}
         isAdmin={isAdmin}
       />
 
@@ -430,6 +434,8 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
         <ContainerDetailModal
           containerId={selectedInspectContainer.Id}
           containerSummary={selectedInspectContainer}
+          initialTab={inspectInitialTab}
+          liveStats={statsMap[selectedInspectContainer.Id]}
           isOpen={!!selectedInspectContainer}
           isAdmin={isAdmin}
           onClose={() => setSelectedInspectContainer(null)}

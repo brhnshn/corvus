@@ -3,6 +3,16 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.26] - 2026-10-05
+
+### Düzeltilenler (Fixed)
+- **Konteyner Kaynak Sınırları ve Canlı Telemetri Zenginleştirmesi**:
+  - **Gerçek Zamanlı Telemetri ve Performans Göstergeleri (`ContainerResourcesTab.tsx`)**: Boş kalan kaynak sınırları sekmesi, gerçek zamanlı telemetri motoruyla donatıldı. Çalışan konteynerler için anlık CPU kullanımı (%), bellek kullanımı (MB/GB ve %), tanımlı çekirdek/RAM limitleri ile dinamik renkli ilerleme çubukları (yeşil / sarı / kırmızı) ve canlı ağ giriş/çıkış (Rx/Tx) veri akışı entegre edildi.
+  - **Host Donanım Kapasitesi ve Docker Compose Farkındalığı**: Konteynere ayrılmış limitler ile sunucunun (host) toplam fiziksel RAM ve CPU kapasitesi karşılaştırmalı olarak sunuldu. Compose yığınlarına bağlı konteynerler için otomatik compose yığın etiketi ve kalıcı kaynak limitleri (`deploy.resources.limits`) bilgilendirme paneli eklendi.
+  - **Doğrudan Sekme Yönlendirmesi ve Alt Menü Ayrımı (`ContainerActionSheet.tsx` & `ContainerDetailModal.tsx`)**: Konteyner işlem çekmecesindeki "Kaynak sınırları" eylemi "Kaynak sınırları & telemetri" olarak güncellendi ve doğrudan ilgili sekmeyi açacak şekilde `initialTab` yönlendirmesi eklendi. Genel yapılandırma için "Konteyner detayları" seçeneği bağımsız olarak ayrıldı.
+
+---
+
 ## [1.5.25] - 2026-10-05
 
 ### Düzeltilenler (Fixed)
