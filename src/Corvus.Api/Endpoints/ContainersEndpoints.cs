@@ -239,8 +239,9 @@ public static class ContainersEndpoints
 
             string rawShell = context.Request.Query["shell"].ToString().Trim();
             
-            // Güvenli kabuk aday listesi ve akıllı fallback zinciri (/bin/bash -> /bin/sh -> /bin/ash -> sh)
-            var defaultShells = new[] { "/bin/bash", "/bin/sh", "/bin/ash", "sh" };
+            // Güvenli kabuk aday listesi ve akıllı fallback zinciri (/bin/sh -> sh -> /bin/bash -> /bin/ash)
+            // POSIX /bin/sh istisnasız tüm Linux imajlarında (Alpine, Debian, Ubuntu, Distroless vb.) bulunur.
+            var defaultShells = new[] { "/bin/sh", "sh", "/bin/bash", "/bin/ash" };
             var candidateShells = new List<string>();
 
             if (!string.IsNullOrWhiteSpace(rawShell) && !rawShell.Equals("auto", StringComparison.OrdinalIgnoreCase))

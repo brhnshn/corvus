@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Container In-Browser Terminal & Stream Interactivity**:
   - **Docker Exec HTTP Handshake Byte Calculation (`DockerHttpClient.cs`)**: Fixed hardcoded `Content-Length: 28` header mismatch in the raw Docker Engine HTTP upgrade request (`POST /exec/{id}/start`). Replaced with dynamic UTF-8 length calculation (`27` bytes for `{"Detach":false,"Tty":true}`), preventing Docker Daemon from swallowing keystrokes as pending HTTP request payload.
   - **Immediate Stdin Stream Flushing (`ContainersEndpoints.cs`)**: Added immediate `await dockerStream.FlushAsync(ct)` calls after WebSocket frames are written to Docker's stdin pipe. Resolves unresponsive typing on Windows (`NamedPipeClientStream`) and Linux Unix domain sockets where small asynchronous keystroke buffers were previously trapped without remote echo.
+  - **Universal Shell Prioritization & Alpine Compatibility (`ContainersEndpoints.cs`)**: Reordered candidate shell auto-detection to prioritize POSIX `/bin/sh` and `sh` ahead of `/bin/bash`. Eliminates immediate OCI runtime exec crashes (`stat /bin/bash: no such file or directory`, code 1006) on Alpine, BusyBox, Go, and minimal scratch containers that lack `/bin/bash`.
   - **Unit Test Coverage (`DockerServiceTests.cs`)**: Added dedicated unit test `DockerExec_StartPayload_CalculatesExactContentLength` ensuring exact UTF-8 byte calculations for Docker exec upgrade requests.
 
 ---

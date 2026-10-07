@@ -9,6 +9,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Konteyner Web Terminali ve Etkileşimli Girdi Akışı (Stdin)**:
   - **Docker Exec HTTP El Sıkışma Boyut Doğrulaması (`DockerHttpClient.cs`)**: Docker daemon'a ham HTTP upgrade isteği (`POST /exec/{id}/start`) gönderilirken sabit `Content-Length: 28` değeri dinamik UTF-8 byte hesaplayıcısıyla (`{"Detach":false,"Tty":true}` için tam 27 byte) düzeltildi. Docker motorunun kullanıcının bastığı ilk klavye tuşunu eksik HTTP gövdesi sanıp yutması engellendi.
   - **Anlık Stdin Akış Boşaltma (`ContainersEndpoints.cs`)**: WebSocket üzerinden gelen her tuş vuruşunun Docker giriş borusuna (`NamedPipeClientStream` ve Unix domain socket) yazılmasının ardından hemen `await dockerStream.FlushAsync(ct)` çağrılması sağlandı. Windows ve Linux ortamlarında ara bellekte (buffer) takılan karakterlerin gecikmeksizin Docker kabuğuna ulaşması ve ekranda anında yankılanması (echo) sağlandı.
+  - **Evrensel Kabuk Önceliği & Alpine / Minimal Uyumluluğu (`ContainersEndpoints.cs`)**: Otomatik kabuk tespit listesinde POSIX standardı `/bin/sh` ve `sh` kabukları `/bin/bash` önüne alındı. Alpine, BusyBox, Go ve minimal konteynerlerde `/bin/bash` bulunmadığı için oluşan OCI runtime çökmesi (`stat /bin/bash: no such file or directory`, Kod 1006) kalıcı olarak önlendi.
   - **Birim Test Kapsamı (`DockerServiceTests.cs`)**: Docker exec istek gövdesinin tam ve doğru byte uzunluğunu doğrulayan `DockerExec_StartPayload_CalculatesExactContentLength` birim testi eklendi.
 
 ---
