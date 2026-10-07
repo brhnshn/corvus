@@ -9,9 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://usecorvus.me"><img src="https://img.shields.io/badge/Web_Sitesi-usecorvus.me-blue?logo=googlechrome" alt="Web Sitesi" /></a>
   <img src="https://img.shields.io/badge/.NET-9.0_Native_AOT-512BD4?logo=dotnet" alt=".NET 9" />
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
-  <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
   <img src="https://img.shields.io/badge/Testler-223_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
@@ -29,7 +30,84 @@
 
 ## 🌟 Genel Bakış
 
-**Corvus**, homelab ortamları, VPS sunucuları ve self-hosted altyapılar için tasarlanmış ultra hafif, yerel bir servis başlatıcı ve gözlemlenebilirlik (observability) kontrol panelidir. Sıfır çalışma zamanı yansıması (zero-reflection) ile önceden derlenen (**Native AOT**) Corvus, **30 MB'ın altında RAM** tüketerek çalışırken gerçek zamanlı Docker konteyner keşfi, endüstriyel standartta 3 durumlu servis sağlık denetimi, zaman serisi kaynak takibi, canlı konteyner logları, çok kanallı alarmlar ve periyodik push izleme sunar.
+**Corvus**, homelab ortamları, VPS sunucuları ve self-hosted altyapılar için tasarlanmış ultra hafif, hepsi-bir-arada konteyner yöneticisi ve gözlemlenebilirlik (observability) kontrol panelidir. 
+
+**ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time derleme) ve gömülü **SQLite WAL motoru** ile sıfırdan inşa edilen Corvus, tek bir bağımsız konteyner içinde ve kararlı biçimde **<30 MB RAM ayak iziyle** çalışır. Gerçek zamanlı Docker konteyner keşfi, tarayıcı içi etkileşimli web terminali (WebSocket), çoklu protokol uptime & SSL sertifika takibi, zaman serisi telemetri sıkıştırması ve kamuya açık şifresiz sistem durum sayfasını tek bir tüy kadar hafif ikili (binary) pakette toplar.
+
+---
+
+## ⚡ 10 Saniyede Hızlı Başlangıç
+
+Docker çalıştıran sunucunuzda Corvus'u tek bir komutla anında ayağa kaldırın:
+
+### Seçenek A: Tek Satırlık Docker Komutu
+```bash
+docker run -d \
+  --name corvus \
+  --restart unless-stopped \
+  -p 8090:8090 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v corvus-data:/data \
+  ghcr.io/brhnshn/corvus:latest
+```
+
+### Seçenek B: Docker Compose (`compose.yaml`)
+```yaml
+services:
+  corvus:
+    image: ghcr.io/brhnshn/corvus:latest
+    container_name: corvus
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - CORVUS_PORT=8090
+      - CORVUS_DATA_DIR=/data
+      - DOCKER_SOCKET=/var/run/docker.sock
+      - CORVUS_AUTH_ENABLED=true
+      - CORVUS_AUTH_USER=admin
+      - CORVUS_AUTH_PASS=corvus123
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - corvus-data:/data
+
+volumes:
+  corvus-data:
+```
+
+```bash
+docker compose up -d
+```
+
+Tarayıcınızdan **`http://localhost:8090`** adresine (veya kamuya açık durum sayfası için **`http://localhost:8090/status`** adresine) gidin.
+
+---
+
+## 🎯 Mimari Kapsam ve Felsefe
+
+| Mimari Boyut | Corvus Tasarım Yaklaşımı | Geleneksel Hantal Çözümler |
+|:---|:---|:---|
+| **Konteyner Ayak İzi** | **Tek ve Bağımsız Konteyner** (~45 MB imaj) | Çoklu konteyner zorunluluğu (Uygulama + DB + Önbellek) |
+| **Boşta RAM Tüketimi** | **Kesinlikle <30 MB RAM** (Workstation GC + `malloc_trim`) | 300 MB – 1 GB+ (JVM/Node/WiredTiger önbellekleri) |
+| **Veritabanı Bağımlılığı**| **Sıfır Harici DB** (Gömülü SQLite WAL, tek `.db` dosyası) | Ayrı PostgreSQL veya MongoDB sunucusu zorunluluğu |
+| **Docker Entegrasyonu** | **Müdahalesiz salt-okunur soket** (`/var/run/docker.sock:ro`) | Ağır ajan servisleri veya compose dosyalarını rehin alma |
+| **Birleşik Kapsam** | **Konteyner Yaşam Döngüsü + Uptime & SSL + Kamusal Durum Sayfası** | 2-3 farklı bağımsız araca bölünmüş mimari |
+| **Yedekleme ve Taşınabilirlik**| **Tek dosya kopyalama veya `VACUUM INTO` anlık görüntü indirme** | Veritabanı dökümleri (`pg_dump`, `mongodump`, volume dışa aktarma) |
+
+---
+
+## 🔬 Native AOT Mühendislik Avantajı
+
+Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgısını çürütmek için sıfırdan tasarlandı:
+
+1. **Sıfır CLR Sanal Makine Yükü:** Önceden (`PublishAot=true`) doğrudan optimize edilmiş Linux x64/ARM64 ELF makine koduna derlenir. İmaj içinde JIT derleyicisi, dinamik IL üretimi veya ağır çalışma zamanı metaverileri bulunmaz.
+2. **Minimal Temel İmaj:** `mcr.microsoft.com/dotnet/runtime-deps:9.0` (kırpılmış minimal glibc) üzerinde çalışır; temel işletim sistemi katmanı yalnızca ~13 MB'tır.
+3. **Agresif Düşük Bellek Optimizasyonları:**
+   - Eşzamanlı olmayan iş istasyonu GC'si (`ServerGarbageCollection=false`, `DOTNET_gcConcurrent=0`).
+   - Tutucu bellek politikası (`DOTNET_GCConserveMemory=9`).
+   - Glibc arena kısıtlamaları (`MALLOC_ARENA_MAX=2`).
+   - Her 3 dakikada bir SQLite bağlantı havuzlarını temizleyen ve yerel `malloc_trim(0)` çağırarak serbest belleği anında işletim sistemine iade eden `MemoryTrimmerBackgroundService`.
+4. **Write-Ahead Logging (WAL) ile Gömülü SQLite:** Otomatik periyodik veri saklama temizlikleri (`RetentionCleanupService`) ile mikrosaniye düzeyinde okuma/yazma; kontrolsüz disk şişmelerine karşı tam koruma.
 
 ---
 
@@ -180,42 +258,6 @@ Corvus Mimarisi:
 
 ---
 
-## 🚀 Docker Compose ile Hızlı Başlangıç
-
-Bir `docker-compose.yml` dosyası oluşturun:
-
-```yaml
-services:
-  corvus:
-    image: ghcr.io/brhnshn/corvus:latest
-    container_name: corvus
-    restart: unless-stopped
-    ports:
-      - "8090:8090"
-    environment:
-      - CORVUS_PORT=8090
-      - CORVUS_DATA_DIR=/data
-      - DOCKER_SOCKET=/var/run/docker.sock
-      - CORVUS_AUTH_ENABLED=true
-    volumes:
-      # Yaşam döngüsü kontrolleri (Start/Stop/Restart) için okuma-yazma soket erişimi:
-      - /var/run/docker.sock:/var/run/docker.sock
-      # Kalıcı SQLite veritabanı alanı
-      - corvus-data:/data
-
-volumes:
-  corvus-data:
-```
-
-Konteyneri başlatın:
-
-```bash
-docker compose up -d
-```
-
-Tarayıcınızdan **`http://localhost:8090`** adresine (veya şifresiz durum sayfası için **`http://localhost:8090/status`** adresine) gidin.
-
----
 
 ## 🏷️ Docker Konteyner Etiketleri (Labels)
 
@@ -301,6 +343,7 @@ Corvus, açık kaynak homelab ve sistem izleme ekosistemindeki öncü araçları
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma) — İzleme mantığı ve durum sayfası felsefesi
 - [Beszel](https://github.com/henrygd/beszel) — Hafif telemetri ve sistem kaynak takibi yaklaşımı
 - [Portainer](https://github.com/portainer/portainer) — Konteyner yaşam döngüsü vizyonu
+- [Checkmate](https://github.com/bluewave-labs/checkmate) — Olay (incident) yönetimi ve modern gözlemlenebilirlik estetiği
 
 ---
 

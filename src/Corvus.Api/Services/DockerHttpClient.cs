@@ -548,14 +548,17 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     {
         var rawStream = await CreateRawDockerStreamAsync(cancellationToken);
 
+        const string jsonBody = "{\"Detach\":false,\"Tty\":true}";
+        byte[] bodyBytes = Encoding.UTF8.GetBytes(jsonBody);
+
         string request = $"POST /exec/{Uri.EscapeDataString(execId)}/start HTTP/1.1\r\n" +
                          "Host: localhost\r\n" +
                          "User-Agent: Corvus\r\n" +
                          "Content-Type: application/json\r\n" +
                          "Connection: Upgrade\r\n" +
                          "Upgrade: tcp\r\n" +
-                         "Content-Length: 28\r\n\r\n" +
-                         "{\"Detach\":false,\"Tty\":true}";
+                         $"Content-Length: {bodyBytes.Length}\r\n\r\n" +
+                         jsonBody;
 
         byte[] requestBytes = Encoding.UTF8.GetBytes(request);
         await rawStream.WriteAsync(requestBytes, cancellationToken);

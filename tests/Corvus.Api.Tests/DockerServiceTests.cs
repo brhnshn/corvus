@@ -645,6 +645,26 @@ public class DockerServiceTests
         Assert.True(result.Success);
         Assert.Equal("Container updated", result.Message);
     }
+
+    [Fact]
+    public void DockerExec_StartPayload_CalculatesExactContentLength()
+    {
+        const string jsonBody = "{\"Detach\":false,\"Tty\":true}";
+        byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(jsonBody);
+
+        Assert.Equal(27, bodyBytes.Length);
+
+        string request = $"POST /exec/test_exec_id/start HTTP/1.1\r\n" +
+                         "Host: localhost\r\n" +
+                         "User-Agent: Corvus\r\n" +
+                         "Content-Type: application/json\r\n" +
+                         "Connection: Upgrade\r\n" +
+                         "Upgrade: tcp\r\n" +
+                         $"Content-Length: {bodyBytes.Length}\r\n\r\n" +
+                         jsonBody;
+
+        Assert.Contains("Content-Length: 27\r\n", request);
+    }
 }
 
 public class FakeDockerHttpClientWithContainers : DockerServiceTests.FakeDockerHttpClient

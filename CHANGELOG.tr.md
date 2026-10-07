@@ -3,6 +3,27 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.29] - 2026-10-07
+
+### Düzeltilenler (Fixed)
+- **Konteyner Web Terminali ve Etkileşimli Girdi Akışı (Stdin)**:
+  - **Docker Exec HTTP El Sıkışma Boyut Doğrulaması (`DockerHttpClient.cs`)**: Docker daemon'a ham HTTP upgrade isteği (`POST /exec/{id}/start`) gönderilirken sabit `Content-Length: 28` değeri dinamik UTF-8 byte hesaplayıcısıyla (`{"Detach":false,"Tty":true}` için tam 27 byte) düzeltildi. Docker motorunun kullanıcının bastığı ilk klavye tuşunu eksik HTTP gövdesi sanıp yutması engellendi.
+  - **Anlık Stdin Akış Boşaltma (`ContainersEndpoints.cs`)**: WebSocket üzerinden gelen her tuş vuruşunun Docker giriş borusuna (`NamedPipeClientStream` ve Unix domain socket) yazılmasının ardından hemen `await dockerStream.FlushAsync(ct)` çağrılması sağlandı. Windows ve Linux ortamlarında ara bellekte (buffer) takılan karakterlerin gecikmeksizin Docker kabuğuna ulaşması ve ekranda anında yankılanması (echo) sağlandı.
+  - **Birim Test Kapsamı (`DockerServiceTests.cs`)**: Docker exec istek gövdesinin tam ve doğru byte uzunluğunu doğrulayan `DockerExec_StartPayload_CalculatesExactContentLength` birim testi eklendi.
+
+---
+
+## [1.5.28] - 2026-10-07
+
+### Değiştirilenler (Changed)
+- **Dokümantasyon & Açık Kaynak Vitrini Modernizasyonu**:
+  - **10 Saniyede Hızlı Başlangıç Önceliği**: Doğrulanmış tek satırlık `docker run` komutu (`ghcr.io/brhnshn/corvus:latest`) ve yalın `compose.yaml` örneği `README.md` ve `README.tr.md` dosyalarının en üstüne taşındı.
+  - **Otantik Mühendislik & Mimari Kapsam**: Şişirilmemiş somut verilerle "Mimari Kapsam ve Felsefe" karşılaştırma tablosu ve sıfır-CLR, Workstation GC, bellek kompaktörü ile gömülü SQLite WAL çalışma prensiplerini açıklayan "Native AOT Mühendislik Avantajı" bölümü eklendi.
+  - **Resmi Konteyner Registry Uyumu**: Şablon imaj adları resmi GitHub Container Registry adresi (`ghcr.io/brhnshn/corvus:latest`) ile güncellendi.
+  - **İlham Kaynakları & Teşekkür**: [Checkmate](https://github.com/bluewave-labs/checkmate) projesi, açık kaynak saygı ve ilham etiği kurallarına uygun olarak resmi listeye eklendi.
+
+---
+
 ## [1.5.27] - 2026-10-05
 
 ### Düzeltilenler (Fixed)

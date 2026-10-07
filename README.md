@@ -9,9 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://usecorvus.me"><img src="https://img.shields.io/badge/Website-usecorvus.me-blue?logo=googlechrome" alt="Website" /></a>
   <img src="https://img.shields.io/badge/.NET-9.0_Native_AOT-512BD4?logo=dotnet" alt=".NET 9" />
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
-  <img src="https://img.shields.io/badge/Frontend-React_19_+_Vite_+_Tailwind-61DAFB?logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
   <img src="https://img.shields.io/badge/Tests-223_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
@@ -29,7 +30,84 @@
 
 ## 🌟 Overview
 
-**Corvus** is an ultra-lightweight, self-hosted server launcher and observability dashboard designed for homelabs, VPS instances, and self-hosted environments. Compiled ahead-of-time (**Native AOT**) with zero dynamic reflection, it runs within a **<30 MB RAM footprint** while providing real-time container discovery, enterprise-grade 3-state service health monitoring, time-series resource tracking, container live logs, multi-channel alerts, and periodic push monitoring.
+**Corvus** is an ultra-lightweight, self-hosted server launcher, container manager, and observability dashboard designed for homelabs, VPS instances, and self-hosted environments. 
+
+Engineered with **ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time compilation) and an embedded **SQLite WAL engine**, Corvus runs in a single self-contained container with a deterministic **<30 MB RAM footprint**. It consolidates real-time Docker container discovery, interactive web terminal access, multi-protocol uptime & SSL monitoring, time-series telemetry downsampling, and an unauthenticated public status page into a single featherweight binary.
+
+---
+
+## ⚡ 10-Second Quick Start
+
+Get Corvus up and running on your Docker host with a single command:
+
+### Option A: Single Docker Command
+```bash
+docker run -d \
+  --name corvus \
+  --restart unless-stopped \
+  -p 8090:8090 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v corvus-data:/data \
+  ghcr.io/brhnshn/corvus:latest
+```
+
+### Option B: Docker Compose (`compose.yaml`)
+```yaml
+services:
+  corvus:
+    image: ghcr.io/brhnshn/corvus:latest
+    container_name: corvus
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - CORVUS_PORT=8090
+      - CORVUS_DATA_DIR=/data
+      - DOCKER_SOCKET=/var/run/docker.sock
+      - CORVUS_AUTH_ENABLED=true
+      - CORVUS_AUTH_USER=admin
+      - CORVUS_AUTH_PASS=corvus123
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - corvus-data:/data
+
+volumes:
+  corvus-data:
+```
+
+```bash
+docker compose up -d
+```
+
+Open your browser at **`http://localhost:8090`** (or public status page at **`http://localhost:8090/status`**).
+
+---
+
+## 🎯 Architectural Scope & Philosophy
+
+| Architectural Aspect | Corvus Design Approach | Traditional Heavy Stacks |
+|:---|:---|:---|
+| **Container Footprint** | **Single All-in-One Container** (~45 MB image) | Multi-container setups (App + Database + Cache) |
+| **Idle Memory (RAM)** | **Strictly <30 MB RAM** (Workstation GC + `malloc_trim`) | 300 MB – 1 GB+ (JVM/Node/WiredTiger caches) |
+| **Database Dependency**| **Zero External DB** (Embedded SQLite WAL, single `.db` file) | Requires dedicated PostgreSQL or MongoDB |
+| **Docker Integration** | **Non-invasive read-only socket** (`/var/run/docker.sock:ro`) | Agent daemons or invasive file hijackers |
+| **Combined Scope** | **Container Lifecycle + Extended Uptime & SSL + Public Status Page** | Fragmented across 2-3 separate tools |
+| **Backup / Portability**| **Single-file copy or `VACUUM INTO` snapshot download** | Database dumps (`pg_dump`, `mongodump`, volume exports) |
+
+---
+
+## 🔬 The Native AOT Engineering Advantage
+
+Corvus is built from the ground up to challenge the misconception that modern enterprise frameworks require heavy containers:
+
+1. **Zero CLR Virtual Machine Overhead:** Compiled ahead-of-time (`PublishAot=true`) directly to an optimized Linux x64/ARM64 ELF executable. There is no JIT compilation, dynamic IL generation, or heavy runtime metadata bundled in the image.
+2. **Minimal Base Image:** Operates on top of `mcr.microsoft.com/dotnet/runtime-deps:9.0` (chiseled minimal glibc), keeping the base OS layer at only ~13 MB.
+3. **Aggressive Low-Memory Tuning:**
+   - Non-concurrent workstation GC (`ServerGarbageCollection=false`, `DOTNET_gcConcurrent=0`).
+   - Conservative allocation policy (`DOTNET_GCConserveMemory=9`).
+   - Glibc arena constraints (`MALLOC_ARENA_MAX=2`).
+   - Built-in `MemoryTrimmerBackgroundService` that flushes SQLite connection pools and invokes native `malloc_trim(0)` every 3 minutes.
+4. **Embedded SQLite with Write-Ahead Logging (WAL):** Sub-millisecond reads/writes with automated rolling data retention cleanups (`RetentionCleanupService`), ensuring database files never suffer from unmonitored disk bloat.
 
 ---
 
@@ -184,43 +262,6 @@ Corvus Architecture:
 
 ---
 
-## 🚀 Quick Start with Docker Compose
-
-Create a `docker-compose.yml` file:
-
-```yaml
-services:
-  corvus:
-    image: corvus:latest
-    container_name: corvus
-    restart: unless-stopped
-    ports:
-      - "8090:8090"
-    environment:
-      - CORVUS_PORT=8090
-      - CORVUS_DATA_DIR=/data
-      - DOCKER_SOCKET=/var/run/docker.sock
-      - CORVUS_AUTH_ENABLED=true
-      - CORVUS_AUTH_USER=admin
-      - CORVUS_AUTH_PASS=corvus123
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - corvus-data:/data
-
-volumes:
-  corvus-data:
-```
-
-Run the container:
-
-```bash
-docker compose up -d
-```
-
-Open your browser at **`http://localhost:8090`** (or public status page at **`http://localhost:8090/status`**).
-
----
-
 ## 🏷️ Docker Container Labels
 
 Enhance your containers with Corvus metadata labels in your compose files:
@@ -305,6 +346,7 @@ Corvus is inspired by the architectural philosophies of pioneering open-source h
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma) — Health monitoring philosophy and status page concepts
 - [Beszel](https://github.com/henrygd/beszel) — Compact telemetry and system resource metrics approach
 - [Portainer](https://github.com/portainer/portainer) — Container lifecycle management vision
+- [Checkmate](https://github.com/bluewave-labs/checkmate) — Incident tracking and modern observability aesthetics
 
 ---
 

@@ -375,6 +375,7 @@ public static class ContainersEndpoints
                                 else
                                 {
                                     await dockerStream.WriteAsync(buffer.AsMemory(0, result.Count), ct);
+                                    await dockerStream.FlushAsync(ct);
                                 }
                             }
                         }
