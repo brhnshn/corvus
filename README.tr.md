@@ -9,12 +9,13 @@
 </p>
 
 <p align="center">
+  <a href="https://demo.usecorvus.me"><img src="https://img.shields.io/badge/Canl%C4%B1_Demo-demo.usecorvus.me-10b981?logo=googlechrome&logoColor=white" alt="Canlı Demo" /></a>
   <a href="https://usecorvus.me"><img src="https://img.shields.io/badge/Web_Sitesi-usecorvus.me-blue?logo=googlechrome" alt="Web Sitesi" /></a>
   <img src="https://img.shields.io/badge/.NET-9.0_Native_AOT-512BD4?logo=dotnet" alt=".NET 9" />
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Testler-223_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-224_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -31,6 +32,9 @@
 ## 🌟 Genel Bakış
 
 **Corvus**, homelab ortamları, VPS sunucuları ve self-hosted altyapılar için tasarlanmış ultra hafif, hepsi-bir-arada konteyner yöneticisi ve gözlemlenebilirlik (observability) kontrol panelidir. 
+
+> 🎮 **Kurulum Yapmadan Tarayıcıda Canlı Demoyu Deneyin:**  
+> **[https://demo.usecorvus.me](https://demo.usecorvus.me)** — Sıfır sunucu yüküyle çalışan tarayıcı içi simülasyon ortamında Docker yönetimini, etkileşimli terminali ve telemetri grafiklerini anında keşfedin.
 
 **ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time derleme) ve gömülü **SQLite WAL motoru** ile sıfırdan inşa edilen Corvus, tek bir bağımsız konteyner içinde ve kararlı biçimde **<30 MB RAM ayak iziyle** çalışır. Gerçek zamanlı Docker konteyner keşfi, tarayıcı içi etkileşimli web terminali (WebSocket), çoklu protokol uptime & SSL sertifika takibi, zaman serisi telemetri sıkıştırması ve kamuya açık şifresiz sistem durum sayfasını tek bir tüy kadar hafif ikili (binary) pakette toplar.
 

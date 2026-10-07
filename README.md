@@ -9,12 +9,13 @@
 </p>
 
 <p align="center">
+  <a href="https://demo.usecorvus.me"><img src="https://img.shields.io/badge/Live_Demo-demo.usecorvus.me-10b981?logo=googlechrome&logoColor=white" alt="Live Demo" /></a>
   <a href="https://usecorvus.me"><img src="https://img.shields.io/badge/Website-usecorvus.me-blue?logo=googlechrome" alt="Website" /></a>
   <img src="https://img.shields.io/badge/.NET-9.0_Native_AOT-512BD4?logo=dotnet" alt=".NET 9" />
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-223_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-224_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -31,6 +32,9 @@
 ## 🌟 Overview
 
 **Corvus** is an ultra-lightweight, self-hosted server launcher, container manager, and observability dashboard designed for homelabs, VPS instances, and self-hosted environments. 
+
+> 🎮 **Try the In-Browser Live Demo (No Install Needed):**  
+> **[https://demo.usecorvus.me](https://demo.usecorvus.me)** — Explore live Docker management, interactive terminal, and real-time telemetry sandbox with zero server load.
 
 Engineered with **ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time compilation) and an embedded **SQLite WAL engine**, Corvus runs in a single self-contained container with a deterministic **<30 MB RAM footprint**. It consolidates real-time Docker container discovery, interactive web terminal access, multi-protocol uptime & SSL monitoring, time-series telemetry downsampling, and an unauthenticated public status page into a single featherweight binary.
 
