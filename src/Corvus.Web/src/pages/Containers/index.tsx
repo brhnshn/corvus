@@ -7,6 +7,8 @@ import { ContainerLogsModal } from './ContainerLogsModal';
 import { ContainerTerminalModal } from './ContainerTerminalModal';
 import { ContainerTagsModal } from './ContainerTagsModal';
 import { SystemPruneModal } from './SystemPruneModal';
+import { ImageUpdateModal } from './ImageUpdateModal';
+import { ComposeConfigModal } from './ComposeConfigModal';
 import { ContainerDetailModal } from './detail/ContainerDetailModal';
 import { ContainerActionSheet } from './ContainerActionSheet';
 import { ContainersHeader } from './ContainersHeader';
@@ -46,6 +48,8 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
   const [selectedInspectContainer, setSelectedInspectContainer] = useState<DockerContainer | null>(null);
   const [editingTagsContainer, setEditingTagsContainer] = useState<DockerContainer | null>(null);
   const [sheetContainer, setSheetContainer] = useState<DockerContainer | null>(null);
+  const [imageUpdateContainer, setImageUpdateContainer] = useState<{ id: string; name: string; image: string } | null>(null);
+  const [composeConfigProject, setComposeConfigProject] = useState<string | null>(null);
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -398,6 +402,11 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           selectedTag={selectedTag}
           onSelectTag={setSelectedTag}
           isAdmin={isAdmin}
+          onOpenImageUpdate={(c) => setImageUpdateContainer({
+            id: c.Id,
+            name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
+            image: c.Image
+          })}
         />
       )}
 
@@ -421,6 +430,12 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           selectedTag={selectedTag}
           onSelectTag={setSelectedTag}
           isAdmin={isAdmin}
+          onOpenComposeConfig={(name) => setComposeConfigProject(name)}
+          onOpenImageUpdate={(c) => setImageUpdateContainer({
+            id: c.Id,
+            name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
+            image: c.Image
+          })}
         />
       )}
 
@@ -484,6 +499,35 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           container={editingTagsContainer}
           onClose={() => setEditingTagsContainer(null)}
           onSuccess={handleTagsUpdated}
+        />
+      )}
+
+      {/* OCI İmaj Güncelleme Denetleyici Modalı */}
+      {imageUpdateContainer && (
+        <ImageUpdateModal
+          containerId={imageUpdateContainer.id}
+          containerName={imageUpdateContainer.name}
+          imageName={imageUpdateContainer.image}
+          isOpen={!!imageUpdateContainer}
+          onClose={() => setImageUpdateContainer(null)}
+          onSuccess={() => {
+            loadContainers(true);
+            toast.success('Konteyner güncellendi ve yeniden başlatıldı.');
+          }}
+        />
+      )}
+
+      {/* Compose Stack YAML Konfigürasyon Modalı */}
+      {composeConfigProject && (
+        <ComposeConfigModal
+          projectName={composeConfigProject}
+          isOpen={!!composeConfigProject}
+          isAdmin={isAdmin}
+          onClose={() => setComposeConfigProject(null)}
+          onSuccess={() => {
+            loadContainers(true);
+            toast.success('Compose stack güncellendi.');
+          }}
         />
       )}
     </div>

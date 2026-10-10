@@ -364,3 +364,34 @@ export interface DockerContainerUpdateRequest {
   memoryReservation?: number;
   restartPolicy?: DockerRestartPolicy;
 }
+
+export interface ContainerImageUpdateInfo {
+  containerId: string;
+  image: string;
+  hasUpdate: boolean;
+  localDigest?: string | null;
+  remoteDigest?: string | null;
+  registry: string;
+  checkedAt: string;
+  error?: string | null;
+}
+
+export interface ContainerImageRecreateRequest {
+  pullLatest?: boolean;
+}
+
+export interface ComposeFileDto {
+  projectName: string;
+  filePath: string;
+  content: string;
+  lastModified?: string | null;
+  exists: boolean;
+  error?: string | null;
+}
+
+export interface SaveComposeFileRequest {
+  content: string;
+  restartStack?: boolean;
+}
+
+

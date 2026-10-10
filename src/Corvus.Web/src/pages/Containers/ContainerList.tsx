@@ -12,6 +12,8 @@ export interface ContainerListProps {
   selectedTag?: string | null;
   onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
+  onOpenImageUpdate?: (container: DockerContainer) => void;
+  updatesMap?: Record<string, boolean>;
 }
 
 export const ContainerList: React.FC<ContainerListProps> = ({
@@ -23,6 +25,8 @@ export const ContainerList: React.FC<ContainerListProps> = ({
   onInspect,
   onSelectTag,
   isAdmin = true,
+  onOpenImageUpdate,
+  updatesMap = {},
 }) => {
   return (
     <div className="space-y-2">
@@ -48,6 +52,8 @@ export const ContainerList: React.FC<ContainerListProps> = ({
             onInspect={onInspect}
             onSelectTag={onSelectTag}
             isAdmin={isAdmin}
+            onOpenImageUpdate={onOpenImageUpdate}
+            hasUpdate={updatesMap[container.Id]}
           />
         ))}
       </div>

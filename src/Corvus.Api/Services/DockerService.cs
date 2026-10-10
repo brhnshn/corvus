@@ -24,6 +24,9 @@ public interface IDockerService
     Task<DockerSelectivePruneResult> ExecuteSelectivePruneAsync(DockerSelectivePruneRequest request, CancellationToken cancellationToken = default);
     Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default);
     Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default);
+    Task<ContainerImageUpdateInfo> CheckContainerUpdateAsync(string containerId, CancellationToken cancellationToken = default);
+    Task<List<ContainerImageUpdateInfo>> CheckAllContainersUpdateAsync(CancellationToken cancellationToken = default);
+    Task<DockerActionResult> RecreateContainerAsync(string containerId, bool pullLatest = true, CancellationToken cancellationToken = default);
     bool ShouldIgnoreContainer(DockerContainerInfo container);
     Service MapContainerToService(DockerContainerInfo container, IEnumerable<string>? env = null);
     void InvalidateContainersCache();
@@ -32,6 +35,7 @@ public interface IDockerService
 public class DockerService : IDockerService
 {
     private readonly IDockerHttpClient _client;
+    private readonly IOciRegistryClient? _ociRegistryClient;
     private readonly ILogger<DockerService> _logger;
     private readonly IServiceScopeFactory? _scopeFactory;
     private readonly ConcurrentDictionary<string, (DateTime Expiry, ContainerStatsDto Stats)> _statsCache = new();
@@ -42,9 +46,19 @@ public class DockerService : IDockerService
         IDockerHttpClient client, 
         ILogger<DockerService> logger, 
         IServiceScopeFactory? scopeFactory = null)
+        : this(client, logger, null, scopeFactory)
+    {
+    }
+
+    public DockerService(
+        IDockerHttpClient client, 
+        ILogger<DockerService> logger, 
+        IOciRegistryClient? ociRegistryClient,
+        IServiceScopeFactory? scopeFactory = null)
     {
         _client = client;
         _logger = logger;
+        _ociRegistryClient = ociRegistryClient;
         _scopeFactory = scopeFactory;
     }
 
@@ -719,4 +733,91 @@ public class DockerService : IDockerService
                    .Distinct(StringComparer.OrdinalIgnoreCase)
                    .ToList();
     }
+
+    public async Task<ContainerImageUpdateInfo> CheckContainerUpdateAsync(string containerId, CancellationToken cancellationToken = default)
+    {
+        var inspect = await InspectContainerAsync(containerId, cancellationToken);
+        if (inspect == null)
+        {
+            return new ContainerImageUpdateInfo
+            {
+                ContainerId = containerId,
+                Error = "Konteyner bulunamadı veya inspect verisi alınamadı."
+            };
+        }
+
+        string imageName = inspect.Config?.Image ?? inspect.Image ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(imageName))
+        {
+            return new ContainerImageUpdateInfo
+            {
+                ContainerId = containerId,
+                Error = "Konteyner imaj adı okunamadı."
+            };
+        }
+
+        List<string>? repoDigests = null;
+        if (!string.IsNullOrEmpty(inspect.Image))
+        {
+            var imageInspect = await _client.InspectImageAsync(inspect.Image, cancellationToken);
+            repoDigests = imageInspect?.RepoDigests;
+        }
+
+        if (_ociRegistryClient == null)
+        {
+            return new ContainerImageUpdateInfo
+            {
+                ContainerId = containerId,
+                Image = imageName,
+                Error = "OCI registry servisi yapılandırılmamış."
+            };
+        }
+
+        return await _ociRegistryClient.CheckContainerUpdateAsync(containerId, imageName, inspect.Image, repoDigests, cancellationToken);
+    }
+
+    public async Task<List<ContainerImageUpdateInfo>> CheckAllContainersUpdateAsync(CancellationToken cancellationToken = default)
+    {
+        var containers = await GetContainersAsync(cancellationToken);
+        var results = new List<ContainerImageUpdateInfo>();
+
+        foreach (var c in containers)
+        {
+            if (ShouldIgnoreContainer(c)) continue;
+            var updateInfo = await CheckContainerUpdateAsync(c.Id, cancellationToken);
+            results.Add(updateInfo);
+        }
+
+        return results;
+    }
+
+    public async Task<DockerActionResult> RecreateContainerAsync(string containerId, bool pullLatest = true, CancellationToken cancellationToken = default)
+    {
+        var inspect = await InspectContainerAsync(containerId, cancellationToken);
+        if (inspect == null)
+        {
+            return new DockerActionResult(false, "Konteyner bulunamadı.", 404);
+        }
+
+        string imageName = inspect.Config?.Image ?? inspect.Image ?? string.Empty;
+        if (pullLatest && !string.IsNullOrWhiteSpace(imageName))
+        {
+            _logger.LogInformation("Konteyner yeniden oluşturma öncesi güncel imaj çekiliyor: {Image}", imageName);
+            bool pulled = await _client.PullImageAsync(imageName, cancellationToken);
+            if (!pulled)
+            {
+                _logger.LogWarning("Güncel imaj çekilemedi, mevcut yerel imajla devam ediliyor: {Image}", imageName);
+            }
+        }
+
+        var restartResult = await RestartContainerAsync(containerId, cancellationToken);
+        if (restartResult.Success)
+        {
+            InvalidateContainersCache();
+            return new DockerActionResult(true, "Konteyner güncellendi ve başarıyla yeniden başlatıldı.");
+        }
+
+        return restartResult;
+    }
 }
+

@@ -1,4 +1,4 @@
-import"./rolldown-runtime-hePW80VL.js";import{Pt as e}from"./vendor-icons-CFMgPCTt.js";import{t}from"./vendor-react-eQJM-iE2.js";import{t as n}from"./ProgressBar-Cp0tadgS.js";e();var r=t(),i=({label:e,value:t,unit:i,icon:a,progress:o,metricType:s,variant:c,footer:l,onClick:u,className:d=``})=>(0,r.jsxs)(`div`,{onClick:u,className:`
+import"./rolldown-runtime-hePW80VL.js";import{It as e}from"./vendor-icons-D9FNfK9M.js";import{t}from"./vendor-react-C7BGwqDt.js";import{t as n}from"./ProgressBar-BGULdxTg.js";e();var r=t(),i=({label:e,value:t,unit:i,icon:a,progress:o,metricType:s,variant:c,footer:l,onClick:u,className:d=``})=>(0,r.jsxs)(`div`,{onClick:u,className:`
         surface rounded-[20px] p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 transition-colors duration-250 select-none
         ${u?`cursor-pointer hover:bg-white/[0.12] active:scale-[0.98]`:`hover:bg-white/[0.08]`}
         ${d}

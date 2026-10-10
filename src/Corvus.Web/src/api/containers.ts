@@ -108,5 +108,36 @@ export const containersApi = {
     invalidateCache('/services');
     invalidateCache('/dashboard');
     return res;
+  },
+
+  checkContainerUpdate: (id: string) =>
+    fetchJson<import('../types').ContainerImageUpdateInfo>(`/containers/${id}/check-update`),
+
+  checkAllContainersUpdates: () =>
+    fetchJson<import('../types').ContainerImageUpdateInfo[]>('/containers/updates'),
+
+  recreateContainer: async (id: string, pullLatest: boolean = true) => {
+    const res = await fetchJson<{ success: boolean; message?: string }>(`/containers/${id}/recreate`, {
+      method: 'POST',
+      body: JSON.stringify({ pullLatest })
+    });
+    invalidateCache('/containers');
+    invalidateCache('/services');
+    invalidateCache('/dashboard');
+    return res;
+  },
+
+  getComposeFile: (projectName: string) =>
+    fetchJson<import('../types').ComposeFileDto>(`/compose/${encodeURIComponent(projectName)}/file`),
+
+  saveComposeFile: async (projectName: string, req: import('../types').SaveComposeFileRequest) => {
+    const res = await fetchJson<{ success: boolean; message?: string }>(`/compose/${encodeURIComponent(projectName)}/file`, {
+      method: 'PUT',
+      body: JSON.stringify(req)
+    });
+    invalidateCache('/containers');
+    invalidateCache('/services');
+    invalidateCache('/dashboard');
+    return res;
   }
 };

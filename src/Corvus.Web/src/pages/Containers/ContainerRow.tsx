@@ -5,7 +5,8 @@ import {
   RotateCw, 
   MoreHorizontal, 
   ArrowDownRight, 
-  ArrowUpRight 
+  ArrowUpRight,
+  Sparkles
 } from 'lucide-react';
 import type { DockerContainer, ContainerStats } from '../../types';
 import { Pill, type StatusType } from '../../components/ui/Pill';
@@ -23,6 +24,8 @@ export interface ContainerRowProps {
   onInspect?: (container: DockerContainer) => void;
   onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
+  onOpenImageUpdate?: (container: DockerContainer) => void;
+  hasUpdate?: boolean;
 }
 
 export function extractContainerTags(labels?: Record<string, string>): string[] {
@@ -46,6 +49,8 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   onInspect,
   onSelectTag,
   isAdmin = true,
+  onOpenImageUpdate,
+  hasUpdate = false,
 }) => {
   const rawName = container.Names?.[0] || container.Id.slice(0, 12);
   const cleanName = rawName.replace(/^\//, '');
@@ -91,6 +96,20 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
             >
               {cleanName}
             </b>
+            {hasUpdate && onOpenImageUpdate && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenImageUpdate(container);
+                }}
+                title="İmaj Güncellemesi Mevcut"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold hover:bg-emerald-500/25 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-2.5 h-2.5" />
+                <span>Güncelleme</span>
+              </button>
+            )}
           </div>
           <small className="font-mono text-[11px] text-[#9ba0b5] block truncate mt-0.5">
             {shortId}
@@ -152,9 +171,21 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
 
       {/* 3. İmaj & Portlar */}
       <div className="min-w-0">
-        <span className="font-mono text-[11.5px] text-[#9ba0b5] truncate block" title={container.Image}>
-          {container.Image}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[11.5px] text-[#9ba0b5] truncate block flex-1" title={container.Image}>
+            {container.Image}
+          </span>
+          {onOpenImageUpdate && (
+            <button
+              type="button"
+              onClick={() => onOpenImageUpdate(container)}
+              title="İmaj sürümünü denetle"
+              className="p-1 rounded text-[#9ba0b5] hover:text-emerald-400 hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
+            >
+              <Sparkles className="w-3 h-3" />
+            </button>
+          )}
+        </div>
         {container.Ports && container.Ports.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
             {container.Ports.map((p, i) => (

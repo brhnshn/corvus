@@ -206,3 +206,39 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - `ContainerDiscoveryService.cs` arka plan servisinde çalışan -> durdu geçişlerini ve sıfır olmayan çıkış kodlarını izleyen durum makinesi.
   - `NotificationServiceTests.cs` xUnit birim test kapsamı (225/225 yeşil test).
 * **Kabul Kriteri:** Anormal kapanmalarda anında bildirim iletilmesi; normal manuel durdurmalarda (ExitCode == 0) gereksiz alarm üretilmemesi.
+
+---
+
+## Faz 7: Otonom Konteyner Yaşam Döngüsü & GitOps Otomasyonu
+
+### Bilet 7.1 — Konteyner İmaj Güncelleme Takipçisi & OCI Registry Digest İzleyici [TAMAMLANDI]
+* **Önkoşul:** Faz 6 tamamlandı.
+* **Amaç:** Katman indirmeden (sıfır bant genişliği tüketimi) OCI registry (Docker Hub, GHCR, Quay) digest'larını HEAD istekleriyle kontrol edip güncelleme rozetleri ve tek tıkla yeniden oluşturma (recreate) sunmak.
+* **Kapsam:**
+  - Native AOT uyumlu `IOciRegistryClient` / `OciRegistryClient.cs` servisi; `/v2/{repo}/manifests/{tag}` adreslerine sıfır gövdeli HEAD istekleri.
+  - Docker Hub ve GitHub Container Registry için anonim Bearer token alma mekanizması.
+  - Yerel imaj vs. Uzak registry digest karşılaştırma motoru (`ContainerImageUpdateInfo`).
+  - Uç noktalar: `GET /api/containers/{id}/check-update`, `GET /api/containers/updates` ve `POST /api/containers/{id}/recreate` (`RequireAdmin`).
+  - Frontend modüler `ImageUpdateModal.tsx`, konteyner satırlarında güncelleme rozetleri ve detay sayfasında hızlı eylem butonu.
+* **Kabul Kriteri:** Katman indirmeden hızlı digest kontrolü; birim testlerin geçmesi (244/244 yeşil test).
+
+### Bilet 7.2 — Compose Stack Yapılandırma Görüntüleyici & Güvenli YAML Editörü [TAMAMLANDI]
+* **Önkoşul:** Yok.
+* **Amaç:** Web arayüzünden `compose.yaml` dosyalarını görüntülemek, güvenle düzenlemek, otomatik `.bak` yedeği almak ve tek tıkla stack'i yeniden başlatmak.
+* **Kapsam:**
+  - `IComposeFileService` / `ComposeFileService.cs` ile dizin aşımı (path traversal) koruması ve otomatik `.bak` yedeği alma motoru.
+  - Uç noktalar: `GET /api/compose/{projectName}/file` ve `PUT /api/compose/{projectName}/file` (`RequireAdmin`).
+  - Modüler `ComposeConfigModal.tsx` bileşeni ile syntax dostu editör ve stack yeniden başlatma tetikleyicisi.
+  - `ComposeStackGroup.tsx` başlık eylemlerine dosya düzenleme butonu entegrasyonu.
+* **Kabul Kriteri:** Compose dosyasının güvenle düzenlenip `.bak` yedeğinin alınması; birim testlerin geçmesi.
+
+### Bilet 7.3 — Olay Güdümlü Kendi Kendini Onarma (Auto-Healing) & Gelen Dağıtım Webhook'ları [TAMAMLANDI]
+* **Önkoşul:** Bilet 7.1 ve 7.2 tamamlandı.
+* **Amaç:** Çöken konteynerleri döngü korumasıyla (loop-prevention) otomatik yeniden başlatmak ve CI/CD dağıtımları için webhook uç noktası sağlamak.
+* **Kapsam:**
+  - `AutoHealingService.cs` ile thread-safe kayan pencere (15 dakikada en fazla 2 kurtarma) döngü koruması.
+  - `ContainerDiscoveryService.cs` üzerinde sıfır olmayan çıkış kodlarında otomatik kurtarma tetiklemesi.
+  - `INotificationService.DispatchContainerAutoHealedAlertAsync` ile bildirim kanallarına kurtarma alarmları.
+  - Sabit zamanlı (constant-time token) güvenli gelen dağıtım webhook uç noktası (`POST /api/hooks/deploy/{token}`).
+  - Ayarlar arayüzünde (`GeneralSettingsTab.tsx`) gizli token oluşturma ve yapılandırma alanı.
+* **Kabul Kriteri:** Çöken konteynerlerin otomatik kurtarılması ve 3. çöküşte döngü engeli konulması; dağıtım webhook doğrulaması; 244 birim testin yeşil olması.

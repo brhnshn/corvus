@@ -206,3 +206,40 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Stateful transition tracking in `ContainerDiscoveryService.cs` checking for running -> exited transitions with non-zero exit codes.
   - xUnit unit test coverage in `NotificationServiceTests.cs` (225/225 passing tests).
 * **Acceptance Criteria:** Crash notification dispatched immediately upon abnormal exit; zero false positives on normal graceful stops (ExitCode == 0).
+
+---
+
+## Phase 7: Autonomous Container Lifecycle & GitOps Automation
+
+### Ticket 7.1 — Container Image Update Sentinel & Registry Digest Watcher [COMPLETED]
+* **Blocked by:** Phase 6 completed.
+* **Objective:** Lightweight OCI registry digest inspection (Docker Hub, GHCR, Quay) via HEAD requests without downloading image layers, indicating update availability and one-click recreate.
+* **Scope:**
+  - Native AOT compliant `IOciRegistryClient` / `OciRegistryClient.cs` performing zero-body HEAD requests to registry manifest endpoints (`/v2/{repo}/manifests/{tag}`).
+  - Bearer token acquisition for Docker Hub and GitHub Container Registry.
+  - Local vs Remote digest comparison (`ContainerImageUpdateInfo`).
+  - Endpoints `GET /api/containers/{id}/check-update`, `GET /api/containers/updates`, and `POST /api/containers/{id}/recreate`.
+  - Frontend `ImageUpdateModal.tsx`, update indicator badges on container rows, and detail header quick action.
+* **Acceptance Criteria:** Fast manifest digest checking without downloading image layers; verified with unit tests (244/244 passing).
+
+### Ticket 7.2 — Compose Stack Configuration Inspector & Safe In-Place YAML Editor [COMPLETED]
+* **Blocked by:** None.
+* **Objective:** View and safely edit `compose.yaml` files directly from the web interface with automatic backup and stack restart capabilities.
+* **Scope:**
+  - `IComposeFileService` / `ComposeFileService.cs` with path traversal sanitization and automatic `.bak` file generation.
+  - `GET /api/compose/{projectName}/file` and `PUT /api/compose/{projectName}/file` (RBAC protected).
+  - Modular `ComposeConfigModal.tsx` component with syntax-friendly editor and stack restart triggers.
+  - Integration with `ComposeStackGroup.tsx` header actions.
+* **Acceptance Criteria:** Compose file edited safely with `.bak` backup verification; unit tests passing.
+
+### Ticket 7.3 — Event-Driven Auto-Healing & Inbound Deploy Webhooks [COMPLETED]
+* **Blocked by:** Ticket 7.1 & Ticket 7.2 completed.
+* **Objective:** Automatically revive crashed containers with crash-loop protection, and enable CI/CD deployment webhooks.
+* **Scope:**
+  - `AutoHealingService.cs` with thread-safe sliding window enforcement (max 2 restarts / 15m) preventing infinite flapping storms.
+  - Automatic recovery triggered via `ContainerDiscoveryService.cs` on non-zero exit codes.
+  - Automated alert dispatch via `INotificationService.DispatchContainerAutoHealedAlertAsync`.
+  - Constant-time token authenticated inbound webhook endpoint (`POST /api/hooks/deploy/{token}`).
+  - Settings UI for generating and configuring secret deploy tokens.
+* **Acceptance Criteria:** Auto-healing revives crashed containers and halts on 3rd attempt within window; deploy webhook verified; 244 unit tests passing.
+

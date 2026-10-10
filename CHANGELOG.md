@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.31] - 2026-10-10
+
+### Fixed
+- **OCI Registry Image Sentinel & Digest Tracking (Ticket 7.1)**:
+  - **Zero-Payload Manifest Inspection (`OciRegistryClient.cs`)**: Implemented zero-byte HEAD requests to `/v2/{repo}/manifests/{tag}` against Docker Hub, GitHub Container Registry (GHCR), and Quay. Accurately determines if newer container images exist upstream without downloading heavy container image layers.
+  - **Docker Engine Layer Comparison (`DockerHttpClient.cs`, `DockerService.cs`)**: Extracts container RepoDigests and compares SHA256 digests against remote OCI manifests.
+  - **One-Click Safe Recreate (`ContainersEndpoints.cs`)**: Added `POST /api/containers/{id}/recreate` (`RequireAdmin`) to automatically pull the upstream image, stop the old container, recreate it with identical configuration, and launch it seamlessly.
+  - **Visual Update Indicator (`ImageUpdateModal.tsx`, `ContainerRow.tsx`, `ContainerList.tsx`, `ContainerDetailHeader.tsx`)**: Displays an amber "Update Available" badge across fleet table rows, cards, and detail headers with a dedicated modal showing local vs remote digest hashes and 1-click update.
+- **Docker Compose YAML Inspector & Safe In-Place Editor (Ticket 7.2)**:
+  - **Path-Traversal Protected YAML Service (`ComposeFileService.cs`, `ComposeEndpoints.cs`)**: Securely resolves Compose configuration files (`compose.yaml`, `docker-compose.yml`) via container labels. Strictly blocks directory traversal (`..`) attempts.
+  - **Automatic `.bak` Backup Preservation**: Generates an automatic timestamped or `.bak` copy before committing any file updates to disk.
+  - **Modular In-Browser Editor (`ComposeConfigModal.tsx`, `ComposeStackGroup.tsx`)**: Lightweight YAML editor with monospace formatting, line count indicator, file size badges, and "Save & Restart Stack" action.
+- **Event-Driven Auto-Healing & Inbound Deploy Webhooks (Ticket 7.3)**:
+  - **Loop-Guarded Container Auto-Recovery (`AutoHealingService.cs`, `ContainerDiscoveryService.cs`)**: Automatically revives crashed containers when abnormal exit codes are detected, guarded by a thread-safe sliding window algorithm (max 2 restarts within 15 minutes) to prevent infinite flapping storms.
+  - **Instant Multi-Channel Auto-Heal Alerts (`NotificationService.cs`)**: Dispatches recovery notifications across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks upon successful auto-restart.
+  - **Constant-Time Inbound Deploy Webhook (`DeployWebhookEndpoints.cs`)**: Added `POST /api/hooks/deploy/{token}` with cryptographic constant-time token verification (`CryptographicOperations.FixedTimeEquals`) to prevent timing side-channel attacks for CI/CD pipelines.
+  - **Deploy Token Management UI (`GeneralSettingsTab.tsx`)**: Interface for generating, revealing, and managing secure deploy webhook tokens.
+- **Test Suite Expansion**:
+  - Expanded unit test coverage with dedicated test cases across auto-healing, compose file safety, and webhook authentication (244/244 passing tests).
+
+---
+
 ## [1.5.30] - 2026-10-10
 
 ### Fixed

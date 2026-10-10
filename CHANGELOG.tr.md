@@ -3,6 +3,28 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.31] - 2026-10-10
+
+### Düzeltilenler (Fixed)
+- **OCI Registry İmaj Güncelleme Takipçisi & Digest İzleyici (Bilet 7.1)**:
+  - **Sıfır Yüklü Manifest Sorgulama (`OciRegistryClient.cs`)**: Docker Hub, GitHub Container Registry (GHCR) ve Quay üzerinde `/v2/{repo}/manifests/{tag}` adreslerine sıfır gövdeli HEAD istekleri atarak büyük imaj katmanlarını indirmeden (bant genişliği tüketmeden) üst sürüm olup olmadığını tespit eden istemci uygulandı.
+  - **Docker Engine Katman Karşılaştırması (`DockerHttpClient.cs`, `DockerService.cs`)**: Konteynerin `RepoDigests` verisi ile uzak registry'den alınan SHA256 digest'ı karşılaştırılarak güncelleme durumu hesaplanır.
+  - **Tek Tıkla Güvenli Yeniden Oluşturma (`ContainersEndpoints.cs`)**: `POST /api/containers/{id}/recreate` (`RequireAdmin`) uç noktası ile yeni imaj çekilir, eski konteyner durdurulur ve aynı konfigürasyonla kesintisiz yeniden ayağa kaldırılır.
+  - **Görsel Güncelleme Bildirimi (`ImageUpdateModal.tsx`, `ContainerRow.tsx`, `ContainerList.tsx`, `ContainerDetailHeader.tsx`)**: Konteyner listesinde, kartlarda ve detay sayfasında amber "Güncelleme Var" rozeti ve yerel vs uzak hash özetlerini gösteren modal eklendi.
+- **Docker Compose YAML İnceleyici & Güvenli Düzenleyici (Bilet 7.2)**:
+  - **Dizin Aşımı Korumalı YAML Servisi (`ComposeFileService.cs`, `ComposeEndpoints.cs`)**: Compose etiketlerinden dosya yolunu çözer, dizin aşımı (`..`) girişimlerini engeller.
+  - **Otomatik `.bak` Yedeği**: Dosyaya yazılmadan önce mevcut dosyanın otomatik `.bak` yedeği alınır.
+  - **Modüler Tarayıcı İçi Editör (`ComposeConfigModal.tsx`, `ComposeStackGroup.tsx`)**: Monospace formatlama, satır sayısı, dosya boyutu göstergesi ve "Kaydet ve Stack'i Yeniden Başlat" aksiyonu sunan hafif editör bileşeni.
+- **Olay Güdümlü Kendi Kendini Onarma (Auto-Healing) & Gelen Dağıtım Webhook'ları (Bilet 7.3)**:
+  - **Döngü Korumalı Otomatik Kurtarma (`AutoHealingService.cs`, `ContainerDiscoveryService.cs`)**: Sıfır olmayan çıkış koduyla çöken konteynerler anında tespit edilip yeniden başlatılır; kayan pencere algoritmasıyla (15 dakikada en fazla 2 deneme) sonsuz flapping döngüleri engellenir.
+  - **Çok Kanallı Kurtarma Alarmları (`NotificationService.cs`)**: Başarılı otomatik kurtarmalarda Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına anında bildirim gönderilir.
+  - **Sabit Zamanlı Gelen Dağıtım Webhook'u (`DeployWebhookEndpoints.cs`)**: CI/CD boru hatları için `POST /api/hooks/deploy/{token}` uç noktası eklendi; timing saldırılarına karşı `CryptographicOperations.FixedTimeEquals` ile doğrulanır.
+  - **Dağıtım Token Yönetim Arayüzü (`GeneralSettingsTab.tsx`)**: Güvenli webhook token üretme ve görüntüleme ayar kartı eklendi.
+- **Genişletilmiş Test Paketi**:
+  - Auto-healing, compose dosya güvenliği ve webhook doğrulamalarını kapsayan testler eklendi (244/244 yeşil test).
+
+---
+
 ## [1.5.30] - 2026-10-10
 
 ### Düzeltilenler (Fixed)

@@ -44,6 +44,10 @@ public class DockerServiceTests
             Task.FromResult(new DockerActionResult(true, "Volume deleted"));
         public virtual Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(new DockerActionResult(true, "Container updated"));
+        public virtual Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerImageInspectInfo?>(null);
+        public virtual Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
     }
 
     [Fact]
@@ -298,6 +302,8 @@ public class DockerServiceTests
             Task.FromResult(new DockerActionResult(false, "Delete volume failed", 500));
         public Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(new DockerActionResult(false, "Update container failed", 500));
+        public Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default) => Task.FromResult<DockerImageInspectInfo?>(null);
+        public Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) => Task.FromResult(false);
     }
 
     [Fact]

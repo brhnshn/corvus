@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RotateCw, Play, Square, Loader2 } from 'lucide-react';
+import { RotateCw, Play, Square, Loader2, FileCode2 } from 'lucide-react';
 import type { DockerContainer, ContainerStats } from '../../api/client';
 import { ContainerList } from './ContainerList';
 import { GroupSection } from '../../components/GroupSection';
@@ -24,6 +24,9 @@ export interface ComposeStackGroupProps {
   selectedTag?: string | null;
   onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
+  onOpenComposeConfig?: (projectName: string) => void;
+  onOpenImageUpdate?: (container: DockerContainer) => void;
+  updatesMap?: Record<string, boolean>;
 }
 
 export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
@@ -45,6 +48,9 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
   onInspect,
   onSelectTag,
   isAdmin = true,
+  onOpenComposeConfig,
+  onOpenImageUpdate,
+  updatesMap,
 }) => {
   const [stackBusy, setStackBusy] = useState<string | null>(null);
 
@@ -108,6 +114,18 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
                     <Play className="w-3 h-3" />
                   </button>
 
+                  {/* Stack YAML Config Editor */}
+                  {onOpenComposeConfig && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenComposeConfig(group.name)}
+                      className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-indigo-500/20 text-[#9ba0b5] hover:text-indigo-300 border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer"
+                      title={`${group.name} Stack YAML Yapılandırması`}
+                    >
+                      <FileCode2 className="w-3 h-3" />
+                    </button>
+                  )}
+
                   {/* Stop Stack */}
                   <button
                     type="button"
@@ -131,6 +149,8 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
               onInspect={onInspect}
               onSelectTag={onSelectTag}
               isAdmin={isAdmin}
+              onOpenImageUpdate={onOpenImageUpdate}
+              updatesMap={updatesMap}
             />
           </GroupSection>
         );

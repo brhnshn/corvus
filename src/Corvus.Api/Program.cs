@@ -39,6 +39,9 @@ builder.Services.AddSingleton<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IFlappingDetector, FlappingDetector>();
 builder.Services.AddSingleton<IEventBroadcaster, EventBroadcaster>();
 builder.Services.AddSingleton<IUpdateCheckerService, UpdateCheckerService>();
+builder.Services.AddSingleton<IOciRegistryClient, OciRegistryClient>();
+builder.Services.AddSingleton<IComposeFileService, ComposeFileService>();
+builder.Services.AddSingleton<IAutoHealingService, AutoHealingService>();
 
 // Arka Plan Servisleri
 builder.Services.AddHostedService<ContainerDiscoveryService>();
@@ -131,6 +134,8 @@ app.MapStatusPageEndpoints();
 app.MapIncidentEndpoints();
 app.MapNotificationEndpoints();
 app.MapStreamEndpoints();
+app.MapComposeEndpoints();
+app.MapDeployWebhookEndpoints();
 
 // SPA Routing Fallback (Asla önbelleklenmemeli; her zaman taze chunk hash'lerini döndürür)
 app.MapFallbackToFile("index.html", new StaticFileOptions

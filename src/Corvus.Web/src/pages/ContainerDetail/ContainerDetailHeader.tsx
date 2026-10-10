@@ -7,7 +7,8 @@ import {
   Pause, 
   Terminal as TerminalIcon, 
   FileText, 
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import type { DockerContainer } from '../../types';
 import { useI18n } from '../../i18n';
@@ -22,6 +23,7 @@ interface ContainerDetailHeaderProps {
   activeTab: ContainerDetailTab;
   onSelectTab: (tab: ContainerDetailTab) => void;
   isAdmin?: boolean;
+  onOpenUpdateModal?: () => void;
 }
 
 export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
@@ -32,7 +34,8 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
   onAction,
   activeTab,
   onSelectTab,
-  isAdmin = true
+  isAdmin = true,
+  onOpenUpdateModal
 }) => {
   const { t } = useI18n();
 
@@ -132,6 +135,18 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                 <span>{t('containers.tabTerminal') || 'Web Terminali'}</span>
               </button>
             </>
+          )}
+
+          {onOpenUpdateModal && (
+            <button
+              type="button"
+              onClick={onOpenUpdateModal}
+              title={t('containers.checkUpdate') || 'İmaj Güncellemesini Denetle'}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{t('containers.checkUpdate') || 'İmajı Denetle'}</span>
+            </button>
           )}
 
           {isAdmin && (

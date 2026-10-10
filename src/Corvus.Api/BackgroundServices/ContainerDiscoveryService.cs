@@ -158,6 +158,12 @@ public class ContainerDiscoveryService : BackgroundService
                 using var scope = _services.CreateScope();
                 var notif = scope.ServiceProvider.GetRequiredService<INotificationService>();
                 await notif.DispatchContainerCrashAlertAsync(containerName, container.Id, exitCode, error, ct);
+
+                var autoHeal = scope.ServiceProvider.GetService<IAutoHealingService>();
+                if (autoHeal != null)
+                {
+                    _ = autoHeal.TryAutoHealAsync(container, exitCode, ct);
+                }
             }
         }
         catch (Exception ex)

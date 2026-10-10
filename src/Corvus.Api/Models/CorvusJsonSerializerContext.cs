@@ -306,6 +306,14 @@ public record NotificationResult(
 [JsonSerializable(typeof(List<DockerMountInfo>))]
 [JsonSerializable(typeof(DockerContainerUpdateRequest))]
 [JsonSerializable(typeof(DockerActionResult))]
+[JsonSerializable(typeof(DockerImageInspectInfo))]
+[JsonSerializable(typeof(ContainerImageUpdateInfo))]
+[JsonSerializable(typeof(List<ContainerImageUpdateInfo>))]
+[JsonSerializable(typeof(ContainerImageRecreateRequest))]
+[JsonSerializable(typeof(ComposeFileDto))]
+[JsonSerializable(typeof(SaveComposeFileRequest))]
+[JsonSerializable(typeof(DeployWebhookRequest))]
+[JsonSerializable(typeof(DeployWebhookResult))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }

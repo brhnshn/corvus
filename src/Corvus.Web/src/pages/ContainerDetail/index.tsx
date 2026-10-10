@@ -26,6 +26,7 @@ import { ContainerNetworkingTab } from '../Containers/detail/ContainerNetworking
 import { ContainerStorageTab } from '../Containers/detail/ContainerStorageTab';
 import { LogsTab } from './tabs/LogsTab';
 import { TerminalTab } from './tabs/TerminalTab';
+import { ImageUpdateModal } from '../Containers/ImageUpdateModal';
 
 export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   containerId,
@@ -43,6 +44,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const isMountedRef = useRef(true);
 
@@ -205,6 +207,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         isAdmin={isAdmin}
+        onOpenUpdateModal={() => setShowUpdateModal(true)}
       />
 
       {/* 2. Canlı Telemetri Hero Alanı (CPU / RAM / Ağ) */}
@@ -287,6 +290,20 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
           <TerminalTab containerId={containerId} containerName={containerName} />
         )}
       </div>
+
+      {showUpdateModal && (
+        <ImageUpdateModal
+          containerId={containerId}
+          containerName={containerName}
+          imageName={inspect?.config?.image || container?.Image || ''}
+          isOpen={showUpdateModal}
+          onClose={() => setShowUpdateModal(false)}
+          onSuccess={() => {
+            loadContainerData();
+            toast.success('Konteyner başarıyla yeniden oluşturuldu.');
+          }}
+        />
+      )}
     </div>
   );
 };

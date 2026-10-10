@@ -114,6 +114,52 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Inbound Deploy Webhook (CI/CD Otomasyonu) */}
+      <div className="space-y-4 pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="w-9 h-9 rounded-[12px] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+              <Database className="w-4 h-4 text-indigo-400" />
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold text-[#eceef6]">Inbound Deploy Webhook (CI/CD)</h2>
+              <p className="text-xs text-[#9ba0b5]">
+                GitHub Actions veya CI/CD boru hatlarından otomatik konteyner dağıtımını tetikleyin
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const generated = Array.from(crypto.getRandomValues(new Uint8Array(24)))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+              setSettings(prev => ({ ...prev, deploy_webhook_token: generated }));
+            }}
+            className="self-start sm:self-auto px-3 py-1.5 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 text-xs font-medium transition-colors cursor-pointer"
+          >
+            Yeni Belirteç Üret
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-mono text-[#9ba0b5] block">
+            Gizli Webhook Belirteci (Token)
+          </label>
+          <input
+            type="text"
+            value={settings['deploy_webhook_token'] || ''}
+            onChange={(e) => setSettings(prev => ({ ...prev, deploy_webhook_token: e.target.value }))}
+            placeholder="Örn: 9f8a7b6c5d4e3f2a1b0c..."
+            className="w-full px-3.5 py-2.5 rounded-[14px] bg-white/[0.04] border border-white/10 font-mono text-xs text-[#eceef6] focus:outline-hidden focus:border-indigo-500/50"
+          />
+          <p className="text-[11px] text-[#9ba0b5] font-mono leading-relaxed">
+            Kullanım: <code className="text-indigo-300">POST /api/hooks/deploy/{'{token}'}?projectName=stack-adi</code>
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

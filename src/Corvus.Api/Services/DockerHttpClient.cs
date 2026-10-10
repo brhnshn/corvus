@@ -35,6 +35,8 @@ public interface IDockerHttpClient
     Task<DockerActionResult> DeleteImageAsync(string imageId, bool force = false, CancellationToken cancellationToken = default);
     Task<DockerActionResult> DeleteVolumeAsync(string volumeName, bool force = false, CancellationToken cancellationToken = default);
     Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default);
+    Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default);
+    Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default);
 }
 
 public class DockerHttpClient : IDockerHttpClient, IDisposable
@@ -819,6 +821,39 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
         {
             _logger.LogError(ex, "Container yapılandırması güncellenirken hata: {ContainerId}", containerId);
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
+        }
+    }
+
+    public async Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync($"/images/{Uri.EscapeDataString(imageIdOrName)}/json", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerImageInspectInfo, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker image inspect hatası: {Image}", imageIdOrName);
+            return null;
+        }
+    }
+
+    public async Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsync($"/images/create?fromImage={Uri.EscapeDataString(imageName)}", null, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Docker image pull hatası: {Image}", imageName);
+            return false;
         }
     }
 
