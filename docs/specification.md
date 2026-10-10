@@ -218,6 +218,12 @@ Incoming push monitor heartbeat records.
 | `POST /api/containers/prune/selective` | Admin | **Selective Dry-Run Prune:** Granular deletion of chosen containers, images, volumes, and build cache |
 | `GET /api/containers/{id}/inspect` | Auth | **Inspect Details:** Complete low-level configuration, env vars, port mappings, networks, and storage mounts |
 | `POST /api/containers/{id}/update` | Admin | **Live Resource Tuning:** Zero-downtime CPU (`NanoCpus`), RAM (`Memory`), and Restart Policy update |
+| `GET /api/containers/{id}/check-update` | Auth | **OCI Digest Inspection:** Performs zero-body HEAD request checking upstream registry (Docker Hub, GHCR, Quay) for new digests |
+| `GET /api/containers/updates` | Auth | **Batch Image Update Status:** Returns list of all active containers with upstream update availability |
+| `POST /api/containers/{id}/recreate` | Admin | **One-Click Recreate:** Pulls latest image, halts previous container, and seamlessly restarts with identical parameters |
+| `GET /api/compose/{projectName}/file` | Admin | **Compose YAML Inspector:** Path-traversal sanitized retrieval of `compose.yaml` file contents |
+| `PUT /api/compose/{projectName}/file` | Admin | **Safe Compose In-Place Editor:** Updates Compose configuration file with automated `.bak` backup and optional stack restart |
+| `POST /api/hooks/deploy/{token}` | Constant-Time Token | **CI/CD Inbound Deploy Webhook:** Constant-time token verified inbound webhook triggering server deployment |
 | `GET /api/containers/tags` | Auth | List all unique environment tags applied to containers |
 | `PUT /api/containers/{id}/tags` | Admin | Update container environment tags (persisted in SQLite `service_overrides`) |
 | `POST /api/containers/{id}/start` | Admin | Start container |
@@ -255,7 +261,8 @@ Incoming push monitor heartbeat records.
 
 | Service | Interval | Function |
 |---|---|---|
-| `ContainerDiscoveryService` | 10 sec | Synchronizes container state from the Docker socket. Newly discovered containers initialize with `is_uptime_enabled = 0`; runtime state directly maps to `healthy` as long as Docker reports running |
+| `ContainerDiscoveryService` | 10 sec | Synchronizes container state from the Docker socket. Newly discovered containers initialize with `is_uptime_enabled = 0`; runtime state directly maps to `healthy` as long as Docker reports running. Detects abnormal non-zero exits to trigger recovery & crash alerts |
+| `AutoHealingService` | Event-Driven | Revives crashed containers using a thread-safe sliding window (max 2 restarts within 15 minutes) to avoid infinite flapping storms; dispatches multi-channel auto-healed alert notifications |
 | `SystemMetricsCollector` | 15 sec | Samples host CPU, RAM, disk, and network stats into `system_metrics` |
 | `UptimeCheckerService` | 5 sec (tick) / 60 sec | HTTP/TCP and ICMP ping checks, body payload assertions, proactive SSL early warnings (14d warning, 7d critical) with daily debounce memory, 3-state finite state machine (`healthy` -> `degraded` -> `down`), and Snitch checks |
 | `UpdateCheckerService` | 24 hours | Checks GitHub Releases API for updates and caches release notifications |
@@ -287,7 +294,8 @@ Incoming push monitor heartbeat records.
 |---|---|---|
 | **Dashboard** | `/` | Mobile-first 2-column KPI strip, full-width Disk bar, live system pulse hero, GitHub update checker badge, and active containers widget |
 | **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, expected body assertion, SSL expiration badge, **environment tags (`TagBadge`)**, **real-time tag filter bar (`TagFilterBar`)**, and reordering controls |
-| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, Start/Stop/Pause/Restart actions, Compose stack accordion grouping, live log terminal, **Interactive Web Terminal (`ContainerTerminalModal`)**, **Safe Two-Stage Dry-Run Prune (`SystemPruneModal`)**, **Container Detail & Inspection Modal (`ContainerDetailModal`)**, **Live Zero-Downtime Resource Tuning**, and **Container Tags & Filter Bar (`TagFilterBar`)** |
+| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, **Clickable Row Navigation (`ContainerRow`)**, **In-Row Quick Actions Toolbar (`ContainerQuickActions`)**, Start/Stop/Pause/Restart actions, **Bulk Stack Controls (`ComposeStackGroup`)**, **In-Browser YAML Editor (`ComposeConfigModal`)**, **OCI Image Update Sentinel (`ImageUpdateModal`)**, live log terminal, **Interactive Web Terminal**, **Dry-Run Disk Prune (`SystemPruneModal`)**, and **Container Tags & Filter Bar (`TagFilterBar`)** |
+| **Container Detail** | `/containers/:id` | **Dedicated Full-Page Control Center:** Standalone URL-addressable, bookmarkable, deep-linked (`?tab=`) diagnostic dashboard with live telemetry cards (CPU, RAM, Rx/Tx), **Historical Area Telemetry Charts (`ContainerHistoricalCharts`)**, full-screen streaming logs, and xterm.js interactive terminal |
 | **Uptime** | `/uptime` | Service uptime monitors, ICMP Ping, proactive SSL alerts, Dead Man's Snitch monitors, historical check logs, and incident management |
 | **System Metrics** | `/metrics` | Time-series hardware utilization charts with **1h, 6h, 12h, 24h, 7d, 30d, 90d, and 1y** periods powered by hourly rollups |
 | **Settings** | `/settings` | Single-column (`max-w-4xl`) settings shell with general options, DB storage stats, backup snapshots, **SMTP Email**, **Slack Webhook**, and **Flapping Protection** |
@@ -304,6 +312,16 @@ Incoming push monitor heartbeat records.
 - [x] Docker socket multiplexed log demuxer and live log streaming
 - [x] Multi-channel alert engine (Discord, Telegram, Ntfy, Webhook) with system-language synchronization
 - [x] Live container resource stats (CPU, RAM, Net I/O)
+- [x] Dedicated Full-Page Container Diagnostic & Telemetry Dashboard (`/containers/:id`)
+- [x] Historical Container Telemetry Charts (Recharts Area time-series CPU & RAM trend graphs)
+- [x] Docker Compose Stack Bulk Actions (Restart / Start / Stop Project)
+- [x] Container Crash-Loop & Unexpected Exit Alerting (ExitCode != 0, OOMKilled)
+- [x] OCI Registry Image Sentinel & Manifest Digest Watcher (Zero-bandwidth HEAD requests, 1-click safe recreate)
+- [x] Docker Compose YAML Inspector & Safe In-Place Browser Editor (Path traversal sanitization, automated `.bak` backups)
+- [x] Event-Driven Auto-Healing & Constant-Time Inbound Deploy Webhooks
+- [x] Case-Insensitive Container Inspect Normalization (`inspectHelpers.ts`)
+- [x] Fluid Row-Click Navigation & In-Row Quick Actions Toolbar (`ContainerQuickActions.tsx`)
+- [x] Automated CI/CD SemVer Version Detection & Git Tag / GitHub Release Publishing (`ci.yml`)
 - [x] Extended Uptime: TCP Port Ping, ICMP Ping, and proactive SSL certificate early warnings
 - [x] Dead Man's Snitch: Periodic push monitoring with auto-overdue alerting
 - [x] Unauthenticated Public Status Page (`/status` and `/api/status-page`)

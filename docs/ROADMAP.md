@@ -243,3 +243,40 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Settings UI for generating and configuring secret deploy tokens.
 * **Acceptance Criteria:** Auto-healing revives crashed containers and halts on 3rd attempt within window; deploy webhook verified; 244 unit tests passing.
 
+### Ticket 7.4 — Inspect Data Normalization, Fluid Row Actions & Automated Releases [COMPLETED]
+* **Blocked by:** Ticket 7.3 completed.
+* **Objective:** Normalize Docker inspect property casings, provide friction-free table row navigation with embedded quick actions, and automate git tag & release generation via CI/CD.
+* **Scope:**
+  - Case-insensitive safe data accessor `inspectHelpers.ts` ensuring complete display of Env, Port bindings, Docker Networks, and Mounts on `/containers/:id`.
+  - `ContainerRow.tsx` and `ContainerQuickActions.tsx` for fluid full-row click navigation, in-row quick action toolbar (Logs, Info, Activity, Terminal), and clickable published port links.
+  - `.github/workflows/ci.yml` automation to parse version from `CHANGELOG.md` on push to `main`, auto-create git tags (`vX.Y.Z`), generate GitHub Releases with notes, and build dual-tagged Docker images.
+* **Acceptance Criteria:** All environment variables and mounts visible without loss; full-row click transitions smoothly; CI automatically creates releases and tags; 244/244 unit tests green.
+
+---
+
+## Phase 8: Multi-Node Architecture & Advanced Integrations (Planned)
+
+### Ticket 8.1 — Lightweight Remote Node Monitoring (Edge Agent)
+* **Blocked by:** Phase 7 completed.
+* **Objective:** Monitor multiple remote servers (edge nodes, VPS, homelab machines) from a single centralized Corvus dashboard.
+* **Scope:**
+  - Corvus Edge Agent (single Native AOT binary, <10 MB RAM) or mTLS-secured Docker socket proxy.
+  - Multi-node selector dropdown and node-scoped container/telemetry filtering.
+* **Acceptance Criteria:** Remote nodes report telemetry to primary instance with zero measurable latency.
+
+### Ticket 8.2 — Enterprise OIDC / OAuth2 Authentication
+* **Blocked by:** Ticket 8.1.
+* **Objective:** OpenID Connect enterprise Single Sign-On via Authentik, Keycloak, Authelia, or Google Workspace.
+* **Scope:**
+  - OIDC discovery, token exchange, and claims mapping service.
+  - Group-to-role mappings (`admin` / `viewer`).
+* **Acceptance Criteria:** 1-click enterprise SSO authentication with role synchronization.
+
+### Ticket 8.3 — Advanced Container Log Search, Regex Filtering & Export
+* **Blocked by:** None.
+* **Objective:** Search live and historical container logs by timestamp, apply regex patterns, and export to `.log` or `.json`.
+* **Scope:**
+  - Time-bounded log range retrieval.
+  - Copy to clipboard and one-click export actions.
+* **Acceptance Criteria:** Instant regex filtering on large log payloads without freezing the UI.
+

@@ -41,8 +41,10 @@ corvus/
 │   │   ├── Endpoints/             # Kaynak odaklı Minimal API uç noktaları (extension metodlar)
 │   │   │   ├── AuthEndpoints.cs          # Session auth, kayıt yönetimi ve Zero-Trust SSO
 │   │   │   ├── BackupEndpoints.cs        # Tek tıkla SQLite VACUUM INTO anlık yedek indirme
-│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, kontroller, Web Terminali (/terminal), Kuru Çalıştırmalı Temizlik (/system-df, /prune/selective), Detay (/inspect), Güncelleme (/update) ve Etiketler (/tags)
+│   │   │   ├── ComposeEndpoints.cs       # Compose stack YAML okuma ve güvenli düzenleme (/api/compose/{projectName}/file)
+│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, kontroller, Web Terminali (/terminal), Kuru Çalıştırmalı Temizlik (/system-df, /prune/selective), Detay (/inspect), Güncelleme (/update), OCI İmaj Güncelleme Kontrolü (/check-update, /updates) ve Yeniden Oluşturma (/recreate)
 │   │   │   ├── DashboardEndpoints.cs     # 2.5s in-memory önbellekli Dashboard KPI özeti
+│   │   │   ├── DeployWebhookEndpoints.cs # CI/CD için sabit zamanlı güvenli dağıtım webhook'u (/api/hooks/deploy/{token})
 │   │   │   ├── IncidentEndpoints.cs      # Sistem olayları ve planlı bakım CRUD & yaşam döngüsü
 │   │   │   ├── MetricsEndpoints.cs       # Sistem donanım metrikleri zaman serisi (1h-1y)
 │   │   │   ├── NotificationEndpoints.cs  # Çok kanallı alarm test uç noktası (Discord, Telegram, SMTP, Slack, Ntfy, Webhook)
@@ -54,7 +56,7 @@ corvus/
 │   │   │   ├── UptimeEndpoints.cs        # Servis uptime denetim geçmişi, HTTP gövde doğrulaması ve ICMP ping testi
 │   │   │   └── UserEndpoints.cs          # Yönetici RBAC kullanıcı yönetimi CRUD uç noktaları (/api/users)
 │   │   ├── BackgroundServices/    # Arka plan çalışan iş parçacıkları
-│   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periyodik konteyner senkronizasyonu (10s, fingerprint & inspect cache)
+│   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periyodik konteyner senkronizasyonu (10s, fingerprint & inspect cache), beklenmedik çökme tespiti ve auto-healing tetikleyicisi
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrik toplayıcısı (15s, streaming /proc/meminfo)
 │   │   │   ├── UptimeCheckerService.cs       # 3 durumlu HTTP/TCP/Ping, gövde denetimi, proaktif SSL erken uyarısı ve Snitch denetimi
 │   │   │   ├── MemoryTrimmerBackgroundService.cs # 3dk periyotlu SQLite havuz temizliği, PRAGMA wal_checkpoint(TRUNCATE), Gen2 agresif sıkıştırma ve malloc_trim(0)
@@ -104,11 +106,14 @@ corvus/
 │   │   │   └── HttpBodyValidator.cs          # Sıfır bellek ayırmalı 64 KB sınırlı akış ve ReDoS korumalı gövde doğrulayıcı
 │   │   └── Services/                # Çekirdek iş mantığı servisleri
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler ile doğrudan Docker REST istemcisi (exec, prune, stats, logs)
-│   │       ├── DockerService.cs              # 2.5s önbellekli konteyner işlemleri, sistem temizliği (prune), toplu stats özeti ve etiket eşleme
+│   │       ├── DockerService.cs              # 2.5s önbellekli konteyner işlemleri, sistem temizliği (prune), toplu stats özeti, imaj güncelleme ve yeniden oluşturma
 │   │       ├── DockerLogDemuxer.cs           # Multiplexed Docker stdout/stderr sıfır bellek tahsisli ayrıştırıcı
+│   │       ├── OciRegistryClient.cs          # Sıfır gövdeli HEAD istekleriyle OCI registry (Docker Hub, GHCR, Quay) imaj digest denetleyicisi
+│   │       ├── ComposeFileService.cs         # Dizin aşımı korumalı ve otomatik .bak yedekli compose.yaml okuma/yazma servisi
+│   │       ├── AutoHealingService.cs         # Kayan pencereli (15dk / maks 2 deneme) döngü korumalı otomatik konteyner kurtarma motoru
 │   │       ├── IFlappingDetector.cs          # Kayan pencereli dalgalanma (flapping) algılama arayüzü
 │   │       ├── FlappingDetector.cs           # Bellek içi durum geçiş takipçisi ve alarm susturma motoru
-│   │       ├── NotificationService.cs        # SSRF korumalı, çift dilli Discord, Telegram, SMTP E-posta, Slack, Ntfy ve Webhook motoru
+│   │       ├── NotificationService.cs        # SSRF korumalı, çift dilli Discord, Telegram, SMTP E-posta, Slack, Ntfy ve Webhook motoru (çökme ve auto-heal alarmları dahil)
 │   │       ├── EventBroadcaster.cs           # Çok istemcili Channel Pub/Sub SSE olay yayıncısı
 │   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hash, kalıcı SQLite session store, RBAC ve kullanıcı yönetimi
 │   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter kimlik doğrulama & RBAC katmanı (admin/viewer koruması)
@@ -160,7 +165,11 @@ corvus/
 │       │       ├── Containers/
 │       │       │   ├── index.tsx             # Toplu stats ile çalışan sayfa yöneticisi (<250 satır)
 │       │       │   ├── ContainerList.tsx     # Duyarlı mobil kartlar ve masaüstü tablo görünümü
-│       │       │   ├── ComposeStackGroup.tsx # Docker Compose stack projeleri için akordiyon bileşeni
+│       │       │   ├── ContainerRow.tsx      # Tıklanabilir satır gezinmesi, port linkleri ve hızlı aksiyon entegrasyonu
+│       │       │   ├── ContainerQuickActions.tsx # Satır içi tek tıkla Log, İnceleme, Telemetri ve Terminal hızlı aksiyon çubuğu
+│       │       │   ├── ImageUpdateModal.tsx  # OCI registry imaj güncelleme ve tek tıkla recreate modalı
+│       │       │   ├── ComposeConfigModal.tsx # Tarayıcı içi güvenli compose.yaml editörü ve stack restart tetikleyicisi
+│       │       │   ├── ComposeStackGroup.tsx # Docker Compose stack projeleri için akordiyon bileşeni (toplu başlat/durdur/restart butonlu)
 │       │       │   ├── ContainerStatsBadges.tsx # CPU, RAM ve Ağ canlı rozetleri
 │       │       │   ├── ContainerActionButtons.tsx # Yaşam döngüsü butonları, log ve terminal tetikleyicisi
 │       │       │   ├── ContainerActionSheet.tsx # HTML prototipiyle 1:1 uyumlu akıcı alt çekmece eylem menüsü
@@ -168,8 +177,9 @@ corvus/
 │       │       │   ├── ContainerTerminalModal.tsx # Tarayıcı içi interaktif web terminali (@xterm/xterm, shell seçici, PTY resize)
 │       │       │   ├── ContainerTagsModal.tsx   # Konteyner ortam etiketi atama ve düzenleme modalı
 │       │       │   ├── SystemPruneModal.tsx     # Güvenli iki aşamalı kuru çalıştırmalı disk analizi ve temizlik modalı
-│       │       │   ├── detail/                  # Modüler konteyner detay sekmeleri
-│       │       │   │   ├── ContainerDetailModal.tsx # Üst denetleyici çok sekmeli konteyner inceleme penceresi
+│       │       │   ├── detail/                  # Modüler konteyner detay sekmeleri ve yardımcıları
+│       │       │   │   ├── inspectHelpers.ts    # Docker PascalCase vs camelCase toleranslı güvenli veri erişim normalleştiricisi
+│       │       │   │   ├── ContainerDetailModal.tsx # Modal tabanlı konteyner inceleme penceresi
 │       │       │   │   ├── ContainerOverviewTab.tsx # ID, imaj, durum, tam komut satırı ve işlem çubuğu
 │       │       │   │   ├── ContainerEnvTab.tsx      # Arama filtreli ortam değişkenleri, maskeleme ve .env kopyalama
 │       │       │   │   ├── ContainerNetworkingTab.tsx # Port eşleştirmeleri ve bağlı Docker ağ detayları
@@ -180,6 +190,14 @@ corvus/
 │       │       │       ├── PruneImagesTable.tsx     # Kullanılmayan imajlar seçim tablosu
 │       │       │       ├── PruneVolumesTable.tsx    # Yetim hacimler (veri kaybı uyarılı) seçim tablosu
 │       │       │       └── PruneBuildCacheCard.tsx  # Derleme katman önbelleği temizleme kartı
+│       │       ├── ContainerDetail/          # Bağımsız Tam Ekran Konteyner Teşhis & Detay Sayfası (/containers/:id)
+│       │       │   ├── index.tsx             # Tam ekran rota denetleyicisi, derin bağlantı (?tab=) ve telemetri orkestrasyonu
+│       │       │   ├── ContainerDetailHeader.tsx # Konteyner başlığı, durum rozeti, geri butonu ve yaşam döngüsü kontrolleri
+│       │       │   ├── ContainerTelemetryHero.tsx # Canlı CPU %, RAM kullanımı/limiti ve Ağ Rx/Tx veri akış kartları
+│       │       │   ├── ContainerHistoricalCharts.tsx # Recharts Area zaman serisi CPU ve RAM yük trendi grafikleri
+│       │       │   └── tabs/                 # Tam ekran sekmeleri
+│       │       │       ├── LogsTab.tsx       # Tam ekran canlı log izleyicisi (arama, satır seçici, auto-scroll)
+│       │       │       └── TerminalTab.tsx   # Tam ekran xterm.js interaktif web terminali (shell seçici, resize)
 │       │       ├── Dashboard/
 │       │       │   ├── index.tsx             # Konsolide Midnight v2 Dashboard orkestratörü
 │       │       │   ├── DashboardHeader.tsx   # Karşılama, canlı saat, durum nabzı ve yenileme denetimi

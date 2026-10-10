@@ -43,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - **10-Second Quick Start Promotion**: Elevated the verified single-line `docker run` command and streamlined `compose.yaml` to the immediate top of `README.md` and `README.tr.md`.
   - **The Native AOT Engineering Advantage**: Detailed the zero-CLR, Workstation GC, memory trimming, and embedded SQLite WAL runtime mechanics.
   - **Inspirations & Credits**: Formally credited open-source inspirations adhering to project credit ethics.
+  - **Comprehensive Architecture & Specification Documentation Sync**: Fully synchronized `README.md`, `README.tr.md`, `docs/architecture.md`, `docs/architecture.tr.md`, `docs/specification.md`, `docs/specification.tr.md`, `docs/ROADMAP.md`, and `docs/ROADMAP.tr.md` reflecting Phase 6, Phase 7, and Phase 8 roadmap plans.
 
 ---
 

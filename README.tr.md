@@ -168,16 +168,33 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
   - Sınırsız mod seçildiğinde disk büyümesi ve yedekleme süresi hakkında bilgilendirici akıllı uyarı.
   - SQLite dosya ve WAL boyutunu canlı takip etme (`GET /api/settings/db-stats`).
   - Veritabanı ayarını dinamik dinleyen ve temizlik sonrası `PRAGMA optimize;` çalıştıran `RetentionCleanupService`.
+- **🖥️ Bağımsız Konteyner Teşhis & Detay Paneli (`/containers/:id`):**
+  - **Tam Ekran Komuta Merkezi:** Konteyner inceleme, canlı telemetri, loglar, web terminali ve kaynak yönetimi deneyimi kısıtlı modal pencerelerden çıkarılarak doğrudan URL ile erişilebilir, yer imlerine eklenebilir ve derin bağlantılı (`?tab=`) bağımsız bir kontrol merkezine dönüştürüldü (`pages/ContainerDetail/`).
+  - **Tarihsel Telemetri Zaman Serisi Grafikleri (`ContainerHistoricalCharts.tsx`):** Recharts Area grafikleriyle çalışan konteynerin anlık ve geçmiş CPU yükünü (% vCPU) ve bellek kullanım eğilimini dinamik degrade renkler ve araç ipuçlarıyla görselleştirme.
+  - **Büyük/Küçük Harf Toleranslı Normalleştirilmiş Veri Katmanı (`inspectHelpers.ts`):** Docker daemon'ın PascalCase çıktıları ile istemci tarafındaki camelCase eşleşmesini güvenceye alarak Ortam Değişkenleri (`Env`), Dışa Açılan Portlar, Docker Ağları ve Depolama Bağlama Noktalarını (`Mounts`) eksiksiz haritalama.
+  - **Sıfır Kesintili Canlı Kaynak Güncelleme (`POST /api/containers/{id}/update`):** Konteyneri durdurmadan veya yeniden başlatmadan canlı CPU kotası (`NanoCpus`), RAM limiti (`Memory`) ve Yeniden Başlatma İlkesi (Restart Policy) değiştirme.
+  - **Entegre Canlı Log İzleyici & xterm Web Terminali:** Tam ekran xterm.js tabanlı etkileşimli kabuk (`TerminalTab.tsx`) ve kelime arama filtreli, otomatik kaydırmalı SSE log akışı (`LogsTab.tsx`).
+- **⚡ Akıcı Satır Tıklama Geçişi & Hızlı Eylemler Çubuğu (`ContainerQuickActions.tsx`):**
+  - **Tüm Satıra Tıklanabilir Doğrudan Gezinme (`ContainerRow.tsx`):** 3 nokta menüsüyle uğraşma zorunluluğu kaldırılarak tüm satır tıklanabilir hale getirildi (`hover:bg-white/[0.08] active:scale-[0.998] transition-all`); akıcı mikro-geçişle doğrudan `/containers/:id` sayfasına yönlendirir.
+  - **Satır Üstü Hızlı Eylemler Çubuğu:** Tablo satırlarına doğrudan tek tıkla Canlı Loglar (`FileText`), Konteyner İnceleme (`Info`), Telemetri ve Kaynaklar (`Activity`) ve Web Terminali (`Terminal`) sekmesini açan kompakt aksiyon seti.
+  - **Tıklanabilir Yayınlanan Portlar:** Dışa açılan portlar (`host:port ↗`) yeni tarayıcı sekmesinde doğrudan açılabilir köprü bağlantılarına dönüştürüldü.
+- **📦 OCI Registry İmaj Takipçisi & Digest İzleyici (Image Sentinel):**
+  - **Sıfır Bant Genişliği Tüketimiyle Güncelleme Tespiti (`OciRegistryClient.cs`):** Docker Hub, GitHub Container Registry (GHCR) ve Quay üzerinde `/v2/{repo}/manifests/{tag}` adreslerine sıfır gövdeli HEAD istekleri atarak büyük imaj katmanlarını indirmeden üst sürüm olup olmadığını tespit eden istemci.
+  - **Tek Tıkla Güvenli Yeniden Oluşturma (`POST /api/containers/{id}/recreate`):** Konteyner listesinde amber "Güncelleme Var" rozeti ve tek tıkla yeni imajı çekip aynı konfigürasyonla kesintisiz yeniden ayağa kaldırma (`ImageUpdateModal.tsx`).
+- **📝 Docker Compose YAML İnceleyici & Tarayıcı İçi Güvenli Düzenleyici:**
+  - **Dizin Aşımı Korumalı YAML Servisi (`ComposeFileService.cs`, `ComposeEndpoints.cs`):** Compose etiketlerinden dosya yolunu çözer, dizin aşımı (`..`) girişimlerini engeller ve diske yazmadan önce otomatik `.bak` yedeği alır.
+  - **Modüler Tarayıcı İçi Editör (`ComposeConfigModal.tsx`):** Monospace formatlama, satır sayısı, dosya boyutu göstergesi ve "Kaydet ve Stack'i Yeniden Başlat" aksiyonu.
+  - **Docker Compose Stack Toplu Eylemleri (`ComposeStackGroup.tsx`):** Proje grubu başlıklarında tek tıkla tüm stack'i Yeniden Başlatma, Başlatma ve Durdurma butonları.
+- **🛡️ Olay Güdümlü Kendi Kendini Onarma (Auto-Healing) & Gelen Dağıtım Webhook'ları:**
+  - **Döngü Korumalı Otomatik Kurtarma (`AutoHealingService.cs`):** Sıfır olmayan çıkış koduyla çöken konteynerler anında tespit edilip yeniden başlatılır; kayan pencere algoritmasıyla (15 dakikada en fazla 2 deneme) sonsuz flapping döngüleri engellenir.
+  - **Çok Kanallı Kurtarma Alarmları (`NotificationService.cs`):** Başarılı otomatik kurtarmalarda Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına anında bildirim gönderilir.
+  - **Sabit Zamanlı Gelen Dağıtım Webhook'u (`DeployWebhookEndpoints.cs`):** CI/CD boru hatları için `POST /api/hooks/deploy/{token}` uç noktası; zamanlama saldırılarına karşı `CryptographicOperations.FixedTimeEquals` ile doğrulanır.
 - **🪵 Etkileşimli Web Terminali (Exec Shell) & Canlı Log Akışı:**
   - **Tarayıcı İçi Web Terminali (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`):** Ekstra ajan veya arka plan süreci kurmadan çalışan Docker konteynerlerine doğrudan interaktif kabuk erişimi (`ArrayPool<byte>` ile sıfır bellek tahsisatlı, 8 KB sabit tamponlu WebSocket proxy).
-  - Windows pipe kilitlenmeleri çözülmüş, kesintisiz çift yönlü klavye akışı, otomatik kabuk zinciri, tam ANSI 256 renk (`TERM=xterm-256color`) ve sıkı RBAC koruması (`[RequireAdmin]`, 403 Forbidden).
+  - Windows pipe kilitlenmeleri çözülmüş, anlık stdin akış boşaltmalı (`FlushAsync`), dinamik UTF-8 el sıkışmalı, tam ANSI 256 renk (`TERM=xterm-256color`) ve sıkı RBAC koruması (`[RequireAdmin]`, 403 Forbidden).
   - Docker stdout/stderr akışları için sıfır bellek ayırmalı (zero-alloc) ayrıştırıcı (`DockerLogDemuxer.cs`).
-  - Koyu temalı terminal modalı, anahtar kelime filtreleme ve otomatik kaydırma ile Server-Sent Events (`/api/containers/{id}/logs/stream`) akışı.
-- **⚡ Konteyner Detay İnceleme, Sıfır Kesintili Kaynak Güncelleme & Güvenli Kuru Çalıştırmalı Temizlik:**
-  - **Konteyner Detay Modalı (`ContainerDetailModal.tsx`):** Konteyner adına veya ayar simgesine tıklayarak 5 bağımsız sekmede (Genel Bakış, Gizlenebilir Ortam Değişkenleri & `.env` kopyalama, Portlar & Docker Ağları, Disk/Volume Bağlamaları, Kaynak Yönetimi) tam denetim.
-  - **Sıfır Kesintili Kaynak Güncelleme (`POST /api/containers/{id}/update`):** Konteyneri durdurmadan veya yeniden başlatmadan canlı CPU çekirdeği (`NanoCpus`), RAM limiti (`Memory`) ve Yeniden Başlatma İlkesi (Restart Policy) değiştirme.
-  - **Güvenli Kuru Çalıştırmalı Sistem Temizliği (`SystemPruneModal.tsx`):** Docker `GET /system/df` ile disk analizini önceden yaparak kazanılacak alanı hesaplar; Durdurulmuş Konteynerler, Kullanılmayan İmajlar, Yetim Volumeler (veri kaybı uyarılı) ve Build Cache kalemlerini tablo tablo seçtirerek güvenle temizler (`POST /api/containers/prune/selective`).
-  - **Compose Stack Gruplaması:** Düz liste ile katlanabilir Docker Compose projeleri (`com.docker.compose.project`) arasında tek tıkla geçiş.
+- **⚡ Güvenli Kuru Çalıştırmalı Sistem Temizliği (System Prune):**
+  - **Güvenli Disk Temizliği (`SystemPruneModal.tsx`):** Docker `GET /system/df` ile disk analizini önceden yaparak kazanılacak alanı hesaplar; Durdurulmuş Konteynerler, Kullanılmayan İmajlar, Yetim Volumeler (veri kaybı uyarılı) ve Build Cache kalemlerini tablo tablo seçtirerek güvenle temizler (`POST /api/containers/prune/selective`).
 - **🔔 Çok Kanallı Alarm Motoru & Dalgalanma (Flapping) Koruması:**
   - Sekmeli yapılandırma: **Discord**, **Telegram**, **E-posta (SMTP)**, **Slack Webhook**, **Ntfy / Gotify** ve **Özel Webhook** kanalları.
   - **Akıllı Dalgalanma Engelleme (`IFlappingDetector`):** Hızlı durum değişimlerinde alarm kirliliğini ve yorgunluğunu önler; tek bir Dalgalanma Uyarısı (Amber) ve Kararlılık/Kurtarma (Yeşil) bildirimi gönderir.

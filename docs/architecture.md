@@ -30,8 +30,10 @@ corvus/
 │   │   ├── Endpoints/             # Resource-oriented Minimal API endpoints (extension methods)
 │   │   │   ├── AuthEndpoints.cs          # Session auth, registration toggle, and Zero-Trust SSO
 │   │   │   ├── BackupEndpoints.cs        # One-click SQLite VACUUM INTO snapshot download
-│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, lifecycle, Web Terminal (/terminal), Dry-Run Prune (/system-df, /prune/selective), Inspect (/inspect), Update (/update), and Tags (/tags)
+│   │   │   ├── ComposeEndpoints.cs       # Compose stack YAML retrieval and safe editor (/api/compose/{projectName}/file)
+│   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, lifecycle, Web Terminal (/terminal), Dry-Run Prune (/system-df, /prune/selective), Inspect (/inspect), Update (/update), OCI Image Update Check (/check-update, /updates), and Recreate (/recreate)
 │   │   │   ├── DashboardEndpoints.cs     # Dashboard aggregated KPI summary
+│   │   │   ├── DeployWebhookEndpoints.cs # Constant-time token authenticated inbound deploy webhook (/api/hooks/deploy/{token})
 │   │   │   ├── IncidentEndpoints.cs      # Incident and maintenance announcement CRUD & lifecycle
 │   │   │   ├── MetricsEndpoints.cs       # Host system metrics time-series (1h-1y)
 │   │   │   ├── NotificationEndpoints.cs  # Multi-channel alert test endpoint (Discord, Telegram, SMTP, Slack, Ntfy, Webhooks)
@@ -43,7 +45,7 @@ corvus/
 │   │   │   ├── UptimeEndpoints.cs        # Service uptime check history, HTTP body assertion, and ICMP ping diagnostics
 │   │   │   └── UserEndpoints.cs          # Administrator RBAC user management CRUD endpoints (/api/users)
 │   │   ├── BackgroundServices/    # Continuous background worker threads
-│   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periodic container discovery (10s)
+│   │   │   ├── ContainerDiscoveryService.cs  # Docker socket periodic container discovery (10s), crash detection, and auto-healing trigger
 │   │   │   ├── SystemMetricsCollector.cs     # Host CPU/RAM/Disk/Net metrics sampler (15s)
 │   │   │   ├── UptimeCheckerService.cs       # 3-state HTTP/TCP/ICMP ping, body assertions, proactive SSL early warnings, and Snitch checks
 │   │   │   ├── MemoryTrimmerBackgroundService.cs # Periodic native memory trimming, PRAGMA wal_checkpoint(TRUNCATE), Gen2 compaction & malloc_trim
@@ -93,11 +95,14 @@ corvus/
 │   │   │   └── HttpBodyValidator.cs          # Zero-allocation 64 KB bounded stream content validator with ReDoS timeout
 │   │   └── Services/                # Core domain business logic
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler direct socket client (exec, prune, stats, logs)
-│   │       ├── DockerService.cs              # Container operations, system prune, stats, and label parsing
+│   │       ├── DockerService.cs              # Container operations, system prune, stats, label parsing, image update & recreate
 │   │       ├── DockerLogDemuxer.cs           # Zero-alloc multiplexed Docker stdout/stderr demuxer
+│   │       ├── OciRegistryClient.cs          # Zero-payload HEAD request OCI registry (Docker Hub, GHCR, Quay) digest checker
+│   │       ├── ComposeFileService.cs         # Path-traversal sanitized and automatic .bak backup Compose YAML service
+│   │       ├── AutoHealingService.cs         # Thread-safe sliding-window (max 2 restarts / 15m) container auto-recovery engine
 │   │       ├── IFlappingDetector.cs          # Sliding-window flapping detection interface
 │   │       ├── FlappingDetector.cs           # In-memory sliding-window transition tracker & alert debounce engine
-│   │       ├── NotificationService.cs        # Multi-channel alert dispatcher (Discord, Telegram, SMTP Email, Slack, Ntfy, Webhook)
+│   │       ├── NotificationService.cs        # Multi-channel alert dispatcher (Discord, Telegram, SMTP Email, Slack, Ntfy, Webhook, crash alerts)
 │   │       ├── EventBroadcaster.cs           # Bounded Channel SSE real-time event publisher
 │   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hashing, persistent SQLite session store & RBAC
 │   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter authentication & RBAC authorization layer
@@ -149,7 +154,11 @@ corvus/
 │       │       ├── Containers/
 │       │       │   ├── index.tsx             # Page orchestrator & state manager (<250 lines)
 │       │       │   ├── ContainerList.tsx     # Responsive mobile cards and desktop table
-│       │       │   ├── ComposeStackGroup.tsx # Collapsible Docker Compose stack accordions
+│       │       │   ├── ContainerRow.tsx      # Clickable row navigation, port links, and in-row action integration
+│       │       │   ├── ContainerQuickActions.tsx # In-row 1-click Logs, Info, Activity, and Terminal quick actions toolbar
+│       │       │   ├── ImageUpdateModal.tsx  # OCI registry image update indicator & 1-click recreate modal
+│       │       │   ├── ComposeConfigModal.tsx # In-browser Compose YAML editor & stack restart trigger
+│       │       │   ├── ComposeStackGroup.tsx # Collapsible Docker Compose stack accordions with bulk lifecycle buttons
 │       │       │   ├── ContainerStatsBadges.tsx # Real-time CPU, RAM, Net I/O badges
 │       │       │   ├── ContainerActionButtons.tsx # Lifecycle controls, log viewer, and web terminal trigger
 │       │       │   ├── ContainerActionSheet.tsx # 1:1 HTML prototype-aligned fluid bottom action sheet
@@ -157,8 +166,9 @@ corvus/
 │       │       │   ├── ContainerTerminalModal.tsx # Interactive in-browser web terminal (@xterm/xterm, shell selector, PTY resize)
 │       │       │   ├── ContainerTagsModal.tsx   # Container environment tag assignment modal
 │       │       │   ├── SystemPruneModal.tsx     # Safe two-stage dry-run disk space audit and cleanup dialog
-│       │       │   ├── detail/                  # Modular container detail tabs
-│       │       │   │   ├── ContainerDetailModal.tsx # Orchestrator multi-tab container inspection dialog
+│       │       │   ├── detail/                  # Modular container detail tabs and utilities
+│       │       │   │   ├── inspectHelpers.ts    # Docker PascalCase vs camelCase case-insensitive property normalizer
+│       │       │   │   ├── ContainerDetailModal.tsx # Multi-tab container inspection dialog
 │       │       │   │   ├── ContainerOverviewTab.tsx # ID, image, state, command, and quick actions toolbar
 │       │       │   │   ├── ContainerEnvTab.tsx      # Searchable env vars with secret masking toggle & .env copy
 │       │       │   │   ├── ContainerNetworkingTab.tsx # Port bindings and attached Docker network details
@@ -169,6 +179,14 @@ corvus/
 │       │       │       ├── PruneImagesTable.tsx     # Unused images audit table with size indicators
 │       │       │       ├── PruneVolumesTable.tsx    # Orphaned volumes table with data-loss warning banner
 │       │       │       └── PruneBuildCacheCard.tsx  # Docker build cache reclaim card
+│       │       ├── ContainerDetail/          # Dedicated Full-Page Container Dashboard (/containers/:id)
+│       │       │   ├── index.tsx             # Full-screen route orchestrator with deep-linking (?tab=)
+│       │       │   ├── ContainerDetailHeader.tsx # Container header, status badge, back navigation & lifecycle controls
+│       │       │   ├── ContainerTelemetryHero.tsx # Live CPU %, RAM load/limit, and Network Rx/Tx metric cards
+│       │       │   ├── ContainerHistoricalCharts.tsx # Recharts Area historical time-series CPU & RAM trend charts
+│       │       │   └── tabs/                 # Full-screen tab implementations
+│       │       │       ├── LogsTab.tsx       # Full-screen streaming logs viewer (search, line limits, auto-scroll)
+│       │       │       └── TerminalTab.tsx   # Full-screen xterm.js interactive terminal (shell selector, dynamic PTY resize)
 │       │       ├── Dashboard/
 │       │       │   ├── index.tsx             # Consolidated Midnight v2 Dashboard orchestrator
 │       │       │   ├── DashboardHeader.tsx   # Greeting, live clock, status dot, and refresh control

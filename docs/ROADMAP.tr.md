@@ -242,3 +242,40 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - Sabit zamanlı (constant-time token) güvenli gelen dağıtım webhook uç noktası (`POST /api/hooks/deploy/{token}`).
   - Ayarlar arayüzünde (`GeneralSettingsTab.tsx`) gizli token oluşturma ve yapılandırma alanı.
 * **Kabul Kriteri:** Çöken konteynerlerin otomatik kurtarılması ve 3. çöküşte döngü engeli konulması; dağıtım webhook doğrulaması; 244 birim testin yeşil olması.
+
+### Bilet 7.4 — İnceleme Normalizasyonu, Hızlı Eylemler & Otomatik Sürümleme [TAMAMLANDI]
+* **Önkoşul:** Bilet 7.3 tamamlandı.
+* **Amaç:** Konteyner detaylarındaki eksik alanları gidermek, gezinmeyi akıcı hale getirmek ve git tag / GitHub release sürecini tam otomatik CI/CD akışına bağlamak.
+* **Kapsam:**
+  - `inspectHelpers.ts` ile Docker PascalCase vs camelCase toleranslı normalleştirici; Çevre değişkenleri (`Env`), Portlar, Ağlar ve Mounts verilerinin `/containers/:id` ekranında eksiksiz gösterimi.
+  - `ContainerRow.tsx` ve `ContainerQuickActions.tsx` ile tüm satırın tıklanabilir olması, satır içi 1-tıkla Log, İnceleme, Telemetri ve Terminal sekmelerine geçiş ve dışa açılan port köprü bağlantıları.
+  - `.github/workflows/ci.yml` üzerinden `main` dalına push yapıldığında `CHANGELOG.md` sürümünü algılayıp otomatik git tag (`vX.Y.Z`) oluşturma, notları ayıklayıp GitHub Release yayınlama ve çift tag'li Docker imajı derleme.
+* **Kabul Kriteri:** `/containers/:id` detay sayfasında tüm ortam değişkenleri ve mountların eksiksiz görünmesi; satır tıklamalarının sorunsuz çalışması; CI üzerinde otomatik etiket ve sürüm oluşturulması; tüm birim testlerin geçmesi (244/244).
+
+---
+
+## Faz 8: Çoklu Node (Remote Agent) & İleri Düzey Entegrasyonlar (Planlanıyor)
+
+### Bilet 8.1 — Hafif Remote Node / Sunucu Ajanı (Remote Node Monitoring)
+* **Önkoşul:** Faz 7 tamamlandı.
+* **Amaç:** Tek bir merkezi Corvus kontrol panelinden birden fazla uzak sunucuyu (edge nodes, VPS'ler, homelab cihazları) hafif AOT binary veya Docker soket vekili ile izleyebilmek.
+* **Kapsam:**
+  - Corvus Edge Agent (tek binary, <10 MB RAM) veya mTLS tabanlı Docker soket tüneli.
+  - Çoklu node seçici arayüzü ve node bazında konteyner/sistem metrikleri filtreleme.
+* **Kabul Kriteri:** Uzak sunucuların merkezi paneline bağlanarak gecikmesiz izlenebilmesi.
+
+### Bilet 8.2 — OIDC / OAuth2 Kurumsal Kimlik Doğrulama
+* **Önkoşul:** Bilet 8.1.
+* **Amaç:** Authentik, Keycloak, Authelia veya Google Workspace ile OpenID Connect tabanlı kurumsal oturum açma.
+* **Kapsam:**
+  - OIDC discovery, token değişimi ve claims eşleştirme servisi.
+  - RBAC rolleriyle (`admin` / `viewer`) grup haritalandırması.
+* **Kabul Kriteri:** SSO üzerinden tek tıkla güvenli giriş ve yetkilendirme.
+
+### Bilet 8.3 — Gelişmiş Log Arama, Regex Filtreleme & Dışa Aktarma
+* **Önkoşul:** Yok.
+* **Amaç:** Canlı konteyner loglarında zaman aralığına göre arama, regex süzme ve `.log` / `.json` olarak tek tıkla dışa aktarma.
+* **Kapsam:**
+  - Tarih ve saat filtreli log sorgulama motoru.
+  - Panoya kopyalama ve tek tıkla dosya indirme aksiyonları.
+* **Kabul Kriteri:** Büyük log çıktılarında arama ve filtrelemenin tarayıcıyı dondurmadan çalışması.

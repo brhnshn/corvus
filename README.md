@@ -172,16 +172,33 @@ Corvus is built from the ground up to challenge the misconception that modern en
   - Informative disk-growth advisories when selecting Unlimited mode.
   - Real-time database disk footprint tracking (`GET /api/settings/db-stats`).
   - Dynamic background cleaner (`RetentionCleanupService`) with SQLite `PRAGMA optimize;`.
+- **🖥️ Dedicated Full-Page Container Dashboard (`/containers/:id`):**
+  - **URL-Addressable Full-Screen Control Center:** Migrated container inspection, live telemetry, streaming logs, web terminal, and resource management out of cramped popups into a dedicated full-page dashboard with deep-linking (`?tab=`) support (`pages/ContainerDetail/`).
+  - **Historical Telemetry Time-Series Charts (`ContainerHistoricalCharts.tsx`):** Responsive Recharts Area charts rendering real-time CPU % load and memory usage trends with dynamic color degradation, custom tooltips, and memory limit context.
+  - **Case-Insensitive Normalized Data Accessor (`inspectHelpers.ts`):** Bridges Docker daemon PascalCase properties with client-side camelCase structures, ensuring complete and error-free display of Environment Variables (`Env`), Exposed Port Bindings, Connected Docker Networks, and Storage Volume Mounts.
+  - **Zero-Downtime Live Resource Tuning (`POST /api/containers/{id}/update`):** Dynamically adjust CPU cores (`NanoCpus`), RAM limits (`Memory`), and Restart Policies without stopping or restarting the container.
+  - **Integrated Live Logs & Interactive xterm Terminal:** Full-screen xterm.js interactive shell (`TerminalTab.tsx`) and keyword-filtered, auto-scrolling SSE log viewer (`LogsTab.tsx`).
+- **⚡ Fluid Row-Click Navigation & Quick Actions Toolbar (`ContainerQuickActions.tsx`):**
+  - **Whole-Row Direct Click Navigation (`ContainerRow.tsx`):** Replaced 3-dots menu friction with full-row clickability featuring subtle micro-interaction transitions (`hover:bg-white/[0.08] active:scale-[0.998] transition-all`), navigating straight into `/containers/:id`.
+  - **In-Row Quick Actions Toolbar:** 1-click icon buttons directly on table rows for instant navigation into Live Logs (`FileText`), Container Overview (`Info`), Telemetry & Resource Limits (`Activity`), and Web Terminal (`Terminal`).
+  - **Clickable Published Ports:** External published ports (`host:port ↗`) behave as direct anchor links opening in a new browser tab with event bubbling isolation.
+- **📦 OCI Registry Image Sentinel & Digest Tracking:**
+  - **Zero-Bandwidth Manifest Inspection (`OciRegistryClient.cs`):** Performs zero-byte HEAD requests to `/v2/{repo}/manifests/{tag}` against Docker Hub, GitHub Container Registry (GHCR), and Quay to detect upstream image releases without downloading heavy layers.
+  - **One-Click Safe Recreate (`POST /api/containers/{id}/recreate`):** Amber "Update Available" indicator badge across container lists and 1-click recreate modal (`ImageUpdateModal.tsx`) pulling the latest image and seamlessly re-spawning the container with identical configuration.
+- **📝 Docker Compose YAML Inspector & Safe In-Place Editor:**
+  - **Path-Traversal Protected YAML Service (`ComposeFileService.cs`, `ComposeEndpoints.cs`):** Resolves Compose files via container labels, strictly blocks directory traversal (`..`), and automatically takes timestamped `.bak` backups before writing to disk.
+  - **Modular In-Browser Editor (`ComposeConfigModal.tsx`):** Monospace YAML editor with line counts, file size indicators, and "Save & Restart Stack" capabilities.
+  - **Docker Compose Stack Bulk Actions (`ComposeStackGroup.tsx`):** Bulk Restart Stack, Start Stack, and Stop Stack actions directly on Compose project headers.
+- **🛡️ Event-Driven Auto-Healing & Inbound Deploy Webhooks:**
+  - **Loop-Guarded Container Auto-Recovery (`AutoHealingService.cs`):** Revives crashed containers upon abnormal exit codes (ExitCode != 0, OOMKilled), guarded by a thread-safe sliding window (max 2 restarts within 15 minutes) to avoid infinite flapping loops.
+  - **Instant Recovery Notifications (`NotificationService.cs`):** Multi-channel alerts dispatched across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks on successful auto-restart.
+  - **Constant-Time Inbound Deploy Webhook (`DeployWebhookEndpoints.cs`):** CI/CD deploy webhook endpoint (`POST /api/hooks/deploy/{token}`) verified via cryptographic constant-time comparison (`CryptographicOperations.FixedTimeEquals`).
 - **🪵 Interactive Web Terminal (Exec Shell) & Log Streaming:**
   - **In-Browser Web Terminal (`/bin/bash` -> `/bin/sh` -> `/bin/ash` -> `sh`):** Interactive shell access directly into running containers via zero-allocation ASP.NET Core Native AOT WebSocket proxy (`ArrayPool<byte>`, 8 KB static buffer footprint).
-  - Unfrozen bidirectional keyboard streaming with Win32 pipe deadlocks resolved, automatic fallback shell chain, ANSI 256-color support (`TERM=xterm-256color`), dynamic PTY resizing, and strict RBAC protection (`[RequireAdmin]`, 403 Forbidden).
+  - Unfrozen bidirectional keyboard streaming with Win32 pipe deadlocks resolved, immediate stdin stream flushing (`FlushAsync`), dynamic UTF-8 handshake calculations, ANSI 256-color support (`TERM=xterm-256color`), and strict RBAC protection (`[RequireAdmin]`, 403 Forbidden).
   - Zero-allocation multiplexed demuxer (`DockerLogDemuxer.cs`) for Docker stdout/stderr streams.
-  - Real-time Server-Sent Events (`/api/containers/{id}/logs/stream`) with dark monospace terminal modal, keyword filtering, and auto-scroll.
-- **⚡ Container Detail Inspection, Zero-Downtime Resource Tuning & Safe Dry-Run Prune:**
-  - **Container Detail Modal (`ContainerDetailModal.tsx`):** Click container names or the sliders button to inspect container configuration across 5 dedicated modular tabs: Overview, Environment Variables (with secret masking & `.env` export), Port Bindings & Networks, Storage Volume Mounts, and Resource Tuning.
-  - **Live Resource Updates (`POST /api/containers/{id}/update`):** Dynamically adjust CPU cores (`NanoCpus`), RAM limits (`Memory`), and Restart Policies without stopping or restarting the container.
-  - **Safe Dry-Run System Prune (`SystemPruneModal.tsx`):** Audits reclaimable disk space first via Docker `GET /system/df` with itemized tables for Stopped Containers, Unused Images, Orphaned Volumes (safeguarded by default with data-loss warnings), and Build Cache before selective deletion (`POST /api/containers/prune/selective`).
-  - **Compose Stack Grouping:** Toggle between flat list and collapsible Docker Compose projects (`com.docker.compose.project`).
+- **⚡ Safe Dry-Run System Prune (`SystemPruneModal.tsx`):**
+  - Audits reclaimable disk space first via Docker `GET /system/df` with itemized tables for Stopped Containers, Unused Images, Orphaned Volumes (safeguarded by default with data-loss warnings), and Build Cache before selective deletion (`POST /api/containers/prune/selective`).
 - **🔔 Multi-Channel Alerting Engine & Flapping Protection:**
   - Tabbed notification configuration: **Discord**, **Telegram**, **Email (SMTP)**, **Slack Webhooks**, **Ntfy / Gotify**, and **Generic Webhooks**.
   - **Intelligent Flapping Suppression (`IFlappingDetector`):** Sliding-window transition tracking suppresses alert spam during intermittent flapping, dispatching single warning (Amber) and resolved (Green) notifications.

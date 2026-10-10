@@ -44,6 +44,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - **Otantik Mühendislik & Mimari Kapsam**: Şişirilmemiş somut verilerle "Mimari Kapsam ve Felsefe" karşılaştırma tablosu ve sıfır-CLR, Workstation GC, bellek kompaktörü ile gömülü SQLite WAL çalışma prensiplerini açıklayan "Native AOT Mühendislik Avantajı" bölümü eklendi.
   - **Resmi Konteyner Registry Uyumu**: Şablon imaj adları resmi GitHub Container Registry adresi (`ghcr.io/brhnshn/corvus:latest`) ile güncellendi.
   - **İlham Kaynakları & Teşekkür**: Açık kaynak saygı ve ilham etiği kurallarına uygun olarak referans projeler resmi listeye eklendi.
+  - **Kapsamlı Mimari & Şartname Dokümantasyonu Senkronizasyonu**: `README.md`, `README.tr.md`, `docs/architecture.md`, `docs/architecture.tr.md`, `docs/specification.md`, `docs/specification.tr.md`, `docs/ROADMAP.md` ve `docs/ROADMAP.tr.md` dosyaları; Faz 6, Faz 7 ve Faz 8 yol haritasını yansıtacak şekilde baştan sona eksiksiz güncellendi.
 
 ---
 

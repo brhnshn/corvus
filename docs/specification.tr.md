@@ -218,6 +218,12 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 | `POST /api/containers/prune/selective` | Admin | **Seçimli Kuru Çalıştırmalı Temizlik:** Seçilen durdurulmuş konteyner, imaj, yetim hacim ve derleme önbelleklerini temizler |
 | `GET /api/containers/{id}/inspect` | Auth | **Konteyner Detayları:** Derinlemesine yapılandırma, ortam değişkenleri, portlar, ağlar ve disk bağlama noktaları |
 | `POST /api/containers/{id}/update` | Admin | **Sıfır Kesintili Kaynak Güncelleme:** Canlı CPU (`NanoCpus`), RAM (`Memory`) ve Yeniden Başlatma İlkesi düzenleme |
+| `GET /api/containers/{id}/check-update` | Auth | **OCI Digest Kontrolü:** İlgili konteynerin upstream OCI registry'de (Docker Hub, GHCR, Quay) yeni sürümü olup olmadığını sıfır veri transferiyle sorgular |
+| `GET /api/containers/updates` | Auth | **Toplu İmaj Güncellemeleri:** Tüm çalışan konteynerlerin imaj güncelleme durum listesini döner |
+| `POST /api/containers/{id}/recreate` | Admin | **Tek Tıkla Yeniden Oluşturma:** Yeni imajı çeker, eski konteyneri durdurur ve aynı konfigürasyonla kesintisiz yeniden ayağa kaldırır |
+| `GET /api/compose/{projectName}/file` | Admin | **Compose YAML İnceleyici:** Dizin aşımı korumalı `compose.yaml` dosya içeriğini okur |
+| `PUT /api/compose/{projectName}/file` | Admin | **Güvenli Compose Düzenleyici:** Compose dosyasını günceller, otomatik `.bak` yedeği alır ve isteğe bağlı stack'i yeniden başlatır |
+| `POST /api/hooks/deploy/{token}` | Sabit Zamanlı Token | **CI/CD Dağıtım Webhook'u:** Sabit zamanlı kriptografik token ile güvenli gelen dağıtım tetikleyicisi |
 | `GET /api/containers/tags` | Auth | Konteynerlere atanmış tüm tekil etiketleri listeler |
 | `PUT /api/containers/{id}/tags` | Admin | Konteyner ortam etiketlerini günceller (SQLite `service_overrides` ile kalıcı saklanır) |
 | `POST /api/containers/{id}/start` | Admin | Konteyneri başlatır |
@@ -255,7 +261,8 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 
 | Servis | Periyot | İş |
 |---|---|---|
-| `ContainerDiscoveryService` | 10 sn | Docker socket'ten container listesini senkronize eder. Keşfedilen yeni konteynerler `is_uptime_enabled = 0` olarak başlatılır; Docker running olduğu sürece durumları `healthy` senkronize edilir |
+| `ContainerDiscoveryService` | 10 sn | Docker socket'ten container listesini senkronize eder. Keşfedilen yeni konteynerler `is_uptime_enabled = 0` olarak başlatılır; Docker running olduğu sürece durumları `healthy` senkronize edilir. Sıfır olmayan çıkış koduyla duran konteynerleri tespit edip kurtarma/alarm sürecini tetikler |
+| `AutoHealingService` | Olay Güdümlü | Sıfır olmayan çıkış koduyla çöken konteynerleri thread-safe kayan pencere algoritmasıyla (15 dakikada en fazla 2 kurtarma) otomatik yeniden başlatır; flapping döngülerini engeller ve kurtarma alarmları gönderir |
 | `SystemMetricsCollector` | 15 sn | Host CPU/RAM/disk/network ölçer, `system_metrics` tablosuna yazar |
 | `UptimeCheckerService` | 5 sn (tick) / 60 sn | HTTP/TCP ve ICMP ping denetimleri, gövde içeriği doğrulaması, proaktif SSL erken uyarıları (14g ve 7g), durum geçiş takibi (`healthy` -> `degraded` -> `down`) ve Snitch denetimi |
 | `UpdateCheckerService` | 24 saat | GitHub Releases API'sini sorgulayarak yeni sürüm kontrolü yapar, güncelleme bildirimlerini önbelleğe alır |
@@ -287,7 +294,8 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 |---|---|---|
 | **Dashboard** | `/` | Mobil-öncelikli 2 sütunlu KPI şeridi, tam genişlikte Disk barı, canlı sistem nabzı, GitHub sürüm rozeti ve aktif konteynerler widget'ı |
 | **Servisler** | `/services` | Servis kartları, durum rozetleri, TCP/ICMP PING port göstergeleri, HTTP gövde doğrulaması, SSL kalan gün rozeti, **ortam etiketleri (`TagBadge`)**, **anlık etiket filtreleme çubuğu (`TagFilterBar`)**, yukarı/aşağı sıralama butonları |
-| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, Start/Stop/Pause/Restart aksiyonları, Compose Stack akordeon gruplaması, canlı log terminali, **İnteraktif Web Terminali (`ContainerTerminalModal`)**, **Güvenli İki Aşamalı Kuru Çalıştırmalı Temizlik (`SystemPruneModal`)**, **Konteyner Detay & İnceleme Modalı (`ContainerDetailModal`)**, **Canlı Sıfır Kesintili Kaynak Güncelleme** ve **Konteyner Etiketleme & Filtreleme (`TagFilterBar`)** |
+| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, **Tıklanabilir Satır Gezinmesi (`ContainerRow`)**, **Satır İçi Hızlı Aksiyonlar (`ContainerQuickActions`)**, Start/Stop/Pause/Restart aksiyonları, **Toplu Stack Butonları (`ComposeStackGroup`)**, **Tarayıcı İçi YAML Editörü (`ComposeConfigModal`)**, **OCI İmaj Güncelleme Takibi (`ImageUpdateModal`)**, canlı log terminali, **İnteraktif Web Terminali**, **Kuru Çalıştırmalı Disk Temizliği (`SystemPruneModal`)**, **Konteyner Etiketleme & Filtreleme (`TagFilterBar`)** |
+| **Konteyner Detay** | `/containers/:id` | **Tam Ekran Komuta Merkezi:** Bağımsız URL ile erişilebilir, yer imlerine eklenebilir, derin bağlantılı (`?tab=`) kontrol paneli; canlı CPU %, RAM, Ağ Rx/Tx metrik kartları, **Tarihsel Telemetri Area Grafikleri (`ContainerHistoricalCharts`)**, tam ekran loglar ve xterm.js web terminali |
 | **Uptime & Snitch** | `/uptime` | 3 durumlu sağlık takibi, HTTP/TCP/Ping yanıt süreleri geçmişi, proaktif SSL alarmları, Dead Man's Snitch ve sistem olayları / planlı bakım duyuru sekmesi |
 | **Sistem Metrikleri**| `/metrics` | **1h, 6h, 12h, 24h, 7d, 30d, 90d ve 1y** aralıklarında saatlik rollup destekli CPU, RAM, Disk ve Ağ I/O grafikleri |
 | **Ayarlar** | `/settings` | Tek kolonlu (`max-w-4xl`) ferah düzen, başlık sürüm rozeti, sekmeli alarm yapılandırması (**Discord, Telegram, SMTP E-posta, Slack Webhook, Ntfy, Webhook**), çift yönlü yedekleme, **Dalgalanma Koruması** ve esnek veri saklama |
@@ -311,6 +319,16 @@ Push monitor üzerinden gelen son yedekleme sinyalleri.
 - [x] Servis & Konteyner Ortam Etiketleme / Gruplama (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`, konteyner etiketleri)
 - [x] HTTP Yanıt Gövdesi (Kelime & Regex) Doğrulaması
 - [x] Konteyner başına canlı kaynak kullanımı (Docker Stats: CPU, RAM, Net I/O)
+- [x] Bağımsız Tam Ekran Konteyner Detay & Teşhis Sayfası (`/containers/:id`, derin bağlantı ve telemetri paneli)
+- [x] Konteyner Tarihsel Telemetri Grafikleri (Recharts Area zaman serisi CPU & RAM yük trendi)
+- [x] Docker Compose Stack Toplu Eylemleri (Toplu Başlat/Durdur/Yeniden Başlat)
+- [x] Konteyner Beklenmedik Kapanma & Crash-Loop Alarmları (ExitCode != 0, OOMKilled)
+- [x] OCI Registry İmaj Güncelleme Sentinel & Digest İzleyici (HEAD istekleriyle katman indirmeden tespit, 1-tıkla recreate)
+- [x] Docker Compose YAML İnceleyici & Tarayıcı İçi Güvenli Düzenleyici (Dizin aşımı korumalı, otomatik .bak yedeği)
+- [x] Olay Güdümlü Kendi Kendini Onarma (Auto-Healing) ve Sabit Zamanlı CI/CD Dağıtım Webhook'ları
+- [x] Konteyner İnceleme Verisi Normalizasyonu & Eksik Alan Onarımları (`inspectHelpers.ts`)
+- [x] Akıcı Satır Tıklama & Hızlı Eylemler Çubuğu (`ContainerQuickActions.tsx`)
+- [x] Otomatik CI/CD Sürüm Algılama & Git Tag / Release Otomasyonu (`ci.yml`)
 - [x] Genişletilmiş Uptime: TCP Port Ping, ICMP Ping ve SSL Sertifika erken uyarıları
 - [x] Dead Man's Snitch: Beklenen periyotlu push monitörü ve otomatik gecikme alarmları
 - [x] Halka Açık / Şifresiz Durum Sayfası (`/status` ve `/api/status-page`)
