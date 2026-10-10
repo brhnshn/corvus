@@ -160,7 +160,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
     { id: 'networking' as const, label: t('containers.tabNetworking') || 'Ağ & Portlar', icon: Network },
     { id: 'storage' as const, label: t('containers.tabStorage') || 'Depolama', icon: HardDrive },
     { id: 'logs' as const, label: t('containers.tabLogs') || 'Canlı Loglar', icon: FileText },
-    { id: 'terminal' as const, label: t('containers.tabTerminal') || 'Web Terminali', icon: TerminalIcon }
+    ...(isAdmin ? [{ id: 'terminal' as const, label: t('containers.tabTerminal') || 'Web Terminali', icon: TerminalIcon }] : [])
   ];
 
   if (loading && !inspect) {
