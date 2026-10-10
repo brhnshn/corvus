@@ -9,12 +9,14 @@ import {
   User as UserIcon, 
   LogOut,
   PanelLeftClose,
+  Search,
+  History,
 } from 'lucide-react';
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
 import { LanguageSwitch } from './LanguageSwitch';
 
-export type PageId = 'dashboard' | 'services' | 'containers' | 'metrics' | 'uptime' | 'settings' | 'profile';
+export type PageId = 'dashboard' | 'services' | 'containers' | 'metrics' | 'uptime' | 'activity' | 'settings' | 'profile';
 
 interface SidebarProps {
   currentPage: PageId;
@@ -24,6 +26,7 @@ interface SidebarProps {
   onLogout?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -34,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   isCollapsed = false,
   onToggleCollapse,
+  onOpenCommandPalette,
 }) => {
   const [versionInfo, setVersionInfo] = React.useState<VersionInfo | null>(null);
   const [isStatusLinkVisible, setIsStatusLinkVisible] = React.useState<boolean>(false);
@@ -52,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'containers', label: t('nav.containers'), icon: Boxes },
     { id: 'metrics', label: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), icon: Clock },
+    { id: 'activity', label: 'Olay Geçmişi', icon: History },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ] as const;
 
@@ -96,6 +101,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {onOpenCommandPalette && (
+          <div className="pb-3 mb-2 border-b border-white/10">
+            <button
+              type="button"
+              onClick={onOpenCommandPalette}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#9ba0b5] bg-white/[0.04] hover:bg-white/[0.08] hover:text-[#eceef6] border border-white/10 transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Search className="w-3.5 h-3.5" />
+                <span>{t('common.search') || 'Komutlar...'}</span>
+              </div>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-white/10 border border-white/10 text-slate-400">
+                Ctrl K
+              </kbd>
+            </button>
+          </div>
+        )}
+
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;

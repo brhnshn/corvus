@@ -60,9 +60,14 @@ public static class ContainersEndpoints
                 CorvusJsonSerializerContext.Default.GenericApiResponse);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/restart", async (string id, IDockerService docker) =>
+        group.MapPost("/{id}/restart", async (string id, IDockerService docker, IActivityLogService? activityLogger, HttpContext httpContext) =>
         {
             var result = await docker.RestartContainerAsync(id);
+            if (result.Success)
+            {
+                var username = httpContext.User.Identity?.Name ?? "admin";
+                activityLogger?.Log(username, "container_restart", "container", id, result.Message);
+            }
             return result.Success 
                 ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container yeniden başlatıldı.")) 
                 : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden başlatılamadı."), 
@@ -70,9 +75,14 @@ public static class ContainersEndpoints
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/start", async (string id, IDockerService docker) =>
+        group.MapPost("/{id}/start", async (string id, IDockerService docker, IActivityLogService? activityLogger, HttpContext httpContext) =>
         {
             var result = await docker.StartContainerAsync(id);
+            if (result.Success)
+            {
+                var username = httpContext.User.Identity?.Name ?? "admin";
+                activityLogger?.Log(username, "container_start", "container", id, result.Message);
+            }
             return result.Success 
                 ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container başlatıldı.")) 
                 : Results.Json(new GenericApiResponse(false, result.Message ?? "Container başlatılamadı."), 
@@ -80,9 +90,14 @@ public static class ContainersEndpoints
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/stop", async (string id, IDockerService docker) =>
+        group.MapPost("/{id}/stop", async (string id, IDockerService docker, IActivityLogService? activityLogger, HttpContext httpContext) =>
         {
             var result = await docker.StopContainerAsync(id);
+            if (result.Success)
+            {
+                var username = httpContext.User.Identity?.Name ?? "admin";
+                activityLogger?.Log(username, "container_stop", "container", id, result.Message);
+            }
             return result.Success 
                 ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container durduruldu.")) 
                 : Results.Json(new GenericApiResponse(false, result.Message ?? "Container durdurulamadı."), 

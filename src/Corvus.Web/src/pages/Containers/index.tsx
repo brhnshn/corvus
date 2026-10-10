@@ -27,11 +27,13 @@ import { extractContainerTags } from './ContainerRow';
 export interface ContainersPageProps {
   isAdmin?: boolean;
   onNavigateToDetail?: (id: string, defaultTab?: string) => void;
+  initialAction?: string | null;
 }
 
 export const ContainersPage: React.FC<ContainersPageProps> = ({ 
   isAdmin = true,
-  onNavigateToDetail 
+  onNavigateToDetail,
+  initialAction
 }) => {
   const { t } = useI18n();
   const toast = useToast();
@@ -53,7 +55,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedState, setSelectedState] = useState<string | null>(null);
-  const [showPruneModal, setShowPruneModal] = useState(false);
+  const [showPruneModal, setShowPruneModal] = useState(initialAction === 'prune');
   
   // Görünüm Modu: Düz Liste vs Gruplanmış Görünüm (Compose & Akıllı Gruplar)
   const [viewMode, setViewMode] = useState<'flat' | 'compose'>('flat');

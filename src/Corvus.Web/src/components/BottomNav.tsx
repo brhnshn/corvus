@@ -7,6 +7,7 @@ import {
   Clock,
   Settings,
   User,
+  History,
   type LucideIcon,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -36,6 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
     { id: 'containers', label: t('nav.containers'), full: t('nav.containers'), icon: Boxes },
     { id: 'metrics', label: t('nav.metricsShort'), full: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), full: t('nav.uptime'), icon: Clock },
+    { id: 'activity', label: 'Geçmiş', full: 'Olay Geçmişi', icon: History },
     { id: 'settings', label: t('nav.settings'), full: t('nav.settings'), icon: Settings },
     { id: 'profile', label: t('nav.profileShort'), full: t('nav.profile'), icon: User },
   ];

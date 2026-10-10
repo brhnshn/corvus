@@ -11,6 +11,7 @@ export interface AppLayoutProps {
   username?: string | null;
   role?: string | null;
   onLogout?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -20,6 +21,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   username,
   role,
   onLogout,
+  onOpenCommandPalette,
 }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('corvus_sidebar_collapsed') === 'true';
@@ -45,6 +47,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onLogout={onLogout}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
+          onOpenCommandPalette={onOpenCommandPalette}
         />
 
         {/* Kenar Çubuğu Kapalıyken Havada Duran Corvus Logolu Açma Butonu */}

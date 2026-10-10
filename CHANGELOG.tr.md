@@ -3,6 +3,33 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.29] - 2026-10-10
+
+### Eklenenler (Added)
+- **Genel Komut Paleti (`Ctrl+K` / `Cmd+K`) & Klavye Odaklı Gezinme**:
+  - **Hafif Bulanık Arama Algoritması (`fuzzySearch.ts`)**: Sıfır dış bağımlılıkla hızlı klavye filtreleme ve karakter dizisi puanlaması.
+  - **Modüler Komut Paleti Modalı (`CommandPaletteModal.tsx`, `useCommandPalette.ts`, `commandItems.ts`)**: Klavye ok tuşları (`↑`/`↓`/`Enter`) ile Sayfalar, Konteyner Hızlı Eylemleri, Canlı Loglar, Web Terminali ve Sistem Metrikleri arasında anında geçiş.
+  - **Kenar Çubuğu Hızlı Arama Butonu (`Sidebar.tsx`)**: Masaüstü ve mobil menüde tek tıkla komut paletini açan şık arama çubuğu ve `Ctrl K` kısayol rozeti.
+- **Mikro-Animasyonlar & Yumuşak Sayfa Geçişleri**:
+  - **Akıcı Sayfa Geçiş Katmanı (`PageTransition.tsx`)**: Rota değişimlerinde 150ms hafif opaklık ve yukarı kayma geçişi (`prefers-reduced-motion` erişilebilirlik korumalı).
+  - **Kademeli Rakam Sayaç İnterpolasyonu (`useAnimatedNumber.ts`)**: Canlı telemetri ve metrik sayaçlarının sıçramadan yumuşakça akmasını sağlayan hook.
+  - **İskelet Yükleme Ekranları (`Skeleton.tsx`)**: Tablolar ve kartlar için yükleme esnasında göze batmayan modern shimmer iskelet göstergeleri.
+- **Proaktif Metrik Eşik Alarm Motoru (Faz 9)**:
+  - **SQLite Alarm Kuralları Tablosu (`014_alert_rules.sql`)**: Kullanıcı tanımlı CPU, RAM ve Disk eşik kuralları, ihlal süresi ve spam önleyici cooldown sürelerini saklayan kalıcı tablo.
+  - **Dapper Veri Erişim & Native AOT Desteği (`AlertRuleRepository.cs`, `AlertRule.cs`, `CorvusJsonSerializerContext.cs`)**: Sıfır çalışma zamanı yansıması (reflection-free) ile yüksek performanslı veri katmanı.
+  - **Arka Plan Kayan Pencere Değerlendiricisi (`ThresholdEvaluatorService.cs`)**: Sistem metriklerini sürekli inceleyen, ihlal sürelerini takip eden ve anlık spike'larda gereksiz alarm üretmeyen arka plan izleyicisi.
+  - **Çok Kanallı Eşik Bildirimleri (`NotificationService.cs`)**: Eşik aşımı ve normale dönme (resolved) durumlarında Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına anında uyarı iletimi.
+  - **REST Yönetim Uç Noktaları (`AlertRulesEndpoints.cs`)**: `RequireAdmin` korumalı tam CRUD API (`/api/alerts/rules`).
+  - **Olay Geçmişi ve Denetim Zaman Çizelgesi (Faz 10)**:
+    - **SQLite Olay Kayıtları Tablosu (`015_activity_logs.sql`)**: Konteyner işlemleri, metrik alarmları ve yönetici eylemleri için zaman ve kategori indeksli yapısal loglama.
+    - **Kuyruk Tipi Asenkron Yazma Hattı (`ActivityLogService.cs`, `ActivityLogRepository.cs`)**: `System.Threading.Channels` ile ana API akışına sıfır gecikme maliyeti getiren tamponlu arka plan kayıt mekanizması.
+    - **Native AOT DTO'ları & Serileştirme (`ActivityLogEntry.cs`, `CorvusJsonSerializerContext.cs`)**: Uçtan uca yansımasız (reflection-free) güvenli veri modelleri.
+    - **Denetim REST Uç Noktaları (`ActivityLogEndpoints.cs`)**: Sayfalamalı ve kategori filtreli `/api/activity-logs` API'si ve otomatik saklama süresi temizliği.
+    - **Olay Zaman Çizelgesi Ekranı (`ActivityTimeline/index.tsx`, `ActivityTimelineItem.tsx`, `ActivityTimelineFilter.tsx`)**: Kategori rozetleri, aktör bilgisi ve hızlı filtre çipleri içeren kronolojik olay akışı.
+  - **Docker Hacim ve İmaj Hijyen Denetimi (Faz 11)**:
+    - **İki Aşamalı Önizlemeli Sistem Hijyeni**: `GET /api/containers/system-df` ile disk analizi ve `POST /api/containers/prune/selective` ile seçici temizlik.
+    - **Klavyeden Doğrudan Temizlik Başlatıcı**: Komut Paleti üzerinden (`action-prune`) ve `/containers?action=prune` sorgu parametresiyle anında disk temizlik ekranına geçiş.
+
 ## [1.5.28] - 2026-10-10
 
 ### Düzeltilenler (Fixed)

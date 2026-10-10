@@ -254,28 +254,82 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
 
 ---
 
-## Faz 8: Çoklu Node (Remote Agent) & İleri Düzey Entegrasyonlar (Planlanıyor)
+## Faz 8: Modern UI/UX, Komut Paleti & Mikro-Animasyonlar [TAMAMLANDI - v1.5.29]
 
-### Bilet 8.1 — Hafif Remote Node / Sunucu Ajanı (Remote Node Monitoring)
-* **Önkoşul:** Faz 7 tamamlandı.
-* **Amaç:** Tek bir merkezi Corvus kontrol panelinden birden fazla uzak sunucuyu (edge nodes, VPS'ler, homelab cihazları) hafif AOT binary veya Docker soket vekili ile izleyebilmek.
-* **Kapsam:**
-  - Corvus Edge Agent (tek binary, <10 MB RAM) veya mTLS tabanlı Docker soket tüneli.
-  - Çoklu node seçici arayüzü ve node bazında konteyner/sistem metrikleri filtreleme.
-* **Kabul Kriteri:** Uzak sunucuların merkezi paneline bağlanarak gecikmesiz izlenebilmesi.
-
-### Bilet 8.2 — OIDC / OAuth2 Kurumsal Kimlik Doğrulama
-* **Önkoşul:** Bilet 8.1.
-* **Amaç:** Authentik, Keycloak, Authelia veya Google Workspace ile OpenID Connect tabanlı kurumsal oturum açma.
-* **Kapsam:**
-  - OIDC discovery, token değişimi ve claims eşleştirme servisi.
-  - RBAC rolleriyle (`admin` / `viewer`) grup haritalandırması.
-* **Kabul Kriteri:** SSO üzerinden tek tıkla güvenli giriş ve yetkilendirme.
-
-### Bilet 8.3 — Gelişmiş Log Arama, Regex Filtreleme & Dışa Aktarma
+### Bilet 8.1 — Hızlı Komut Paleti (`Ctrl+K` / `Cmd+K`)
 * **Önkoşul:** Yok.
-* **Amaç:** Canlı konteyner loglarında zaman aralığına göre arama, regex süzme ve `.log` / `.json` olarak tek tıkla dışa aktarma.
+* **Amaç:** Fareden bağımsız olarak tek bir klavye kısayoluyla konteynerler, servisler, ayarlar ve operasyonel aksiyonlar arasında anında arama ve geçiş sağlamak.
 * **Kapsam:**
-  - Tarih ve saat filtreli log sorgulama motoru.
-  - Panoya kopyalama ve tek tıkla dosya indirme aksiyonları.
-* **Kabul Kriteri:** Büyük log çıktılarında arama ve filtrelemenin tarayıcıyı dondurmadan çalışması.
+  - `fuzzySearch.ts` ile sıfır bağımlılıklı hafif harf dizisi eşleştirme ve öncelik puanlama.
+  - `CommandPaletteModal.tsx`, `useCommandPalette.ts` ve `CommandPaletteResults.tsx` ile ok tuşları (`↑`/`↓`/`Enter`) ve arama filtreleme.
+  - `Sidebar.tsx` kenar çubuğuna tek tıkla arama çubuğu ve `Ctrl K` kısayol göstergesi.
+* **Kabul Kriteri:** `Ctrl+K` basıldığında paletin açılması, konteyner veya sayfaya tıklandığında anında yönlendirilmesi; 246 birim testin yeşil olması.
+
+### Bilet 8.2 — Sayfa Geçişleri, Durum Nabzı & İskelet Yükleme Ekranları
+* **Önkoşul:** Bilet 8.1.
+* **Amaç:** Sayfa değişimlerinde sıçramaları önlemek, CPU/RAM sayaçlarını yumuşatmak ve veri yüklenirken shimmer iskeletleri göstermek.
+* **Kapsam:**
+  - `PageTransition.tsx` ile `prefers-reduced-motion` destekli 150ms sayfa geçişleri.
+  - `useAnimatedNumber.ts` ile kademeli sayı interpolasyonu.
+  - `Skeleton.tsx` modüler iskelet yükleme bileşeni.
+* **Kabul Kriteri:** Akıcı geçişler, sıfır CLS (layout shift) ve erişilebilirlik uyumu.
+
+---
+
+## Faz 9: Proaktif Metrik Eşik Alarm Motoru [TAMAMLANDI - v1.5.29]
+
+### Bilet 9.1 — Eşik Kuralı Tanımlama ve SQLite Depolama Katmanı
+* **Önkoşul:** Faz 8 tamamlandı.
+* **Amaç:** Sistem metrikleri (CPU, RAM, Disk) için eşik kuralları tanımlamak ve Dapper Native AOT ile saklamak.
+* **Kapsam:**
+  - SQLite `014_alert_rules.sql` migration tablosu (`id`, `name`, `metric`, `operator`, `threshold_value`, `duration_seconds`, `cooldown_minutes`, `is_enabled`, `is_firing`).
+  - `IAlertRuleRepository` ve `AlertRuleRepository.cs` veri erişim katmanı.
+  - `AlertRulesEndpoints.cs` ile `/api/alerts/rules` tam CRUD uç noktaları (`RequireAdmin`).
+  - `CorvusJsonSerializerContext.cs` AOT serializasyon kayıtları.
+* **Kabul Kriteri:** REST uç noktaları ve xUnit testleri (246/246 yeşil test).
+
+### Bilet 9.2 — Arka Plan Değerlendirme Motoru & Çok Kanallı Uyarılar
+* **Önkoşul:** Bilet 9.1.
+* **Amaç:** Telemetri verilerini kayan pencereyle izleyip ihlal süresi ve cooldown'a göre spam korumalı bildirim göndermek.
+* **Kapsam:**
+  - `ThresholdEvaluatorService.cs` 20 saniyede bir periyodik kural değerlendiricisi.
+  - `NotificationService.DispatchMetricThresholdAlertAsync` ile Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına anında uyarı ve `[DÜZELDİ]` toparlanma bildirimleri.
+  - Ayarlar sayfasında `AlertRulesTab.tsx` ve `AddAlertRuleModal.tsx` görsel kural oluşturma ve takip arayüzü.
+* **Kabul Kriteri:** Eşik aşıldığında bildirimlerin iletilmesi ve durum normale döndüğünde toparlanma alarmı gitmesi.
+
+---
+
+## Faz 10: Denetim & Olay Zaman Çizelgesi (Audit Timeline) [TAMAMLANDI - v1.5.29]
+
+### Bilet 10.1 — Kalıcı Olay ve Denetim Kayıtları (Audit Logging Engine)
+* **Önkoşul:** Faz 9 tamamlandı.
+* **Amaç:** Sistemde gerçekleşen tüm kritik eylemleri (konteyner durdurma/başlatma, ayar değiştirme, oturum açma, otomatik kurtarma) kimin ve ne zaman yaptığını kaydetmek.
+* **Kapsam:**
+  - SQLite `015_activity_logs.sql` tablosu (`category`, `actor_username`, `created_at` indeksli).
+  - Kritik istek yolunu engellemeyen (non-blocking) asenkron `System.Threading.Channels` arka plan kuyruğu (`ActivityLogService.cs`).
+  - Native AOT uyumlu `ActivityLogEntry.cs` modeli ve sayfalamalı, filtrelemeli, arama destekli `ActivityLogRepository.cs`.
+  - Konteyner yaşam döngüsü (`ContainersEndpoints.cs`) ve metrik alarm değerlendirmesi (`ThresholdEvaluatorService.cs`) üzerinden otomatik olay günlüğü kaydı.
+* **Kabul Kriteri:** Hızlı, kesintisiz olay günlüğü kaydı; 248 yeşil birim test.
+
+### Bilet 10.2 — Etkileşimli Zaman Çizelgesi Arayüzü (Activity Timeline Page)
+* **Önkoşul:** Bilet 10.1.
+* **Amaç:** Olayları tarih, aktör ve kategoriye göre süzebilen şık bir zaman çizgisi sunmak.
+* **Kapsam:**
+  - `/activity` bağımsız rota sayfası (`ActivityTimeline/index.tsx`).
+  - Modüler bileşenler: `ActivityTimelineItem.tsx` ve `ActivityTimelineFilter.tsx`.
+  - Kenar Çubuğu (Sidebar), Alt Menü (BottomNav) ve Komut Paleti (`G A` kısayolu) entegrasyonu.
+* **Kabul Kriteri:** Sayfalamalı, filtrelemeli ve akıcı olay geçmişi keşfi.
+
+---
+
+## Faz 11: Docker Hacim & İmaj Hijyen Denetimi [TAMAMLANDI - v1.5.29]
+
+### Bilet 11.1 — Güvenli İki Aşamalı Önizlemeli Sistem Hijyeni ve Komut Paleti Entegrasyonu
+* **Önkoşul:** Faz 10 tamamlandı.
+* **Amaç:** Askıda kalan imajlar, durdurulmuş konteynerler ve yetim birimler için doğrudan hijyen denetimi, kısayollar ve sıfır riskli temizlik sağlamak.
+* **Kapsam:**
+  - `GET /api/containers/system-df` ile disk analizi ve `POST /api/containers/prune/selective` ile seçici temizlik.
+  - Modüler temizlik bileşenleri (`PruneContainersTable.tsx`, `PruneImagesTable.tsx`, `PruneVolumesTable.tsx`, `PruneBuildCacheCard.tsx`).
+  - Komut Paleti üzerinden tek tıkla doğrudan Sistem Temizliği açma (`action-prune`) ve `App.tsx` sorgu desteği (`/containers?action=prune`).
+* **Kabul Kriteri:** Arayüzden ve klavyeden 1 tıkla güvenli disk temizliği analizi; korumalı varsayılanlar; tüm testlerin geçmesi.
+

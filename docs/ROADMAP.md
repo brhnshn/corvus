@@ -254,29 +254,82 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
 
 ---
 
-## Phase 8: Multi-Node Architecture & Advanced Integrations (Planned)
+## Phase 8: Modern UI/UX, Command Palette & Micro-Animations [COMPLETED - v1.5.29]
 
-### Ticket 8.1 — Lightweight Remote Node Monitoring (Edge Agent)
-* **Blocked by:** Phase 7 completed.
-* **Objective:** Monitor multiple remote servers (edge nodes, VPS, homelab machines) from a single centralized Corvus dashboard.
-* **Scope:**
-  - Corvus Edge Agent (single Native AOT binary, <10 MB RAM) or mTLS-secured Docker socket proxy.
-  - Multi-node selector dropdown and node-scoped container/telemetry filtering.
-* **Acceptance Criteria:** Remote nodes report telemetry to primary instance with zero measurable latency.
-
-### Ticket 8.2 — Enterprise OIDC / OAuth2 Authentication
-* **Blocked by:** Ticket 8.1.
-* **Objective:** OpenID Connect enterprise Single Sign-On via Authentik, Keycloak, Authelia, or Google Workspace.
-* **Scope:**
-  - OIDC discovery, token exchange, and claims mapping service.
-  - Group-to-role mappings (`admin` / `viewer`).
-* **Acceptance Criteria:** 1-click enterprise SSO authentication with role synchronization.
-
-### Ticket 8.3 — Advanced Container Log Search, Regex Filtering & Export
+### Ticket 8.1 — Fast Command Palette (`Ctrl+K` / `Cmd+K`)
 * **Blocked by:** None.
-* **Objective:** Search live and historical container logs by timestamp, apply regex patterns, and export to `.log` or `.json`.
+* **Objective:** Enable instant, keyboard-driven navigation across containers, services, settings, and operational actions.
 * **Scope:**
-  - Time-bounded log range retrieval.
-  - Copy to clipboard and one-click export actions.
-* **Acceptance Criteria:** Instant regex filtering on large log payloads without freezing the UI.
+  - Lightweight fuzzy matching algorithm `fuzzySearch.ts` with zero external dependencies.
+  - Interactive modal `CommandPaletteModal.tsx`, `useCommandPalette.ts`, and `CommandPaletteResults.tsx` supporting arrow key navigation (`↑`/`↓`/`Enter`).
+  - Search trigger bar embedded inside `Sidebar.tsx` with a `Ctrl K` shortcut badge.
+* **Acceptance Criteria:** `Ctrl+K` triggers palette; instant routing to container logs or interactive shell; 246 green unit tests.
+
+### Ticket 8.2 — Smooth Page Transitions, Status Pulses & Skeleton Placeholders
+* **Blocked by:** Ticket 8.1.
+* **Objective:** Eliminate harsh page flashes, smooth out telemetry counters, and render shimmer placeholders while loading.
+* **Scope:**
+  - `PageTransition.tsx` with 150ms opacity and translateY transitions honoring `prefers-reduced-motion`.
+  - `useAnimatedNumber.ts` easing live metrics counters.
+  - Modular `Skeleton.tsx` shimmer loading states.
+* **Acceptance Criteria:** Fluid route changes with zero cumulative layout shift (CLS).
+
+---
+
+## Phase 9: Proactive Metric Threshold Alerting Engine [COMPLETED - v1.5.29]
+
+### Ticket 9.1 — Threshold Rules Schema & SQLite Storage Layer
+* **Blocked by:** Phase 8 completed.
+* **Objective:** Allow users to define custom threshold rules (CPU, RAM, Disk) backed by Dapper Native AOT storage.
+* **Scope:**
+  - SQLite `014_alert_rules.sql` migration table (`id`, `name`, `metric`, `operator`, `threshold_value`, `duration_seconds`, `cooldown_minutes`, `is_enabled`, `is_firing`).
+  - `IAlertRuleRepository` and `AlertRuleRepository.cs` data access layer.
+  - `AlertRulesEndpoints.cs` full CRUD REST API (`/api/alerts/rules`) with `RequireAdmin`.
+  - Registration inside `CorvusJsonSerializerContext.cs` for Native AOT.
+* **Acceptance Criteria:** Verified REST endpoints and xUnit test suite (246/246 tests green).
+
+### Ticket 9.2 — Sliding Window Evaluator & Multi-Channel Dispatcher
+* **Blocked by:** Ticket 9.1.
+* **Objective:** Continuous background evaluation of system telemetry against configured rules with anti-spam cooldown protection.
+* **Scope:**
+  - Periodic background evaluator `ThresholdEvaluatorService.cs` (every 20s).
+  - Multi-channel notification alerts via `NotificationService.DispatchMetricThresholdAlertAsync` across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks with resolved recovery alerts.
+  - Web interface in Settings (`AlertRulesTab.tsx`, `AddAlertRuleModal.tsx`) for rule creation, sliders, and toggles.
+* **Acceptance Criteria:** Threshold breach triggers notifications, and normalized metrics trigger recovery alerts.
+
+---
+
+## Phase 10: Audit Timeline & Event Activity Logs [COMPLETED - v1.5.29]
+
+### Ticket 10.1 — Persistent Audit Logging Engine
+* **Blocked by:** Phase 9 completed.
+* **Objective:** Record all critical actions (container lifecycle, configuration changes, user logins, auto-healing events) with actor and timestamp.
+* **Scope:**
+  - SQLite `015_activity_logs.sql` migration table with indexing on `category`, `actor_username`, and `created_at`.
+  - Non-blocking in-memory `System.Threading.Channels` pipeline (`ActivityLogService.cs`) ensuring zero I/O latency on critical request paths.
+  - Native AOT model `ActivityLogEntry.cs` and `ActivityLogRepository.cs` with paginated retrieval, category filtering, search, and automated retention cleanup.
+  - Real-time logging integrated into container operations (`ContainersEndpoints.cs`) and threshold alerting (`ThresholdEvaluatorService.cs`).
+* **Acceptance Criteria:** Fast non-blocking audit logging across container events and alerts; 248 passing unit tests.
+
+### Ticket 10.2 — Interactive Activity Timeline Interface
+* **Blocked by:** Ticket 10.1.
+* **Objective:** Responsive chronological timeline view filterable by date, actor, and event category.
+* **Scope:**
+  - Dedicated full-page route (`/activity`) with responsive desktop and mobile timeline layout (`ActivityTimeline/index.tsx`).
+  - Modular subcomponents: `ActivityTimelineItem.tsx` and `ActivityTimelineFilter.tsx`.
+  - Integrated into Sidebar navigation, BottomNav, and Command Palette (`G A` shortcut).
+* **Acceptance Criteria:** Fluid responsive audit log exploration with pagination, category filtering, and direct links.
+
+---
+
+## Phase 11: Docker Volume & Image Hygiene Inspection [COMPLETED - v1.5.29]
+
+### Ticket 11.1 — Safe Two-Stage Dry-Run System Hygiene & Quick Palette Integration
+* **Blocked by:** Phase 10 completed.
+* **Objective:** Provide direct system hygiene actions, prune shortcuts, and zero-risk dry-run cleanup of dangling images, stopped containers, and unused volumes.
+* **Scope:**
+  - Two-stage selective prune workflow with dry-run audit via `GET /api/containers/system-df` and `POST /api/containers/prune/selective`.
+  - Modular prune components (`PruneContainersTable.tsx`, `PruneImagesTable.tsx`, `PruneVolumesTable.tsx`, `PruneBuildCacheCard.tsx`).
+  - Quick action integration inside Command Palette (`action-prune`) and query action support (`/containers?action=prune`) in `App.tsx`.
+* **Acceptance Criteria:** 1-click dry-run audit and selective pruning from UI and Command Palette; protected volume defaults; all tests passing.
 

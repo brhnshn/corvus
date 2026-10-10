@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Testler-224_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-248_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -117,6 +117,18 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
 
 ## ✨ Temel Özellikler
 
+- **⌨️ Genel Komut Paleti (`Ctrl+K` / `Cmd+K`) & Mikro-Animasyonlar:**
+  - **Sıfır Bağımlılıklı Bulanık Arama (`fuzzySearch.ts`):** Hafif harf dizisi eşleme algoritması ile tüm sayfalara, konteynerlere, hızlı eylemlere ve ayarlara anında erişim.
+  - **Tam Klavye Gezinmesi:** Ok tuşları (`↑`/`↓`/`Enter`) ve doğrudan kısayollar (`G D` Genel Bakış, `G C` Konteynerler, `G A` Olay Geçmişi, `R` Yenile).
+  - **Akıcı Mikro-Geçişler (`PageTransition.tsx`, `useAnimatedNumber.ts`, `Skeleton.tsx`):** `prefers-reduced-motion` uyumlu 150ms sayfa geçişleri, yumuşakça akan canlı metrik sayaçları ve modern shimmer iskelet göstergeleri.
+- **📜 Olay Geçmişi & Denetim Zaman Çizelgesi (`/activity`):**
+  - **Yapısal Olay Kayıt Motoru (`015_activity_logs.sql`):** Konteyner yaşam döngüsü değişimleri (başlatma, durdurma, yeniden başlatma), metrik eşik alarmları ve yönetici eylemleri için kalıcı kayıt.
+  - **Kuyruk Tipi Asenkron Yazma Hattı (`ActivityLogService.cs`):** `System.Threading.Channels` ile ana istek akışına sıfır gecikme maliyeti getiren tamponlu arka plan kayıt mekanizması ve otomatik saklama süresi temizliği.
+  - **Kronolojik Zaman Çizelgesi Arayüzü (`ActivityTimeline/`):** Olay kategorilerine (`container`, `alert`, `security`, `service`, `system`) göre filtreleme, kaynak bazlı arama ve detaylı JSON veri görüntüleme.
+- **🚨 Proaktif Metrik Eşik Alarm Motoru:**
+  - **Kullanıcı Tanımlı Eşik Kuralları (`014_alert_rules.sql`):** Ayarlanabilir ihlal süresi ve spam önleyici cooldown süreleriyle CPU, RAM ve Disk % eşikleri belirleme.
+  - **Arka Plan Kayan Pencere Değerlendiricisi (`ThresholdEvaluatorService.cs`):** 20 saniyede bir periyodik değerlendirme ile anlık sıçramalarda sahte alarmları (flapping) engelleyen akıllı izleme.
+  - **Çok Kanallı Bildirim İletimi:** Eşik aşımı ve `[DÜZELDİ]` toparlanma durumlarında Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına gerçek zamanlı bildirim.
 - **🎨 Midnight v2 Bütünleşik Tasarım Sistemi & Katlanabilir Komuta Düzeni:**
   - **Merkezi Mimari Yerleşim (`AppLayout.tsx`):** MVC benzeri merkezi yerleşim mimarisi; masaüstünde tek tıkla katlanabilen, açık/kapalı durumunu `localStorage`'da hatırlayan ve kapandığında sol üstte beliren Corvus logolu animasyonlu hap butonla akıcı şekilde geri açılabilen sidebar.
   - **Kesin Eşik Tabanlı Renk Semantiği:** Grafik ve ilerleme çubuklarındaki süsleme mor/camgöbeği degradeler kaldırıldı; renkler doğrudan operasyonel sağlık eşiklerine bağlandı (<%70 yeşil `#34d399`, %70-89 kehribar sarı `#fbbf24`, >=%90 gül kırmızısı `#f87171`).

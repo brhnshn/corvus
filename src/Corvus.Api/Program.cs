@@ -30,6 +30,8 @@ builder.Services.AddScoped<IIncidentRepository, IncidentRepository>();
 builder.Services.AddSingleton<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
+builder.Services.AddScoped<IAlertRuleRepository, AlertRuleRepository>();
+builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
 
 builder.Services.AddSingleton<IDockerHttpClient, DockerHttpClient>();
 builder.Services.AddSingleton<IDockerService, DockerService>();
@@ -42,6 +44,7 @@ builder.Services.AddSingleton<IUpdateCheckerService, UpdateCheckerService>();
 builder.Services.AddSingleton<IOciRegistryClient, OciRegistryClient>();
 builder.Services.AddSingleton<IComposeFileService, ComposeFileService>();
 builder.Services.AddSingleton<IAutoHealingService, AutoHealingService>();
+builder.Services.AddSingleton<IActivityLogService, ActivityLogService>();
 
 // Arka Plan Servisleri
 builder.Services.AddHostedService<ContainerDiscoveryService>();
@@ -49,6 +52,7 @@ builder.Services.AddHostedService<SystemMetricsCollector>();
 builder.Services.AddHostedService<UptimeCheckerService>();
 builder.Services.AddHostedService<RetentionCleanupService>();
 builder.Services.AddHostedService<MemoryTrimmerBackgroundService>();
+builder.Services.AddHostedService<ThresholdEvaluatorService>();
 
 // CORS (Sertleştirilmiş Güvenlik: Geliştirme modu veya CORVUS_ALLOWED_ORIGINS ile kontrollü erişim)
 string? allowedOriginsEnv = Environment.GetEnvironmentVariable("CORVUS_ALLOWED_ORIGINS");
@@ -136,6 +140,8 @@ app.MapNotificationEndpoints();
 app.MapStreamEndpoints();
 app.MapComposeEndpoints();
 app.MapDeployWebhookEndpoints();
+app.MapAlertRulesEndpoints();
+app.MapActivityLogEndpoints();
 
 // SPA Routing Fallback (Asla önbelleklenmemeli; her zaman taze chunk hash'lerini döndürür)
 app.MapFallbackToFile("index.html", new StaticFileOptions

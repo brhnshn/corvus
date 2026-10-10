@@ -5,6 +5,13 @@ import type { PageId } from './components/Sidebar';
 import { RegistrationPromptModal } from './components/RegistrationPromptModal';
 import { RefreshCw } from 'lucide-react';
 import { useI18n } from './i18n';
+import { 
+  useCommandPalette, 
+  CommandPaletteModal, 
+  fetchCommandItems, 
+  type CommandItem 
+} from './components/common/CommandPalette';
+import { PageTransition } from './components/common/PageTransition';
 
 // Chunk yükleme hatalarını (yeni dağıtımlarda 404 veren eski JS dosyalarını) yakalayıp tazeleyen dirençli lazy sarmalayıcı
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -39,6 +46,7 @@ const UptimePage = lazyWithRetry(() => import('./pages/Uptime').then(m => ({ def
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
 const ProfilePage = lazyWithRetry(() => import('./pages/Profile').then(m => ({ default: m.ProfilePage })));
 const ContainerDetailPage = lazyWithRetry(() => import('./pages/ContainerDetail').then(m => ({ default: m.ContainerDetailPage })));
+const ActivityTimelinePage = lazyWithRetry(() => import('./pages/ActivityTimeline').then(m => ({ default: m.ActivityTimelinePage })));
 const AuthPage = lazyWithRetry(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const PublicStatus = lazyWithRetry(() => import('./pages/PublicStatus'));
 
@@ -95,24 +103,27 @@ const PageLoader = () => (
   </div>
 );
 
-const VALID_PAGES: PageId[] = ['dashboard', 'services', 'containers', 'metrics', 'uptime', 'settings', 'profile'];
+const VALID_PAGES: PageId[] = ['dashboard', 'services', 'containers', 'metrics', 'uptime', 'activity', 'settings', 'profile'];
 
 interface ParsedRoute {
   page: PageId;
   containerId: string | null;
+  action?: string | null;
 }
 
 const parseCurrentRoute = (): ParsedRoute => {
   const path = window.location.pathname.replace(/^\//, '');
+  const searchParams = new URLSearchParams(window.location.search);
+  const actionParam = searchParams.get('action');
   const segments = path.split('/');
   const first = segments[0]?.toLowerCase() as PageId;
   if (first === 'containers' && segments[1]) {
-    return { page: 'containers', containerId: segments[1] };
+    return { page: 'containers', containerId: segments[1], action: actionParam };
   }
   if (VALID_PAGES.includes(first)) {
-    return { page: first, containerId: null };
+    return { page: first, containerId: null, action: actionParam };
   }
-  return { page: 'dashboard', containerId: null };
+  return { page: 'dashboard', containerId: null, action: actionParam };
 };
 
 export const App: React.FC = () => {
@@ -123,20 +134,42 @@ export const App: React.FC = () => {
   const [currentRoute, setCurrentRoute] = useState<ParsedRoute>(parseCurrentRoute);
   const currentPage = currentRoute.page;
   const selectedContainerId = currentRoute.containerId;
+  const initialAction = currentRoute.action;
   const [showRegPrompt, setShowRegPrompt] = useState(false);
 
+  const { isOpen: isCmdOpen, open: openCmd, close: closeCmd } = useCommandPalette();
+  const [commandItems, setCommandItems] = useState<CommandItem[]>([]);
+
   const navigateTo = (page: PageId, containerId?: string | null, tab?: string | null) => {
-    const newRoute: ParsedRoute = { page, containerId: containerId || null };
+    const isAction = !containerId && tab;
+    const newRoute: ParsedRoute = { 
+      page, 
+      containerId: containerId || null,
+      action: isAction ? tab : null
+    };
     setCurrentRoute(newRoute);
     let newPath = page === 'dashboard' ? '/' : `/${page}`;
     if (page === 'containers' && containerId) {
       newPath = `/containers/${containerId}${tab ? `?tab=${tab}` : ''}`;
+    } else if (page === 'containers' && isAction) {
+      newPath = `/containers?action=${tab}`;
     }
     const currentFull = window.location.pathname + window.location.search;
     if (currentFull !== newPath) {
       window.history.pushState(null, '', newPath);
     }
   };
+
+  // Komut paleti açıldığında taze öğeleri yükle
+  useEffect(() => {
+    if (isCmdOpen) {
+      fetchCommandItems({
+        t,
+        onNavigate: navigateTo,
+        onRefreshData: () => invalidateCache(),
+      }).then(setCommandItems);
+    }
+  }, [isCmdOpen, t]);
 
   // Tarayıcı Geri/İleri butonları için popstate dinleyicisi
   useEffect(() => {
@@ -376,6 +409,7 @@ export const App: React.FC = () => {
         return (
           <ContainersPage
             isAdmin={isAdmin}
+            initialAction={initialAction}
             onNavigateToDetail={(id, tab) => navigateTo('containers', id, tab)}
           />
         );
@@ -383,6 +417,8 @@ export const App: React.FC = () => {
         return <SystemMetricsPage />;
       case 'uptime':
         return <UptimePage />;
+      case 'activity':
+        return <ActivityTimelinePage />;
       case 'settings':
         return <SettingsPage />;
       case 'profile':
@@ -399,12 +435,22 @@ export const App: React.FC = () => {
       username={authStatus?.username}
       role={authStatus?.role}
       onLogout={authStatus?.authEnabled ? handleLogout : undefined}
+      onOpenCommandPalette={openCmd}
     >
       <ChunkErrorBoundary>
         <Suspense fallback={<PageLoader />}>
-          {renderPage()}
+          <PageTransition pageKey={`${currentPage}-${selectedContainerId || 'root'}`}>
+            {renderPage()}
+          </PageTransition>
         </Suspense>
       </ChunkErrorBoundary>
+
+      {/* Komut Paleti Modal */}
+      <CommandPaletteModal
+        isOpen={isCmdOpen}
+        onClose={closeCmd}
+        items={commandItems}
+      />
 
       {/* Kayıtları kapatma öneri modalı */}
       <RegistrationPromptModal

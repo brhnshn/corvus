@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-224_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-248_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -117,6 +117,18 @@ Corvus is built from the ground up to challenge the misconception that modern en
 
 ## ✨ Key Features
 
+- **⌨️ Universal Command Palette (`Ctrl+K` / `Cmd+K`) & Micro-Animations:**
+  - **Zero-Dependency Fuzzy Search (`fuzzySearch.ts`):** Lightweight string matching algorithm delivering instant results across all pages, containers, actions, and settings.
+  - **Full Keyboard Navigation:** Arrow key browsing (`↑`/`↓`/`Enter`) with quick shortcuts (`G D` Dashboard, `G C` Containers, `G A` Activity, `R` Refresh).
+  - **Interactive Micro-Transitions (`PageTransition.tsx`, `useAnimatedNumber.ts`, `Skeleton.tsx`):** 150ms fluid page transitions honoring `prefers-reduced-motion`, smooth live metric counter interpolations, and shimmer skeleton loading states.
+- **📜 Event History & Audit Timeline (`/activity`):**
+  - **Structured Audit Logging Engine (`015_activity_logs.sql`):** Captures container lifecycle changes (start, stop, restart), metric threshold alerts, and administrator actions.
+  - **Non-Blocking Channel Pipeline (`ActivityLogService.cs`):** High-throughput, zero-latency buffered queuing using `System.Threading.Channels` with automated retention cleanup.
+  - **Chronological Timeline UI (`ActivityTimeline/`):** Filter by event categories (`container`, `alert`, `security`, `service`, `system`), search by resource, and view detailed JSON payloads.
+- **🚨 Proactive Metric Threshold Alerting Engine:**
+  - **User-Configurable Metric Rules (`014_alert_rules.sql`):** Set CPU, RAM, and Disk % thresholds with customizable evaluation duration and anti-spam cooldown protection.
+  - **Background Sliding Window Evaluator (`ThresholdEvaluatorService.cs`):** Continuous 20-second evaluation preventing false positives from transient spikes.
+  - **Multi-Channel Dispatch:** Real-time breach warnings and `[RESOLVED]` recovery notifications dispatched across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks.
 - **🎨 Midnight v2 Unified Design System & Collapsible Command Layout:**
   - **Unified Architectural Layout (`AppLayout.tsx`):** MVC-like central layout with a desktop collapsible sidebar that remembers its open/closed state in `localStorage`, complete with an animated floating Corvus pill button to smoothly restore the sidebar when collapsed.
   - **Strict Threshold-Driven Color Semantics:** Replaced arbitrary cyan/purple gradients with strict operational threshold colors across charts and progress bars (<70% green `#34d399`, 70-89% amber `#fbbf24`, >=90% rose `#f87171`).

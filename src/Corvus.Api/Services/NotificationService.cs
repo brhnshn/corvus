@@ -14,6 +14,7 @@ public interface INotificationService
     Task DispatchFlappingAlertAsync(string serviceName, string? url, bool isRecovered, int transitionCount, CancellationToken ct = default);
     Task DispatchContainerCrashAlertAsync(string containerName, string containerId, int exitCode, string? errorReason, CancellationToken ct = default);
     Task DispatchContainerAutoHealedAlertAsync(string containerName, string containerId, int exitCode, bool success, string? detailMessage, CancellationToken ct = default);
+    Task DispatchMetricThresholdAlertAsync(string ruleName, string targetDescription, string metric, double thresholdValue, double currentValue, bool isResolved, CancellationToken ct = default);
     Task<NotificationResult> TestChannelAsync(
         string channel, 
         string? webhookUrl, 
@@ -384,6 +385,78 @@ public class NotificationService : INotificationService
             settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
         {
             tasks.Add(SendGenericWebhookAsync(wUrl, success ? "container_auto_healed" : "container_crash_loop", title, message, ct));
+        }
+
+        if (settings.TryGetValue("notification_slack_enabled", out var slEnabled) && slEnabled == "true" &&
+            settings.TryGetValue("notification_slack_webhook_url", out var slUrl) && !string.IsNullOrWhiteSpace(slUrl))
+        {
+            tasks.Add(SendSlackAsync(slUrl, title, message, badgeColor, ct));
+        }
+
+        if (settings.TryGetValue("notification_email_enabled", out var eEnabled) && eEnabled == "true")
+        {
+            tasks.Add(SendSmtpEmailFromSettingsAsync(settings, title, message, badgeColor, ct));
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+        }
+    }
+
+    public async Task DispatchMetricThresholdAlertAsync(
+        string ruleName, 
+        string targetDescription, 
+        string metric, 
+        double thresholdValue, 
+        double currentValue, 
+        bool isResolved, 
+        CancellationToken ct = default)
+    {
+        var settings = await _settings.GetAllAsync();
+        bool isTr = settings.TryGetValue("system_language", out var lang) && lang?.ToLowerInvariant() == "tr";
+
+        string metricName = metric.ToUpperInvariant();
+        string title = isResolved
+            ? (isTr ? $"[DÜZELDİ] {ruleName} ({metricName})" : $"[RESOLVED] {ruleName} ({metricName})")
+            : (isTr ? $"[EŞİK AŞIMI UYARISI] {ruleName} ({metricName})" : $"[THRESHOLD EXCEEDED] {ruleName} ({metricName})");
+
+        string message = isResolved
+            ? (isTr 
+                ? $"Hedef: {targetDescription}\n{metricName} değeri normale döndü: %{currentValue:F1} (Eşik: %{thresholdValue:F1})"
+                : $"Target: {targetDescription}\n{metricName} returned to normal: {currentValue:F1}% (Threshold: {thresholdValue:F1}%)")
+            : (isTr
+                ? $"Hedef: {targetDescription}\n{metricName} eşik değerini aştı!\nMevcut Değer: %{currentValue:F1}\nTanımlı Eşik: %{thresholdValue:F1}"
+                : $"Target: {targetDescription}\n{metricName} exceeded threshold!\nCurrent: {currentValue:F1}%\nThreshold: {thresholdValue:F1}%");
+
+        string badgeColor = isResolved ? "#22c55e" : "#ef4444";
+        int discordColor = isResolved ? 0x22c55e : 0xef4444;
+
+        var tasks = new List<Task>();
+
+        if (settings.TryGetValue("notification_discord_enabled", out var dEnabled) && dEnabled == "true" &&
+            settings.TryGetValue("notification_discord_webhook_url", out var dUrl) && !string.IsNullOrWhiteSpace(dUrl))
+        {
+            tasks.Add(SendDiscordAsync(dUrl, title, message, discordColor, ct));
+        }
+
+        if (settings.TryGetValue("notification_telegram_enabled", out var tEnabled) && tEnabled == "true" &&
+            settings.TryGetValue("notification_telegram_bot_token", out var tToken) && !string.IsNullOrWhiteSpace(tToken) &&
+            settings.TryGetValue("notification_telegram_chat_id", out var tChat) && !string.IsNullOrWhiteSpace(tChat))
+        {
+            tasks.Add(SendTelegramAsync(tToken, tChat, title, message, ct));
+        }
+
+        if (settings.TryGetValue("notification_ntfy_enabled", out var nEnabled) && nEnabled == "true" &&
+            settings.TryGetValue("notification_ntfy_url", out var nUrl) && !string.IsNullOrWhiteSpace(nUrl))
+        {
+            tasks.Add(SendNtfyAsync(nUrl, title, message, priority: isResolved ? "default" : "urgent", tags: isResolved ? "white_check_mark" : "fire,warning", ct));
+        }
+
+        if (settings.TryGetValue("notification_webhook_enabled", out var wEnabled) && wEnabled == "true" &&
+            settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
+        {
+            tasks.Add(SendGenericWebhookAsync(wUrl, isResolved ? "metric_resolved" : "metric_threshold_exceeded", title, message, ct));
         }
 
         if (settings.TryGetValue("notification_slack_enabled", out var slEnabled) && slEnabled == "true" &&

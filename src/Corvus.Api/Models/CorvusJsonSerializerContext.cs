@@ -314,6 +314,13 @@ public record NotificationResult(
 [JsonSerializable(typeof(SaveComposeFileRequest))]
 [JsonSerializable(typeof(DeployWebhookRequest))]
 [JsonSerializable(typeof(DeployWebhookResult))]
+[JsonSerializable(typeof(AlertRule))]
+[JsonSerializable(typeof(List<AlertRule>))]
+[JsonSerializable(typeof(CreateAlertRuleRequest))]
+[JsonSerializable(typeof(UpdateAlertRuleRequest))]
+[JsonSerializable(typeof(ActivityLogEntry))]
+[JsonSerializable(typeof(List<ActivityLogEntry>))]
+[JsonSerializable(typeof(ActivityLogPagedResult))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }

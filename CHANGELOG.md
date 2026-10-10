@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.29] - 2026-10-10
+
+### Added
+- **Global Command Palette (`Ctrl+K` / `Cmd+K`) & Keyboard Navigation**:
+  - **Fuzzy Search Algorithm (`fuzzySearch.ts`)**: Zero-dependency, lightweight character sequencing and fuzzy matching for fast keyboard filtering.
+  - **Modular Command Palette Modal (`CommandPaletteModal.tsx`, `useCommandPalette.ts`, `commandItems.ts`)**: Instant launcher providing keyboard navigation (`↑`/`↓`/`Enter`), quick access to Pages, Container Actions, Live Logs, Interactive Web Terminals, and System Metrics.
+  - **Sidebar Quick Search Launcher (`Sidebar.tsx`)**: Prominent search bar in desktop and mobile layouts triggering the command palette with a single click.
+- **Micro-Animations & Smooth Layout Transitions**:
+  - **Fluid Page Transitions (`PageTransition.tsx`)**: Subtle 150ms opacity and translateY fade transitions on route changes honoring `prefers-reduced-motion`.
+  - **Dynamic Number Counter Interpolation (`useAnimatedNumber.ts`)**: Eased numeric counter transitions for live metrics and telemetry gauges.
+  - **Skeleton Loading Placeholders (`Skeleton.tsx`)**: Shimmer placeholder states for tables and cards replacing jarring full-page spinners.
+- **Proactive Metric Threshold Alerting Engine (Phase 9)**:
+  - **SQLite Alert Rules Migration (`014_alert_rules.sql`)**: Persistent storage for user-defined CPU, RAM, and Disk threshold rules with configurable evaluation duration and anti-spam cooldown periods.
+  - **Dapper Repository & Native AOT Models (`AlertRuleRepository.cs`, `AlertRule.cs`, `CorvusJsonSerializerContext.cs`)**: High-performance data access layer with zero runtime reflection.
+  - **Background Sliding Window Evaluator (`ThresholdEvaluatorService.cs`)**: Continuous background monitor evaluating telemetry metrics, tracking violation durations, and preventing flapping alert fatigue.
+  - **Multi-Channel Alert Dispatcher (`NotificationService.cs`)**: Real-time threshold breach and resolved notifications across Discord, Telegram, Slack, SMTP, Ntfy, and generic Webhooks.
+  - **REST Management Endpoints (`AlertRulesEndpoints.cs`)**: Full CRUD API (`/api/alerts/rules`) protected by `RequireAdmin`.
+  - **Activity Log & Audit Timeline (Phase 10)**:
+    - **SQLite Activity Logs Migration (`015_activity_logs.sql`)**: Structured logging of container lifecycle operations, system alerts, and administrative actions with indexed timestamps and categories.
+    - **Non-Blocking Channel Pipeline (`ActivityLogService.cs`, `ActivityLogRepository.cs`)**: High-performance buffered write queue using `System.Threading.Channels` ensuring zero latency impact on API requests.
+    - **Native AOT DTOs & Serialization (`ActivityLogEntry.cs`, `CorvusJsonSerializerContext.cs`)**: End-to-end reflection-free data structures.
+    - **Audit Log Endpoints (`ActivityLogEndpoints.cs`)**: Paginated and filterable REST API (`/api/activity-logs`) with automated retention cleanup.
+    - **Activity Timeline Dashboard (`ActivityTimeline/index.tsx`, `ActivityTimelineItem.tsx`, `ActivityTimelineFilter.tsx`)**: Chronological event stream with category badges, actor details, and quick filter chips.
+  - **Docker Volume & Image Hygiene Inspection (Phase 11)**:
+    - **Dry-Run Two-Stage System Hygiene**: Full disk analysis (`GET /api/containers/system-df`) paired with selective pruning (`POST /api/containers/prune/selective`).
+    - **Keyboard Prune Launcher**: Direct invocation of system hygiene via the Command Palette (`action-prune`) and query action routing (`/containers?action=prune`).
+
 ## [1.5.28] - 2026-10-10
 
 ### Fixed

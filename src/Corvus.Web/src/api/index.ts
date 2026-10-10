@@ -5,6 +5,8 @@ import { uptimeApi } from './uptime';
 import { metricsApi } from './metrics';
 import { settingsApi } from './settings';
 import { incidentsApi } from './incidents';
+import { alertsApi } from './alerts';
+import { activityLogsApi } from './activityLogs';
 
 export const api = {
   ...authApi,
@@ -13,7 +15,9 @@ export const api = {
   ...uptimeApi,
   ...metricsApi,
   ...settingsApi,
-  ...incidentsApi
+  ...incidentsApi,
+  ...alertsApi,
+  ...activityLogsApi
 };
 
 export { fetchJson, fetchCachedJson, invalidateCache } from './http';
@@ -24,4 +28,6 @@ export { uptimeApi } from './uptime';
 export { metricsApi } from './metrics';
 export { settingsApi } from './settings';
 export { incidentsApi } from './incidents';
+export { alertsApi } from './alerts';
+export { activityLogsApi } from './activityLogs';
 export * from '../types';

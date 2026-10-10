@@ -3,19 +3,22 @@ import { api, type VersionInfo } from '../../api/client';
 import { 
   Save, 
   Check, 
-  ExternalLink,
-  Shield,
-  Bell,
-  Database,
-  RefreshCw
+  ExternalLink, 
+  Shield, 
+  Bell, 
+  Database, 
+  RefreshCw,
+  Activity
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { Button } from '../../components/ui/Button';
 import { GeneralSettingsTab } from './GeneralSettingsTab';
 import { NotificationSettingsTab, type ChannelType } from './NotificationSettingsTab';
 import { BackupSettingsTab } from './BackupSettingsTab';
+import { AlertRulesTab } from './alerts/AlertRulesTab';
+import type { AlertRule } from '../../types';
 
-type SettingsTab = 'general' | 'notifications' | 'backup';
+type SettingsTab = 'general' | 'notifications' | 'alerts' | 'backup';
 
 export const SettingsPage: React.FC = () => {
   const { t } = useI18n();
@@ -32,8 +35,15 @@ export const SettingsPage: React.FC = () => {
   const [copiedBackupCmd, setCopiedBackupCmd] = useState(false);
   const [dbStats, setDbStats] = useState<{ formattedSize: string; sizeBytes: number } | null>(null);
   const [isCustomDays, setIsCustomDays] = useState(false);
+  const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
 
   const isRegistrationOpen = settings['registration_enabled'] !== 'false';
+
+  const fetchAlertRules = () => {
+    api.getAlertRules()
+      .then(setAlertRules)
+      .catch((err) => console.warn('[Settings] Alarm kuralları yüklenemedi:', err));
+  };
 
   const fetchDbStats = () => {
     api.getDbStats()
@@ -60,6 +70,7 @@ export const SettingsPage: React.FC = () => {
       .catch(() => {});
 
     fetchDbStats();
+    fetchAlertRules();
   }, []);
 
   const handleToggleRegistration = async () => {
@@ -165,6 +176,7 @@ export const SettingsPage: React.FC = () => {
   const tabs = [
     { id: 'general' as const, label: t('settings.tabGeneral') || 'Genel & Güvenlik', icon: Shield },
     { id: 'notifications' as const, label: t('settings.tabNotifications') || 'Bildirim Kanalları', icon: Bell },
+    { id: 'alerts' as const, label: 'Eşik Alarmları', icon: Activity },
     { id: 'backup' as const, label: t('settings.tabBackup') || 'Yedekleme & SQLite', icon: Database }
   ];
 
@@ -273,6 +285,13 @@ export const SettingsPage: React.FC = () => {
             testingChannel={testingChannel}
             testResult={testResult}
             onTestNotification={handleTestNotification}
+          />
+        )}
+
+        {activeTab === 'alerts' && (
+          <AlertRulesTab
+            rules={alertRules}
+            onRefresh={fetchAlertRules}
           />
         )}
 

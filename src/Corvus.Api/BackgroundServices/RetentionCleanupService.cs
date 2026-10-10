@@ -66,6 +66,19 @@ public class RetentionCleanupService : BackgroundService
                         }
                     }
 
+                    var activityRepo = scope.ServiceProvider.GetService<IActivityLogRepository>();
+                    if (activityRepo != null)
+                    {
+                        try
+                        {
+                            await activityRepo.CleanupOldLogsAsync(retentionDays);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "Eski activity log kayıtları temizlenirken geçici hata.");
+                        }
+                    }
+
                     // SQLite sorgu planlayıcısı istatistiklerini güncelle ve silinen kayıtların freelist alanını diske iade et (VACUUM)
                     if (dbFactory != null)
                     {

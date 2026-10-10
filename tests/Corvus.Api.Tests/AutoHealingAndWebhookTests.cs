@@ -48,6 +48,9 @@ public class AutoHealingAndWebhookTests
             return Task.CompletedTask;
         }
 
+        public Task DispatchMetricThresholdAlertAsync(string ruleName, string targetDescription, string metric, double thresholdValue, double currentValue, bool isResolved, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
         public Task<NotificationResult> TestChannelAsync(string channel, string? webhookUrl, string? botToken, string? chatId, string? smtpHost = null, int? smtpPort = null, string? smtpUser = null, string? smtpPass = null, string? smtpFrom = null, string? smtpFromName = null, string? smtpTo = null, bool? smtpTls = null, CancellationToken ct = default) =>
             Task.FromResult(new NotificationResult(true, "OK"));
     }
