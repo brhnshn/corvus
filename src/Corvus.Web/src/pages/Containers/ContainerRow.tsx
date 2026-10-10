@@ -6,7 +6,8 @@ import {
   MoreHorizontal, 
   ArrowDownRight, 
   ArrowUpRight,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import type { DockerContainer, ContainerStats } from '../../types';
 import { Pill, type StatusType } from '../../components/ui/Pill';
@@ -14,6 +15,7 @@ import { TagChip } from '../../components/ui/TagChip';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Button } from '../../components/ui/Button';
 import { formatBytes } from '../../utils/format';
+import { ContainerQuickActions } from './ContainerQuickActions';
 
 export interface ContainerRowProps {
   container: DockerContainer;
@@ -21,7 +23,7 @@ export interface ContainerRowProps {
   actionInProgress?: boolean;
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenSheet: (container: DockerContainer) => void;
-  onInspect?: (container: DockerContainer) => void;
+  onInspect?: (container: DockerContainer, defaultTab?: string) => void;
   onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
   onOpenImageUpdate?: (container: DockerContainer) => void;
@@ -55,6 +57,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   const rawName = container.Names?.[0] || container.Id.slice(0, 12);
   const cleanName = rawName.replace(/^\//, '');
   const shortId = container.Id.slice(0, 12);
+  const composeProject = container.Labels?.['com.docker.compose.project'];
 
   const state = container.State.toLowerCase();
   const isRunning = state === 'running';
@@ -71,15 +74,21 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   const ramBytes = stats?.memoryUsageBytes ?? 0;
   const ramPercent = stats ? Math.round(stats.memoryPercent) : 0;
 
+  const handleRowClick = () => {
+    onInspect?.(container);
+  };
+
   return (
     <div
+      onClick={handleRowClick}
       className="
-        surface rounded-[20px] p-3.5 sm:p-4 transition-all duration-200 select-none hover:bg-white/[0.10] animate-rv
+        surface rounded-[20px] p-3.5 sm:p-4 select-none
+        cursor-pointer hover:bg-white/[0.08] hover:border-white/15 active:scale-[0.998] transition-all duration-150 animate-rv
         flex flex-col gap-3
-        lg:grid lg:grid-cols-[2.1fr_1.7fr_1.8fr_1.1fr_190px] lg:items-center lg:gap-4 lg:py-3 lg:px-4.5
+        lg:grid lg:grid-cols-[2.1fr_1.5fr_1.8fr_1fr_190px] lg:items-center lg:gap-4 lg:py-3 lg:px-4.5
       "
     >
-      {/* 1. İsim & ID & Etiketler */}
+      {/* 1. İsim & ID & Hızlı Eylemler & Etiketler */}
       <div className="flex items-start gap-3 min-w-0">
         <span
           className={`
@@ -88,14 +97,20 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
           `}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <b
-              onClick={() => onInspect?.(container)}
-              className="text-[14px] sm:text-[15px] font-semibold text-[#eceef6] hover:text-[#d5d5dc] cursor-pointer truncate leading-snug"
+              className="text-[14px] sm:text-[15px] font-semibold text-[#eceef6] hover:text-white truncate leading-snug"
               title={cleanName}
             >
               {cleanName}
             </b>
+
+            {composeProject && (
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300">
+                {composeProject}
+              </span>
+            )}
+
             {hasUpdate && onOpenImageUpdate && (
               <button
                 type="button"
@@ -111,9 +126,21 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
               </button>
             )}
           </div>
-          <small className="font-mono text-[11px] text-[#9ba0b5] block truncate mt-0.5">
-            {shortId}
-          </small>
+
+          <div className="flex items-center gap-2 mt-0.5">
+            <small className="font-mono text-[11px] text-[#9ba0b5] block truncate">
+              {shortId}
+            </small>
+
+            {/* Doğrudan satır üstünde Portainer tarzı Hızlı Eylemler (Quick Actions) */}
+            <div className="hidden sm:inline-block">
+              <ContainerQuickActions
+                container={container}
+                onInspect={onInspect}
+                isAdmin={isAdmin}
+              />
+            </div>
+          </div>
 
           {containerTags.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -188,14 +215,37 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
         </div>
         {container.Ports && container.Ports.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-            {container.Ports.map((p, i) => (
-              <span
-                key={i}
-                className="font-mono text-[10.5px] px-2 py-0.5 rounded-[7px] bg-white/[0.08] border border-white/10 text-[#eceef6]"
-              >
-                {p.PublicPort ? `${p.PublicPort}:` : ''}{p.PrivatePort}
-              </span>
-            ))}
+            {container.Ports.map((p, i) => {
+              const label = p.PublicPort ? `${p.PublicPort}:${p.PrivatePort}` : `${p.PrivatePort}`;
+              const host = window.location.hostname || 'localhost';
+              const href = p.PublicPort ? `http://${host}:${p.PublicPort}` : undefined;
+
+              if (href) {
+                return (
+                  <a
+                    key={i}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title={`${label} adresine git`}
+                    className="inline-flex items-center gap-1 font-mono text-[10.5px] px-2 py-0.5 rounded-[7px] bg-white/[0.08] hover:bg-white/[0.16] hover:text-white border border-white/10 text-[#eceef6] transition-colors cursor-pointer"
+                  >
+                    <span>{label}</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-[#9ba0b5]" />
+                  </a>
+                );
+              }
+
+              return (
+                <span
+                  key={i}
+                  className="font-mono text-[10.5px] px-2 py-0.5 rounded-[7px] bg-white/[0.08] border border-white/10 text-[#eceef6]"
+                >
+                  {label}
+                </span>
+              );
+            })}
           </div>
         )}
       </div>
@@ -209,14 +259,20 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
       </div>
 
       {/* 5. Aksiyon Butonları */}
-      <div className="flex items-center justify-end gap-1.5 border-t border-white/10 pt-2 lg:border-t-0 lg:pt-0">
+      <div
+        className="flex items-center justify-end gap-1.5 border-t border-white/10 pt-2 lg:border-t-0 lg:pt-0"
+        onClick={(e) => e.stopPropagation()}
+      >
         {isAdmin && (
           <>
             {isRunning ? (
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => onAction('stop', container.Id, cleanName)}
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  onAction('stop', container.Id, cleanName);
+                }}
                 disabled={actionInProgress}
                 icon={<Square className="w-3.5 h-3.5" />}
                 className="flex-1 lg:flex-none"
@@ -227,7 +283,10 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => onAction('start', container.Id, cleanName)}
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  onAction('start', container.Id, cleanName);
+                }}
                 disabled={actionInProgress}
                 icon={<Play className="w-3.5 h-3.5" />}
                 className="flex-1 lg:flex-none"
@@ -239,7 +298,10 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
             <Button
               variant="icon"
               size="sm"
-              onClick={() => onAction('restart', container.Id, cleanName)}
+              onClick={(e) => {
+                e?.stopPropagation();
+                onAction('restart', container.Id, cleanName);
+              }}
               disabled={actionInProgress}
               icon={<RotateCw className="w-3.5 h-3.5" />}
               title="Yeniden Başlat"
@@ -251,7 +313,10 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
         <Button
           variant="icon"
           size="sm"
-          onClick={() => onOpenSheet(container)}
+          onClick={(e) => {
+            e?.stopPropagation();
+            onOpenSheet(container);
+          }}
           icon={<MoreHorizontal className="w-4 h-4" />}
           title="İşlemler"
           aria-label="İşlemler"

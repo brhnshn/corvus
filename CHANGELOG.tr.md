@@ -3,6 +3,20 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.32] - 2026-10-10
+
+### Düzeltilenler (Fixed)
+- **Konteyner İnceleme Verisi Normalizasyonu & Eksik Alanların Onarılması**:
+  - **Büyük/Küçük Harf Toleranslı Güvenli Veri Erişimi (`inspectHelpers.ts`)**: Docker daemon'ın PascalCase (`Config`, `NetworkSettings`, `PortBindings`, `Mounts`) çıktısı ile istemci tarafındaki camelCase (`config`, `networkSettings`, `mounts`) alan eşleşmesi düzeltildi. Ortam değişkenleri (`Env`), port eşleşmeleri, bağlı Docker ağları ve depolama bağlama noktaları (mounts) artık `/containers/:id` detay sayfasında eksiksiz ve hatasız listelenir.
+  - **Çalışma Zamanı ve Sağlık Durumu Çözümleyicisi**: Konteyner çalışma dizini, başlangıç komutları (entrypoint) ve konteyner sağlık durumu (health probes) için güvenli veri haritalandırması yapıldı.
+- **Akıcı Satır Tıklama Geçişi & Hızlı Eylemler (Quick Actions) Çubuğu**:
+  - **Tüm Satıra Tıklanabilir Doğrudan Gezinme (`ContainerRow.tsx`)**: 3 nokta menüsüyle uğraşma zorunluluğu kaldırılarak tüm satır tıklanabilir hale getirildi (`hover:bg-white/[0.08] active:scale-[0.998] transition-all`); tıklandığında akıcı mikro-geçişle doğrudan `/containers/:id` sayfasına yönlendirir. Buton tıklamaları `stopPropagation` ile izole edildi.
+  - **Satır Üstü Hızlı Eylemler Çubuğu (`ContainerQuickActions.tsx`)**: Tablo satırlarına doğrudan tek tıkla Canlı Loglar (`FileText`), Konteyner İnceleme (`Info`), Telemetri ve Kaynaklar (`Activity`) ve Web Terminali (`Terminal`) sekmesini açan kompakt aksiyon seti eklendi.
+  - **Tıklanabilir Yayınlanan Portlar (`ContainerRow.tsx`)**: Dışa açılan portlar (`p.PublicPort ? host:port ↗`) yeni tarayıcı sekmesinde açılabilir köprü bağlantılarına dönüştürüldü.
+  - **Doğrudan Sekme Bağlantısı (`App.tsx`, `Containers/index.tsx`, `ContainerDetail/index.tsx`)**: `?tab=` URL sorgu parametresi desteğiyle Hızlı Eylem ikonuna tıklandığında doğrudan ilgili sekmenin açılması sağlandı.
+
+---
+
 ## [1.5.31] - 2026-10-10
 
 ### Düzeltilenler (Fixed)

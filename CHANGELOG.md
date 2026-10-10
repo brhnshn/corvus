@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.32] - 2026-10-10
+
+### Fixed
+- **Container Inspect Data Normalization & Missing Field Restoration**:
+  - **Case-Insensitive Safe Data Accessor (`inspectHelpers.ts`)**: Resolved Docker daemon PascalCase (`Config`, `NetworkSettings`, `PortBindings`, `Mounts`) vs client-side camelCase (`config`, `networkSettings`, `mounts`) property mapping. Environment variables, port mappings, connected Docker networks, and storage volume mounts now display accurately on `/containers/:id`.
+  - **Graceful State & Health Mapping**: Added fallback parsers for runtime execution config, working directory, entrypoints, and container health probes.
+- **Fluid Row-Click Navigation & Quick Actions Toolbar**:
+  - **Whole-Row Direct Click Navigation (`ContainerRow.tsx`)**: Replaced 3-dots menu friction with full-row clickability featuring subtle micro-interaction transitions (`hover:bg-white/[0.08] active:scale-[0.998] transition-all`), navigating straight into `/containers/:id`.
+  - **In-Row Quick Actions Toolbar (`ContainerQuickActions.tsx`)**: Added compact 1-click icon buttons directly onto container table rows for instant navigation into Live Logs (`FileText`), Container Overview (`Info`), Telemetry & Resource Limits (`Activity`), and Web Terminal (`Terminal`).
+  - **Clickable Published Ports (`ContainerRow.tsx`)**: Exposed external published ports (`p.PublicPort ? host:port ↗`) as direct anchor links opening in a new browser tab with event bubbling isolation.
+  - **Deep-Linked Tab Query Navigation (`App.tsx`, `Containers/index.tsx`, `ContainerDetail/index.tsx`)**: Enabled `?tab=` query parameter support so clicking Quick Action icons routes straight into the target tab.
+
+---
+
 ## [1.5.31] - 2026-10-10
 
 ### Fixed

@@ -2,6 +2,7 @@ import React from 'react';
 import { useI18n } from '../../../i18n';
 import { Globe, ArrowRight, ExternalLink, Network } from 'lucide-react';
 import type { DockerContainerInspectInfo } from '../../../types';
+import { getInspectPorts, getInspectNetworks } from './inspectHelpers';
 
 interface ContainerNetworkingTabProps {
   inspect: DockerContainerInspectInfo;
@@ -10,10 +11,10 @@ interface ContainerNetworkingTabProps {
 export const ContainerNetworkingTab: React.FC<ContainerNetworkingTabProps> = ({ inspect }) => {
   const { t } = useI18n();
 
-  const portsMap = inspect.networkSettings?.ports || inspect.hostConfig?.portBindings || {};
+  const portsMap = getInspectPorts(inspect);
   const portEntries = Object.entries(portsMap);
 
-  const networksMap = inspect.networkSettings?.networks || {};
+  const networksMap = getInspectNetworks(inspect);
   const networkEntries = Object.entries(networksMap);
 
   return (

@@ -2,6 +2,7 @@ import React from 'react';
 import { useI18n } from '../../../i18n';
 import { Play, Square, RotateCw, Pause, Terminal, FileText, Copy, Check } from 'lucide-react';
 import type { DockerContainerInspectInfo, DockerContainer } from '../../../types';
+import { getInspectConfig, getInspectState, getInspectHostConfig } from './inspectHelpers';
 
 interface ContainerOverviewTabProps {
   inspect: DockerContainerInspectInfo;
@@ -32,15 +33,19 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
   const { t } = useI18n();
   const [copiedId, setCopiedId] = React.useState(false);
 
+  const config = getInspectConfig(inspect);
+  const state = getInspectState(inspect);
+  const hostConfig = getInspectHostConfig(inspect);
+
   const handleCopyId = () => {
     navigator.clipboard.writeText(inspect.id);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const isRunning = inspect.state?.running ?? false;
-  const isPaused = inspect.state?.paused ?? false;
-  const statusStr = inspect.state?.status ?? 'unknown';
+  const isRunning = state.running ?? false;
+  const isPaused = state.paused ?? false;
+  const statusStr = state.status ?? 'unknown';
 
   const formatDate = (isoString?: string) => {
     if (!isoString || isoString.startsWith('0001-01-01')) return '—';
@@ -51,8 +56,8 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
     }
   };
 
-  const commandStr = inspect.config?.cmd ? inspect.config.cmd.join(' ') : (inspect.path ? `${inspect.path} ${(inspect.args || []).join(' ')}` : '—');
-  const entrypointStr = inspect.config?.entrypoint ? inspect.config.entrypoint.join(' ') : '—';
+  const commandStr = config.cmd ? config.cmd.join(' ') : (inspect.path ? `${inspect.path} ${(inspect.args || []).join(' ')}` : '—');
+  const entrypointStr = config.entrypoint ? config.entrypoint.join(' ') : '—';
 
   return (
     <div className="space-y-4">
@@ -189,15 +194,15 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
               {statusStr}
             </span>
 
-            {inspect.state?.health?.status && (
+            {state.health?.status && (
               <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-                Sağlık: {inspect.state.health.status}
+                Sağlık: {state.health.status}
               </span>
             )}
 
-            {inspect.state?.exitCode !== undefined && inspect.state.exitCode !== 0 && (
+            {state.exitCode !== undefined && state.exitCode !== 0 && (
               <span className="text-xs font-mono text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
-                Exit: {inspect.state.exitCode}
+                Exit: {state.exitCode}
               </span>
             )}
           </div>
@@ -207,7 +212,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
         <div className="p-4 surface rounded-2xl border border-white/10 space-y-1.5">
           <div className="text-xs text-[#9ba0b5]">{t('containers.restartPolicyLabel')}</div>
           <div className="text-xs font-bold text-[#eceef6]">
-            {inspect.hostConfig?.restartPolicy?.name || 'no'}
+            {hostConfig.restartPolicy?.name || 'no'}
           </div>
         </div>
       </div>
@@ -228,11 +233,11 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-white/10 pb-2">
             <span className="text-[#9ba0b5]">{t('containers.workdir')}</span>
-            <span className="md:col-span-3 font-mono text-[#eceef6]">{inspect.config?.workingDir || '—'}</span>
+            <span className="md:col-span-3 font-mono text-[#eceef6]">{config.workingDir || '—'}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4">
             <span className="text-[#9ba0b5]">{t('containers.user')}</span>
-            <span className="md:col-span-3 font-mono text-[#eceef6]">{inspect.config?.user || 'root (varsayılan)'}</span>
+            <span className="md:col-span-3 font-mono text-[#eceef6]">{config.user || 'root (varsayılan)'}</span>
           </div>
         </div>
       </div>

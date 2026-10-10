@@ -125,14 +125,15 @@ export const App: React.FC = () => {
   const selectedContainerId = currentRoute.containerId;
   const [showRegPrompt, setShowRegPrompt] = useState(false);
 
-  const navigateTo = (page: PageId, containerId?: string | null) => {
+  const navigateTo = (page: PageId, containerId?: string | null, tab?: string | null) => {
     const newRoute: ParsedRoute = { page, containerId: containerId || null };
     setCurrentRoute(newRoute);
     let newPath = page === 'dashboard' ? '/' : `/${page}`;
     if (page === 'containers' && containerId) {
-      newPath = `/containers/${containerId}`;
+      newPath = `/containers/${containerId}${tab ? `?tab=${tab}` : ''}`;
     }
-    if (window.location.pathname !== newPath) {
+    const currentFull = window.location.pathname + window.location.search;
+    if (currentFull !== newPath) {
       window.history.pushState(null, '', newPath);
     }
   };
@@ -375,7 +376,7 @@ export const App: React.FC = () => {
         return (
           <ContainersPage
             isAdmin={isAdmin}
-            onNavigateToDetail={(id) => navigateTo('containers', id)}
+            onNavigateToDetail={(id, tab) => navigateTo('containers', id, tab)}
           />
         );
       case 'metrics':

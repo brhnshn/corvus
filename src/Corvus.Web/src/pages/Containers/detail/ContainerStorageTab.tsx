@@ -2,6 +2,7 @@ import React from 'react';
 import { useI18n } from '../../../i18n';
 import { HardDrive, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
 import type { DockerContainerInspectInfo } from '../../../types';
+import { getInspectMounts } from './inspectHelpers';
 
 interface ContainerStorageTabProps {
   inspect: DockerContainerInspectInfo;
@@ -9,7 +10,7 @@ interface ContainerStorageTabProps {
 
 export const ContainerStorageTab: React.FC<ContainerStorageTabProps> = ({ inspect }) => {
   const { t } = useI18n();
-  const mounts = inspect.mounts || [];
+  const mounts = getInspectMounts(inspect);
 
   return (
     <div className="space-y-4">

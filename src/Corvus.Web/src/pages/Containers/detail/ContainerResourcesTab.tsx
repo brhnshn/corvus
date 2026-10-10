@@ -18,6 +18,7 @@ import type {
   DockerContainerUpdateRequest, 
   ContainerStats 
 } from '../../../types';
+import { getInspectHostConfig, getInspectState } from './inspectHelpers';
 
 interface ContainerResourcesTabProps {
   inspect: DockerContainerInspectInfo;
@@ -34,20 +35,23 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
 }) => {
   const { t } = useI18n();
 
+  const hostConfig = getInspectHostConfig(inspect);
+  const state = getInspectState(inspect);
+
   // Canlı Stats State'i & Polling
   const [stats, setStats] = useState<ContainerStats | null>(initialStats || null);
   const isMountedRef = useRef(true);
 
-  const isRunning = inspect.state?.running === true;
+  const isRunning = state.running === true;
 
   // Başlangıç değerleri (Inspect'ten)
-  const initialNanoCpus = inspect.hostConfig?.nanoCpus || 0;
+  const initialNanoCpus = hostConfig.nanoCpus || 0;
   const initialCores = initialNanoCpus > 0 ? (initialNanoCpus / 1_000_000_000).toString() : '0';
 
-  const initialMemoryBytes = inspect.hostConfig?.memory || 0;
+  const initialMemoryBytes = hostConfig.memory || 0;
   const initialMemoryMb = initialMemoryBytes > 0 ? Math.round(initialMemoryBytes / (1024 * 1024)).toString() : '0';
 
-  const initialRestartPolicy = inspect.hostConfig?.restartPolicy?.name || 'no';
+  const initialRestartPolicy = hostConfig.restartPolicy?.name || 'no';
 
   const [cpuCores, setCpuCores] = useState<string>(initialCores);
   const [memoryMb, setMemoryMb] = useState<string>(initialMemoryMb);

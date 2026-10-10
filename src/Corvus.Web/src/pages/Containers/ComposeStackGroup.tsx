@@ -20,7 +20,7 @@ export interface ComposeStackGroupProps {
   actionInProgress: { id: string; action: string } | null;
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart', id: string, name: string) => void;
   onOpenSheet: (container: DockerContainer) => void;
-  onInspect?: (container: DockerContainer) => void;
+  onInspect?: (container: DockerContainer, defaultTab?: string) => void;
   selectedTag?: string | null;
   onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;

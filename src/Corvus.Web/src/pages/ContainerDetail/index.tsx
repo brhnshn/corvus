@@ -17,6 +17,7 @@ import { ContainerDetailHeader } from './ContainerDetailHeader';
 import { ContainerTelemetryHero } from './ContainerTelemetryHero';
 import { ContainerHistoricalCharts, type ContainerTelemetryPoint } from './ContainerHistoricalCharts';
 import type { ContainerDetailTab, ContainerDetailPageProps } from './types';
+import { getInspectEnv, getInspectHostConfig, getInspectConfig } from '../Containers/detail/inspectHelpers';
 
 // Modüler Alt Sekmeler (Clean Architecture)
 import { ContainerOverviewTab } from '../Containers/detail/ContainerOverviewTab';
@@ -36,7 +37,11 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   const { t } = useI18n();
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<ContainerDetailTab>('overview');
+  const [activeTab, setActiveTab] = useState<ContainerDetailTab>(() => {
+    const queryTab = new URLSearchParams(window.location.search).get('tab');
+    const validTabs: ContainerDetailTab[] = ['overview', 'resources', 'env', 'networking', 'storage', 'logs', 'terminal'];
+    return (validTabs.includes(queryTab as ContainerDetailTab) ? queryTab : 'overview') as ContainerDetailTab;
+  });
   const [container, setContainer] = useState<DockerContainer | null>(null);
   const [inspect, setInspect] = useState<DockerContainerInspectInfo | null>(null);
   const [stats, setStats] = useState<ContainerStats | null>(null);
@@ -217,7 +222,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
       <ContainerHistoricalCharts
         data={telemetryHistory}
         isRunning={isRunning}
-        memoryLimitBytes={inspect?.hostConfig?.memory || stats?.memoryLimitBytes || 0}
+        memoryLimitBytes={getInspectHostConfig(inspect).memory || stats?.memoryLimitBytes || 0}
       />
 
       {/* 3. Çok Sekmeli Gezinme Çubuğu */}
@@ -271,7 +276,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
         )}
 
         {activeTab === 'env' && inspect && (
-          <ContainerEnvTab envList={inspect.config?.env} />
+          <ContainerEnvTab envList={getInspectEnv(inspect)} />
         )}
 
         {activeTab === 'networking' && inspect && (
@@ -295,7 +300,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
         <ImageUpdateModal
           containerId={containerId}
           containerName={containerName}
-          imageName={inspect?.config?.image || container?.Image || ''}
+          imageName={getInspectConfig(inspect).image || container?.Image || ''}
           isOpen={showUpdateModal}
           onClose={() => setShowUpdateModal(false)}
           onSuccess={() => {

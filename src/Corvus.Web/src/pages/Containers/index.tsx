@@ -26,7 +26,7 @@ import { extractContainerTags } from './ContainerRow';
 
 export interface ContainersPageProps {
   isAdmin?: boolean;
-  onNavigateToDetail?: (id: string) => void;
+  onNavigateToDetail?: (id: string, defaultTab?: string) => void;
 }
 
 export const ContainersPage: React.FC<ContainersPageProps> = ({ 
@@ -265,9 +265,9 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
     storageKey: 'corvus_container_groups',
   });
 
-  const handleInspect = (c: DockerContainer) => {
+  const handleInspect = (c: DockerContainer, defaultTab?: string) => {
     if (onNavigateToDetail) {
-      onNavigateToDetail(c.Id);
+      onNavigateToDetail(c.Id, defaultTab);
     } else {
       setSelectedInspectContainer(c);
     }
