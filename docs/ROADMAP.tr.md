@@ -179,3 +179,30 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
   - Çalışma zamanı cgroup kaynak sınırları (vCPU kotası, RAM limiti) ve yeniden başlatma ilkesi (restart policy) canlı güncelleme.
   - Konteyner kartlarından, satırlarından ve aksiyon menüsünden doğrudan URL ile `/containers/:id` sayfasına yönlendirme.
 * **Kabul Kriteri:** Modal sınırları olmadan konteynerin tüm metriklerinin, loglarının ve terminalinin bağımsız sayfada derinlemesine izlenip yönetilebilmesi; teftiş için popup modal zorunluluğunun kalkması; tüm testlerin geçmesi.
+
+### Bilet 6.2 — Konteyner Tarihsel Telemetri Grafikleri (CPU & RAM Zaman Serisi) [TAMAMLANDI]
+* **Önkoşul:** Bilet 6.1 tamamlandı.
+* **Amaç:** Çalışan konteynerler için geçmiş CPU yükünü ve bellek kullanım eğilimlerini grafiklerle görselleştirmek.
+* **Kapsam:**
+  - `ContainerHistoricalCharts.tsx` modüler Recharts Area grafiği bileşeni ve renk kodlu degrade dolgular.
+  - Ekranda son 30 telemetri noktasını (~2.5 dakika) kayan pencereyle tutan bellek içi akış tamponu.
+  - Bellek sınırı bağlamı ve formatlanmış bayt araç ipuçları (tooltips).
+* **Kabul Kriteri:** CPU % ve RAM eğilimini akıcı gösteren gerçek zamanlı grafikler; masaüstü ve mobil uyumu.
+
+### Bilet 6.3 — Docker Compose Stack Toplu Eylemleri [TAMAMLANDI]
+* **Önkoşul:** Yok.
+* **Amaç:** Bir Docker Compose projesine ait tüm konteynerleri tek tıkla topluca yönetebilmek.
+* **Kapsam:**
+  - `GroupSection.tsx` bileşenine özelleştirilebilir `headerActions` yuvası.
+  - `ComposeStackGroup.tsx` proje başlığına Stack'i Yeniden Başlat (`RotateCw`), Başlat (`Play`) ve Durdur (`Square`) butonları.
+  - Canlı demo etkileşimli havuzuna tam entegrasyon.
+* **Kabul Kriteri:** Tek tıkla stack'teki tüm konteynerlerin yeniden başlatılabilmesi veya durdurulabilmesi; admin yetki koruması.
+
+### Bilet 6.4 — Konteyner Beklenmedik Durma & Crash-Loop Alarmları [TAMAMLANDI]
+* **Önkoşul:** Yok.
+* **Amaç:** Docker konteynerleri beklenmedik şekilde sıfır olmayan bir çıkış koduyla durduğunda (ExitCode != 0, OOMKilled, çökme) anında bildirim göndermek.
+* **Kapsam:**
+  - `INotificationService` ve `NotificationService.cs` içine Discord, Telegram, Slack, SMTP, Ntfy ve Webhook destekli `DispatchContainerCrashAlertAsync` metodu.
+  - `ContainerDiscoveryService.cs` arka plan servisinde çalışan -> durdu geçişlerini ve sıfır olmayan çıkış kodlarını izleyen durum makinesi.
+  - `NotificationServiceTests.cs` xUnit birim test kapsamı (225/225 yeşil test).
+* **Kabul Kriteri:** Anormal kapanmalarda anında bildirim iletilmesi; normal manuel durdurmalarda (ExitCode == 0) gereksiz alarm üretilmemesi.

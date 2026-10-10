@@ -18,6 +18,7 @@ interface GroupSectionProps {
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent) => void;
+  headerActions?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -31,6 +32,7 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
   onDragOver,
   onDragLeave,
   onDrop,
+  headerActions,
   children
 }) => {
   const { t } = useI18n();
@@ -146,12 +148,15 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
           )}
         </div>
 
-        {/* Drag over badge */}
-        {isDragOver && (
-          <span className="text-[11px] text-indigo-400 font-mono font-medium animate-pulse px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/40">
-            {t('groups.dropHere')}
-          </span>
-        )}
+        {/* Right side: header actions & drag badge */}
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {headerActions}
+          {isDragOver && (
+            <span className="text-[11px] text-indigo-400 font-mono font-medium animate-pulse px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/40">
+              {t('groups.dropHere')}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Group Items Grid / Content */}

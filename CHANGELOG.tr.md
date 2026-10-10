@@ -16,6 +16,13 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
     - Genel Bakış, Çevre Değişkenleri, Ağ, Depolama Mountları ve canlı kaynak limit düzenleme sekmeleri korundu ve entegre edildi.
   - **Yönlendirme & Derin Bağlantı (Deep-Linking) Entegrasyonu (`App.tsx`, `Containers/index.tsx`)**: İstemci yönlendirme motoru URL parametrelerini destekleyecek şekilde güncellendi, sayfa başlığı (`Konteyner Adı - Konteyner Detayı - Corvus`) senkronize edildi ve liste görünümüne geri dönüş bağlantısı sağlandı.
   - **Çift Dilli Yerelleştirme Eşitlemesi (`tr.ts`, `en.ts`)**: Konteyner detay paneli, telemetri göstergeleri, loglar ve terminal başlıkları için Türkçe ve İngilizce dil anahtarları eklendi.
+- **Konteyner Tarihsel Telemetri Zaman Serisi Grafikleri (Bilet 6.2)**:
+  - **Canlı CPU & RAM Trend Görselleştirmesi (`ContainerHistoricalCharts.tsx`)**: Konteynerin CPU yükünü ve bellek kullanım geçmişini renk kodlu degrade dolgular ve araç ipuçlarıyla gösteren duyarlı Recharts Area grafikleri eklendi.
+- **Docker Compose Stack Toplu Eylemleri (Bilet 6.3)**:
+  - **Tek Tıkla Proje Yönetimi (`ComposeStackGroup.tsx`, `GroupSection.tsx`)**: Compose grup başlıklarına tüm projeyi tek seferde Yeniden Başlatma, Başlatma ve Durdurma butonları ile döner yükleme göstergesi eklendi.
+- **Konteyner Beklenmedik Kapanma & Crash-Loop Alarmları (Bilet 6.4)**:
+  - **Anormal Çıkış Kodu İzleme (`ContainerDiscoveryService.cs`, `NotificationService.cs`)**: Sıfır olmayan çıkış koduyla duran veya çöken (ExitCode != 0, OOMKilled) konteynerler anında tespit edilerek Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına acil bildirim iletilmesi sağlandı.
+  - **Birim Test Kapsamı (`NotificationServiceTests.cs`)**: Çökme durumunda bildirim gönderimini doğrulayan xUnit testi eklendi (225/225 yeşil test).
 
 ---
 

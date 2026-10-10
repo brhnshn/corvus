@@ -15,6 +15,7 @@ import { useI18n } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { ContainerDetailHeader } from './ContainerDetailHeader';
 import { ContainerTelemetryHero } from './ContainerTelemetryHero';
+import { ContainerHistoricalCharts, type ContainerTelemetryPoint } from './ContainerHistoricalCharts';
 import type { ContainerDetailTab, ContainerDetailPageProps } from './types';
 
 // Modüler Alt Sekmeler (Clean Architecture)
@@ -38,6 +39,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   const [container, setContainer] = useState<DockerContainer | null>(null);
   const [inspect, setInspect] = useState<DockerContainerInspectInfo | null>(null);
   const [stats, setStats] = useState<ContainerStats | null>(null);
+  const [telemetryHistory, setTelemetryHistory] = useState<ContainerTelemetryPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
@@ -73,12 +75,26 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
     }
   }, [containerId]);
 
-  // 2. Canlı Telemetriyi (CPU/RAM/Net) Arka Planda Güncelle
+  // 2. Canlı Telemetriyi (CPU/RAM/Net) Arka Planda Güncelle ve Tarihsel Seriye Ekle
   const fetchLiveStats = useCallback(async () => {
     try {
       const liveData = await containersApi.getContainerStats(containerId);
       if (liveData && isMountedRef.current) {
         setStats(liveData);
+        const now = new Date();
+        const newPoint: ContainerTelemetryPoint = {
+          time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          fullTime: now.toLocaleTimeString(),
+          cpuPercent: +liveData.cpuPercent.toFixed(1),
+          memoryUsageBytes: liveData.memoryUsageBytes,
+          memoryPercent: +liveData.memoryPercent.toFixed(1),
+          networkRxBytes: liveData.networkRxBytes,
+          networkTxBytes: liveData.networkTxBytes
+        };
+        setTelemetryHistory((prev) => {
+          const next = [...prev, newPoint];
+          return next.slice(-30);
+        });
       }
     } catch {
       // sessizce geç
@@ -193,6 +209,13 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
 
       {/* 2. Canlı Telemetri Hero Alanı (CPU / RAM / Ağ) */}
       <ContainerTelemetryHero stats={stats} isRunning={isRunning} />
+
+      {/* 2.1 Tarihsel Telemetri Zaman Serisi Grafikleri */}
+      <ContainerHistoricalCharts
+        data={telemetryHistory}
+        isRunning={isRunning}
+        memoryLimitBytes={inspect?.hostConfig?.memory || stats?.memoryLimitBytes || 0}
+      />
 
       {/* 3. Çok Sekmeli Gezinme Çubuğu */}
       <div className="glass rounded-[20px] p-[4px] flex gap-1 overflow-x-auto no-scrollbar shadow-xs">

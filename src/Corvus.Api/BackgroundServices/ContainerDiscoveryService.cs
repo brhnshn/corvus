@@ -12,6 +12,7 @@ public class ContainerDiscoveryService : BackgroundService
     private readonly IDockerService _docker;
     private readonly IDockerHttpClient? _dockerClient;
     private readonly ConcurrentDictionary<string, (string ImageId, List<string>? Env)> _inspectCache = new();
+    private readonly ConcurrentDictionary<string, string> _previousStates = new();
     private string _lastFingerprint = string.Empty;
 
     public ContainerDiscoveryService(
@@ -49,6 +50,18 @@ public class ContainerDiscoveryService : BackgroundService
                         }
 
                         activeIds.Add(c.Id);
+
+                        // Konteyner durum geçişini kontrol et (Crash / Exit Code tespiti)
+                        string currentState = c.State?.ToLowerInvariant() ?? "unknown";
+                        if (_previousStates.TryGetValue(c.Id, out var prevState))
+                        {
+                            if (prevState == "running" && (currentState == "exited" || currentState == "dead"))
+                            {
+                                // Konteyner çalışırken aniden kapandı; Inspect ile çıkış kodunu doğrula
+                                _ = CheckAndAlertCrashAsync(c, stoppingToken);
+                            }
+                        }
+                        _previousStates[c.Id] = currentState;
 
                         List<string>? env = null;
                         if (_dockerClient != null && DockerService.ExtractDomainFromLabels(c.Labels ?? new Dictionary<string, string>()) == null)
@@ -122,6 +135,35 @@ public class ContainerDiscoveryService : BackgroundService
         }
 
         _logger.LogInformation("ContainerDiscoveryService durduruldu.");
+    }
+
+    private async Task CheckAndAlertCrashAsync(DockerContainerInfo container, CancellationToken ct)
+    {
+        try
+        {
+            if (_dockerClient == null) return;
+
+            var inspect = await _dockerClient.InspectContainerAsync(container.Id, ct);
+            if (inspect?.State == null) return;
+
+            int exitCode = inspect.State.ExitCode;
+            // Sıfır olmayan çıkış kodu (Crash / OOM / Hata) durumunda alarm gönder
+            if (exitCode != 0)
+            {
+                string containerName = container.Names?.FirstOrDefault()?.TrimStart('/') ?? container.Id.Substring(0, Math.Min(12, container.Id.Length));
+                string? error = !string.IsNullOrWhiteSpace(inspect.State.Error) ? inspect.State.Error : null;
+
+                _logger.LogWarning("Konteyner beklenmedik şekilde durdu: {ContainerName} (ID: {ContainerId}, ExitCode: {ExitCode})", containerName, container.Id, exitCode);
+
+                using var scope = _services.CreateScope();
+                var notif = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                await notif.DispatchContainerCrashAlertAsync(containerName, container.Id, exitCode, error, ct);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Konteyner çıkış kodu incelenirken hata: {ContainerId}", container.Id);
+        }
     }
 
     private static string ComputeFingerprint(List<Service> services, List<string> activeIds)

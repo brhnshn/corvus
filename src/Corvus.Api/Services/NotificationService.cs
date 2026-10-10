@@ -12,6 +12,7 @@ public interface INotificationService
     Task DispatchServiceAlertAsync(string serviceName, string? url, bool isDown, string? errorMessage, CancellationToken ct = default);
     Task DispatchSslExpiryAlertAsync(string serviceName, string? url, int daysRemaining, string? issuer, CancellationToken ct = default);
     Task DispatchFlappingAlertAsync(string serviceName, string? url, bool isRecovered, int transitionCount, CancellationToken ct = default);
+    Task DispatchContainerCrashAlertAsync(string containerName, string containerId, int exitCode, string? errorReason, CancellationToken ct = default);
     Task<NotificationResult> TestChannelAsync(
         string channel, 
         string? webhookUrl, 
@@ -240,6 +241,77 @@ public class NotificationService : INotificationService
             settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
         {
             tasks.Add(SendGenericWebhookAsync(wUrl, isRecovered ? "flapping_resolved" : "flapping_detected", title, message, ct));
+        }
+
+        // Slack
+        if (settings.TryGetValue("notification_slack_enabled", out var slEnabled) && slEnabled == "true" &&
+            settings.TryGetValue("notification_slack_webhook_url", out var slUrl) && !string.IsNullOrWhiteSpace(slUrl))
+        {
+            tasks.Add(SendSlackAsync(slUrl, title, message, badgeColor, ct));
+        }
+
+        // Email (SMTP)
+        if (settings.TryGetValue("notification_email_enabled", out var eEnabled) && eEnabled == "true")
+        {
+            tasks.Add(SendSmtpEmailFromSettingsAsync(settings, title, message, badgeColor, ct));
+        }
+
+        if (tasks.Count > 0)
+        {
+            await Task.WhenAll(tasks);
+        }
+    }
+
+    public async Task DispatchContainerCrashAlertAsync(string containerName, string containerId, int exitCode, string? errorReason, CancellationToken ct = default)
+    {
+        var settings = await _settings.GetAllAsync();
+        if (settings.TryGetValue("notify_container_events", out var nce) && nce == "false")
+        {
+            return; // Konteyner olay bildirimleri devre dışı bırakılmış
+        }
+
+        bool isTr = settings.TryGetValue("system_language", out var lang) && lang?.ToLowerInvariant() == "tr";
+
+        string title = isTr
+            ? $"[KONTEYNER BEKLENMEDİK ŞEKİLDE DURDU] {containerName}"
+            : $"[CONTAINER CRASH / EXIT] {containerName}";
+
+        string message = isTr
+            ? $"Docker konteyneri sıfır olmayan bir çıkış koduyla durdu veya çöktü.\nKonteyner: {containerName}\nID: {containerId.Substring(0, Math.Min(12, containerId.Length))}\nÇıkış Kodu (Exit Code): {exitCode}\nSebep / Hata: {errorReason ?? "Bilinmiyor"}\nZaman: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC"
+            : $"Docker container exited with non-zero exit code or crashed.\nContainer: {containerName}\nID: {containerId.Substring(0, Math.Min(12, containerId.Length))}\nExit Code: {exitCode}\nReason / Error: {errorReason ?? "Unknown"}\nTime: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
+
+        const string badgeColor = "#ef4444";
+        const int discordColor = 15548997; // #ED4245 (Red)
+
+        var tasks = new List<Task>();
+
+        // Discord
+        if (settings.TryGetValue("notification_discord_enabled", out var dEnabled) && dEnabled == "true" &&
+            settings.TryGetValue("notification_discord_webhook_url", out var dUrl) && !string.IsNullOrWhiteSpace(dUrl))
+        {
+            tasks.Add(SendDiscordAsync(dUrl, title, message, discordColor, ct));
+        }
+
+        // Telegram
+        if (settings.TryGetValue("notification_telegram_enabled", out var tEnabled) && tEnabled == "true" &&
+            settings.TryGetValue("notification_telegram_bot_token", out var tToken) && !string.IsNullOrWhiteSpace(tToken) &&
+            settings.TryGetValue("notification_telegram_chat_id", out var tChat) && !string.IsNullOrWhiteSpace(tChat))
+        {
+            tasks.Add(SendTelegramAsync(tToken, tChat, title, message, ct));
+        }
+
+        // Ntfy
+        if (settings.TryGetValue("notification_ntfy_enabled", out var nEnabled) && nEnabled == "true" &&
+            settings.TryGetValue("notification_ntfy_url", out var nUrl) && !string.IsNullOrWhiteSpace(nUrl))
+        {
+            tasks.Add(SendNtfyAsync(nUrl, title, message, priority: "urgent", tags: "skull,warning", ct));
+        }
+
+        // Generic Webhook
+        if (settings.TryGetValue("notification_webhook_enabled", out var wEnabled) && wEnabled == "true" &&
+            settings.TryGetValue("notification_webhook_url", out var wUrl) && !string.IsNullOrWhiteSpace(wUrl))
+        {
+            tasks.Add(SendGenericWebhookAsync(wUrl, "container_crash", title, message, ct));
         }
 
         // Slack

@@ -319,5 +319,28 @@ public class NotificationServiceTests
         Assert.Contains("stabilized across consecutive checks", body);
         Assert.Contains("#22c55e", body); // Green success color
     }
+
+    [Fact]
+    public async Task DispatchContainerCrashAlertAsync_WhenContainerExitedWithNonZero_SendsCrashAlert()
+    {
+        var repo = new FakeSettingsRepository();
+        await repo.SetAsync("system_language", "en");
+        await repo.SetAsync("notify_container_events", "true");
+        await repo.SetAsync("notification_slack_enabled", "true");
+        await repo.SetAsync("notification_slack_webhook_url", "https://hooks.slack.com/services/T00/B00/XXXX");
+
+        var handler = new RecordingHttpMessageHandler();
+        var service = new NotificationService(repo, new MockHttpClientFactory(handler), NullLogger<NotificationService>.Instance);
+
+        await service.DispatchContainerCrashAlertAsync("api-worker-prod", "c1a2b3c4d5e6f7g8", exitCode: 137, errorReason: "OOMKilled");
+
+        Assert.Single(handler.Requests);
+        var (_, body) = handler.Requests[0];
+        Assert.Contains("CONTAINER CRASH", body);
+        Assert.Contains("api-worker-prod", body);
+        Assert.Contains("137", body);
+        Assert.Contains("OOMKilled", body);
+        Assert.Contains("#ef4444", body); // Red error color
+    }
 }
 

@@ -16,6 +16,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     - Preserved specialized tab views for Overview, Environment Variables, Network mappings, Storage mounts, and dynamic cgroup resource tuning.
   - **Router & Deep-Linking Integration (`App.tsx`, `Containers/index.tsx`)**: Extended client route parser and navigation dispatcher with dynamic document title synchronization (`Container Name - Container Details - Corvus`) and fluid back-navigation to the containers fleet view.
   - **Internationalization Synchronization (`tr.ts`, `en.ts`)**: Added comprehensive Turkish and English localization keys for the dedicated container dashboard, telemetry headers, logs viewer, and terminal console.
+- **Historical Telemetry Time-Series Charts (Ticket 6.2)**:
+  - **Live CPU & RAM Trend Visualizations (`ContainerHistoricalCharts.tsx`)**: Embedded responsive Area charts rendering real-time CPU % load and memory usage trends with dynamic color degradation, custom tooltips, and memory limit context.
+- **Docker Compose Stack Bulk Actions (Ticket 6.3)**:
+  - **One-Click Stack Management (`ComposeStackGroup.tsx`, `GroupSection.tsx`)**: Added Restart Stack, Start Stack, and Stop Stack bulk lifecycle buttons directly onto the Compose project group headers with spin loading indicators.
+- **Container Health & Crash-Loop Alerting (Ticket 6.4)**:
+  - **Abnormal Exit Monitoring (`ContainerDiscoveryService.cs`, `NotificationService.cs`)**: Automatic detection of running-to-exited container state transitions with non-zero exit codes (ExitCode != 0, OOMKilled, runtime faults). Dispatches instantaneous alerts across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks.
+  - **Unit Test Coverage (`NotificationServiceTests.cs`)**: Added dedicated test suite verifying abnormal container exit alert generation (225/225 passing tests).
 
 ---
 

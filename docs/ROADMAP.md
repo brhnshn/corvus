@@ -179,3 +179,30 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
   - Interactive runtime cgroup resource limit controls (vCPU cores, RAM limits, OOM protection) and restart policy adjustments.
   - Direct URL addressability and deep-link navigation from container cards, table rows, and the quick action sheet.
 * **Acceptance Criteria:** Comprehensive container diagnostics and control operating on a dedicated page without modal constraints; zero modal popups for inspect; build and test suite green.
+
+### Ticket 6.2 — Historical Container Telemetry Charts (CPU & RAM Time-Series) [COMPLETED]
+* **Blocked by:** Ticket 6.1 completed.
+* **Objective:** Visualize historical CPU load and memory usage trends for running containers.
+* **Scope:**
+  - Modular time-series chart component `ContainerHistoricalCharts.tsx` utilizing Recharts Area charts with smooth color-coded gradients.
+  - In-memory rolling telemetry buffer maintaining recent 30 telemetry points (~2.5 minutes) with real-time sliding updates.
+  - Memory limit contextual line and formatted human-readable byte tooltips.
+* **Acceptance Criteria:** Real-time animated charts showing CPU % and memory trends; clean responsive rendering on mobile and desktop.
+
+### Ticket 6.3 — Docker Compose Stack Bulk Actions [COMPLETED]
+* **Blocked by:** None.
+* **Objective:** Enable one-click bulk lifecycle operations across entire Docker Compose project groups.
+* **Scope:**
+  - Extended `GroupSection.tsx` with customizable `headerActions` slot.
+  - Added Restart Stack (`RotateCw`), Start Stack (`Play`), and Stop Stack (`Square`) buttons to `ComposeStackGroup.tsx` with animated spin indicator.
+  - Integrated with live demo interactive sandbox.
+* **Acceptance Criteria:** Single-click execution restarts or halts all containers in a Compose project; admin RBAC enforcement.
+
+### Ticket 6.4 — Container Health & Crash-Loop Alerting [COMPLETED]
+* **Blocked by:** None.
+* **Objective:** Automatically detect unexpected container exits (ExitCode != 0, OOMKilled, runtime crashes) and dispatch instant alerts.
+* **Scope:**
+  - Added `DispatchContainerCrashAlertAsync` to `INotificationService` and `NotificationService.cs` across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks.
+  - Stateful transition tracking in `ContainerDiscoveryService.cs` checking for running -> exited transitions with non-zero exit codes.
+  - xUnit unit test coverage in `NotificationServiceTests.cs` (225/225 passing tests).
+* **Acceptance Criteria:** Crash notification dispatched immediately upon abnormal exit; zero false positives on normal graceful stops (ExitCode == 0).
