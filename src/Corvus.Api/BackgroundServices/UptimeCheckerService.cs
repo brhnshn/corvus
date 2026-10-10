@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Corvus.Api.Services.Uptime.Checkers;
 using Corvus.Api.Utils;
 
 namespace Corvus.Api.BackgroundServices;
@@ -20,8 +21,8 @@ public class UptimeCheckerService : BackgroundService
     private readonly ConcurrentDictionary<string, string> _previousStatus = new();
     private record SslAlertState(int Level, DateTime AlertDate);
     private readonly ConcurrentDictionary<string, SslAlertState> _lastSslAlerts = new();
-    private static readonly HttpRequestOptionsKey<SslInfoHolder> SslInfoKey = new("Corvus_SslInfo");
-    private static readonly HttpRequestOptionsKey<bool> IgnoreTlsKey = new("Corvus_IgnoreTls");
+    private static readonly HttpRequestOptionsKey<SslInfoHolder> SslInfoKey = HttpProtocolChecker.SslInfoKey;
+    private static readonly HttpRequestOptionsKey<bool> IgnoreTlsKey = HttpProtocolChecker.IgnoreTlsKey;
     private readonly HttpClient _httpClient;
     private DateTime _lastServicesRefresh = DateTime.MinValue;
     private List<Service> _cachedServices = [];
@@ -36,12 +37,6 @@ public class UptimeCheckerService : BackgroundService
     private int _cachedFlappingRecoveryChecks = 3;
     private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(25);
     private static readonly TimeSpan ThresholdCacheTtl = TimeSpan.FromMinutes(1);
-
-    private class SslInfoHolder
-    {
-        public int? SslDays { get; set; }
-        public string? SslIssuer { get; set; }
-    }
 
     public UptimeCheckerService(
         IServiceProvider services, 
@@ -395,140 +390,6 @@ public class UptimeCheckerService : BackgroundService
         _logger.LogInformation("UptimeCheckerService durduruldu.");
     }
 
-    private static string NormalizeHttpUrl(string url)
-    {
-        var trimmed = url.Trim();
-        if (!trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-            !trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            return $"http://{trimmed}";
-        }
-        return trimmed;
-    }
-
-    private static bool IsLoopbackHost(string host)
-    {
-        return host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-               host == "127.0.0.1" ||
-               host == "::1";
-    }
-
-    private static string? _cachedResolvedLoopback;
-    private static readonly object _loopbackLock = new();
-
-    private static string ResolveContainerLoopback()
-    {
-        if (_cachedResolvedLoopback != null)
-        {
-            return _cachedResolvedLoopback;
-        }
-
-        lock (_loopbackLock)
-        {
-            if (_cachedResolvedLoopback != null)
-            {
-                return _cachedResolvedLoopback;
-            }
-
-            // 1. Ortam değişkeniyle manuel belirtilmişse öncelik ver
-            string? overrideHost = Environment.GetEnvironmentVariable("CORVUS_HOST_GATEWAY")
-                                ?? Environment.GetEnvironmentVariable("CORVUS_INTERNAL_HOST");
-            if (!string.IsNullOrWhiteSpace(overrideHost))
-            {
-                return _cachedResolvedLoopback = overrideHost.Trim();
-            }
-
-            // 2. Container içinde miyiz?
-            bool inContainer = File.Exists("/.dockerenv") ||
-                               string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase);
-
-            if (inContainer)
-            {
-                // A. host.docker.internal çözülebiliyor mu?
-                try
-                {
-                    var entry = System.Net.Dns.GetHostEntry("host.docker.internal");
-                    if (entry.AddressList.Length > 0)
-                    {
-                        return _cachedResolvedLoopback = "host.docker.internal";
-                    }
-                }
-                catch { }
-
-                // B. Docker bridge varsayılan host gateway (172.17.0.1 vb.)
-                try
-                {
-                    var gateway = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
-                        .Where(n => n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up)
-                        .SelectMany(n => n.GetIPProperties().GatewayAddresses)
-                        .Select(g => g.Address)
-                        .FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
-
-                    if (gateway != null)
-                    {
-                        return _cachedResolvedLoopback = gateway.ToString();
-                    }
-                }
-                catch { }
-            }
-
-            return _cachedResolvedLoopback = "localhost";
-        }
-    }
-
-    private static string ResolveHealthCheckUrl(string url)
-    {
-        try
-        {
-            var uri = new Uri(url);
-            if (IsLoopbackHost(uri.Host))
-            {
-                string resolvedHost = ResolveContainerLoopback();
-                if (resolvedHost != uri.Host)
-                {
-                    var builder = new UriBuilder(uri) { Host = resolvedHost };
-                    return builder.Uri.ToString();
-                }
-            }
-        }
-        catch { }
-        return url;
-    }
-
-    private static string ResolveHealthCheckHost(string host)
-    {
-        if (IsLoopbackHost(host))
-        {
-            return ResolveContainerLoopback();
-        }
-        return host;
-    }
-
-    private static string ExtractHost(string raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
-        raw = raw.Trim();
-        if (raw.StartsWith("ping://", StringComparison.OrdinalIgnoreCase))
-        {
-            raw = raw[7..];
-        }
-        else if (raw.Contains("://", StringComparison.Ordinal))
-        {
-            try
-            {
-                var uri = new Uri(raw);
-                return uri.Host;
-            }
-            catch { }
-        }
-
-        int slashIdx = raw.IndexOf('/');
-        if (slashIdx >= 0) raw = raw[..slashIdx];
-        int colonIdx = raw.IndexOf(':');
-        if (colonIdx >= 0) raw = raw[..colonIdx];
-        return raw.Trim();
-    }
-
     private async Task<(Service Service, UptimeCheck? Check, SslInfoHolder? Ssl)> CheckSingleServiceAsync(Service s, CancellationToken ct)
     {
         if (!s.IsUptimeEnabled || string.Equals(s.CheckType, "none", StringComparison.OrdinalIgnoreCase))
@@ -560,14 +421,13 @@ public class UptimeCheckerService : BackgroundService
             CheckedAt = DateTime.UtcNow.ToString("o")
         };
 
-        var sw = Stopwatch.StartNew();
-        SslInfoHolder? sslHolder = null;
         int maxRetries = Math.Max(0, s.MaxRetries ?? 1);
         int retryIntervalSec = Math.Max(1, s.RetryInterval ?? 30);
         int timeoutSeconds = Math.Max(1, s.TimeoutSeconds ?? 5);
 
         if (isDockerCheck)
         {
+            var sw = Stopwatch.StartNew();
             bool isContainerRunning = false;
             string? containerStateDesc = null;
 
@@ -617,208 +477,28 @@ public class UptimeCheckerService : BackgroundService
         }
         else if (isPing)
         {
-            string host = ExtractHost(targetUrl ?? string.Empty);
-            if (string.IsNullOrWhiteSpace(host))
-            {
-                host = "localhost";
-            }
-            string checkHost = ResolveHealthCheckHost(host);
-
-            async Task<(bool Ok, long Rtt, string? Error)> TryPingAsync()
-            {
-                try
-                {
-                    using var ping = new Ping();
-                    int timeoutMs = timeoutSeconds * 1000;
-                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    cts.CancelAfter(timeoutMs);
-
-                    var reply = await ping.SendPingAsync(checkHost, timeoutMs);
-                    if (reply.Status == IPStatus.Success)
-                    {
-                        return (true, reply.RoundtripTime, null);
-                    }
-                    return (false, reply.RoundtripTime, $"ICMP Ping: {reply.Status}");
-                }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-                {
-                    return (false, 0, $"Zaman aşımı ({timeoutSeconds}s) - Ping yanıt vermedi ({checkHost})");
-                }
-                catch (Exception ex)
-                {
-                    return (false, 0, $"Ping hatası ({checkHost}): {ex.GetBaseException().Message}");
-                }
-            }
-
-            var pingResult = await TryPingAsync();
-            for (int r = 0; r < maxRetries && !pingResult.Ok && !ct.IsCancellationRequested; r++)
-            {
-                try { await Task.Delay(TimeSpan.FromSeconds(Math.Min(retryIntervalSec, 30)), ct); } catch (OperationCanceledException) { break; }
-                if (!ct.IsCancellationRequested)
-                {
-                    pingResult = await TryPingAsync();
-                }
-            }
-
-            sw.Stop();
-            check.ResponseTimeMs = pingResult.Ok
-                ? Math.Max(1, (int)pingResult.Rtt)
-                : (int)sw.ElapsedMilliseconds;
-
-            if (pingResult.Ok)
-            {
-                check.Status = "up";
-            }
-            else
-            {
-                check.Status = "down";
-                check.ErrorMessage = pingResult.Error ?? "Bilinmeyen ICMP hatası";
-            }
-
+            var pingRes = await PingProtocolChecker.CheckAsync(targetUrl, timeoutSeconds, maxRetries, retryIntervalSec, ct);
+            check.ResponseTimeMs = pingRes.ResponseTimeMs;
+            check.Status = pingRes.IsUp ? "up" : "down";
+            check.ErrorMessage = pingRes.ErrorMessage;
             return (s, check, null);
         }
         else if (isTcp)
         {
-            string host = "localhost";
-            int port = s.Port ?? 80;
-
-            if (!string.IsNullOrWhiteSpace(targetUrl))
-            {
-                try
-                {
-                    var cleanUrl = targetUrl.StartsWith("tcp://", StringComparison.OrdinalIgnoreCase)
-                        ? targetUrl.Replace("tcp://", "http://", StringComparison.OrdinalIgnoreCase)
-                        : (targetUrl.Contains("://") ? targetUrl : $"http://{targetUrl}");
-                    var uri = new Uri(cleanUrl);
-                    host = uri.Host;
-                    if (uri.Port > 0) port = uri.Port;
-                }
-                catch
-                {
-                    host = targetUrl.Split(':')[0];
-                }
-            }
-
-            string checkHost = ResolveHealthCheckHost(host);
-
-            async Task<Exception?> TryConnectTcpAsync()
-            {
-                try
-                {
-                    using var tcp = new TcpClient();
-                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-                    await tcp.ConnectAsync(checkHost, port, cts.Token);
-                    return null;
-                }
-                catch (Exception ex)
-                {
-                    return ex;
-                }
-            }
-
-            var tcpEx = await TryConnectTcpAsync();
-            for (int r = 0; r < maxRetries && tcpEx != null && !ct.IsCancellationRequested; r++)
-            {
-                try { await Task.Delay(TimeSpan.FromSeconds(Math.Min(retryIntervalSec, 30)), ct); } catch (OperationCanceledException) { break; }
-                if (!ct.IsCancellationRequested)
-                {
-                    tcpEx = await TryConnectTcpAsync();
-                }
-            }
-
-            sw.Stop();
-            check.ResponseTimeMs = (int)sw.ElapsedMilliseconds;
-
-            if (tcpEx == null)
-            {
-                check.Status = "up";
-            }
-            else
-            {
-                check.Status = "down";
-                check.ErrorMessage = $"TCP bağlantı hatası ({host}:{port}): {tcpEx.Message}";
-            }
+            var tcpRes = await TcpProtocolChecker.CheckAsync(targetUrl, s.Port, timeoutSeconds, maxRetries, retryIntervalSec, ct);
+            check.ResponseTimeMs = tcpRes.ResponseTimeMs;
+            check.Status = tcpRes.IsUp ? "up" : "down";
+            check.ErrorMessage = tcpRes.ErrorMessage;
+            return (s, check, null);
         }
         else
         {
-            targetUrl = NormalizeHttpUrl(targetUrl!);
-            string internalCheckUrl = ResolveHealthCheckUrl(targetUrl);
-            sslHolder = new SslInfoHolder();
-
-            async Task<(bool Ok, string? Error)> TrySendHttpAsync()
-            {
-                var method = new HttpMethod(string.IsNullOrWhiteSpace(s.HttpMethod) ? "GET" : s.HttpMethod.Trim().ToUpperInvariant());
-                using var request = new HttpRequestMessage(method, internalCheckUrl);
-                try
-                {
-                    // Reverse proxy veya Virtual Host etiketleri için orijinal Host başlığını koru
-                    request.Headers.Host = new Uri(targetUrl).Authority;
-                }
-                catch { }
-
-                request.Options.Set(SslInfoKey, sslHolder);
-                request.Options.Set(IgnoreTlsKey, s.IgnoreTls);
-
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
-
-                try
-                {
-                    using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                    int code = (int)response.StatusCode;
-                    bool isAccepted = StatusCodeMatcher.IsMatch(code, s.AcceptedStatusCodes);
-                    if (!isAccepted)
-                    {
-                        return (false, $"HTTP {code}");
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(s.ExpectedBody))
-                    {
-                        var (bodyOk, bodyError) = await HttpBodyValidator.ValidateAsync(response.Content, s.ExpectedBody, cts.Token);
-                        if (!bodyOk)
-                        {
-                            return (false, bodyError);
-                        }
-                    }
-
-                    return (true, null);
-                }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-                {
-                    return (false, $"Zaman aşımı ({timeoutSeconds}s) - Hedefe ulaşılamadı ({internalCheckUrl})");
-                }
-                catch (Exception ex)
-                {
-                    return (false, ex.Message);
-                }
-            }
-
-            var httpResult = await TrySendHttpAsync();
-            for (int r = 0; r < maxRetries && !httpResult.Ok && !ct.IsCancellationRequested; r++)
-            {
-                try { await Task.Delay(TimeSpan.FromSeconds(Math.Min(retryIntervalSec, 30)), ct); } catch (OperationCanceledException) { break; }
-                if (!ct.IsCancellationRequested)
-                {
-                    httpResult = await TrySendHttpAsync();
-                }
-            }
-
-            sw.Stop();
-            check.ResponseTimeMs = (int)sw.ElapsedMilliseconds;
-
-            if (httpResult.Ok)
-            {
-                check.Status = "up";
-            }
-            else
-            {
-                check.Status = "down";
-                check.ErrorMessage = httpResult.Error ?? "Bilinmeyen HTTP hatası";
-            }
+            var httpRes = await HttpProtocolChecker.CheckAsync(_httpClient, s, targetUrl!, timeoutSeconds, maxRetries, retryIntervalSec, ct);
+            check.ResponseTimeMs = httpRes.ResponseTimeMs;
+            check.Status = httpRes.IsUp ? "up" : "down";
+            check.ErrorMessage = httpRes.ErrorMessage;
+            return (s, check, httpRes.Ssl);
         }
-
-        return (s, check, sslHolder);
     }
 
     public override void Dispose()

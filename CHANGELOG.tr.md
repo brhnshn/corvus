@@ -3,7 +3,25 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.5.29] - 2026-10-10
+## [1.5.30] - 2026-10-10
+
+### Değiştirilenler (Refactored)
+- **Docker İstemci Mimarisi & Soket İletişiminin Ayrıştırılması**:
+  - Unix Domain Socket ve Windows Named Pipe tabanlı alt taşıma katmanı `DockerHttpTransport.cs` (`IDockerHttpTransport`) sınıfına çıkarıldı.
+  - Özelleşmiş alt istemciler `Corvus.Api.Services.Docker` altında bağımsız modüller olarak yapılandırıldı: `DockerContainerClient.cs`, `DockerImageClient.cs`, `DockerVolumeClient.cs`, `DockerSystemClient.cs` ve `DockerExecClient.cs`.
+  - 865 satırlık monolitik `DockerHttpClient.cs`, dışa dönük API sözleşmesini bozmadan hafif bir orkestratör cephesine (facade) dönüştürüldü.
+- **Konteyner Sayfası Durum ve Olay Yönetiminin Ayrıştırılması**:
+  - `Containers/index.tsx` içerisindeki periyodik yoklama, görünürlük dinleyicileri, SSE olay entegrasyonu, iyimser (optimistic) eylemler ve filtreleme mantıkları `useContainersPageState.ts` hook'una aktarılarak sayfa bileşeni sadeleştirildi.
+- **Çok Kanallı Bildirim Mimarisi Modüler Ayrımı**:
+  - `DiscordChannelSender`, `TelegramChannelSender`, `SlackChannelSender`, `SmtpChannelSender`, `NtfyChannelSender` ve `WebhookChannelSender` bağımsız sınıflara çıkarıldı (`Corvus.Api.Services.Notifications`).
+  - SSRF saldırılarına karşı güvenli URL doğrulayıcısı (`NotificationSecurity.cs`) ve iki dilli (TR/EN) şablon formatlayıcısı (`NotificationMessageFormatter.cs`) ayrıştırıldı.
+  - `NotificationService.cs` ~980 satırdan ince bir orkestratör cephesine (facade) dönüştürüldü; tüm xUnit testleriyle %100 uyumluluk korundu.
+- **Uptime Protokol Denetleyicilerinin Ayrıştırılması**:
+  - Protokol denetimleri `Corvus.Api.Services.Uptime.Checkers` altında bağımsız sınıflara bölündü: `HttpProtocolChecker`, `TcpProtocolChecker`, `PingProtocolChecker` ve `NetworkAddressResolver`.
+  - Ağ adresi çözümleme, container gateway eşleme ve SSL bilgisi okuma kodları ana döngüden (`UptimeCheckerService.cs`) temizlendi.
+- **Frontend Çekirdek Rota ve Yönlendirme Modülerleşmesi**:
+  - URL ayrıştırma, browser geçmişi (`pushState`/`popstate`) ve sekme yönlendirmeleri `useAppNavigation.ts` hook'una aktarıldı.
+  - Sayfa eşleme ve lazy-load render mekanizması `AppRouter.tsx` bileşenine çıkarılarak `App.tsx` sadeleştirildi.
 
 ### Eklenenler (Added)
 - **Genel Komut Paleti (`Ctrl+K` / `Cmd+K`) & Klavye Odaklı Gezinme**:

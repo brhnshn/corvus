@@ -3,7 +3,25 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.29] - 2026-10-10
+## [1.5.30] - 2026-10-10
+
+### Refactored
+- **Docker Client Architecture & Socket Transport Decoupling**:
+  - Extracted core Unix Domain Socket and Windows Named Pipe transport into `DockerHttpTransport.cs` (`IDockerHttpTransport`).
+  - Modularized specialized sub-clients under `Corvus.Api.Services.Docker`: `DockerContainerClient.cs`, `DockerImageClient.cs`, `DockerVolumeClient.cs`, `DockerSystemClient.cs`, and `DockerExecClient.cs`.
+  - Transformed monolithic 865-line `DockerHttpClient.cs` into a clean, lightweight orchestrator facade with zero breaking changes.
+- **Containers Page State & Polling Extraction**:
+  - Decoupled polling intervals, visibility listeners, SSE event dispatching, optimistic container actions, and complex tag/state filtering from `Containers/index.tsx` into a dedicated `useContainersPageState.ts` custom hook.
+- **Multi-Channel Notification Architecture Decoupling**:
+  - Extracted individual notification channel senders (`DiscordChannelSender`, `TelegramChannelSender`, `SlackChannelSender`, `SmtpChannelSender`, `NtfyChannelSender`, `WebhookChannelSender`) under `Corvus.Api.Services.Notifications`.
+  - Added dedicated SSRF protection validator (`NotificationSecurity.cs`) and bilingual alert template formatter (`NotificationMessageFormatter.cs`).
+  - Slimmed down `NotificationService.cs` from ~980 lines to a clean orchestrator facade with 100% backward compatibility for all test suites.
+- **Uptime Monitoring Protocol Separation**:
+  - Modularized protocol probes into specialized standalone checkers under `Corvus.Api.Services.Uptime.Checkers`: `HttpProtocolChecker`, `TcpProtocolChecker`, `PingProtocolChecker`, and `NetworkAddressResolver`.
+  - Decoupled container gateway loopback address translation and TLS certificate extraction from the main scheduler loop in `UptimeCheckerService.cs`.
+- **Frontend Core Architecture & Routing Extraction**:
+  - Extracted route parsing, history synchronization, and deep-link query navigation into `useAppNavigation.ts` hook.
+  - Decoupled page switching and fallback rendering into dedicated `AppRouter.tsx` layout component.
 
 ### Added
 - **Global Command Palette (`Ctrl+K` / `Cmd+K`) & Keyboard Navigation**:

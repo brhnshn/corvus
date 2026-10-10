@@ -103,82 +103,19 @@ const PageLoader = () => (
   </div>
 );
 
-const VALID_PAGES: PageId[] = ['dashboard', 'services', 'containers', 'metrics', 'uptime', 'activity', 'settings', 'profile'];
-
-interface ParsedRoute {
-  page: PageId;
-  containerId: string | null;
-  action?: string | null;
-}
-
-const parseCurrentRoute = (): ParsedRoute => {
-  const path = window.location.pathname.replace(/^\//, '');
-  const searchParams = new URLSearchParams(window.location.search);
-  const actionParam = searchParams.get('action');
-  const segments = path.split('/');
-  const first = segments[0]?.toLowerCase() as PageId;
-  if (first === 'containers' && segments[1]) {
-    return { page: 'containers', containerId: segments[1], action: actionParam };
-  }
-  if (VALID_PAGES.includes(first)) {
-    return { page: first, containerId: null, action: actionParam };
-  }
-  return { page: 'dashboard', containerId: null, action: actionParam };
-};
+import { useAppNavigation } from './hooks/useAppNavigation';
+import { AppRouter } from './components/layout/AppRouter';
 
 export const App: React.FC = () => {
   const { t } = useI18n();
   const isStatusPath = window.location.pathname === '/status' || window.location.pathname.startsWith('/status');
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [authLoading, setAuthLoading] = useState(!isStatusPath);
-  const [currentRoute, setCurrentRoute] = useState<ParsedRoute>(parseCurrentRoute);
-  const currentPage = currentRoute.page;
-  const selectedContainerId = currentRoute.containerId;
-  const initialAction = currentRoute.action;
+  const { currentPage, selectedContainerId, initialAction, navigateTo } = useAppNavigation();
   const [showRegPrompt, setShowRegPrompt] = useState(false);
 
   const { isOpen: isCmdOpen, open: openCmd, close: closeCmd } = useCommandPalette();
   const [commandItems, setCommandItems] = useState<CommandItem[]>([]);
-
-  const navigateTo = (page: PageId, containerId?: string | null, tab?: string | null) => {
-    const isAction = !containerId && tab;
-    const newRoute: ParsedRoute = { 
-      page, 
-      containerId: containerId || null,
-      action: isAction ? tab : null
-    };
-    setCurrentRoute(newRoute);
-    let newPath = page === 'dashboard' ? '/' : `/${page}`;
-    if (page === 'containers' && containerId) {
-      newPath = `/containers/${containerId}${tab ? `?tab=${tab}` : ''}`;
-    } else if (page === 'containers' && isAction) {
-      newPath = `/containers?action=${tab}`;
-    }
-    const currentFull = window.location.pathname + window.location.search;
-    if (currentFull !== newPath) {
-      window.history.pushState(null, '', newPath);
-    }
-  };
-
-  // Komut paleti açıldığında taze öğeleri yükle
-  useEffect(() => {
-    if (isCmdOpen) {
-      fetchCommandItems({
-        t,
-        onNavigate: navigateTo,
-        onRefreshData: () => invalidateCache(),
-      }).then(setCommandItems);
-    }
-  }, [isCmdOpen, t]);
-
-  // Tarayıcı Geri/İleri butonları için popstate dinleyicisi
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentRoute(parseCurrentRoute());
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
 
   const checkAuth = async () => {
     try {
@@ -388,45 +325,18 @@ export const App: React.FC = () => {
     );
   }
 
-  const isAdmin = !authStatus?.authEnabled || authStatus?.role === 'admin';
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <DashboardPage onNavigate={navigateTo} />;
-      case 'services':
-        return <ServicesPage />;
-      case 'containers':
-        if (selectedContainerId) {
-          return (
-            <ContainerDetailPage
-              containerId={selectedContainerId}
-              onBack={() => navigateTo('containers')}
-              isAdmin={isAdmin}
-            />
-          );
-        }
-        return (
-          <ContainersPage
-            isAdmin={isAdmin}
-            initialAction={initialAction}
-            onNavigateToDetail={(id, tab) => navigateTo('containers', id, tab)}
-          />
-        );
-      case 'metrics':
-        return <SystemMetricsPage />;
-      case 'uptime':
-        return <UptimePage />;
-      case 'activity':
-        return <ActivityTimelinePage />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'profile':
-        return <ProfilePage username={authStatus?.username} role={authStatus?.role} />;
-      default:
-        return <DashboardPage onNavigate={navigateTo} />;
+  // Komut paleti açıldığında taze öğeleri yükle
+  useEffect(() => {
+    if (isCmdOpen) {
+      fetchCommandItems({
+        t,
+        onNavigate: navigateTo,
+        onRefreshData: () => invalidateCache(),
+      }).then(setCommandItems);
     }
-  };
+  }, [isCmdOpen, t, navigateTo]);
+
+  const isAdmin = !authStatus?.authEnabled || authStatus?.role === 'admin';
 
   return (
     <AppLayout
@@ -440,7 +350,24 @@ export const App: React.FC = () => {
       <ChunkErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <PageTransition pageKey={`${currentPage}-${selectedContainerId || 'root'}`}>
-            {renderPage()}
+            <AppRouter
+              currentPage={currentPage}
+              selectedContainerId={selectedContainerId}
+              initialAction={initialAction}
+              isAdmin={isAdmin}
+              username={authStatus?.username}
+              role={authStatus?.role}
+              onNavigate={navigateTo}
+              DashboardPage={DashboardPage}
+              ServicesPage={ServicesPage}
+              ContainersPage={ContainersPage}
+              ContainerDetailPage={ContainerDetailPage}
+              SystemMetricsPage={SystemMetricsPage}
+              UptimePage={UptimePage}
+              ActivityTimelinePage={ActivityTimelinePage}
+              SettingsPage={SettingsPage}
+              ProfilePage={ProfilePage}
+            />
           </PageTransition>
         </Suspense>
       </ChunkErrorBoundary>
