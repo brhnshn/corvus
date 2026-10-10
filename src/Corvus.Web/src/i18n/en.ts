@@ -216,11 +216,15 @@ export const en = {
     scanningDiskUsageDesc: 'Scanning stopped containers, unused images, and orphaned volumes.',
     pruningInProgress: 'Cleaning up...',
     detailModalTitle: 'Container Details',
+    detailTitle: 'Container Details',
+    backToList: 'Back to Containers',
     tabOverview: 'Overview',
     tabEnv: 'Environment',
     tabNetworking: 'Networking',
     tabStorage: 'Storage & Mounts',
     tabResources: 'Resources & Limits',
+    tabLogs: 'Live Logs',
+    tabTerminal: 'Web Terminal',
     copyEnvAll: 'Copy All (.env)',
     envCopied: 'Copied to clipboard!',
     envShowSecrets: 'Show Values',
@@ -259,7 +263,11 @@ export const en = {
     updateResourcesError: 'Failed to update container configuration.',
     quickActions: 'Quick Actions',
     openTerminal: 'Terminal',
-    viewLogs: 'Logs'
+    viewLogs: 'Logs',
+    logsTitle: 'Container Logs',
+    cpuUsage: 'CPU Usage',
+    memoryUsage: 'Memory (RAM)',
+    networkIO: 'Network I/O'
   },
   services: {
     title: 'Services',

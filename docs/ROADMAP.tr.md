@@ -170,12 +170,12 @@ Bu belge, Corvus projesinin hafiflik (30-50 MB RAM), yüksek performans ve sıf�
 
 ## Faz 6: Gelecek Mimari Planlar
 
-### Bilet 6.1 — Bağımsız Konteyner Detay & Telemetri Sayfası (`/containers/:id`) [PLANLANDI]
-* **Önkoşul:** Bilet 4.4 tamamlandı.
-* **Amaç:** Konteyner inceleme, canlı telemetri ve kaynak yönetimi deneyimini açılır modal yerine tam ekran, zengin ve bağımsız bir detay sayfasına (`/containers/:id`) dönüştürmek.
+### Bilet 6.1 — Bağımsız Konteyner Detay & Telemetri Sayfası (`/containers/:id`) [TAMAMLANDI]
+* **Önkoşul:** Bilet 4.3 tamamlandı.
+* **Amaç:** Konteyner inceleme, canlı telemetri, loglar, web terminali ve kaynak yönetimi deneyimini açılır modal yerine tam ekran, zengin ve bağımsız bir detay sayfasına (`/containers/:id`) dönüştürmek.
 * **Kapsam:**
   - `/containers/:id` rotası ile bağımsız tam sayfa görünümü (`pages/ContainerDetail/`).
-  - Genel bakış, gerçek zamanlı telemetri grafikleri (anlık ve zaman serisi CPU, RAM, Ağ I/O), çevre değişkenleri düzenleme, ağ haritası ve depolama bağlama noktalarının tek bir gelişmiş dashboard'da sunulması.
-  - Çalışma zamanı cgroup kaynak sınırları (vCPU, RAM, OOM Killer koruması) ve yeniden başlatma ilkesi (restart policy) doğrudan sayfa üzerinden yönetimi.
-  - Konteyner kartlarından, satırlarından ve alt işlem çekmecesinden doğrudan bu sayfaya akıcı geçiş.
-* **Kabul Kriteri:** Modal sınırları olmadan konteynerin tüm metriklerinin ve ayarlarının bağımsız sayfada derinlemesine izlenip yönetilebilmesi.
+  - Genel bakış başlığı, gerçek zamanlı telemetri kartları (anlık CPU %, RAM kullanımı/limiti, Ağ Rx/Tx), çevre değişkenleri tarayıcısı, ağ eşleşmeleri, depolama mountları, yerleşik canlı log akışı (`LogsTab.tsx`) ve yerleşik xterm web terminali (`TerminalTab.tsx`).
+  - Çalışma zamanı cgroup kaynak sınırları (vCPU kotası, RAM limiti) ve yeniden başlatma ilkesi (restart policy) canlı güncelleme.
+  - Konteyner kartlarından, satırlarından ve aksiyon menüsünden doğrudan URL ile `/containers/:id` sayfasına yönlendirme.
+* **Kabul Kriteri:** Modal sınırları olmadan konteynerin tüm metriklerinin, loglarının ve terminalinin bağımsız sayfada derinlemesine izlenip yönetilebilmesi; teftiş için popup modal zorunluluğunun kalkması; tüm testlerin geçmesi.

@@ -24,9 +24,13 @@ import { extractContainerTags } from './ContainerRow';
 
 export interface ContainersPageProps {
   isAdmin?: boolean;
+  onNavigateToDetail?: (id: string) => void;
 }
 
-export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }) => {
+export const ContainersPage: React.FC<ContainersPageProps> = ({ 
+  isAdmin = true,
+  onNavigateToDetail 
+}) => {
   const { t } = useI18n();
   const toast = useToast();
 
@@ -257,6 +261,14 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
     storageKey: 'corvus_container_groups',
   });
 
+  const handleInspect = (c: DockerContainer) => {
+    if (onNavigateToDetail) {
+      onNavigateToDetail(c.Id);
+    } else {
+      setSelectedInspectContainer(c);
+    }
+  };
+
   return (
     <div className="space-y-3.5 sm:space-y-4">
       {/* 1. Başlık & Hızlı İşlemler */}
@@ -382,7 +394,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
           actionInProgress={actionInProgress}
           onAction={handleAction}
           onOpenSheet={(c) => setSheetContainer(c)}
-          onInspect={(c) => setSelectedInspectContainer(c)}
+          onInspect={handleInspect}
           selectedTag={selectedTag}
           onSelectTag={setSelectedTag}
           isAdmin={isAdmin}
@@ -405,7 +417,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
           actionInProgress={actionInProgress}
           onAction={handleAction}
           onOpenSheet={(c) => setSheetContainer(c)}
-          onInspect={(c) => setSelectedInspectContainer(c)}
+          onInspect={handleInspect}
           selectedTag={selectedTag}
           onSelectTag={setSelectedTag}
           isAdmin={isAdmin}
@@ -418,6 +430,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({ isAdmin = true }
         isOpen={!!sheetContainer}
         onClose={() => setSheetContainer(null)}
         onAction={handleAction}
+        onInspect={handleInspect}
         onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
         onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
         onEditTags={(c) => setEditingTagsContainer(c)}

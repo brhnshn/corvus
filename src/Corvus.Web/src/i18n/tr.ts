@@ -218,11 +218,15 @@ export const tr: TranslationDictionary = {
     scanningDiskUsageDesc: 'Durdurulmuş konteynerler, kullanılmayan imajlar ve sahipsiz hacimler analiz ediliyor.',
     pruningInProgress: 'Temizleniyor...',
     detailModalTitle: 'Konteyner Detayları',
+    detailTitle: 'Konteyner Detayı',
+    backToList: 'Tüm Konteynerlere Dön',
     tabOverview: 'Genel Bakış',
     tabEnv: 'Ortam Değişkenleri',
     tabNetworking: 'Ağ & Portlar',
     tabStorage: 'Depolama & Mountlar',
     tabResources: 'Kaynaklar & Limitler',
+    tabLogs: 'Canlı Loglar',
+    tabTerminal: 'Web Terminali',
     copyEnvAll: 'Tümünü Kopyala (.env)',
     envCopied: 'Panoya kopyalandı!',
     envShowSecrets: 'Değerleri Göster',
@@ -261,7 +265,11 @@ export const tr: TranslationDictionary = {
     updateResourcesError: 'Konteyner yapılandırması güncellenemedi.',
     quickActions: 'Hızlı Eylemler',
     openTerminal: 'Terminal',
-    viewLogs: 'Loglar'
+    viewLogs: 'Loglar',
+    logsTitle: 'Konteyner Logları',
+    cpuUsage: 'CPU Kullanımı',
+    memoryUsage: 'Bellek (RAM)',
+    networkIO: 'Ağ Giriş / Çıkış'
   },
   services: {
     title: 'Servisler',

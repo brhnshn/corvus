@@ -38,6 +38,7 @@ const SystemMetricsPage = lazyWithRetry(() => import('./pages/SystemMetrics').th
 const UptimePage = lazyWithRetry(() => import('./pages/Uptime').then(m => ({ default: m.UptimePage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
 const ProfilePage = lazyWithRetry(() => import('./pages/Profile').then(m => ({ default: m.ProfilePage })));
+const ContainerDetailPage = lazyWithRetry(() => import('./pages/ContainerDetail').then(m => ({ default: m.ContainerDetailPage })));
 const AuthPage = lazyWithRetry(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const PublicStatus = lazyWithRetry(() => import('./pages/PublicStatus'));
 
@@ -96,12 +97,22 @@ const PageLoader = () => (
 
 const VALID_PAGES: PageId[] = ['dashboard', 'services', 'containers', 'metrics', 'uptime', 'settings', 'profile'];
 
-const getInitialPage = (): PageId => {
-  const path = window.location.pathname.replace(/^\//, '').toLowerCase();
-  if (VALID_PAGES.includes(path as PageId)) {
-    return path as PageId;
+interface ParsedRoute {
+  page: PageId;
+  containerId: string | null;
+}
+
+const parseCurrentRoute = (): ParsedRoute => {
+  const path = window.location.pathname.replace(/^\//, '');
+  const segments = path.split('/');
+  const first = segments[0]?.toLowerCase() as PageId;
+  if (first === 'containers' && segments[1]) {
+    return { page: 'containers', containerId: segments[1] };
   }
-  return 'dashboard';
+  if (VALID_PAGES.includes(first)) {
+    return { page: first, containerId: null };
+  }
+  return { page: 'dashboard', containerId: null };
 };
 
 export const App: React.FC = () => {
@@ -109,12 +120,18 @@ export const App: React.FC = () => {
   const isStatusPath = window.location.pathname === '/status' || window.location.pathname.startsWith('/status');
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [authLoading, setAuthLoading] = useState(!isStatusPath);
-  const [currentPage, setCurrentPage] = useState<PageId>(getInitialPage);
+  const [currentRoute, setCurrentRoute] = useState<ParsedRoute>(parseCurrentRoute);
+  const currentPage = currentRoute.page;
+  const selectedContainerId = currentRoute.containerId;
   const [showRegPrompt, setShowRegPrompt] = useState(false);
 
-  const navigateTo = (page: PageId) => {
-    setCurrentPage(page);
-    const newPath = page === 'dashboard' ? '/' : `/${page}`;
+  const navigateTo = (page: PageId, containerId?: string | null) => {
+    const newRoute: ParsedRoute = { page, containerId: containerId || null };
+    setCurrentRoute(newRoute);
+    let newPath = page === 'dashboard' ? '/' : `/${page}`;
+    if (page === 'containers' && containerId) {
+      newPath = `/containers/${containerId}`;
+    }
     if (window.location.pathname !== newPath) {
       window.history.pushState(null, '', newPath);
     }
@@ -123,7 +140,7 @@ export const App: React.FC = () => {
   // Tarayıcı Geri/İleri butonları için popstate dinleyicisi
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPage(getInitialPage());
+      setCurrentRoute(parseCurrentRoute());
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -268,10 +285,12 @@ export const App: React.FC = () => {
       document.title = `${t('publicStatus.badge')} - Corvus`;
     } else if (authStatus && authStatus.authEnabled && !authStatus.isAuthenticated) {
       document.title = `${t('auth.tabLogin')} - Corvus`;
+    } else if (currentPage === 'containers' && selectedContainerId) {
+      document.title = `${t('containers.detailTitle') || 'Konteyner Detayı'} - Corvus`;
     } else {
       document.title = `${getPageTitle(currentPage)} - Corvus`;
     }
-  }, [currentPage, isStatusPath, authStatus, t]);
+  }, [currentPage, selectedContainerId, isStatusPath, authStatus, t]);
 
   // Roadmap 1.6: Halka Açık Şifresiz Durum Sayfası
   if (isStatusPath) {
@@ -344,7 +363,21 @@ export const App: React.FC = () => {
       case 'services':
         return <ServicesPage />;
       case 'containers':
-        return <ContainersPage isAdmin={isAdmin} />;
+        if (selectedContainerId) {
+          return (
+            <ContainerDetailPage
+              containerId={selectedContainerId}
+              onBack={() => navigateTo('containers')}
+              isAdmin={isAdmin}
+            />
+          );
+        }
+        return (
+          <ContainersPage
+            isAdmin={isAdmin}
+            onNavigateToDetail={(id) => navigateTo('containers', id)}
+          />
+        );
       case 'metrics':
         return <SystemMetricsPage />;
       case 'uptime':

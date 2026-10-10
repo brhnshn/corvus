@@ -170,12 +170,12 @@ This document outlines the structured, vertical-slice roadmap ("tracer bullet ti
 
 ## Phase 6: Future Architecture Plans
 
-### Ticket 6.1 — Dedicated Container Detail & Telemetry Page (`/containers/:id`) [PLANNED]
-* **Blocked by:** Ticket 4.4 completed.
-* **Objective:** Elevate container inspection, live telemetry, and resource management from a pop-up modal into a full-page, dedicated deep dashboard (`/containers/:id`).
+### Ticket 6.1 — Dedicated Container Detail & Telemetry Page (`/containers/:id`) [COMPLETED]
+* **Blocked by:** Ticket 4.3 completed.
+* **Objective:** Elevate container inspection, live telemetry, logs, web terminal, and resource management from a pop-up modal into a full-page, dedicated deep dashboard (`/containers/:id`).
 * **Scope:**
   - Dedicated route `/containers/:id` with modular page architecture (`pages/ContainerDetail/`).
-  - Unified dashboard displaying overview status, real-time telemetry time-series charts (CPU, RAM, Net I/O), environment variables editor, network topology map, and storage mounts.
+  - Unified dashboard displaying header overview status, live telemetry cards (CPU, RAM, Net I/O), environment variables inspector with secret toggles, network topology map, storage mounts, embedded live logs streamer (`LogsTab.tsx`), and embedded xterm web terminal (`TerminalTab.tsx`).
   - Interactive runtime cgroup resource limit controls (vCPU cores, RAM limits, OOM protection) and restart policy adjustments.
-  - Deep-link navigation directly from container cards, table rows, and the quick action sheet.
-* **Acceptance Criteria:** Comprehensive container diagnostics and control operating on a dedicated page without modal constraints.
+  - Direct URL addressability and deep-link navigation from container cards, table rows, and the quick action sheet.
+* **Acceptance Criteria:** Comprehensive container diagnostics and control operating on a dedicated page without modal constraints; zero modal popups for inspect; build and test suite green.

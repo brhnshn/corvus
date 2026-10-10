@@ -3,6 +3,22 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.30] - 2026-10-10
+
+### Düzeltilenler (Fixed)
+- **Konteyner Detay Sayfası & Bağımsız URL Mimarisi (Bilet 6.1)**:
+  - **Tam Ekran Bağımsız Konteyner Paneli (`/containers/:id`)**: Konteyner inceleme işlemi sıkışık modal penceresinden (`ContainerDetailModal`) çıkarılarak doğrudan URL ile erişilebilir, yer imlerine eklenebilir ve sayfa yenilendiğinde kaybolmayan tam ekran bağımsız bir detay sayfasına dönüştürüldü.
+  - **Temiz ve Modüler Bileşen Mimarisi**: Tek dosyaya kod yığmama kuralına tam uyularak modüler alt bileşenler oluşturuldu:
+    - `pages/ContainerDetail/ContainerDetailHeader.tsx`: Konteyner adı, durumu, çalışma süresi, geri dönüş butonu ve yaşam döngüsü aksiyonları (başlat/durdur/yeniden başlat/duraklat).
+    - `pages/ContainerDetail/ContainerTelemetryHero.tsx`: Canlı telemetri başlık kartları; CPU kullanım yüzdesi, RAM kullanımı/sınırı ve Ağ (Rx/Tx) veri akış hızı.
+    - `pages/ContainerDetail/tabs/LogsTab.tsx`: Tam ekran canlı log izleyicisi; satır sayısı seçici (50-1000 satır), canlı akış anahtarı, anlık arama, otomatik kaydırma ve panoya kopyalama.
+    - `pages/ContainerDetail/tabs/TerminalTab.tsx`: Tam ekran xterm.js tabanlı etkileşimli web terminali; çoklu kabuk seçici (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`), tam ekran kipi ve canlı WebSocket iletişimi.
+    - Genel Bakış, Çevre Değişkenleri, Ağ, Depolama Mountları ve canlı kaynak limit düzenleme sekmeleri korundu ve entegre edildi.
+  - **Yönlendirme & Derin Bağlantı (Deep-Linking) Entegrasyonu (`App.tsx`, `Containers/index.tsx`)**: İstemci yönlendirme motoru URL parametrelerini destekleyecek şekilde güncellendi, sayfa başlığı (`Konteyner Adı - Konteyner Detayı - Corvus`) senkronize edildi ve liste görünümüne geri dönüş bağlantısı sağlandı.
+  - **Çift Dilli Yerelleştirme Eşitlemesi (`tr.ts`, `en.ts`)**: Konteyner detay paneli, telemetri göstergeleri, loglar ve terminal başlıkları için Türkçe ve İngilizce dil anahtarları eklendi.
+
+---
+
 ## [1.5.29] - 2026-10-07
 
 ### Düzeltilenler (Fixed)

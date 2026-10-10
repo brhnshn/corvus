@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.30] - 2026-10-10
+
+### Fixed
+- **Container Detail Architecture & Navigation Overhaul (Ticket 6.1)**:
+  - **Dedicated Full-Page Container Dashboard (`/containers/:id`)**: Replaced the constrained inspect popup dialog (`ContainerDetailModal`) with a full-screen, URL-addressable container diagnostic and telemetry page. Users can now directly bookmark, reload, and share container URLs (`/containers/{id}`).
+  - **Modular Sub-Component Architecture**: Built clean, modular sub-components adhering to clean architecture rules:
+    - `pages/ContainerDetail/ContainerDetailHeader.tsx`: Contextual navigation, dynamic container state badges, uptime, and start/stop/restart/pause controls.
+    - `pages/ContainerDetail/ContainerTelemetryHero.tsx`: High-performance live telemetry hero cards featuring CPU quota usage %, memory footprint against limits, and network Rx/Tx statistics.
+    - `pages/ContainerDetail/tabs/LogsTab.tsx`: Full-height interactive container logs viewer with tail selection (50-1000 lines), real-time streaming toggle, instant text search, auto-scroll, and clipboard export.
+    - `pages/ContainerDetail/tabs/TerminalTab.tsx`: Full-height xterm.js web terminal with multi-shell selection (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`), fullscreen toggle, and real-time bidirectional WebSocket transport.
+    - Preserved specialized tab views for Overview, Environment Variables, Network mappings, Storage mounts, and dynamic cgroup resource tuning.
+  - **Router & Deep-Linking Integration (`App.tsx`, `Containers/index.tsx`)**: Extended client route parser and navigation dispatcher with dynamic document title synchronization (`Container Name - Container Details - Corvus`) and fluid back-navigation to the containers fleet view.
+  - **Internationalization Synchronization (`tr.ts`, `en.ts`)**: Added comprehensive Turkish and English localization keys for the dedicated container dashboard, telemetry headers, logs viewer, and terminal console.
+
+---
+
 ## [1.5.29] - 2026-10-07
 
 ### Fixed

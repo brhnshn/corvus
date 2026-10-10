@@ -19,6 +19,7 @@ export interface ContainerActionSheetProps {
   onOpenLogs: (id: string, name: string) => void;
   onOpenTerminal?: (id: string, name: string) => void;
   onEditTags?: (container: DockerContainer) => void;
+  onInspect?: (container: DockerContainer) => void;
   isAdmin?: boolean;
 }
 
@@ -30,6 +31,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
   onOpenLogs,
   onOpenTerminal,
   onEditTags,
+  onInspect,
   isAdmin = true,
 }) => {
   if (!container) return null;
@@ -65,6 +67,20 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
       }
     >
       <div className="flex flex-col gap-0.5 pt-1">
+        {/* Detay & Telemetri Sayfası */}
+        {onInspect && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onInspect(container);
+            }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-semibold text-white bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/25 border border-indigo-500/20 transition-colors cursor-pointer text-left mb-1"
+          >
+            <FileText className="w-[18px] h-[18px] text-indigo-400 shrink-0" />
+            <span>Konteyner Detay Sayfası</span>
+          </button>
+        )}
         {/* Loglar */}
         <button
           type="button"
