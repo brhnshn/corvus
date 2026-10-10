@@ -3,84 +3,46 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.32] - 2026-10-10
+## [1.5.28] - 2026-10-10
 
 ### Fixed
-- **Container Inspect Data Normalization & Missing Field Restoration**:
-  - **Case-Insensitive Safe Data Accessor (`inspectHelpers.ts`)**: Resolved Docker daemon PascalCase (`Config`, `NetworkSettings`, `PortBindings`, `Mounts`) vs client-side camelCase (`config`, `networkSettings`, `mounts`) property mapping. Environment variables, port mappings, connected Docker networks, and storage volume mounts now display accurately on `/containers/:id`.
-  - **Graceful State & Health Mapping**: Added fallback parsers for runtime execution config, working directory, entrypoints, and container health probes.
+- **Container Inspect Data Normalization & Field Restoration**:
+  - **Case-Insensitive Safe Data Accessor (`inspectHelpers.ts`)**: Resolved Docker daemon PascalCase (`Config`, `NetworkSettings`, `PortBindings`, `Mounts`) vs client-side camelCase (`config`, `networkSettings`, `mounts`) property mapping. Environment variables, published ports, connected Docker networks, and storage volume mounts now display accurately on `/containers/:id`.
+  - **Graceful State & Health Mapping**: Added fallback parsers for runtime execution configuration, working directory, entrypoints, and container health probes.
 - **Fluid Row-Click Navigation & Quick Actions Toolbar**:
   - **Whole-Row Direct Click Navigation (`ContainerRow.tsx`)**: Replaced 3-dots menu friction with full-row clickability featuring subtle micro-interaction transitions (`hover:bg-white/[0.08] active:scale-[0.998] transition-all`), navigating straight into `/containers/:id`.
   - **In-Row Quick Actions Toolbar (`ContainerQuickActions.tsx`)**: Added compact 1-click icon buttons directly onto container table rows for instant navigation into Live Logs (`FileText`), Container Overview (`Info`), Telemetry & Resource Limits (`Activity`), and Web Terminal (`Terminal`).
   - **Clickable Published Ports (`ContainerRow.tsx`)**: Exposed external published ports (`p.PublicPort ? host:port ↗`) as direct anchor links opening in a new browser tab with event bubbling isolation.
   - **Deep-Linked Tab Query Navigation (`App.tsx`, `Containers/index.tsx`, `ContainerDetail/index.tsx`)**: Enabled `?tab=` query parameter support so clicking Quick Action icons routes straight into the target tab.
-
----
-
-## [1.5.31] - 2026-10-10
-
-### Fixed
-- **OCI Registry Image Sentinel & Digest Tracking (Ticket 7.1)**:
-  - **Zero-Payload Manifest Inspection (`OciRegistryClient.cs`)**: Implemented zero-byte HEAD requests to `/v2/{repo}/manifests/{tag}` against Docker Hub, GitHub Container Registry (GHCR), and Quay. Accurately determines if newer container images exist upstream without downloading heavy container image layers.
+- **OCI Registry Image Sentinel & Digest Tracking**:
+  - **Zero-Payload Manifest Inspection (`OciRegistryClient.cs`)**: Implemented zero-byte HEAD requests to `/v2/{repo}/manifests/{tag}` against Docker Hub, GitHub Container Registry (GHCR), and Quay without downloading heavy image layers.
   - **Docker Engine Layer Comparison (`DockerHttpClient.cs`, `DockerService.cs`)**: Extracts container RepoDigests and compares SHA256 digests against remote OCI manifests.
   - **One-Click Safe Recreate (`ContainersEndpoints.cs`)**: Added `POST /api/containers/{id}/recreate` (`RequireAdmin`) to automatically pull the upstream image, stop the old container, recreate it with identical configuration, and launch it seamlessly.
   - **Visual Update Indicator (`ImageUpdateModal.tsx`, `ContainerRow.tsx`, `ContainerList.tsx`, `ContainerDetailHeader.tsx`)**: Displays an amber "Update Available" badge across fleet table rows, cards, and detail headers with a dedicated modal showing local vs remote digest hashes and 1-click update.
-- **Docker Compose YAML Inspector & Safe In-Place Editor (Ticket 7.2)**:
+- **Docker Compose YAML Inspector & Safe In-Place Editor**:
   - **Path-Traversal Protected YAML Service (`ComposeFileService.cs`, `ComposeEndpoints.cs`)**: Securely resolves Compose configuration files (`compose.yaml`, `docker-compose.yml`) via container labels. Strictly blocks directory traversal (`..`) attempts.
   - **Automatic `.bak` Backup Preservation**: Generates an automatic timestamped or `.bak` copy before committing any file updates to disk.
   - **Modular In-Browser Editor (`ComposeConfigModal.tsx`, `ComposeStackGroup.tsx`)**: Lightweight YAML editor with monospace formatting, line count indicator, file size badges, and "Save & Restart Stack" action.
-- **Event-Driven Auto-Healing & Inbound Deploy Webhooks (Ticket 7.3)**:
+- **Event-Driven Auto-Healing & Inbound Deploy Webhooks**:
   - **Loop-Guarded Container Auto-Recovery (`AutoHealingService.cs`, `ContainerDiscoveryService.cs`)**: Automatically revives crashed containers when abnormal exit codes are detected, guarded by a thread-safe sliding window algorithm (max 2 restarts within 15 minutes) to prevent infinite flapping storms.
   - **Instant Multi-Channel Auto-Heal Alerts (`NotificationService.cs`)**: Dispatches recovery notifications across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks upon successful auto-restart.
   - **Constant-Time Inbound Deploy Webhook (`DeployWebhookEndpoints.cs`)**: Added `POST /api/hooks/deploy/{token}` with cryptographic constant-time token verification (`CryptographicOperations.FixedTimeEquals`) to prevent timing side-channel attacks for CI/CD pipelines.
   - **Deploy Token Management UI (`GeneralSettingsTab.tsx`)**: Interface for generating, revealing, and managing secure deploy webhook tokens.
-- **Test Suite Expansion**:
-  - Expanded unit test coverage with dedicated test cases across auto-healing, compose file safety, and webhook authentication (244/244 passing tests).
-
----
-
-## [1.5.30] - 2026-10-10
-
-### Fixed
-- **Container Detail Architecture & Navigation Overhaul (Ticket 6.1)**:
+- **Container Detail Architecture & Navigation Overhaul**:
   - **Dedicated Full-Page Container Dashboard (`/containers/:id`)**: Replaced the constrained inspect popup dialog (`ContainerDetailModal`) with a full-screen, URL-addressable container diagnostic and telemetry page. Users can now directly bookmark, reload, and share container URLs (`/containers/{id}`).
-  - **Modular Sub-Component Architecture**: Built clean, modular sub-components adhering to clean architecture rules:
-    - `pages/ContainerDetail/ContainerDetailHeader.tsx`: Contextual navigation, dynamic container state badges, uptime, and start/stop/restart/pause controls.
-    - `pages/ContainerDetail/ContainerTelemetryHero.tsx`: High-performance live telemetry hero cards featuring CPU quota usage %, memory footprint against limits, and network Rx/Tx statistics.
-    - `pages/ContainerDetail/tabs/LogsTab.tsx`: Full-height interactive container logs viewer with tail selection (50-1000 lines), real-time streaming toggle, instant text search, auto-scroll, and clipboard export.
-    - `pages/ContainerDetail/tabs/TerminalTab.tsx`: Full-height xterm.js web terminal with multi-shell selection (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`), fullscreen toggle, and real-time bidirectional WebSocket transport.
-    - Preserved specialized tab views for Overview, Environment Variables, Network mappings, Storage mounts, and dynamic cgroup resource tuning.
-  - **Router & Deep-Linking Integration (`App.tsx`, `Containers/index.tsx`)**: Extended client route parser and navigation dispatcher with dynamic document title synchronization (`Container Name - Container Details - Corvus`) and fluid back-navigation to the containers fleet view.
-  - **Internationalization Synchronization (`tr.ts`, `en.ts`)**: Added comprehensive Turkish and English localization keys for the dedicated container dashboard, telemetry headers, logs viewer, and terminal console.
-- **Historical Telemetry Time-Series Charts (Ticket 6.2)**:
-  - **Live CPU & RAM Trend Visualizations (`ContainerHistoricalCharts.tsx`)**: Embedded responsive Area charts rendering real-time CPU % load and memory usage trends with dynamic color degradation, custom tooltips, and memory limit context.
-- **Docker Compose Stack Bulk Actions (Ticket 6.3)**:
-  - **One-Click Stack Management (`ComposeStackGroup.tsx`, `GroupSection.tsx`)**: Added Restart Stack, Start Stack, and Stop Stack bulk lifecycle buttons directly onto the Compose project group headers with spin loading indicators.
-- **Container Health & Crash-Loop Alerting (Ticket 6.4)**:
-  - **Abnormal Exit Monitoring (`ContainerDiscoveryService.cs`, `NotificationService.cs`)**: Automatic detection of running-to-exited container state transitions with non-zero exit codes (ExitCode != 0, OOMKilled, runtime faults). Dispatches instantaneous alerts across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks.
-  - **Unit Test Coverage (`NotificationServiceTests.cs`)**: Added dedicated test suite verifying abnormal container exit alert generation (225/225 passing tests).
-
----
-
-## [1.5.29] - 2026-10-07
-
-### Fixed
+  - **Historical Telemetry Time-Series Charts (`ContainerHistoricalCharts.tsx`)**: Embedded responsive Area charts rendering real-time CPU % load and memory usage trends with dynamic color degradation, custom tooltips, and memory limit context.
+  - **Docker Compose Stack Bulk Actions (`ComposeStackGroup.tsx`, `GroupSection.tsx`)**: Added Restart Stack, Start Stack, and Stop Stack bulk lifecycle buttons directly onto Compose project group headers.
+  - **Container Health & Crash-Loop Alerting (`ContainerDiscoveryService.cs`, `NotificationService.cs`)**: Automatic detection of running-to-exited container state transitions with non-zero exit codes (ExitCode != 0, OOMKilled, runtime faults).
 - **Container In-Browser Terminal & Stream Interactivity**:
-  - **Docker Exec HTTP Handshake Byte Calculation (`DockerHttpClient.cs`)**: Fixed hardcoded `Content-Length: 28` header mismatch in the raw Docker Engine HTTP upgrade request (`POST /exec/{id}/start`). Replaced with dynamic UTF-8 length calculation (`27` bytes for `{"Detach":false,"Tty":true}`), preventing Docker Daemon from swallowing keystrokes as pending HTTP request payload.
-  - **Immediate Stdin Stream Flushing (`ContainersEndpoints.cs`)**: Added immediate `await dockerStream.FlushAsync(ct)` calls after WebSocket frames are written to Docker's stdin pipe. Resolves unresponsive typing on Windows (`NamedPipeClientStream`) and Linux Unix domain sockets where small asynchronous keystroke buffers were previously trapped without remote echo.
-  - **Universal Shell Prioritization & Alpine Compatibility (`ContainersEndpoints.cs`)**: Reordered candidate shell auto-detection to prioritize POSIX `/bin/sh` and `sh` ahead of `/bin/bash`. Eliminates immediate OCI runtime exec crashes (`stat /bin/bash: no such file or directory`, code 1006) on Alpine, BusyBox, Go, and minimal scratch containers that lack `/bin/bash`.
-  - **Unit Test Coverage (`DockerServiceTests.cs`)**: Added dedicated unit test `DockerExec_StartPayload_CalculatesExactContentLength` ensuring exact UTF-8 byte calculations for Docker exec upgrade requests.
-
----
-
-## [1.5.28] - 2026-10-07
+  - **Dynamic Exec Handshake Length (`DockerHttpClient.cs`)**: Replaced hardcoded byte lengths with dynamic UTF-8 calculations for Docker exec upgrade requests.
+  - **Immediate Stdin Stream Flushing (`ContainersEndpoints.cs`)**: Added immediate `FlushAsync` calls on stdin streams preventing buffered typing lag.
+  - **Universal Shell Prioritization (`ContainersEndpoints.cs`)**: Prioritizes POSIX `/bin/sh` over `/bin/bash` ensuring 100% compatibility across Alpine, BusyBox, and minimal containers.
 
 ### Changed
 - **Documentation & Open Source Showcase Modernization**:
-  - **10-Second Quick Start Promotion**: Elevated the verified single-line `docker run` command (`ghcr.io/brhnshn/corvus:latest`) and streamlined `compose.yaml` to the immediate top of `README.md` and `README.tr.md`.
-  - **Authentic Engineering & Architectural Scope**: Added a factual "Architectural Scope & Philosophy" comparison table and dedicated "The Native AOT Engineering Advantage" section detailing the zero-CLR, Workstation GC, memory trimming, and embedded SQLite WAL runtime mechanics.
-  - **Official Container Registry Alignment**: Replaced placeholder image references with the official GitHub Container Registry path (`ghcr.io/brhnshn/corvus:latest`).
-  - **Inspirations & Credits**: Added [Checkmate](https://github.com/bluewave-labs/checkmate) to the formal open-source inspirations list adhering to project credit ethics.
+  - **10-Second Quick Start Promotion**: Elevated the verified single-line `docker run` command and streamlined `compose.yaml` to the immediate top of `README.md` and `README.tr.md`.
+  - **The Native AOT Engineering Advantage**: Detailed the zero-CLR, Workstation GC, memory trimming, and embedded SQLite WAL runtime mechanics.
+  - **Inspirations & Credits**: Formally credited open-source inspirations adhering to project credit ethics.
 
 ---
 

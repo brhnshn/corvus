@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.5.32] - 2026-10-10
+## [1.5.28] - 2026-10-10
 
 ### Düzeltilenler (Fixed)
 - **Konteyner İnceleme Verisi Normalizasyonu & Eksik Alanların Onarılması**:
@@ -14,73 +14,36 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - **Satır Üstü Hızlı Eylemler Çubuğu (`ContainerQuickActions.tsx`)**: Tablo satırlarına doğrudan tek tıkla Canlı Loglar (`FileText`), Konteyner İnceleme (`Info`), Telemetri ve Kaynaklar (`Activity`) ve Web Terminali (`Terminal`) sekmesini açan kompakt aksiyon seti eklendi.
   - **Tıklanabilir Yayınlanan Portlar (`ContainerRow.tsx`)**: Dışa açılan portlar (`p.PublicPort ? host:port ↗`) yeni tarayıcı sekmesinde açılabilir köprü bağlantılarına dönüştürüldü.
   - **Doğrudan Sekme Bağlantısı (`App.tsx`, `Containers/index.tsx`, `ContainerDetail/index.tsx`)**: `?tab=` URL sorgu parametresi desteğiyle Hızlı Eylem ikonuna tıklandığında doğrudan ilgili sekmenin açılması sağlandı.
-
----
-
-## [1.5.31] - 2026-10-10
-
-### Düzeltilenler (Fixed)
-- **OCI Registry İmaj Güncelleme Takipçisi & Digest İzleyici (Bilet 7.1)**:
+- **OCI Registry İmaj Güncelleme Takipçisi & Digest İzleyici**:
   - **Sıfır Yüklü Manifest Sorgulama (`OciRegistryClient.cs`)**: Docker Hub, GitHub Container Registry (GHCR) ve Quay üzerinde `/v2/{repo}/manifests/{tag}` adreslerine sıfır gövdeli HEAD istekleri atarak büyük imaj katmanlarını indirmeden (bant genişliği tüketmeden) üst sürüm olup olmadığını tespit eden istemci uygulandı.
   - **Docker Engine Katman Karşılaştırması (`DockerHttpClient.cs`, `DockerService.cs`)**: Konteynerin `RepoDigests` verisi ile uzak registry'den alınan SHA256 digest'ı karşılaştırılarak güncelleme durumu hesaplanır.
   - **Tek Tıkla Güvenli Yeniden Oluşturma (`ContainersEndpoints.cs`)**: `POST /api/containers/{id}/recreate` (`RequireAdmin`) uç noktası ile yeni imaj çekilir, eski konteyner durdurulur ve aynı konfigürasyonla kesintisiz yeniden ayağa kaldırılır.
   - **Görsel Güncelleme Bildirimi (`ImageUpdateModal.tsx`, `ContainerRow.tsx`, `ContainerList.tsx`, `ContainerDetailHeader.tsx`)**: Konteyner listesinde, kartlarda ve detay sayfasında amber "Güncelleme Var" rozeti ve yerel vs uzak hash özetlerini gösteren modal eklendi.
-- **Docker Compose YAML İnceleyici & Güvenli Düzenleyici (Bilet 7.2)**:
+- **Docker Compose YAML İnceleyici & Güvenli Düzenleyici**:
   - **Dizin Aşımı Korumalı YAML Servisi (`ComposeFileService.cs`, `ComposeEndpoints.cs`)**: Compose etiketlerinden dosya yolunu çözer, dizin aşımı (`..`) girişimlerini engeller.
   - **Otomatik `.bak` Yedeği**: Dosyaya yazılmadan önce mevcut dosyanın otomatik `.bak` yedeği alınır.
   - **Modüler Tarayıcı İçi Editör (`ComposeConfigModal.tsx`, `ComposeStackGroup.tsx`)**: Monospace formatlama, satır sayısı, dosya boyutu göstergesi ve "Kaydet ve Stack'i Yeniden Başlat" aksiyonu sunan hafif editör bileşeni.
-- **Olay Güdümlü Kendi Kendini Onarma (Auto-Healing) & Gelen Dağıtım Webhook'ları (Bilet 7.3)**:
+- **Olay Güdümlü Kendi Kendini Onarma (Auto-Healing) & Gelen Dağıtım Webhook'ları**:
   - **Döngü Korumalı Otomatik Kurtarma (`AutoHealingService.cs`, `ContainerDiscoveryService.cs`)**: Sıfır olmayan çıkış koduyla çöken konteynerler anında tespit edilip yeniden başlatılır; kayan pencere algoritmasıyla (15 dakikada en fazla 2 deneme) sonsuz flapping döngüleri engellenir.
   - **Çok Kanallı Kurtarma Alarmları (`NotificationService.cs`)**: Başarılı otomatik kurtarmalarda Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına anında bildirim gönderilir.
   - **Sabit Zamanlı Gelen Dağıtım Webhook'u (`DeployWebhookEndpoints.cs`)**: CI/CD boru hatları için `POST /api/hooks/deploy/{token}` uç noktası eklendi; timing saldırılarına karşı `CryptographicOperations.FixedTimeEquals` ile doğrulanır.
   - **Dağıtım Token Yönetim Arayüzü (`GeneralSettingsTab.tsx`)**: Güvenli webhook token üretme ve görüntüleme ayar kartı eklendi.
-- **Genişletilmiş Test Paketi**:
-  - Auto-healing, compose dosya güvenliği ve webhook doğrulamalarını kapsayan testler eklendi (244/244 yeşil test).
-
----
-
-## [1.5.30] - 2026-10-10
-
-### Düzeltilenler (Fixed)
-- **Konteyner Detay Sayfası & Bağımsız URL Mimarisi (Bilet 6.1)**:
+- **Konteyner Detay Sayfası & Bağımsız URL Mimarisi**:
   - **Tam Ekran Bağımsız Konteyner Paneli (`/containers/:id`)**: Konteyner inceleme işlemi sıkışık modal penceresinden (`ContainerDetailModal`) çıkarılarak doğrudan URL ile erişilebilir, yer imlerine eklenebilir ve sayfa yenilendiğinde kaybolmayan tam ekran bağımsız bir detay sayfasına dönüştürüldü.
-  - **Temiz ve Modüler Bileşen Mimarisi**: Tek dosyaya kod yığmama kuralına tam uyularak modüler alt bileşenler oluşturuldu:
-    - `pages/ContainerDetail/ContainerDetailHeader.tsx`: Konteyner adı, durumu, çalışma süresi, geri dönüş butonu ve yaşam döngüsü aksiyonları (başlat/durdur/yeniden başlat/duraklat).
-    - `pages/ContainerDetail/ContainerTelemetryHero.tsx`: Canlı telemetri başlık kartları; CPU kullanım yüzdesi, RAM kullanımı/sınırı ve Ağ (Rx/Tx) veri akış hızı.
-    - `pages/ContainerDetail/tabs/LogsTab.tsx`: Tam ekran canlı log izleyicisi; satır sayısı seçici (50-1000 satır), canlı akış anahtarı, anlık arama, otomatik kaydırma ve panoya kopyalama.
-    - `pages/ContainerDetail/tabs/TerminalTab.tsx`: Tam ekran xterm.js tabanlı etkileşimli web terminali; çoklu kabuk seçici (`/bin/sh`, `/bin/bash`, `/bin/ash`, `/bin/zsh`), tam ekran kipi ve canlı WebSocket iletişimi.
-    - Genel Bakış, Çevre Değişkenleri, Ağ, Depolama Mountları ve canlı kaynak limit düzenleme sekmeleri korundu ve entegre edildi.
-  - **Yönlendirme & Derin Bağlantı (Deep-Linking) Entegrasyonu (`App.tsx`, `Containers/index.tsx`)**: İstemci yönlendirme motoru URL parametrelerini destekleyecek şekilde güncellendi, sayfa başlığı (`Konteyner Adı - Konteyner Detayı - Corvus`) senkronize edildi ve liste görünümüne geri dönüş bağlantısı sağlandı.
-  - **Çift Dilli Yerelleştirme Eşitlemesi (`tr.ts`, `en.ts`)**: Konteyner detay paneli, telemetri göstergeleri, loglar ve terminal başlıkları için Türkçe ve İngilizce dil anahtarları eklendi.
-- **Konteyner Tarihsel Telemetri Zaman Serisi Grafikleri (Bilet 6.2)**:
   - **Canlı CPU & RAM Trend Görselleştirmesi (`ContainerHistoricalCharts.tsx`)**: Konteynerin CPU yükünü ve bellek kullanım geçmişini renk kodlu degrade dolgular ve araç ipuçlarıyla gösteren duyarlı Recharts Area grafikleri eklendi.
-- **Docker Compose Stack Toplu Eylemleri (Bilet 6.3)**:
-  - **Tek Tıkla Proje Yönetimi (`ComposeStackGroup.tsx`, `GroupSection.tsx`)**: Compose grup başlıklarına tüm projeyi tek seferde Yeniden Başlatma, Başlatma ve Durdurma butonları ile döner yükleme göstergesi eklendi.
-- **Konteyner Beklenmedik Kapanma & Crash-Loop Alarmları (Bilet 6.4)**:
+  - **Docker Compose Stack Toplu Eylemleri (`ComposeStackGroup.tsx`, `GroupSection.tsx`)**: Compose grup başlıklarına tüm projeyi tek seferde Yeniden Başlatma, Başlatma ve Durdurma butonları ile döner yükleme göstergesi eklendi.
   - **Anormal Çıkış Kodu İzleme (`ContainerDiscoveryService.cs`, `NotificationService.cs`)**: Sıfır olmayan çıkış koduyla duran veya çöken (ExitCode != 0, OOMKilled) konteynerler anında tespit edilerek Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına acil bildirim iletilmesi sağlandı.
-  - **Birim Test Kapsamı (`NotificationServiceTests.cs`)**: Çökme durumunda bildirim gönderimini doğrulayan xUnit testi eklendi (225/225 yeşil test).
-
----
-
-## [1.5.29] - 2026-10-07
-
-### Düzeltilenler (Fixed)
 - **Konteyner Web Terminali ve Etkileşimli Girdi Akışı (Stdin)**:
-  - **Docker Exec HTTP El Sıkışma Boyut Doğrulaması (`DockerHttpClient.cs`)**: Docker daemon'a ham HTTP upgrade isteği (`POST /exec/{id}/start`) gönderilirken sabit `Content-Length: 28` değeri dinamik UTF-8 byte hesaplayıcısıyla (`{"Detach":false,"Tty":true}` için tam 27 byte) düzeltildi. Docker motorunun kullanıcının bastığı ilk klavye tuşunu eksik HTTP gövdesi sanıp yutması engellendi.
-  - **Anlık Stdin Akış Boşaltma (`ContainersEndpoints.cs`)**: WebSocket üzerinden gelen her tuş vuruşunun Docker giriş borusuna (`NamedPipeClientStream` ve Unix domain socket) yazılmasının ardından hemen `await dockerStream.FlushAsync(ct)` çağrılması sağlandı. Windows ve Linux ortamlarında ara bellekte (buffer) takılan karakterlerin gecikmeksizin Docker kabuğuna ulaşması ve ekranda anında yankılanması (echo) sağlandı.
-  - **Evrensel Kabuk Önceliği & Alpine / Minimal Uyumluluğu (`ContainersEndpoints.cs`)**: Otomatik kabuk tespit listesinde POSIX standardı `/bin/sh` ve `sh` kabukları `/bin/bash` önüne alındı. Alpine, BusyBox, Go ve minimal konteynerlerde `/bin/bash` bulunmadığı için oluşan OCI runtime çökmesi (`stat /bin/bash: no such file or directory`, Kod 1006) kalıcı olarak önlendi.
-  - **Birim Test Kapsamı (`DockerServiceTests.cs`)**: Docker exec istek gövdesinin tam ve doğru byte uzunluğunu doğrulayan `DockerExec_StartPayload_CalculatesExactContentLength` birim testi eklendi.
-
----
-
-## [1.5.28] - 2026-10-07
+  - **Docker Exec HTTP El Sıkışma Boyut Doğrulaması (`DockerHttpClient.cs`)**: Docker daemon'a ham HTTP upgrade isteğinde dinamik UTF-8 byte hesaplayıcısıyla el sıkışma düzeltildi.
+  - **Anlık Stdin Akış Boşaltma (`ContainersEndpoints.cs`)**: WebSocket üzerinden gelen her tuş vuruşunun Docker giriş borusuna yazılmasının ardından hemen `await dockerStream.FlushAsync(ct)` çağrılması sağlandı.
+  - **Evrensel Kabuk Önceliği & Alpine / Minimal Uyumluluğu (`ContainersEndpoints.cs`)**: Otomatik kabuk tespit listesinde POSIX standardı `/bin/sh` ve `sh` kabukları `/bin/bash` önüne alındı.
 
 ### Değiştirilenler (Changed)
 - **Dokümantasyon & Açık Kaynak Vitrini Modernizasyonu**:
   - **10 Saniyede Hızlı Başlangıç Önceliği**: Doğrulanmış tek satırlık `docker run` komutu (`ghcr.io/brhnshn/corvus:latest`) ve yalın `compose.yaml` örneği `README.md` ve `README.tr.md` dosyalarının en üstüne taşındı.
   - **Otantik Mühendislik & Mimari Kapsam**: Şişirilmemiş somut verilerle "Mimari Kapsam ve Felsefe" karşılaştırma tablosu ve sıfır-CLR, Workstation GC, bellek kompaktörü ile gömülü SQLite WAL çalışma prensiplerini açıklayan "Native AOT Mühendislik Avantajı" bölümü eklendi.
   - **Resmi Konteyner Registry Uyumu**: Şablon imaj adları resmi GitHub Container Registry adresi (`ghcr.io/brhnshn/corvus:latest`) ile güncellendi.
-  - **İlham Kaynakları & Teşekkür**: [Checkmate](https://github.com/bluewave-labs/checkmate) projesi, açık kaynak saygı ve ilham etiği kurallarına uygun olarak resmi listeye eklendi.
+  - **İlham Kaynakları & Teşekkür**: Açık kaynak saygı ve ilham etiği kurallarına uygun olarak referans projeler resmi listeye eklendi.
 
 ---
 
