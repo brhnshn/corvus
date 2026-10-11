@@ -7,10 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 - **High-Density Operations Console & Live Topology Architecture (Dashboard NOC Mode)**:
-  - **Dual View Mode Switcher (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Responsive default mode (desktop >=1024px opens in Console mode, mobile in Classic view) with seamless toggle and `localStorage` persistence.
-  - **Real Docker Network & Stack Topology Engine (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`)**:
-    - Derives real infrastructure graph edges by cross-referencing shared Docker bridge networks (`NetworkSettings.Networks`), Docker Compose project stacks (`com.docker.compose.project`), and Traefik reverse-proxy routing labels.
-    - Zero fake/mock edges: visualizes authentic container-to-service relationships with status-aware bezier SVG connections and compose stack grouping bounding frames.
+  - **Dual View Mode Switcher (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Calibrated default mode to the clean & balanced "Classic" overview with seamless opt-in toggle to high-density Console mode and persistent `localStorage` preference memory.
+  - **De-cluttered Topology Canvas & Expanded Inspect Terminal (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`, `ConsoleDetailInspectPanel.tsx`)**:
+    - Expanded node cards from 130px to 170px width with generous 210px column spacing, preventing container name truncation.
+    - Cleaned up noisy edge label clutter; muted background network curves to 40% opacity with interactive hover highlights.
+    - Added one-click expand/collapse (`⤢ Genişlet` / `▢ Küçült`) for the live terminal inspector, granting full width to the live Docker SSE stream.
+    - Resolved form attribute validation warnings on search inputs (`id` and `name` attributes added).
   - **High-Density Inventory & SLA Explorer (`ConsoleInventoryPanel.tsx`)**: Left panel displaying active containers and services with real-time SLA latency indicators, CPU utilization, stack tags, and instant text filtering.
   - **Engineering Inspector & Live Docker Log Stream (`ConsoleDetailInspectPanel.tsx`)**:
     - Right panel with real Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` tailing (500-line circular buffer, pause/resume, error filtering).

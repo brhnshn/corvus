@@ -6,11 +6,15 @@ import type { TopologyNode } from '../types';
 interface ConsoleDetailInspectPanelProps {
   selectedNode: TopologyNode | null;
   onRefreshData: () => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export const ConsoleDetailInspectPanel: React.FC<ConsoleDetailInspectPanelProps> = ({
   selectedNode,
   onRefreshData,
+  isExpanded = false,
+  onToggleExpand,
 }) => {
   const { t } = useI18n();
   const [logs, setLogs] = useState<string[]>([]);
@@ -141,17 +145,29 @@ export const ConsoleDetailInspectPanel: React.FC<ConsoleDetailInspectPanelProps>
           <h2 className="text-sm font-bold text-[#f1f5f9] font-mono truncate">
             {selectedNode.name}
           </h2>
-          <span
-            className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold uppercase ${
-              selectedNode.status === 'err'
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                : selectedNode.status === 'warn'
-                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-            }`}
-          >
-            {statusLabel}
-          </span>
+          <div className="flex items-center gap-2">
+            {onToggleExpand && (
+              <button
+                type="button"
+                onClick={onToggleExpand}
+                className="px-2 py-0.5 rounded bg-[#1e2433] text-[#94a3b8] hover:text-[#f1f5f9] text-[10px] font-mono transition-colors"
+                title={isExpanded ? 'Küçült' : 'Genişlet (Tam Panel)'}
+              >
+                {isExpanded ? '▢ Küçült' : '⤢ Genişlet'}
+              </button>
+            )}
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold uppercase ${
+                selectedNode.status === 'err'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                  : selectedNode.status === 'warn'
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+              }`}
+            >
+              {statusLabel}
+            </span>
+          </div>
         </div>
 
         {/* Aksiyon Butonları */}

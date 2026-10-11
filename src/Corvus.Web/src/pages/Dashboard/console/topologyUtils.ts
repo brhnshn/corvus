@@ -214,35 +214,36 @@ export function computeTopology(
     });
   }
 
-  // 5. STACK / MİMARİ GRUPLANDIRMAYA GÖRE KOORDİNAT HESAPLAMASI
+  // 5. STACK / MİMARİ GRUPLANDIRMAYA GÖRE KOORDİNAT HESAPLAMASI (Ferah & Geniş Yerleşim)
   const proxyNodes = nodes.filter((n) => n.kind === 'proxy');
   const dbNodes = nodes.filter((n) => n.kind === 'database');
   const appNodes = nodes.filter((n) => n.kind !== 'proxy' && n.kind !== 'database');
 
-  const stageWidth = 760;
-  const colSpacing = 160;
+  const colSpacing = 210;
+  const rowSpacing = 95;
 
   // Proxy'leri yerleştir (Üst Katman)
   proxyNodes.forEach((n, idx) => {
-    n.x = Math.max(40, (stageWidth / (proxyNodes.length + 1)) * (idx + 1) - 65);
-    n.y = 35;
+    n.x = 60 + idx * colSpacing;
+    n.y = 45;
   });
 
   // Uygulamaları yerleştir (Orta Katman) - Aynı stack'te olanları yan yana grupla
   appNodes.sort((a, b) => (a.stackName || '').localeCompare(b.stackName || ''));
+  const startY = proxyNodes.length > 0 ? 150 : 50;
   appNodes.forEach((n, idx) => {
     const itemsPerRow = Math.min(4, Math.max(1, appNodes.length));
     const col = idx % itemsPerRow;
     const row = Math.floor(idx / itemsPerRow);
-    n.x = 40 + col * colSpacing;
-    n.y = 130 + row * 85;
+    n.x = 60 + col * colSpacing;
+    n.y = startY + row * rowSpacing;
   });
 
   // Veritabanlarını yerleştir (Alt Katman)
-  const maxYApp = appNodes.reduce((max, n) => Math.max(max, n.y), 130);
+  const maxYApp = appNodes.reduce((max, n) => Math.max(max, n.y), startY);
   dbNodes.forEach((n, idx) => {
-    n.x = 50 + idx * colSpacing;
-    n.y = maxYApp + 90;
+    n.x = 60 + idx * colSpacing;
+    n.y = maxYApp + 110;
   });
 
   return { nodes, edges };

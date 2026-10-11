@@ -28,11 +28,10 @@ export interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const { t } = useI18n();
 
-  // Görünüm Modu: localStorage ile tercihi hatırla (Masaüstünde 'console', mobilde 'classic')
+  // Görünüm Modu: Varsayılan 'classic' (Ferah & Dengeli), localStorage tercihi varsa onu kullan
   const [viewMode, setViewMode] = useState<DashboardViewMode>(() => {
     const saved = localStorage.getItem('corvus_dashboard_view_mode') as DashboardViewMode | null;
-    if (saved) return saved;
-    return typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'console' : 'classic';
+    return saved || 'classic';
   });
 
   const handleViewModeChange = (mode: DashboardViewMode) => {

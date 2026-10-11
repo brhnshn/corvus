@@ -7,10 +7,12 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 ### Eklenenler (Added)
 - **Yüksek Yoğunluklu Operasyon Konsolu & Canlı Mimari Topolojisi (Dashboard NOC Modu)**:
-  - **İki Modlu Görünüm Desteği (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Duyarlı varsayılan görünüm (masaüstü >=1024px ekranlarda Konsol modu, mobilde Klasik kart modu) ve `localStorage` kalıcılığı ile sorunsuz iki modlu geçiş.
-  - **Gerçek Docker Ağ & Yığın Topoloji Motoru (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`)**:
-    - Gerçek altyapı bağımlılık kenarlarını Docker köprü ağları (`NetworkSettings.Networks`), Docker Compose yığınları (`com.docker.compose.project`) ve Traefik yönlendirme etiketlerinden otomatik çıkarır.
-    - Sıfır yapay/sahte veri: Gerçek konteyner-servis ilişkilerini duruma duyarlı bezier SVG bağlantıları ve Compose yığını gruplama çerçeveleriyle görselleştirir.
+  - **İki Modlu Görünüm Desteği (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Varsayılan açılış ferah ve dengeli "Klasik" genel bakış moduna ayarlandı; kullanıcı isteğine bağlı olarak yüksek yoğunluklu Konsol moduna geçiş ve `localStorage` tercihi korundu.
+  - **Ferahlatılmış Topoloji Tuvali & Genişleyen Log Terminali (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`, `ConsoleDetailInspectPanel.tsx`)**:
+    - Düğüm kartı genişliği 130px'ten 170px'e çıkarıldı, sütunlar arası mesafe 210px'e genişletildi; konteyner isimlerinin çirkin kesilmesi (ellipsis) önlendi.
+    - Sürekli ekranda durup kalabalık yaratan ağ etiketleri temizlendi, arka plan bağlantı eğrileri %40 opaklığa çekilerek sadece fareyle üzerine gelindiğinde parlayacak şekilde sadeleştirildi.
+    - Canlı Docker SSE terminaline tek tıkla tam genişleme (`⤢ Genişlet` / `▢ Küçült`) butonu eklenerek dar alanda log inceleme sıkışıklığı çözüldü.
+    - Arama girişine `id` ve `name` öznitelikleri eklenerek form doğrulama uyarıları giderildi.
   - **Kompakt Envanter & SLA Paneli (`ConsoleInventoryPanel.tsx`)**: Tüm konteyner ve servisleri anlık gecikme, port, CPU yükü, yığın etiketleri ve hızlı filtreleme ile listeleyen yüksek yoğunluklu sol panel.
   - **Mühendislik Denetimi & Canlı Docker Log Akışı (`ConsoleDetailInspectPanel.tsx`)**:
     - Gerçek Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` üzerinden canlı Docker terminal akışı (500 satırlık dairesel tampon, duraklatma/devam etme ve hata filtresi).

@@ -51,6 +51,8 @@ export const ConsoleInventoryPanel: React.FC<ConsoleInventoryPanelProps> = ({
       {/* Arama / Filtre Çubuğu */}
       <div className="p-2 border-b border-[#1e2433] bg-[#090a0f]">
         <input
+          id="console-inventory-search"
+          name="consoleInventorySearch"
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}

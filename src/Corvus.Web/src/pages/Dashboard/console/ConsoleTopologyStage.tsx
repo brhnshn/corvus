@@ -25,16 +25,16 @@ export const ConsoleTopologyStage: React.FC<ConsoleTopologyStageProps> = ({
       if (!existing) {
         groups.set(n.stackName, {
           minX: n.x,
-          maxX: n.x + 130,
+          maxX: n.x + 170,
           minY: n.y,
-          maxY: n.y + 44,
+          maxY: n.y + 48,
           count: 1,
         });
       } else {
         existing.minX = Math.min(existing.minX, n.x);
-        existing.maxX = Math.max(existing.maxX, n.x + 130);
+        existing.maxX = Math.max(existing.maxX, n.x + 170);
         existing.minY = Math.min(existing.minY, n.y);
-        existing.maxY = Math.max(existing.maxY, n.y + 44);
+        existing.maxY = Math.max(existing.maxY, n.y + 48);
         existing.count += 1;
       }
     });
@@ -114,34 +114,23 @@ export const ConsoleTopologyStage: React.FC<ConsoleTopologyStageProps> = ({
             const dashArray = isBroken ? '3 4' : '4 4';
 
             // Eğri (Bezier) hesapla
-            const x1 = n1.x + 65;
-            const y1 = n1.y + 22;
-            const x2 = n2.x + 65;
-            const y2 = n2.y + 22;
+            const x1 = n1.x + 85;
+            const y1 = n1.y + 24;
+            const x2 = n2.x + 85;
+            const y2 = n2.y + 24;
             const midY = (y1 + y2) / 2;
 
             return (
-              <g key={`edge-${idx}`}>
+              <g key={`edge-${idx}`} className="group/edge">
                 <path
                   d={`M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`}
                   stroke={strokeColor}
                   strokeWidth="1.2"
                   strokeDasharray={dashArray}
+                  strokeOpacity="0.4"
                   fill="none"
-                  className={!isBroken ? 'animate-pulse' : ''}
+                  className="transition-opacity group-hover/edge:stroke-opacity-100"
                 />
-                {e.label && (
-                  <text
-                    x={(x1 + x2) / 2}
-                    y={midY - 4}
-                    fill="#64748b"
-                    fontSize="8.5"
-                    fontFamily="JetBrains Mono, monospace"
-                    textAnchor="middle"
-                  >
-                    {e.label}
-                  </text>
-                )}
               </g>
             );
           })}
@@ -175,39 +164,39 @@ export const ConsoleTopologyStage: React.FC<ConsoleTopologyStageProps> = ({
               >
                 {/* Node Kutusu */}
                 <rect
-                  width="130"
-                  height="44"
-                  rx="4"
+                  width="170"
+                  height="48"
+                  rx="6"
                   fill={bgColor}
                   stroke={borderColor}
-                  strokeWidth={isSelected ? '1.8' : '1'}
+                  strokeWidth={isSelected ? '2' : '1'}
                   className="transition-all duration-150 group-hover:stroke-[#4a5568]"
                 />
 
                 {/* Durum Noktası */}
-                <circle cx="12" cy="18" r="4" fill={statusColor} />
+                <circle cx="14" cy="20" r="4.5" fill={statusColor} />
 
                 {/* İsim */}
                 <text
-                  x="22"
-                  y="21"
+                  x="26"
+                  y="23"
                   fill="#f1f5f9"
-                  fontSize="11"
+                  fontSize="12"
                   fontWeight="600"
                   fontFamily="Inter, sans-serif"
                 >
-                  {node.name.length > 13 ? `${node.name.slice(0, 12)}…` : node.name}
+                  {node.name.length > 18 ? `${node.name.slice(0, 17)}…` : node.name}
                 </text>
 
                 {/* Alt Metin / Port / SLA */}
                 <text
-                  x="22"
-                  y="35"
+                  x="26"
+                  y="38"
                   fill="#64748b"
-                  fontSize="9.5"
+                  fontSize="10"
                   fontFamily="JetBrains Mono, monospace"
                 >
-                  {node.port ? `:${node.port}` : node.subLabel?.slice(0, 18) || ''}
+                  {node.port ? `:${node.port}` : node.subLabel?.slice(0, 22) || ''}
                 </text>
               </g>
             );
