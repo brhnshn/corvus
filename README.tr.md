@@ -117,12 +117,6 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
 
 ## ✨ Temel Özellikler
 
-- **🎛️ Yüksek Yoğunluklu Operasyon Konsolu & Canlı Topoloji Sahnesi (NOC Modu):**
-  - **Çift Görünümlü Genel Bakış (`DashboardHeader.tsx`, `Dashboard/index.tsx`):** Üst düzey "Klasik Kartlar" ile yüksek yoğunluklu "Operasyon Konsolu" arasında tek tıkla geçiş; duyarlı varsayılanlar (masaüstü >=1024px Konsol modu, mobil Klasik görünüm) ve kalıcı `localStorage` hafızası.
-  - **Gerçek Docker Ağ & Yığın Topoloji Motoru (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`):** Ortak paylaşılan Docker köprü ağları (`NetworkSettings.Networks`), Docker Compose yığınları (`com.docker.compose.project`) ve Traefik yönlendirme etiketlerinden altyapı bağımlılıklarını otomatik keşfeder. Sıfır sahte veri; duruma duyarlı bezier SVG hatları ve Compose yığını gruplama çerçeveleri.
-  - **Kompakt Envanter Gezgini (`ConsoleInventoryPanel.tsx`):** Tüm aktif konteyner ve servisleri anlık gecikme (latency), CPU tüketimi, yığın etiketleri ve hızlı metin filtrelemesi ile listeleme.
-  - **Mühendislik Denetimi & Canlı Docker Log Akışı (`ConsoleDetailInspectPanel.tsx`):** Gerçek Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` uç noktasından canlı Docker terminal akışı (500 satırlık tampon, duraklat/devam et, hata regex filtresi), tek tıkla Docker konteyner başlatma/yeniden başlatma eylemleri ve detaylı çalışma zamanı telemetrisi.
-  - **Küme Telemetri Çubuğu (`ConsoleTelemetryStrip.tsx`):** Küme genelindeki CPU yükünü, RAM dağılımını ve toplam konteyner küme sağlığını izleyen kompakt alt bant.
 - **⌨️ Genel Komut Paleti (`Ctrl+K` / `Cmd+K`) & Mikro-Animasyonlar:**
   - **Sıfır Bağımlılıklı Bulanık Arama (`fuzzySearch.ts`):** Hafif harf dizisi eşleme algoritması ile tüm sayfalara, konteynerlere, hızlı eylemlere ve ayarlara anında erişim.
   - **Tam Klavye Gezinmesi:** Ok tuşları (`↑`/`↓`/`Enter`) ve doğrudan kısayollar (`G D` Genel Bakış, `G C` Konteynerler, `G A` Olay Geçmişi, `R` Yenile).

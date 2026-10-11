@@ -5,29 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.5.31] - 2026-10-11
 
-### Added
-- **High-Density Operations Console & Live Topology Architecture (Dashboard NOC Mode)**:
-  - **Dual View Mode Switcher (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Calibrated default mode to the clean & balanced "Classic" overview with seamless opt-in toggle to high-density Console mode and persistent `localStorage` preference memory.
-  - **De-cluttered Topology Canvas & Expanded Inspect Terminal (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`, `ConsoleDetailInspectPanel.tsx`)**:
-    - Expanded node cards from 130px to 170px width with generous 210px column spacing, preventing container name truncation.
-    - Cleaned up noisy edge label clutter; muted background network curves to 40% opacity with interactive hover highlights.
-    - Added one-click expand/collapse (`⤢ Genişlet` / `▢ Küçült`) for the live terminal inspector, granting full width to the live Docker SSE stream.
-    - Resolved form attribute validation warnings on search inputs (`id` and `name` attributes added).
-  - **High-Density Inventory & SLA Explorer (`ConsoleInventoryPanel.tsx`)**: Left panel displaying active containers and services with real-time SLA latency indicators, CPU utilization, stack tags, and instant text filtering.
-  - **Engineering Inspector & Live Docker Log Stream (`ConsoleDetailInspectPanel.tsx`)**:
-    - Right panel with real Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` tailing (500-line circular buffer, pause/resume, error filtering).
-    - Single-click Docker container actions (Start, Restart) and detailed runtime telemetry specifications.
-  - **Cluster Telemetry Strip (`ConsoleTelemetryStrip.tsx`)**: Compact footer telemetry bar monitoring real-time CPU load, RAM distribution, and total container cluster health.
-
 ### Fixed
 - **React Hook Lifecycle Consistency (`App.tsx`)**:
   - Relocated the command palette `useCommandPalette` / `fetchCommandItems` effect hook to the component top-level before conditional early returns (`authLoading`, `authStatus`). Resolves production React error #310 ("Rendered more hooks than during the previous render") which caused a black screen after user login.
 
 ### Refactored
-- **Clean Architecture & Modular Decoupling**:
-  - Topology calculation, SVG stage rendering, inventory management, SSE log streaming, and telemetry strips modularized into isolated components under `src/Corvus.Web/src/pages/Dashboard/console/`.
-  - Zero hardcoded UI strings: 100% internationalized via `useI18n` with comprehensive dictionaries in both `tr.ts` and `en.ts`.
-  - Full production data integration: zero mock data used; directly wired to live API endpoints (`/containers`, `/services`, `/metrics`).
+- **Clean Dashboard Architecture & Visual Clarity**:
+  - Restored the unified, spacious Midnight v2 dashboard layout as the sole and definitive overview, purging experimental nested layout partitions to preserve optimal readability and performance.
+  - Zero hardcoded UI strings: 100% internationalized via `useI18n` with synchronized dictionaries in both `tr.ts` and `en.ts`.
 - **Backend Model Enrichment (`DockerModels.cs`)**:
   - Exposed `NetworkSettings` (`DockerNetworkSettings`) in `DockerContainerInfo` and `DockerContainerDto` so Docker network names are serialized directly to the web client.
 

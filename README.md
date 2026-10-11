@@ -117,12 +117,6 @@ Corvus is built from the ground up to challenge the misconception that modern en
 
 ## ✨ Key Features
 
-- **🎛️ High-Density Operations Console & Live Topology Stage (NOC Mode):**
-  - **Dual-View Dashboard (`DashboardHeader.tsx`, `Dashboard/index.tsx`):** Seamless one-click switching between high-level "Classic Cards" and high-density "Operations Console" with responsive defaults (>=1024px opens in Console mode, mobile in Classic view) and persistent `localStorage` memory.
-  - **Real Docker Network & Stack Topology Engine (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`):** Automatically discovers infrastructure graph dependencies by cross-referencing shared Docker bridge networks (`NetworkSettings.Networks`), Docker Compose project stacks (`com.docker.compose.project`), and Traefik routing labels. Zero mock data; status-aware bezier SVG connections and compose stack grouping bounding frames.
-  - **High-Density Inventory Explorer (`ConsoleInventoryPanel.tsx`):** Filter and browse all live containers and services with real-time latency indicators, CPU utilization, stack tags, and instant text filtering.
-  - **Engineering Inspector & Live Docker Log Stream (`ConsoleDetailInspectPanel.tsx`):** Right panel with real Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` terminal tailing (500-line circular buffer, pause/resume, error regex filtering), direct single-click Docker container actions (Start, Restart), and detailed runtime specifications.
-  - **Cluster Telemetry Strip (`ConsoleTelemetryStrip.tsx`):** Compact footer telemetry bar monitoring real-time CPU load, RAM distribution, and total container cluster health.
 - **⌨️ Universal Command Palette (`Ctrl+K` / `Cmd+K`) & Micro-Animations:**
   - **Zero-Dependency Fuzzy Search (`fuzzySearch.ts`):** Lightweight string matching algorithm delivering instant results across all pages, containers, actions, and settings.
   - **Full Keyboard Navigation:** Arrow key browsing (`↑`/`↓`/`Enter`) with quick shortcuts (`G D` Dashboard, `G C` Containers, `G A` Activity, `R` Refresh).

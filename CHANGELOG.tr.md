@@ -5,29 +5,14 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 ## [1.5.31] - 2026-10-11
 
-### Eklenenler (Added)
-- **Yüksek Yoğunluklu Operasyon Konsolu & Canlı Mimari Topolojisi (Dashboard NOC Modu)**:
-  - **İki Modlu Görünüm Desteği (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Varsayılan açılış ferah ve dengeli "Klasik" genel bakış moduna ayarlandı; kullanıcı isteğine bağlı olarak yüksek yoğunluklu Konsol moduna geçiş ve `localStorage` tercihi korundu.
-  - **Ferahlatılmış Topoloji Tuvali & Genişleyen Log Terminali (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`, `ConsoleDetailInspectPanel.tsx`)**:
-    - Düğüm kartı genişliği 130px'ten 170px'e çıkarıldı, sütunlar arası mesafe 210px'e genişletildi; konteyner isimlerinin çirkin kesilmesi (ellipsis) önlendi.
-    - Sürekli ekranda durup kalabalık yaratan ağ etiketleri temizlendi, arka plan bağlantı eğrileri %40 opaklığa çekilerek sadece fareyle üzerine gelindiğinde parlayacak şekilde sadeleştirildi.
-    - Canlı Docker SSE terminaline tek tıkla tam genişleme (`⤢ Genişlet` / `▢ Küçült`) butonu eklenerek dar alanda log inceleme sıkışıklığı çözüldü.
-    - Arama girişine `id` ve `name` öznitelikleri eklenerek form doğrulama uyarıları giderildi.
-  - **Kompakt Envanter & SLA Paneli (`ConsoleInventoryPanel.tsx`)**: Tüm konteyner ve servisleri anlık gecikme, port, CPU yükü, yığın etiketleri ve hızlı filtreleme ile listeleyen yüksek yoğunluklu sol panel.
-  - **Mühendislik Denetimi & Canlı Docker Log Akışı (`ConsoleDetailInspectPanel.tsx`)**:
-    - Gerçek Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` üzerinden canlı Docker terminal akışı (500 satırlık dairesel tampon, duraklatma/devam etme ve hata filtresi).
-    - Tek tıkla konteyner başlatma/yeniden başlatma eylemleri ve kapsamlı çalışma zamanı telemetri tablosu.
-  - **Küme Telemetri Çubuğu (`ConsoleTelemetryStrip.tsx`)**: Cluster genelindeki CPU yükünü, RAM dağılımını ve toplam konteyner küme sağlığını izleyen kompakt alt bant.
-
 ### Düzeltilenler (Fixed)
 - **React Hook Yaşam Döngüsü Tutarlılığı (`App.tsx`)**:
   - Komut paleti `useCommandPalette` / `fetchCommandItems` `useEffect` hook'u koşullu erken dönüşlerden (`authLoading`, `authStatus`) önce, bileşenin en üst seviyesine taşındı. Kullanıcı giriş yaptıktan sonra tetiklenen ve siyah ekrana yol açan üretim React #310 ("Rendered more hooks than during the previous render") hatası giderildi.
 
 ### Değiştirilenler (Refactored)
-- **Temiz Mimari & Modüler Ayrım**:
-  - Topoloji hesaplaması, SVG sahne çizimi, envanter yönetimi, SSE log terminali ve telemetri şeritleri `src/Corvus.Web/src/pages/Dashboard/console/` altında bağımsız modüllere çıkarıldı.
-  - Sıfır sabit kodlanmış metin: `useI18n` altyapısıyla hem `tr.ts` hem de `en.ts` üzerinde eksiksiz çok dilli destek sağlandı.
-  - Tüm operasyon konsolu canlı veri kaynakları (`/containers`, `/services`, `/metrics`) ile doğrudan entegre edildi; hiçbir sahte/mock veri kullanılmadı.
+- **Temiz Dashboard Mimarisi & Görsel Ferahlık**:
+  - Genel Bakış (Dashboard) ekranı, deneysel sıkışık çoklu panel bölünmelerinden tamamen arındırılarak Corvus'un ferah, dengeli ve modern Midnight v2 kart düzenine geri getirildi; okunabilirlik ve performans en üst seviyeye çıkarıldı.
+  - Sıfır sabit kodlanmış metin: `useI18n` altyapısıyla hem `tr.ts` hem de `en.ts` üzerinde eksiksiz ve senkronize çok dilli destek sağlandı.
 - **Backend Model Zenginleştirmesi (`DockerModels.cs`)**:
   - `DockerContainerInfo` ve `DockerContainerDto` içerisine `NetworkSettings` (`DockerNetworkSettings`) dahil edilerek Docker ağ isimleri web istemcisine doğrudan serileştirildi.
 

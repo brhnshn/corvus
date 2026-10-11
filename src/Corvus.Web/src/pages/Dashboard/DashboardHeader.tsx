@@ -1,8 +1,7 @@
 import React from 'react';
-import { Plus, Boxes, ExternalLink, RefreshCw, LayoutDashboard, Terminal } from 'lucide-react';
+import { Plus, Boxes, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useI18n } from '../../i18n';
-import type { DashboardViewMode } from './types';
 
 export interface DashboardHeaderProps {
   subtitle: string;
@@ -10,8 +9,6 @@ export interface DashboardHeaderProps {
   onRefresh: () => void;
   refreshing: boolean;
   onNavigate?: (page: 'services' | 'containers' | 'metrics' | 'uptime' | 'settings') => void;
-  viewMode?: DashboardViewMode;
-  onViewModeChange?: (mode: DashboardViewMode) => void;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -20,8 +17,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onRefresh,
   refreshing,
   onNavigate,
-  viewMode = 'classic',
-  onViewModeChange,
 }) => {
   const { t } = useI18n();
 
@@ -38,37 +33,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </p>
         </div>
 
-        {/* Canlı Sistem & Corvus Bellek Rozeti ve Görünüm Değiştirici */}
+        {/* Canlı Sistem & Corvus Bellek Rozeti */}
         <div className="flex items-center gap-3">
-          {onViewModeChange && (
-            <div className="flex items-center p-0.5 rounded-lg bg-[#0e1117] border border-[#1e2433] text-xs font-mono">
-              <button
-                onClick={() => onViewModeChange('classic')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors ${
-                  viewMode === 'classic'
-                    ? 'bg-[#1e2433] text-[#f1f5f9] font-medium shadow-sm'
-                    : 'text-[#64748b] hover:text-[#94a3b8]'
-                }`}
-                title={t('dashboard.viewClassic')}
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>{t('dashboard.viewClassic')}</span>
-              </button>
-              <button
-                onClick={() => onViewModeChange('console')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors ${
-                  viewMode === 'console'
-                    ? 'bg-[#38bdf8]/15 text-[#38bdf8] border border-[#38bdf8]/30 font-medium shadow-sm'
-                    : 'text-[#64748b] hover:text-[#94a3b8]'
-                }`}
-                title={t('dashboard.viewConsole')}
-              >
-                <Terminal className="w-3.5 h-3.5" />
-                <span>{t('dashboard.viewConsole')}</span>
-              </button>
-            </div>
-          )}
-
           <div className="glass inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full font-mono text-xs font-medium text-[#9ba0b5]">
             <span className="w-2 h-2 rounded-full bg-[#34d399] animate-dot-pulse shrink-0" />
             <span className="text-[#eceef6]">Corvus {memoryUsageMb} MB</span>
