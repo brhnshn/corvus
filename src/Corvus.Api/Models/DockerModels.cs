@@ -29,6 +29,9 @@ public class DockerContainerInfo
     [JsonPropertyName("Labels")]
     public Dictionary<string, string>? Labels { get; set; }
 
+    [JsonPropertyName("NetworkSettings")]
+    public DockerNetworkSettings? NetworkSettings { get; set; }
+
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = new();
 }

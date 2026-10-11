@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.31] - 2026-10-11
+
+### Added
+- **High-Density Operations Console & Live Topology Architecture (Dashboard NOC Mode)**:
+  - **Dual View Mode Switcher (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Responsive default mode (desktop >=1024px opens in Console mode, mobile in Classic view) with seamless toggle and `localStorage` persistence.
+  - **Real Docker Network & Stack Topology Engine (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`)**:
+    - Derives real infrastructure graph edges by cross-referencing shared Docker bridge networks (`NetworkSettings.Networks`), Docker Compose project stacks (`com.docker.compose.project`), and Traefik reverse-proxy routing labels.
+    - Zero fake/mock edges: visualizes authentic container-to-service relationships with status-aware bezier SVG connections and compose stack grouping bounding frames.
+  - **High-Density Inventory & SLA Explorer (`ConsoleInventoryPanel.tsx`)**: Left panel displaying active containers and services with real-time SLA latency indicators, CPU utilization, stack tags, and instant text filtering.
+  - **Engineering Inspector & Live Docker Log Stream (`ConsoleDetailInspectPanel.tsx`)**:
+    - Right panel with real Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` tailing (500-line circular buffer, pause/resume, error filtering).
+    - Single-click Docker container actions (Start, Restart) and detailed runtime telemetry specifications.
+  - **Cluster Telemetry Strip (`ConsoleTelemetryStrip.tsx`)**: Compact footer telemetry bar monitoring real-time CPU load, RAM distribution, and total container cluster health.
+
+### Refactored
+- **Clean Architecture & Modular Decoupling**:
+  - Topology calculation, SVG stage rendering, inventory management, SSE log streaming, and telemetry strips modularized into isolated components under `src/Corvus.Web/src/pages/Dashboard/console/`.
+  - Zero hardcoded UI strings: 100% internationalized via `useI18n` with comprehensive dictionaries in both `tr.ts` and `en.ts`.
+  - Full production data integration: zero mock data used; directly wired to live API endpoints (`/containers`, `/services`, `/metrics`).
+- **Backend Model Enrichment (`DockerModels.cs`)**:
+  - Exposed `NetworkSettings` (`DockerNetworkSettings`) in `DockerContainerInfo` and `DockerContainerDto` so Docker network names are serialized directly to the web client.
+
 ## [1.5.30] - 2026-10-10
 
 ### Refactored

@@ -3,6 +3,28 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.5.31] - 2026-10-11
+
+### Eklenenler (Added)
+- **Yüksek Yoğunluklu Operasyon Konsolu & Canlı Mimari Topolojisi (Dashboard NOC Modu)**:
+  - **İki Modlu Görünüm Desteği (`DashboardHeader.tsx`, `Dashboard/index.tsx`)**: Duyarlı varsayılan görünüm (masaüstü >=1024px ekranlarda Konsol modu, mobilde Klasik kart modu) ve `localStorage` kalıcılığı ile sorunsuz iki modlu geçiş.
+  - **Gerçek Docker Ağ & Yığın Topoloji Motoru (`topologyUtils.ts`, `ConsoleTopologyStage.tsx`)**:
+    - Gerçek altyapı bağımlılık kenarlarını Docker köprü ağları (`NetworkSettings.Networks`), Docker Compose yığınları (`com.docker.compose.project`) ve Traefik yönlendirme etiketlerinden otomatik çıkarır.
+    - Sıfır yapay/sahte veri: Gerçek konteyner-servis ilişkilerini duruma duyarlı bezier SVG bağlantıları ve Compose yığını gruplama çerçeveleriyle görselleştirir.
+  - **Kompakt Envanter & SLA Paneli (`ConsoleInventoryPanel.tsx`)**: Tüm konteyner ve servisleri anlık gecikme, port, CPU yükü, yığın etiketleri ve hızlı filtreleme ile listeleyen yüksek yoğunluklu sol panel.
+  - **Mühendislik Denetimi & Canlı Docker Log Akışı (`ConsoleDetailInspectPanel.tsx`)**:
+    - Gerçek Server-Sent Events (SSE) `/api/containers/{id}/logs/stream` üzerinden canlı Docker terminal akışı (500 satırlık dairesel tampon, duraklatma/devam etme ve hata filtresi).
+    - Tek tıkla konteyner başlatma/yeniden başlatma eylemleri ve kapsamlı çalışma zamanı telemetri tablosu.
+  - **Küme Telemetri Çubuğu (`ConsoleTelemetryStrip.tsx`)**: Cluster genelindeki CPU yükünü, RAM dağılımını ve toplam konteyner küme sağlığını izleyen kompakt alt bant.
+
+### Değiştirilenler (Refactored)
+- **Temiz Mimari & Modüler Ayrım**:
+  - Topoloji hesaplaması, SVG sahne çizimi, envanter yönetimi, SSE log terminali ve telemetri şeritleri `src/Corvus.Web/src/pages/Dashboard/console/` altında bağımsız modüllere çıkarıldı.
+  - Sıfır sabit kodlanmış metin: `useI18n` altyapısıyla hem `tr.ts` hem de `en.ts` üzerinde eksiksiz çok dilli destek sağlandı.
+  - Tüm operasyon konsolu canlı veri kaynakları (`/containers`, `/services`, `/metrics`) ile doğrudan entegre edildi; hiçbir sahte/mock veri kullanılmadı.
+- **Backend Model Zenginleştirmesi (`DockerModels.cs`)**:
+  - `DockerContainerInfo` ve `DockerContainerDto` içerisine `NetworkSettings` (`DockerNetworkSettings`) dahil edilerek Docker ağ isimleri web istemcisine doğrudan serileştirildi.
+
 ## [1.5.30] - 2026-10-10
 
 ### Değiştirilenler (Refactored)

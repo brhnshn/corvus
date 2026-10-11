@@ -18,6 +18,8 @@ import { AttentionAlerts } from './AttentionAlerts';
 import { DockerOverviewSection } from './DockerOverviewSection';
 import { TopResourcesCard } from './TopResourcesCard';
 import { RecentEventsCard, type EventItem } from './RecentEventsCard';
+import { OperationsConsoleSection } from './OperationsConsoleSection';
+import type { DashboardViewMode } from './types';
 
 export interface DashboardPageProps {
   onNavigate?: (page: 'services' | 'containers' | 'metrics' | 'uptime' | 'settings') => void;
@@ -25,6 +27,18 @@ export interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const { t } = useI18n();
+
+  // Görünüm Modu: localStorage ile tercihi hatırla (Masaüstünde 'console', mobilde 'classic')
+  const [viewMode, setViewMode] = useState<DashboardViewMode>(() => {
+    const saved = localStorage.getItem('corvus_dashboard_view_mode') as DashboardViewMode | null;
+    if (saved) return saved;
+    return typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'console' : 'classic';
+  });
+
+  const handleViewModeChange = (mode: DashboardViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem('corvus_dashboard_view_mode', mode);
+  };
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -166,6 +180,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         onRefresh={() => loadData(true)}
         refreshing={refreshing}
         onNavigate={onNavigate}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
       />
 
       {/* Hata Uyarısı */}
@@ -176,48 +192,61 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* 2. Sistem Durum Banner'ı */}
-      <SystemBanner
-        status={bannerStatus}
-        message={bannerMessage}
-        subtext={bannerSubtext}
-        lastCheckText="son kontrol az önce"
-      />
-
-      {/* 3. KPI İstatistik Şeridi + Disk Durumu */}
-      <DashboardKpis
-        summary={summary}
-        metrics={summary?.latestMetrics}
-        onNavigate={onNavigate}
-      />
-
-      {/* 4. Dikkat Gerektiren Kritik Olaylar */}
-      <AttentionAlerts
-        services={services}
-        stoppedContainers={stoppedContainers}
-        failedPushMonitors={failedPushMonitors}
-        onNavigate={onNavigate}
-      />
-
-      {/* 5. Docker Konteynerleri Genel Bakış */}
-      <DockerOverviewSection
-        containers={containers}
-        onNavigate={onNavigate}
-      />
-
-      {/* 6. En Çok Kaynak Kullananlar & Son Olaylar İkili Bölüm */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-3.5">
-        <TopResourcesCard
-          containers={containers}
-          statsMap={containerStats}
-        />
-        <RecentEventsCard
+      {/* MOD SEÇİMİNE GÖRE GÖRÜNÜM: 'console' vs 'classic' */}
+      {viewMode === 'console' ? (
+        <OperationsConsoleSection
           services={services}
           containers={containers}
-          lastBackup={summary?.lastBackup}
-          liveEvents={liveEvents}
+          containerStats={containerStats}
+          summary={summary}
+          onRefreshData={() => loadData(true)}
         />
-      </div>
+      ) : (
+        <>
+          {/* 2. Sistem Durum Banner'ı */}
+          <SystemBanner
+            status={bannerStatus}
+            message={bannerMessage}
+            subtext={bannerSubtext}
+            lastCheckText="son kontrol az önce"
+          />
+
+          {/* 3. KPI İstatistik Şeridi + Disk Durumu */}
+          <DashboardKpis
+            summary={summary}
+            metrics={summary?.latestMetrics}
+            onNavigate={onNavigate}
+          />
+
+          {/* 4. Dikkat Gerektiren Kritik Olaylar */}
+          <AttentionAlerts
+            services={services}
+            stoppedContainers={stoppedContainers}
+            failedPushMonitors={failedPushMonitors}
+            onNavigate={onNavigate}
+          />
+
+          {/* 5. Docker Konteynerleri Genel Bakış */}
+          <DockerOverviewSection
+            containers={containers}
+            onNavigate={onNavigate}
+          />
+
+          {/* 6. En Çok Kaynak Kullananlar & Son Olaylar İkili Bölüm */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-3.5">
+            <TopResourcesCard
+              containers={containers}
+              statsMap={containerStats}
+            />
+            <RecentEventsCard
+              services={services}
+              containers={containers}
+              lastBackup={summary?.lastBackup}
+              liveEvents={liveEvents}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

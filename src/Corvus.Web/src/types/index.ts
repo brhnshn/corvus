@@ -54,6 +54,10 @@ export interface DockerContainer {
   Created: number;
   Ports?: { IP?: string; PrivatePort: number; PublicPort?: number; Type?: string }[];
   Labels?: Record<string, string>;
+  NetworkSettings?: {
+    IPAddress?: string;
+    Networks?: Record<string, { NetworkID?: string; IPAddress?: string }>;
+  };
   tags?: string[];
 }
 
