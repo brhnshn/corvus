@@ -17,6 +17,10 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
     - Tek tıkla konteyner başlatma/yeniden başlatma eylemleri ve kapsamlı çalışma zamanı telemetri tablosu.
   - **Küme Telemetri Çubuğu (`ConsoleTelemetryStrip.tsx`)**: Cluster genelindeki CPU yükünü, RAM dağılımını ve toplam konteyner küme sağlığını izleyen kompakt alt bant.
 
+### Düzeltilenler (Fixed)
+- **React Hook Yaşam Döngüsü Tutarlılığı (`App.tsx`)**:
+  - Komut paleti `useCommandPalette` / `fetchCommandItems` `useEffect` hook'u koşullu erken dönüşlerden (`authLoading`, `authStatus`) önce, bileşenin en üst seviyesine taşındı. Kullanıcı giriş yaptıktan sonra tetiklenen ve siyah ekrana yol açan üretim React #310 ("Rendered more hooks than during the previous render") hatası giderildi.
+
 ### Değiştirilenler (Refactored)
 - **Temiz Mimari & Modüler Ayrım**:
   - Topoloji hesaplaması, SVG sahne çizimi, envanter yönetimi, SSE log terminali ve telemetri şeritleri `src/Corvus.Web/src/pages/Dashboard/console/` altında bağımsız modüllere çıkarıldı.

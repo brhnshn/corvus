@@ -263,6 +263,17 @@ export const App: React.FC = () => {
     }
   }, [currentPage, selectedContainerId, isStatusPath, authStatus, t]);
 
+  // Komut paleti açıldığında taze öğeleri yükle (Tüm hook'lar erken return'lerden ÖNCE olmalıdır)
+  useEffect(() => {
+    if (isCmdOpen) {
+      fetchCommandItems({
+        t,
+        onNavigate: navigateTo,
+        onRefreshData: () => invalidateCache(),
+      }).then(setCommandItems);
+    }
+  }, [isCmdOpen, t, navigateTo]);
+
   // Roadmap 1.6: Halka Açık Şifresiz Durum Sayfası
   if (isStatusPath) {
     return (
@@ -325,16 +336,6 @@ export const App: React.FC = () => {
     );
   }
 
-  // Komut paleti açıldığında taze öğeleri yükle
-  useEffect(() => {
-    if (isCmdOpen) {
-      fetchCommandItems({
-        t,
-        onNavigate: navigateTo,
-        onRefreshData: () => invalidateCache(),
-      }).then(setCommandItems);
-    }
-  }, [isCmdOpen, t, navigateTo]);
 
   const isAdmin = !authStatus?.authEnabled || authStatus?.role === 'admin';
 

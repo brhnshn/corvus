@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     - Single-click Docker container actions (Start, Restart) and detailed runtime telemetry specifications.
   - **Cluster Telemetry Strip (`ConsoleTelemetryStrip.tsx`)**: Compact footer telemetry bar monitoring real-time CPU load, RAM distribution, and total container cluster health.
 
+### Fixed
+- **React Hook Lifecycle Consistency (`App.tsx`)**:
+  - Relocated the command palette `useCommandPalette` / `fetchCommandItems` effect hook to the component top-level before conditional early returns (`authLoading`, `authStatus`). Resolves production React error #310 ("Rendered more hooks than during the previous render") which caused a black screen after user login.
+
 ### Refactored
 - **Clean Architecture & Modular Decoupling**:
   - Topology calculation, SVG stage rendering, inventory management, SSE log streaming, and telemetry strips modularized into isolated components under `src/Corvus.Web/src/pages/Dashboard/console/`.
