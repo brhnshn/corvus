@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corvus — 03 Enstrüman</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Archivo+Narrow:wght@500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--body:#d9d7d0;--panel:#e8e6df;--panel-2:#f3f1ec;--ink:#151515;--dim:#77746c;--line:#bdb9ae;--orange:#ff4f00;--lcd:#1d211b;--lcd-on:#c6f26b;--lcd-dim:#3a4430;--amber:#ffb000;--red:#ff3b1f;
+    --sans:'Archivo',sans-serif;--narrow:'Archivo Narrow',sans-serif;--mono:'DM Mono',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--body);color:var(--ink);font-family:var(--sans);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px}
+  .device{width:min(1180px,100%);background:var(--panel);border-radius:6px;padding:28px;box-shadow:0 1px 0 #fff inset,0 30px 60px -30px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.08)}
+  .label{font-family:var(--narrow);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+
+  /* top strip */
+  .top{display:flex;align-items:center;justify-content:space-between;padding-bottom:20px}
+  .logo{font-weight:800;font-size:22px;letter-spacing:-.03em;display:flex;align-items:center;gap:10px}
+  .logo .sq{width:14px;height:14px;background:var(--orange)}
+  .model{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .leds{display:flex;gap:18px;align-items:center}
+  .led{display:flex;align-items:center;gap:6px}
+  .led i{width:8px;height:8px;border-radius:50%;background:#a9a69c;box-shadow:inset 0 1px 1px rgba(0,0,0,.3)}
+  .led i.on{background:var(--lcd-on);box-shadow:0 0 6px var(--lcd-on)}
+  .led i.am{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+  .led i.rd{background:var(--red);box-shadow:0 0 8px var(--red);animation:bl 1s steps(2) infinite}
+  @keyframes bl{50%{opacity:.3}}
+
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+
+  /* LCD */
+  .lcd{grid-column:span 7;background:var(--lcd);border-radius:4px;padding:18px 20px;color:var(--lcd-on);font-family:var(--mono);box-shadow:inset 0 2px 8px rgba(0,0,0,.6);position:relative;overflow:hidden;min-height:250px}
+  .lcd::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);pointer-events:none}
+  .lcd .hd{display:flex;justify-content:space-between;font-size:11px;color:var(--lcd-dim);letter-spacing:.1em;text-transform:uppercase}
+  .lcd .hd b{color:var(--lcd-on);font-weight:500}
+  .big{font-family:var(--sans);font-weight:800;font-size:88px;letter-spacing:-.04em;line-height:1;margin:14px 0 4px}
+  .big small{font-size:28px;font-weight:600;letter-spacing:0;color:var(--lcd-dim)}
+  .lcd .msg{font-size:13px;line-height:1.7}
+  .lcd .msg .a{color:var(--amber)} .lcd .msg .r{color:var(--red)}
+  .lcd .cursor{display:inline-block;width:8px;height:14px;background:var(--lcd-on);vertical-align:-2px;animation:bl 1s steps(2) infinite}
+
+  /* Dials */
+  .dials{grid-column:span 5;background:var(--panel-2);border-radius:4px;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;box-shadow:inset 0 0 0 1px var(--line)}
+  .dial{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .dial svg{width:100%;max-width:120px}
+  .dial .v{font-family:var(--mono);font-size:13px}
+  .knob-tick{stroke:var(--ink);stroke-width:1}
+
+  /* service keys */
+  .keys{grid-column:span 8;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .key{background:var(--panel-2);border-radius:4px;padding:12px 12px 10px;cursor:pointer;position:relative;box-shadow:0 3px 0 var(--line),0 0 0 1px var(--line);transition:transform .08s,box-shadow .08s;user-select:none}
+  .key:active,.key.pressed{transform:translateY(3px);box-shadow:0 0 0 var(--line),0 0 0 1px var(--line)}
+  .key .nm{font-weight:600;font-size:14px;letter-spacing:-.01em}
+  .key .h{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px}
+  .key .ms{font-family:var(--mono);font-size:20px;margin-top:14px;letter-spacing:-.02em}
+  .key .ms small{font-size:11px;color:var(--dim)}
+  .key .ind{position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%}
+  .key.err{background:var(--orange);color:#fff;box-shadow:0 3px 0 #b33800,0 0 0 1px #d94400}
+  .key.err .h,.key.err .ms small{color:rgba(255,255,255,.75)}
+  .key .hist{display:flex;gap:1.5px;margin-top:8px;height:10px;align-items:flex-end}
+  .key .hist span{flex:1;background:var(--ink);opacity:.25}
+  .key.err .hist span{background:#fff;opacity:.5}
+
+  /* side: resources slider + transport */
+  .side{grid-column:span 4;display:flex;flex-direction:column;gap:14px}
+  .faders{background:var(--panel-2);border-radius:4px;padding:16px 18px;box-shadow:inset 0 0 0 1px var(--line);flex:1}
+  .faders .rows{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;height:150px;margin-top:12px}
+  .fader{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .track{flex:1;width:6px;background:#cfccc3;border-radius:3px;position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.2)}
+  .track .cap{position:absolute;left:50%;width:26px;height:12px;transform:translate(-50%,50%);background:var(--ink);border-radius:2px;box-shadow:0 2px 3px rgba(0,0,0,.3)}
+  .track .cap::after{content:'';position:absolute;left:4px;right:4px;top:5px;height:2px;background:var(--orange)}
+  .fader .n{font-family:var(--narrow);font-size:10px;text-transform:uppercase;letter-spacing:.06em;text-align:center;line-height:1.1}
+  .fader .p{font-family:var(--mono);font-size:10px;color:var(--dim)}
+
+  .transport{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .btn{background:var(--ink);color:var(--panel-2);border-radius:4px;padding:12px 8px;font-family:var(--narrow);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:center;cursor:pointer;box-shadow:0 3px 0 #000;user-select:none}
+  .btn:active{transform:translateY(3px);box-shadow:none}
+  .btn.o{background:var(--orange);box-shadow:0 3px 0 #b33800;color:#fff}
+
+  /* tape log */
+  .tape{grid-column:span 12;background:var(--lcd);border-radius:4px;padding:10px 16px;font-family:var(--mono);font-size:12px;color:var(--lcd-on);overflow:hidden;white-space:nowrap;box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
+  .tape .inner{display:inline-block;animation:scroll 40s linear infinite}
+  .tape span{margin-right:48px}
+  .tape .a{color:var(--amber)} .tape .r{color:var(--red)}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+  .foot{display:flex;justify-content:space-between;margin-top:16px}
+  .screws{display:flex;gap:8px}.screws i{width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f4f2ec,#a8a498);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+  @media(max-width:900px){.lcd,.dials,.keys,.side{grid-column:span 12}.keys{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="top">
+    <div class="logo"><span class="sq"></span>corvus <span class="model">CV-01 · homelab-01</span></div>
+    <div class="leds">
+      <div class="led"><i class="on"></i><span class="label">güç</span></div>
+      <div class="led"><i class="on"></i><span class="label">ağ</span></div>
+      <div class="led"><i class="am"></i><span class="label">uyarı</span></div>
+      <div class="led"><i class="rd" id="alarmLed"></i><span class="label">alarm</span></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="lcd">
+      <div class="hd"><span>sistem durumu</span><b id="clock">16:08:00</b></div>
+      <div class="big" id="bigN">7<small>/8 ayakta</small></div>
+      <div class="msg" id="lcdMsg">
+        <div class="r">! jellyfin durdu — exit 137 (OOM) · 03:12</div>
+        <div class="a">~ gitea yavaş — 1840 ms · 14 dk</div>
+        <div class="a">~ vaultwarden SSL — 9 gün</div>
+        <div>&gt; <span class="cursor"></span></div>
+      </div>
+    </div>
+    <div class="dials" id="dials"></div>
+
+    <div class="keys" id="keys"></div>
+    <div class="side">
+      <div class="faders"><div class="label">kaynak mikseri · cpu</div><div class="rows" id="faders"></div></div>
+      <div class="transport">
+        <div class="btn">◀◀ geçmiş</div><div class="btn" onclick="location.reload()">↻ yenile</div><div class="btn o" id="fixAll">● düzelt</div>
+      </div>
+    </div>
+
+    <div class="tape"><div class="inner" id="tape"></div></div>
+  </div>
+  <div class="foot"><div class="screws"><i></i><i></i></div><span class="label">prototip 03 — enstrüman paneli · tuşlara bas</span><div class="screws"><i></i><i></i></div></div>
+</div>
+
+<script>
+// dials
+const dials=[['cpu',23,'%'],['bellek',38,'6.1G'],['disk',41,'412G'],['ağ',31,'12Mb']];
+document.getElementById('dials').innerHTML=dials.map(([n,v,t])=>{
+  const a0=-135,a1=135,ang=a0+(a1-a0)*v/100;let ticks='';
+  for(let i=0;i<=20;i++){const a=(a0+(a1-a0)*i/20)*Math.PI/180;const r1=46,r2=i%5?50:53;ticks+=`<line class="knob-tick" x1="${60+r1*Math.sin(a)}" y1="${60-r1*Math.cos(a)}" x2="${60+r2*Math.sin(a)}" y2="${60-r2*Math.cos(a)}" opacity="${i/20<=v/100?1:.3}"/>`}
+  const ra=ang*Math.PI/180;
+  return `<div class="dial"><svg viewBox="0 0 120 120">${ticks}
+    <circle cx="60" cy="60" r="36" fill="#1a1a1a"/><circle cx="60" cy="60" r="30" fill="#2a2a2a"/>
+    <line x1="60" y1="60" x2="${60+26*Math.sin(ra)}" y2="${60-26*Math.cos(ra)}" stroke="#ff4f00" stroke-width="3" stroke-linecap="round"/></svg>
+    <div class="label">${n}</div><div class="v">${t==='%'?v+'%':t}</div></div>`}).join('');
+
+// keys
+const S=[['nextcloud','cloud.sahin.dev','ok',142],['jellyfin','media.sahin.lan','err',null],['gitea','git.sahin.dev','warn',1840],['vaultwarden','vault.sahin.dev','warn',88],['immich','photos.sahin.dev','ok',210],['home-assistant','ha.sahin.lan','ok',34],['paperless','docs.sahin.lan','ok',96],['pihole','dns.sahin.lan','ok',12]];
+const ind={ok:'var(--lcd-on)',warn:'var(--amber)',err:'#fff'};
+function renderKeys(){document.getElementById('keys').innerHTML=S.map(([n,h,s,ms],i)=>{let hist='';for(let j=0;j<24;j++)hist+=`<span style="height:${30+Math.abs(Math.sin(j*1.3+i))*70}%"></span>`;
+  return `<div class="key ${s}" data-i="${i}"><span class="ind" style="background:${ind[s]};box-shadow:0 0 6px ${ind[s]}"></span><div class="nm">${n}</div><div class="h">${h}</div><div class="ms">${ms?ms+'<small> ms</small>':'OFF'}</div><div class="hist">${hist}</div></div>`}).join('');
+  document.querySelectorAll('.key').forEach(k=>k.onclick=()=>press(+k.dataset.i))}
+renderKeys();
+const msg=document.getElementById('lcdMsg');
+function press(i){const [n,h,s,ms]=S[i];
+  msg.innerHTML=`<div>&gt; ${n} seçildi</div><div>  host ...... ${h}</div><div>  durum ..... ${s==='err'?'<span class="r">KAPALI</span>':s==='warn'?'<span class="a">DİKKAT</span>':'NORMAL'}</div><div>  yanıt ..... ${ms?ms+' ms':'—'}</div><div>  uptime .... %${s==='err'?'97.12':'99.9'+(i%9)}</div><div>&gt; [R] yeniden başlat  [L] log <span class="cursor"></span></div>`}
+
+// faders
+const F=[['immich-ml',31],['next-cloud',8],['home-asst',4],['post-gres',3],['paper-less',2]];
+document.getElementById('faders').innerHTML=F.map(([n,v])=>`<div class="fader"><div class="track"><div class="cap" style="bottom:${v*2.6}%"></div></div><div class="n">${n.replace('-','<br>')}</div><div class="p">${v}%</div></div>`).join('');
+
+// tape
+const T=[['','16:02 gitea yanıt süresi 1.8s'],['','15:48 immich v1.119 güncellendi'],['','14:30 yedek tamam 38.2GB'],['','09:15 paperless 3 belge'],['r','03:12 jellyfin exit 137'],['a','02:00 vaultwarden SSL 9 gün']];
+const tp=T.map(([c,t])=>`<span class="${c}">▸ ${t}</span>`).join('');document.getElementById('tape').innerHTML=tp+tp;
+
+setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=d.toTimeString().slice(0,8)},1000);
+document.getElementById('fixAll').onclick=()=>{S.forEach(s=>{if(s[2]!=='ok'){s[2]='ok';s[3]=s[3]&&s[3]>1000?180:(s[3]||120)}});renderKeys();
+  document.getElementById('bigN').innerHTML='8<small>/8 ayakta</small>';document.getElementById('alarmLed').className='';
+  document.querySelector('.led i.am').className='';msg.innerHTML='<div>&gt; 3 sorun çözüldü</div><div>&gt; tüm sistemler nominal <span class="cursor"></span></div>'};
+</script>
+</body>
+</html>

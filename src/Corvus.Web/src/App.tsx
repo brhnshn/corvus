@@ -41,6 +41,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 const DashboardPage = lazyWithRetry(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
 const ServicesPage = lazyWithRetry(() => import('./pages/Services').then(m => ({ default: m.ServicesPage })));
 const ContainersPage = lazyWithRetry(() => import('./pages/Containers').then(m => ({ default: m.ContainersPage })));
+const SystemsPage = lazyWithRetry(() => import('./pages/Systems').then(m => ({ default: m.SystemsPage })));
 const SystemMetricsPage = lazyWithRetry(() => import('./pages/SystemMetrics').then(m => ({ default: m.SystemMetricsPage })));
 const UptimePage = lazyWithRetry(() => import('./pages/Uptime').then(m => ({ default: m.UptimePage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
@@ -242,8 +243,10 @@ export const App: React.FC = () => {
       case 'dashboard': return t('nav.dashboard');
       case 'services': return t('nav.services');
       case 'containers': return t('nav.containers');
+      case 'systems': return t('nav.systems');
       case 'metrics': return t('nav.metrics');
       case 'uptime': return t('nav.uptime');
+      case 'activity': return t('nav.activity');
       case 'settings': return t('nav.settings');
       case 'profile': return t('nav.profile');
     }
@@ -363,6 +366,7 @@ export const App: React.FC = () => {
               ServicesPage={ServicesPage}
               ContainersPage={ContainersPage}
               ContainerDetailPage={ContainerDetailPage}
+              SystemsPage={SystemsPage}
               SystemMetricsPage={SystemMetricsPage}
               UptimePage={UptimePage}
               ActivityTimelinePage={ActivityTimelinePage}

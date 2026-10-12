@@ -32,6 +32,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
 builder.Services.AddScoped<IAlertRuleRepository, AlertRuleRepository>();
 builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+builder.Services.AddScoped<ISystemRepository, SystemRepository>();
+builder.Services.AddScoped<ISystemMetricRepository, SystemMetricRepository>();
 
 builder.Services.AddSingleton<IDockerHttpClient, DockerHttpClient>();
 builder.Services.AddSingleton<IDockerService, DockerService>();
@@ -52,6 +54,12 @@ builder.Services.AddSingleton<IComposeFileService, ComposeFileService>();
 builder.Services.AddSingleton<IAutoHealingService, AutoHealingService>();
 builder.Services.AddSingleton<IActivityLogService, ActivityLogService>();
 
+// Sistemler (Systems) Yönetimi Servisleri
+builder.Services.AddSingleton<Corvus.Api.Services.Systems.ITelemetryRingBuffer, Corvus.Api.Services.Systems.TelemetryRingBuffer>();
+builder.Services.AddScoped<Corvus.Api.Services.Systems.ISystemStatusService, Corvus.Api.Services.Systems.SystemStatusService>();
+builder.Services.AddScoped<Corvus.Api.Services.Systems.ISystemAuthService, Corvus.Api.Services.Systems.SystemAuthService>();
+builder.Services.AddSingleton<Corvus.Api.Services.Systems.ISystemTunnelManager, Corvus.Api.Services.Systems.SystemTunnelManager>();
+
 // Arka Plan Servisleri
 builder.Services.AddHostedService<ContainerDiscoveryService>();
 builder.Services.AddHostedService<SystemMetricsCollector>();
@@ -59,6 +67,9 @@ builder.Services.AddHostedService<UptimeCheckerService>();
 builder.Services.AddHostedService<RetentionCleanupService>();
 builder.Services.AddHostedService<MemoryTrimmerBackgroundService>();
 builder.Services.AddHostedService<ThresholdEvaluatorService>();
+builder.Services.AddHostedService<Corvus.Api.BackgroundServices.MetricsBatchFlusherBackgroundService>();
+builder.Services.AddHostedService<Corvus.Api.BackgroundServices.MetricsRetentionWorker>();
+builder.Services.AddHostedService<Corvus.Api.BackgroundServices.SystemWatchdogService>();
 
 // CORS (Sertleştirilmiş Güvenlik: Geliştirme modu veya CORVUS_ALLOWED_ORIGINS ile kontrollü erişim)
 string? allowedOriginsEnv = Environment.GetEnvironmentVariable("CORVUS_ALLOWED_ORIGINS");
@@ -148,6 +159,8 @@ app.MapComposeEndpoints();
 app.MapDeployWebhookEndpoints();
 app.MapAlertRulesEndpoints();
 app.MapActivityLogEndpoints();
+app.MapSystemsEndpoints();
+app.MapAgentTunnelEndpoints();
 
 // SPA Routing Fallback (Asla önbelleklenmemeli; her zaman taze chunk hash'lerini döndürür)
 app.MapFallbackToFile("index.html", new StaticFileOptions

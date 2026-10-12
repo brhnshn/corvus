@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corvus — Özgün Tasarım Dili & Tasarım Sistemi (Midnight v2)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Corvus Orijinal Semantic Token'ları (Midnight v2) */
+      --bg: #0d0e15;
+      --panel: #1b1d2a;
+      --ind: #d5d5dc;
+      --sub: #9ba0b5;
+      --txt: #eceef6;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --err: #f87171;
+      --info: #818cf8;
+      
+      --line: rgba(255, 255, 255, 0.10);
+      --line-subtle: rgba(255, 255, 255, 0.06);
+      --surface: rgba(27, 29, 42, 0.90);
+      --surface-hover: rgba(255, 255, 255, 0.08);
+      --fill-card: rgba(255, 255, 255, 0.06);
+      
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--txt);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    /* Üst Banner & Tanıtım */
+    .hero {
+      margin-bottom: 48px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 32px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(213, 213, 220, 0.1);
+      border: 1px solid rgba(213, 213, 220, 0.2);
+      border-radius: 9999px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--ind);
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      font-size: 15px;
+      color: var(--sub);
+      max-width: 760px;
+    }
+
+    /* Bölüm Başlıkları */
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: #ffffff;
+      margin: 40px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: var(--sub);
+      margin-bottom: 20px;
+    }
+
+    /* Surface Kart Yapısı (Orijinal Corvus Kartları) */
+    .surface {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: all 0.2s var(--ease);
+    }
+
+    /* Renk Paleti Izgarası */
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .swatch-card {
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .swatch-circle {
+      width: 100%;
+      height: 48px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .swatch-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--txt);
+    }
+    .swatch-hex {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--sub);
+    }
+
+    /* Canlı Önizleme Alanı: KPI Kartları */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 860px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat-tile {
+      padding: 16px;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .stat-tile:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+    }
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--sub);
+    }
+    .stat-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--txt);
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      color: var(--txt);
+      line-height: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .stat-unit {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--sub);
+      letter-spacing: normal;
+    }
+
+    /* Progress Bar */
+    .prog-track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.10);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.8s var(--ease);
+    }
+    .prog-ok { background: var(--ok); }
+    .prog-warn { background: var(--warn); }
+    .prog-err { background: var(--err); }
+    .prog-neutral { background: rgba(213, 213, 220, 0.55); }
+
+    /* Pills & Badges */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+    .pill-ok {
+      background: rgba(52, 211, 153, 0.16);
+      color: var(--ok);
+      border-color: rgba(52, 211, 153, 0.30);
+    }
+    .pill-warn {
+      background: rgba(251, 191, 36, 0.16);
+      color: var(--warn);
+      border-color: rgba(251, 191, 36, 0.30);
+    }
+    .pill-err {
+      background: rgba(248, 113, 113, 0.16);
+      color: var(--err);
+      border-color: rgba(248, 113, 113, 0.30);
+    }
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .dot-pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 var(--ok); }
+      70%, 100% { box-shadow: 0 0 0 7px transparent; }
+    }
+
+    /* Butonlar */
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 9999px;
+      padding: 8px 18px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s var(--ease);
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: var(--ind);
+      color: #1b1d2a;
+      border: 1px solid transparent;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .btn-primary:hover {
+      background: #ffffff;
+      transform: scale(0.98);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--txt);
+      border: 1px solid var(--line);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .btn-danger {
+      background: rgba(248, 113, 113, 0.12);
+      color: var(--err);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+    }
+    .btn-danger:hover {
+      background: rgba(248, 113, 113, 0.22);
+    }
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--txt);
+      border: 1px solid var(--line);
+    }
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    /* Sistemler Tablosu (Corvus Midnight v2 Standardı ile Çözüm) */
+    .fleet-table-container {
+      padding: 20px;
+      border-radius: 22px;
+      margin-top: 16px;
+    }
+    .fleet-row {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1fr 140px;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.2s var(--ease);
+      cursor: pointer;
+    }
+    .fleet-row:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+    .fleet-th {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1fr 140px;
+      gap: 16px;
+      padding: 0 18px 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--sub);
+    }
+    .node-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--txt);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .node-sub {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--sub);
+      margin-top: 3px;
+    }
+    .metric-col {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .metric-label {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--sub);
+      display: flex;
+      justify-content: space-between;
+    }
+    .metric-val {
+      font-weight: 600;
+      color: var(--txt);
+    }
+    .tag-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(129, 140, 248, 0.12);
+      border: 1px solid rgba(129, 140, 248, 0.25);
+      color: #a5b4fc;
+    }
+
+    /* Add System Sheet / Modal Preview */
+    .sheet-mockup {
+      max-width: 540px;
+      margin: 24px auto 0;
+      padding: 24px;
+      border-radius: 28px;
+      background: rgba(27, 29, 42, 0.95);
+      border: 1px solid var(--line);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.14);
+    }
+    .sheet-handle {
+      width: 38px;
+      height: 5px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.15);
+      margin: 0 auto 16px;
+    }
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--txt);
+      margin-bottom: 4px;
+    }
+    .sheet-desc {
+      font-size: 12px;
+      color: var(--sub);
+      margin-bottom: 20px;
+    }
+    .code-box {
+      background: #0d0e15;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #eceef6;
+      line-height: 1.6;
+      word-break: break-all;
+      position: relative;
+      margin: 14px 0;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.10);
+      color: var(--txt);
+      border: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Üst Başlık & Açıklama -->
+    <header class="hero">
+      <div class="hero-badge">CORVUS DESIGN SPECIFICATION</div>
+      <h1>Corvus Özgün Tasarım Dili: Midnight v2</h1>
+      <p>
+        Bu sayfa, Corvus'un canlı kod tabanında (Tailwind CSS, React, Lucide ikonları) çalışan gerçek tasarım sistemi standartlarını göstermektedir. Üçüncü taraf araçların veya yapay zeka jeneratörlerinin yabancı renkleri yerine, projenin özgün <strong>#0d0e15</strong> arka planı, <strong>#1b1d2a</strong> panelleri, <strong>#d5d5dc</strong> gümüş aksanları ve <strong>20px/22px</strong> radius'lu yumuşak kart mimarisi temel alınmıştır.
+      </p>
+    </header>
+
+    <!-- 1. Temel Renk ve Token Sistemi -->
+    <h2 class="section-title">
+      <span>1. Semantic Renk Paleti (Tokens)</span>
+    </h2>
+    <p class="section-desc">Corvus'un tüm CSS değişkenleri ve komponent renk hiyerarşisi.</p>
+
+    <div class="swatch-grid">
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #0d0e15;"></div>
+        <div class="swatch-name">Arka Plan (--color-bg)</div>
+        <div class="swatch-hex">#0d0e15 (Midnight Black)</div>
+      </div>
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #1b1d2a;"></div>
+        <div class="swatch-name">Panel / Yüzey (--color-panel)</div>
+        <div class="swatch-hex">#1b1d2a (Deep Slate Glass)</div>
+      </div>
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #d5d5dc;"></div>
+        <div class="swatch-name">Birincil Aksan (--color-indicator)</div>
+        <div class="swatch-hex">#d5d5dc (Matte Silver)</div>
+      </div>
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #eceef6;"></div>
+        <div class="swatch-name">Birincil Metin (--color-txt)</div>
+        <div class="swatch-hex">#eceef6 (Pure White Text)</div>
+      </div>
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #9ba0b5;"></div>
+        <div class="swatch-name">İkincil Metin (--color-sub)</div>
+        <div class="swatch-hex">#9ba0b5 (Muted Slate)</div>
+      </div>
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #34d399;"></div>
+        <div class="swatch-name">Başarılı / Aktif (--color-ok)</div>
+        <div class="swatch-hex">#34d399 (Emerald Green)</div>
+      </div>
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #fbbf24;"></div>
+        <div class="swatch-name">Uyarı (--color-warn)</div>
+        <div class="swatch-hex">#fbbf24 (Amber Yellow)</div>
+      </div>
+      <div class="swatch-card">
+        <div class="swatch-circle" style="background: #f87171;"></div>
+        <div class="swatch-name">Hata / Kesinti (--color-err)</div>
+        <div class="swatch-hex">#f87171 (Rose Red)</div>
+      </div>
+    </div>
+
+    <!-- 2. UI Komponent Standartları -->
+    <h2 class="section-title">
+      <span>2. UI Komponentleri (Butonlar, Rozetler & KPI Kartları)</span>
+    </h2>
+    <p class="section-desc">Gerçek Corvus komponentleri (Button.tsx, Pill.tsx, StatTile.tsx).</p>
+
+    <!-- Butonlar & Durum Rozetleri -->
+    <div class="surface" style="padding: 24px; margin-bottom: 24px;">
+      <div style="font-size: 13px; font-weight: 600; color: var(--sub); margin-bottom: 14px;">BUTONLAR & DURUM HATLARI (PILLS)</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 16px;">
+        <div class="btn-group">
+          <button class="btn btn-primary">+ Sistem Ekle</button>
+          <button class="btn btn-secondary">Detayları Gör</button>
+          <button class="btn btn-danger">Düğümü Kaldır</button>
+          <button class="btn btn-icon">⚙</button>
+        </div>
+        <div class="btn-group">
+          <span class="pill pill-ok">
+            <span class="pill-dot" style="background: var(--ok);"></span>
+            <span>Çalışıyor</span>
+          </span>
+          <span class="pill pill-warn">
+            <span class="pill-dot" style="background: var(--warn);"></span>
+            <span>Yüksek Yük</span>
+          </span>
+          <span class="pill pill-err">
+            <span class="pill-dot" style="background: var(--err);"></span>
+            <span>Bağlantı Kesildi</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Kartları -->
+    <div class="kpi-grid">
+      <div class="surface stat-tile">
+        <div class="stat-header">
+          <span>Tüm Sistemler</span>
+          <div class="stat-icon">💻</div>
+        </div>
+        <div class="stat-value">
+          <span>4/5</span>
+          <span class="stat-unit">çevrimiçi</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill prog-ok" style="width: 80%;"></div>
+        </div>
+      </div>
+
+      <div class="surface stat-tile">
+        <div class="stat-header">
+          <span>Toplam Konteyner</span>
+          <div class="stat-icon">📦</div>
+        </div>
+        <div class="stat-value">
+          <span>62</span>
+          <span class="stat-unit">aktif</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill prog-ok" style="width: 95%;"></div>
+        </div>
+      </div>
+
+      <div class="surface stat-tile">
+        <div class="stat-header">
+          <span>Ortalama CPU</span>
+          <div class="stat-icon">⚡</div>
+        </div>
+        <div class="stat-value">
+          <span>%24</span>
+          <span class="stat-unit">küme yükü</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill prog-ok" style="width: 24%;"></div>
+        </div>
+      </div>
+
+      <div class="surface stat-tile">
+        <div class="stat-header">
+          <span>Bellek Tahsisi</span>
+          <div class="stat-icon">💾</div>
+        </div>
+        <div class="stat-value">
+          <span>38.2 GB</span>
+          <span class="stat-unit">/ 64 GB</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill prog-neutral" style="width: 60%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Çoklu Sunucu / Düğüm Listesi (Fleet Table) Önizleme -->
+    <h2 class="section-title">
+      <span>3. Çoklu Düğüm Listesi (Orijinal Corvus Görünümü)</span>
+    </h2>
+    <p class="section-desc">
+      Beszel'deki gibi aşırı kalabalık veya Stitch'in ürettiği yabancı tonlar yerine; Corvus'un ContainerRow ve ServicesRow'daki temiz, ferah, yüksek okunabilirlikli satır yapısı.
+    </p>
+
+    <div class="surface fleet-table-container">
+      <!-- Başlık Şeridi -->
+      <div class="fleet-th">
+        <span>Sunucu & Hostname</span>
+        <span>CPU Kullanımı</span>
+        <span>RAM Durumu</span>
+        <span>Disk Doluluğu</span>
+        <span>Konteynerler</span>
+        <span style="text-align: right;">Aksiyon</span>
+      </div>
+
+      <!-- Satır 1: Hub Sunucusu -->
+      <div class="fleet-row">
+        <div>
+          <div class="node-title">
+            <span class="pill-dot dot-pulse" style="background: var(--ok);"></span>
+            <span>corvus-hub-prod</span>
+            <span class="tag-badge">Yerel Düğüm</span>
+          </div>
+          <div class="node-sub">185.120.4.15 · Ubuntu 24.04 LTS</div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>CPU</span>
+            <span class="metric-val">%14.2</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-ok" style="width: 14.2%;"></div></div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>RAM</span>
+            <span class="metric-val">3.8 / 16 GB</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-neutral" style="width: 24%;"></div></div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>Disk</span>
+            <span class="metric-val">34 / 250 GB</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-neutral" style="width: 14%;"></div></div>
+        </div>
+
+        <div>
+          <span class="pill pill-ok">
+            <span>24 Aktif</span>
+          </span>
+        </div>
+
+        <div style="text-align: right;">
+          <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 12px;">Detaylar →</button>
+        </div>
+      </div>
+
+      <!-- Satır 2: Hetzner VPS -->
+      <div class="fleet-row">
+        <div>
+          <div class="node-title">
+            <span class="pill-dot dot-pulse" style="background: var(--ok);"></span>
+            <span>vps-frankfurt-01</span>
+            <span class="tag-badge">Hetzner Cloud</span>
+          </div>
+          <div class="node-sub">95.216.14.22 · Debian 12</div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>CPU</span>
+            <span class="metric-val">%18.5</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-ok" style="width: 18.5%;"></div></div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>RAM</span>
+            <span class="metric-val">4.2 / 8 GB</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-neutral" style="width: 52%;"></div></div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>Disk</span>
+            <span class="metric-val">18 / 80 GB</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-neutral" style="width: 22%;"></div></div>
+        </div>
+
+        <div>
+          <span class="pill pill-ok">
+            <span>8 Aktif</span>
+          </span>
+        </div>
+
+        <div style="text-align: right;">
+          <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 12px;">Detaylar →</button>
+        </div>
+      </div>
+
+      <!-- Satır 3: Homelab Storage Box -->
+      <div class="fleet-row">
+        <div>
+          <div class="node-title">
+            <span class="pill-dot" style="background: var(--warn);"></span>
+            <span>homelab-storage-box</span>
+            <span class="tag-badge" style="background: rgba(251, 191, 36, 0.12); color: #fde68a; border-color: rgba(251, 191, 36, 0.25);">Ev Labı / ZFS</span>
+          </div>
+          <div class="node-sub">192.168.1.100 · TrueNAS Scale</div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>CPU</span>
+            <span class="metric-val">%42.1</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-ok" style="width: 42.1%;"></div></div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>RAM</span>
+            <span class="metric-val">28.4 / 32 GB</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-warn" style="width: 88%;"></div></div>
+        </div>
+
+        <div class="metric-col">
+          <div class="metric-label">
+            <span>Disk</span>
+            <span class="metric-val">8.4 / 16 TB</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-neutral" style="width: 52%;"></div></div>
+        </div>
+
+        <div>
+          <span class="pill pill-ok">
+            <span>15 Aktif</span>
+          </span>
+        </div>
+
+        <div style="text-align: right;">
+          <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 12px;">Detaylar →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. "+ Sistem Ekle" Bottom Sheet / Modal Mockup -->
+    <h2 class="section-title">
+      <span>4. "+ Sistem Ekle" Modalı (Sheet.tsx Standartı)</span>
+    </h2>
+    <p class="section-desc">
+      Corvus'un Sheet ve Modal yapısında kullandığı tutamaç çubuğu (handle), koyu zemin ve tek satırlık kopyalanabilir Docker komutu.
+    </p>
+
+    <div class="sheet-mockup">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Yeni Sistem / Düğüm Ekle</div>
+      <div class="sheet-desc">Uç sunucunuzda Corvus Agent'ı başlatın. Dışarıya hiçbir port açmanız gerekmez.</div>
+
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 12px; color: var(--sub); margin-bottom: 6px;">Sistem Adı</label>
+        <input type="text" value="vps-amsterdam-01" style="width: 100%; height: 38px; border-radius: 9999px; background: rgba(255,255,255,0.07); border: 1px solid var(--line); color: var(--txt); padding: 0 16px; font-size: 13px; outline: none;">
+      </div>
+
+      <div class="code-box">
+        <button class="copy-btn">Kopyala</button>
+        <code>docker run -d --name corvus-agent --restart unless-stopped \<br>
+  -v /var/run/docker.sock:/var/run/docker.sock \<br>
+  -e HUB_URL="https://corvus.your-domain.com" \<br>
+  -e NODE_KEY="crv_live_9f82c81a..." \<br>
+  ghcr.io/corvus/agent:latest</code>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ok); margin-bottom: 20px;">
+        <span class="pill-dot dot-pulse" style="background: var(--ok);"></span>
+        <span>Bağlantı bekleniyor... Hedef sunucuda komut çalıştığında sistem otomatik tanınacaktır.</span>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary">Vazgeç</button>
+        <button class="btn btn-primary">Tamamla</button>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

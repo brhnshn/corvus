@@ -29,7 +29,9 @@ export const tr: TranslationDictionary = {
     containers: 'Konteynerler',
     metrics: 'Sistem Metrikleri',
     metricsShort: 'Metrikler',
+    systems: 'Sistemler',
     uptime: 'Uptime',
+    activity: 'Olay Geçmişi',
     settings: 'Ayarlar',
     profile: 'Profil & Kullanıcılar',
     profileShort: 'Profil',
@@ -721,5 +723,117 @@ export const tr: TranslationDictionary = {
     creatingUser: 'Kullanıcı oluşturuluyor...',
     deletingUser: 'Siliniyor...',
     noUsers: 'Kayıtlı kullanıcı bulunamadı.'
+  },
+  systems: {
+    title: 'Sistemler',
+    subtitle: 'Bağlı sunucularınızın canlı sağlık durumu, kaynak tüketimi ve konteynerleri.',
+    addSystem: 'Sistem Ekle',
+    refresh: 'Yenile',
+    searchPlaceholder: 'Sistem adı, hostname, IP veya etiket ara...',
+    noSystemsFound: 'Kayıtlı sistem bulunamadı',
+    noSystemsDesc: 'Arama filtrenize uygun sunucu bulunamadı.',
+    emptyState: {
+      title: 'Bağlı Sistem Bulunmuyor',
+      description: 'Yeni bir sunucu ekleyerek kaynak tüketimini ve Docker konteynerlerini tek merkezden canlı izlemeye başlayın.',
+      ctaButton: '+ İlk Sistemi Ekle'
+    },
+    engineBadge: {
+      sqliteWal: 'SQLite (WAL) · 7 Günlük Saklama',
+      postgresql: 'PostgreSQL · Süresiz Saklama',
+      storageLabel: 'Depolama Motoru'
+    },
+    timeRanges: {
+      live: 'Canlı (3dk)',
+      oneHour: 'Son 1 Saat',
+      oneDay: 'Son 24 Saat',
+      sevenDays: 'Son 7 Gün',
+      thirtyDays: 'Son 30 Gün'
+    },
+    kpis: {
+      totalSystems: 'Toplam Sistem',
+      onlineSystems: 'Çevrimiçi',
+      avgCpu: 'Ortalama CPU',
+      totalRam: 'Toplam Bellek',
+      totalContainers: 'Aktif Konteyner'
+    },
+    filters: {
+      allEnvironments: 'Tüm Ortamlar',
+      production: 'Production',
+      staging: 'Staging',
+      edge: 'Edge',
+      homelab: 'Homelab',
+      allStatuses: 'Tüm Durumlar',
+      online: 'Çevrimiçi',
+      degraded: 'Uyarı',
+      offline: 'Çevrimdışı',
+      sortBy: 'Sırala',
+      sortName: 'Ada Göre',
+      sortCpu: 'CPU Yüküne Göre',
+      sortRam: 'RAM Tüketimine Göre',
+      sortLastSeen: 'Son Sinyale Göre'
+    },
+    systemRow: {
+      cpu: 'CPU',
+      ram: 'Bellek',
+      disk: 'Disk',
+      containers: 'Konteyner',
+      terminal: 'Terminal',
+      details: 'Detaylar',
+      lastSeen: 'Son sinyal'
+    },
+    addSheet: {
+      title: 'Yeni Sistem Ekle',
+      subtitle: 'Sunucunuza Corvus Ajanını kurun ve saniyeler içinde izlemeye başlayın.',
+      stepInfoTitle: '1. Sistem Bilgileri',
+      stepMethodTitle: '2. Kurulum Yöntemi',
+      stepCommandTitle: '3. Kurulum Komutu',
+      stepStatusTitle: '4. Bağlantı Durumu',
+      systemNameLabel: 'Sistem / Sunucu Adı',
+      systemNamePlaceholder: 'örn. vps-frankfurt-01',
+      environmentLabel: 'Ortam / Rol',
+      tagsLabel: 'Etiketler (Virgülle ayırın)',
+      tagsPlaceholder: 'prod, eu-central, hetzner',
+      methodDocker: 'Docker Konteyneri (Önerilen)',
+      methodBinary: 'Linux Binary / Systemd',
+      commandHint: 'Bu komutu hedef sunucunuzda root veya sudo yetkisiyle çalıştırın:',
+      hubUrlOverride: 'Özel Hub Adresi (Opsiyonel)',
+      waitingHandshake: 'Ajanın ilk sinyali bekleniyor...',
+      waitingHint: 'Komutu hedef sunucuya yapıştırdıktan sonra bağlantı otomatik algılanacaktır.',
+      connectedSuccess: 'Bağlantı Başarılı!',
+      connectedDetails: 'Ajan sisteme bağlandı ve ilk telemetri alındı.',
+      goToCockpit: 'Sistem Kokpitine Git',
+      finish: 'Tamamla'
+    },
+    cockpit: {
+      tabs: {
+        telemetry: 'Canlı Telemetri',
+        containers: 'Uç Konteynerler',
+        hardware: 'Donanım & Sistem',
+        security: 'Güvenlik & Ajan'
+      },
+      latency: 'Gecikme',
+      uptime: 'Çalışma Süresi',
+      agentVersion: 'Ajan Sürümü',
+      cpuSparklineTitle: 'CPU Yük Geçmişi',
+      ramBreakdownTitle: 'Bellek Dağılımı',
+      ramUsed: 'Kullanılan',
+      ramCached: 'Önbellek',
+      ramFree: 'Boş',
+      diskTitle: 'Bağlantı Noktaları (Disk)',
+      networkTitle: 'Ağ Giriş / Çıkış Hızı',
+      loadAvgTitle: 'Yük Ortalaması (1m / 5m / 15m)',
+      containersSearch: 'Konteyner ara...',
+      noContainers: 'Çalışan konteyner bulunamadı',
+      startContainer: 'Başlat',
+      stopContainer: 'Durdur',
+      restartContainer: 'Yeniden Başlat',
+      viewLogs: 'Loglar',
+      rotateToken: 'Token Yenile',
+      rotateTokenConfirm: 'Bu sistemin erişim anahtarı yenilenecek. Mevcut ajan bağlantısı kesilecektir. Devam edilsin mi?',
+      deleteSystem: 'Sistemi Kaldır',
+      deleteSystemConfirm: 'Bu sunucuyu kaldırmak istediğinizden emin misiniz? Tüm telemetri geçmişi temizlenecektir.',
+      webTerminal: 'Web Terminali',
+      terminalClose: 'Terminali Kapat'
+    }
   }
 };

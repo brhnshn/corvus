@@ -11,12 +11,13 @@ import {
   PanelLeftClose,
   Search,
   History,
+  Server,
 } from 'lucide-react';
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
 import { LanguageSwitch } from './LanguageSwitch';
 
-export type PageId = 'dashboard' | 'services' | 'containers' | 'metrics' | 'uptime' | 'activity' | 'settings' | 'profile';
+export type PageId = 'dashboard' | 'services' | 'containers' | 'systems' | 'metrics' | 'uptime' | 'activity' | 'settings' | 'profile';
 
 interface SidebarProps {
   currentPage: PageId;
@@ -54,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { id: 'services', label: t('nav.services'), icon: Grid },
     { id: 'containers', label: t('nav.containers'), icon: Boxes },
+    { id: 'systems', label: t('nav.systems'), icon: Server },
     { id: 'metrics', label: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), icon: Clock },
     { id: 'activity', label: 'Olay Geçmişi', icon: History },

@@ -3,7 +3,37 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.5.31] - 2026-10-11
+## [1.6.0] - 2026-10-12 — Çoklu Sistem Yönetimi ("Sistemler") ve Uç Ajan Mimarisi
+
+### Eklenenler (Added)
+- **Çoklu Sistem Yönetimi Kokpiti ve Dağıtık Uç Ajanı (`/systems`)**:
+  - Dışa doğru (outbound) güvenli TLS tüneliyle hiçbir port açma zorunluluğu olmaksızın farklı VPS, sunucu ve homelab ortamlarını tek merkezden yöneten sistem mimarisi.
+  - SQLite (`016_systems_sqlite.sql`) ve PostgreSQL (`016_systems_postgres.sql`) migrasyonları uygulandı: `systems`, `system_tokens`, `system_metrics_1m`, `system_metrics_1h` ve `system_containers_cache` tabloları ve indeksleri oluşturuldu.
+  - 128 baytlık unmanaged `readonly struct SystemTelemetryPoint` ve sistem başına bellekte 60 telemetri noktası (3 dakika @ 3s) tutan dairesel `TelemetryRingBuffer` (`ITelemetryRingBuffer`) inşa edildi (50 sistemde yalnızca ~360 KB RAM).
+  - Her 60 saniyede bir çalışan ve 1 dakikalık ortalamaları tek bir transaction ile `system_metrics_1m` tablosuna kaydeden `MetricsBatchFlusherBackgroundService` eklendi.
+  - 7 günden eski 1m verilerini saatlik özetlere (`system_metrics_1h`) sıkıştıran ve 30 günden eski saatlik kayıtları budayan `MetricsRetentionWorker` eklendi (sistem başına aylık yalnızca ~2.5 MB disk ayak izi).
+  - Dapper.AOT uyumlu `SystemRepository` (`ISystemRepository`), `SystemMetricRepository` (`ISystemMetricRepository`) ve motor/saklama raporlayan `SystemStatusService` (`ISystemStatusService`) yazıldı; `CorvusJsonSerializerContext` içine işlendi.
+  - `MultiNodePhase1Tests.cs` kapsamlı birim test takımı eklenerek test sayısı 252/252 yeşile ulaştırıldı.
+- **Çoklu Sistem Yönetimi Faz 2: Hub Backend Servisleri ve Sistem API Uç Noktaları**:
+  - `SystemAuthService` (`ISystemAuthService`) ile 32 baytlık kriptografik güvenli token (`crv_node_live_...`), SHA-256 hash, sabit zamanlı `FixedTimeEquals` doğrulaması ve anında token iptali hayata geçirildi.
+  - `SystemTunnelManager` (`ISystemTunnelManager`) ile aktif WebSocket tünelleri havuzu, correlationId tabanlı RPC istek/yanıt yönetimi (`docker_req` / `docker_res`) ve ikili PTY çerçeveleme köprüsü kuruldu.
+  - `SystemWatchdogService` ile 5 saniyede bir kalp atışı izlemesi (online <=10s, degraded <=30s, offline >30s) sağlandı.
+  - `/api/v1/systems/*` Minimal API uç noktaları (`SystemsEndpoints`) inşa edildi (durum, canlı RAM telemetrisiyle listeleme, kayıt, detaylar, silme, token döndürme, metrik geçmişi, uzaktan Docker konteyner başlat/durdur/yeniden başlat/loglar).
+  - `GET /api/v1/agent/tunnel` (`AgentTunnelEndpoints`) uç noktasıyla giden TLS/WSS el sıkışması ve telemetri akış pompası tamamlandı.
+  - `MultiNodePhase2Tests.cs` test takımıyla toplam yeşil test sayısı 254/254'e ulaştı.
+- **Çoklu Sistem Yönetimi Faz 3: Corvus Ajanı Uç İstemcisi**:
+  - Bağımsız, sıfır yansımalı .NET 9 Native AOT uç ajanı (`src/Corvus.Agent/`) geliştirildi (<10 MB RAM ayak izi).
+  - `/proc/stat`, `/proc/meminfo`, `/proc/net/dev` ve `/proc/loadavg` üzerinden doğrudan CPU, RAM, Disk, Ağ ve Yük Ortalaması toplayan hafif `SystemMetricCollector` inşa edildi.
+  - `/var/run/docker.sock` Unix Domain Socket üzerinden yerel Docker daemon ile konuşan, konteyner durumlarını tarayan ve uzaktan RPC eylemlerini (`start`, `stop`, `restart`, `logs`) yürüten `AgentDockerClient` yazıldı.
+  - Hub'a outbound TLS/WSS tüneli açan, 3 saniyede bir hafif telemetri akıtan ve $\pm 500\text{ms}$ jitter destekli üstel geri çekilme ($2\text{s} \to 60\text{s}$) ile yeniden bağlanan `AgentTunnelClient` tamamlandı.
+  - Minimal distroless konteyner imajı için `Dockerfile.agent` (`ghcr.io/corvus/agent:latest`) hazırlandı.
+  - `MultiNodePhase3Tests.cs` test paketiyle yeşil test sayısı 256/256'ya ulaştı.
+- **Çoklu Sistem Yönetimi Faz 4 & 5: Sistemler UI Kokpiti, Mimari ve Doğrulama**:
+  - `src/Corvus.Web/src/pages/Systems/` altında modüler bileşen mimarisi kuruldu: `SystemsHeader.tsx`, `SystemsKpis.tsx`, `SystemsFilterBar.tsx`, `SystemRow.tsx`, `SystemsEmptyState.tsx`, `SystemsEngineBadge.tsx`, `AddSystemSheet.tsx`, `SystemDetailModal.tsx` ve `useSystemsPageState.ts` durum kancası.
+  - Bağımsız API servis katmanı `src/Corvus.Web/src/api/systems.ts` ve yardımcı fonksiyonlar `src/Corvus.Web/src/utils/systemsUtils.ts` (bayt formatlama, durum temaları, 1-satırlık agent çalıştırma komut üreteci) yazıldı.
+  - Sistemler kokpiti `Sidebar.tsx`, `AppRouter.tsx` ve `App.tsx` bileşenlerine kod bölme (lazyWithRetry) ve tam çift dilli (`tr.ts` ve `en.ts`) senkronizasyonla bağlandı.
+  - 256/256 xUnit backend testinin ve hatasız Vite frontend üretim derlemesinin (`npm run build`) eksiksiz geçtiği doğrulandı.
+
 
 ### Düzeltilenler (Fixed)
 - **React Hook Yaşam Döngüsü Tutarlılığı (`App.tsx`)**:

@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/.NET-9.0_Native_AOT-512BD4?logo=dotnet" alt=".NET 9" />
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
-  <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Testler-248_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Veritabanı" />
+  <img src="https://img.shields.io/badge/Testler-256_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -117,6 +117,12 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
 
 ## ✨ Temel Özellikler
 
+- **🌐 Çoklu Sistem Yönetimi Kokpiti ve Uç Ajanı (`/systems`):**
+  - **Sıfır Açık Port (Zero-Inbound) Mimarisi:** İzlenen uç sunucular Corvus Hub merkezine şifreli TLS WebSocket (`/api/v1/agent/tunnel`) üzerinden dışa doğru (outbound) bağlanır; uç sunucuda hiçbir port açmaya veya güvenlik duvarı kuralına gerek kalmaz.
+  - **Ultra Hafif Uç Ajanı (`src/Corvus.Agent`):** <10 MB RAM harcayan, doğrudan Linux `/proc` dosya sisteminden CPU, RAM, Disk ve Ağ telemetrisi toplayan .NET 9 Native AOT ikili paketi.
+  - **Sıfır Tahsisli In-Memory Ring Buffer:** 128 baytlık unmanaged struct ile RAM'de 60 telemetri noktasını (3 dakika) tutar (50 sistemde yalnızca ~360 KB RAM) ve her 60 saniyede bir toplu olarak diske yazar.
+  - **Tünel Üzerinden Uzaktan Docker Orkestrasyonu:** Farklı VPS veya sunuculardaki konteynerleri (`start`, `stop`, `restart`, `logs`) doğrudan Corvus arayüzünden yönetin.
+  - **1 Tıkla Sunucu Kaydı:** Kriptografik güvenli token (`crv_node_live_...`) içeren tek satırlık Docker çalıştırma komutu üretimi.
 - **⌨️ Genel Komut Paleti (`Ctrl+K` / `Cmd+K`) & Mikro-Animasyonlar:**
   - **Sıfır Bağımlılıklı Bulanık Arama (`fuzzySearch.ts`):** Hafif harf dizisi eşleme algoritması ile tüm sayfalara, konteynerlere, hızlı eylemlere ve ayarlara anında erişim.
   - **Tam Klavye Gezinmesi:** Ok tuşları (`↑`/`↓`/`Enter`) ve doğrudan kısayollar (`G D` Genel Bakış, `G C` Konteynerler, `G A` Olay Geçmişi, `R` Yenile).

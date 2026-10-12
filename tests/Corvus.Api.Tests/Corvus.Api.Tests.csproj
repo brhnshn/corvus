@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Corvus.Api\Corvus.Api.csproj" />
+    <ProjectReference Include="..\..\src\Corvus.Agent\Corvus.Agent.csproj" />
   </ItemGroup>
 
 </Project>

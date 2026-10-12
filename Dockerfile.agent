@@ -1,0 +1,25 @@
+# Build Stage (.NET 9 Native AOT)
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+RUN apt-get update && apt-get install -y --no-install-recommends clang zlib1g-dev && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY src/Corvus.Agent/Corvus.Agent.csproj ./Corvus.Agent/
+RUN dotnet restore ./Corvus.Agent/Corvus.Agent.csproj -r linux-x64
+
+COPY src/Corvus.Agent/ ./Corvus.Agent/
+WORKDIR /src/Corvus.Agent
+ARG APP_VERSION=1.0.0
+RUN dotnet publish -c Release -r linux-x64 -o /app/publish -p:Version=${APP_VERSION}
+
+# Final Runtime Stage (Minimal distroless/deps image ~10MB RAM footprint)
+FROM mcr.microsoft.com/dotnet/runtime-deps:9.0
+WORKDIR /app
+COPY --from=build /app/publish ./
+
+ENV DOTNET_gcServer=0 \
+    DOTNET_gcConcurrent=0 \
+    DOTNET_GCConserveMemory=9 \
+    MALLOC_ARENA_MAX=2 \
+    MALLOC_TRIM_THRESHOLD_=65536
+
+ENTRYPOINT ["./Corvus.Agent"]

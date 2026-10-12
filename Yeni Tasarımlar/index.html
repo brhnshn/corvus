@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corvus — Tasarım Laboratuvarı</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#090a0f;color:#ddd;font-family:system-ui,-apple-system,sans-serif;height:100vh;display:grid;grid-template-rows:auto 1fr}
+  header{display:flex;align-items:center;gap:4px;padding:8px 16px;border-bottom:1px solid #1e2433;font-size:12px;flex-wrap:wrap;background:#0e1117}
+  header strong{margin-right:12px;color:#fff;font-weight:700;letter-spacing:0.04em}
+  header .round{color:#64748b;margin:0 4px 0 10px;font-size:11px;font-weight:600;text-transform:uppercase}
+  header button{background:none;border:1px solid transparent;color:#94a3b8;padding:4px 10px;border-radius:4px;cursor:pointer;font:inherit;font-size:12px}
+  header button:hover{color:#fff;background:#1a202c}
+  header button.on{border-color:#38bdf8;color:#fff;background:#141822}
+  header .desc{margin-left:auto;color:#64748b;font-size:11px;max-width:480px;text-align:right}
+  header a{color:#38bdf8;font-size:11px;margin-left:12px;text-decoration:none}
+  header a:hover{text-decoration:underline}
+  iframe{width:100%;height:100%;border:none;background:#090a0f}
+</style>
+</head>
+<body>
+<header>
+  <strong>CORVUS LAB</strong>
+
+  <span class="round" style="color:#38bdf8">Tur 3 (Yeni)</span>
+  <button data-f="tur-3/konsol.html" data-d="Operasyon Konsolu: Yüksek veri yoğunluğu (Linear/Datadog stili), canlı topoloji haritası, 1px crisp hatlar, gerçek zamanlı stdout terminali.">05 Operasyon Konsolu</button>
+
+  <span class="round">Tur 2</span>
+  <button data-f="tur-2/A-sicak-koyu.html" data-d="Sakin kullanım (editoryal odaklı).">A Koyu</button>
+  <button data-f="tur-2/C-yakinlasma.html" data-d="A + yakınlaşma denemesi.">C Yakınlaşma</button>
+
+  <span class="round">Tur 1</span>
+  <button data-f="02-topoloji.html" data-d="Mekânsal ağ haritası (ilham kaynağı).">02 Topoloji</button>
+  <button data-f="04-sessiz.html" data-d="Minimalist sessiz yaklaşım.">04 Sessiz</button>
+
+  <span class="desc" id="desc"></span>
+  <a id="open" href="#" target="_blank">tam ekran ↗</a>
+</header>
+<iframe id="f"></iframe>
+<script>
+const bs=[...document.querySelectorAll('button')],f=document.getElementById('f');
+function go(b){bs.forEach(x=>x.classList.toggle('on',x===b));f.src=b.dataset.f;document.getElementById('desc').textContent=b.dataset.d;document.getElementById('open').href=b.dataset.f;location.hash=b.dataset.f}
+bs.forEach(b=>b.onclick=()=>go(b));
+go(bs.find(b=>b.dataset.f===(location.hash ? location.hash.slice(1) : 'tur-3/konsol.html')) || bs[0]);
+</script>
+</body>
+</html>

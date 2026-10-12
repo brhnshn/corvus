@@ -115,7 +115,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Versioned Docker Image
+      - name: Build and Push Versioned Docker Image (Corvus Hub)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -124,6 +124,20 @@ jobs:
           tags: |
             ghcr.io/brhnshn/corvus:${{ steps.resolve_version.outputs.version }}
             ghcr.io/brhnshn/corvus:latest
+          build-args: |
+            APP_VERSION=${{ steps.resolve_version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Versioned Docker Image (Corvus Agent)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.agent
+          push: true
+          tags: |
+            ghcr.io/brhnshn/corvus-agent:${{ steps.resolve_version.outputs.version }}
+            ghcr.io/brhnshn/corvus-agent:latest
           build-args: |
             APP_VERSION=${{ steps.resolve_version.outputs.version }}
           cache-from: type=gha

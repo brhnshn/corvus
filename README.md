@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/.NET-9.0_Native_AOT-512BD4?logo=dotnet" alt=".NET 9" />
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
-  <img src="https://img.shields.io/badge/Database-SQLite_+_Dapper.AOT-003B57?logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-248_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Database-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Database" />
+  <img src="https://img.shields.io/badge/Tests-256_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -117,6 +117,12 @@ Corvus is built from the ground up to challenge the misconception that modern en
 
 ## ✨ Key Features
 
+- **🌐 Multi-Node Systems Cockpit & Edge Agent (`/systems`):**
+  - **Zero-Inbound Port Architecture:** Edge servers connect outbound to Corvus Hub over encrypted TLS WebSocket (`/api/v1/agent/tunnel`), requiring zero open ports or firewall changes on monitored nodes.
+  - **Ultra-Lightweight Edge Agent (`src/Corvus.Agent`):** Standalone .NET 9 Native AOT executable consuming <10 MB RAM, collecting CPU, RAM, Disk, and Network telemetries directly via Linux `/proc` filesystem.
+  - **Zero-Alloc In-Memory Ring Buffer:** Stores rolling 60 telemetry points (3 minutes) in RAM using a 128-byte unmanaged struct (~7.2 KB RAM per node; ~360 KB for 50 systems) with 60s batched disk flushes.
+  - **Remote Docker Orchestration via Tunnel:** Manage remote containers (`start`, `stop`, `restart`, `logs`) across disparate VPS nodes directly through the Corvus UI cockpit.
+  - **1-Click Host Registration:** Instant Docker run command generated with cryptographically secure node tokens (`crv_node_live_...`).
 - **⌨️ Universal Command Palette (`Ctrl+K` / `Cmd+K`) & Micro-Animations:**
   - **Zero-Dependency Fuzzy Search (`fuzzySearch.ts`):** Lightweight string matching algorithm delivering instant results across all pages, containers, actions, and settings.
   - **Full Keyboard Navigation:** Arrow key browsing (`↑`/`↓`/`Enter`) with quick shortcuts (`G D` Dashboard, `G C` Containers, `G A` Activity, `R` Refresh).

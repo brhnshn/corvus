@@ -27,7 +27,9 @@ export const en = {
     containers: 'Containers',
     metrics: 'System Metrics',
     metricsShort: 'Metrics',
+    systems: 'Systems',
     uptime: 'Uptime',
+    activity: 'Activity Log',
     settings: 'Settings',
     profile: 'Profile & Users',
     profileShort: 'Profile',
@@ -719,5 +721,117 @@ export const en = {
     creatingUser: 'Creating user...',
     deletingUser: 'Deleting...',
     noUsers: 'No users found.'
+  },
+  systems: {
+    title: 'Systems',
+    subtitle: 'Real-time health, resource consumption, and containers of your connected hosts.',
+    addSystem: 'Add System',
+    refresh: 'Refresh',
+    searchPlaceholder: 'Search system name, hostname, IP or tags...',
+    noSystemsFound: 'No systems found',
+    noSystemsDesc: 'No servers match your current search filters.',
+    emptyState: {
+      title: 'No Systems Connected',
+      description: 'Add a new server to start monitoring system resources and Docker containers from a single cockpit.',
+      ctaButton: '+ Add First System'
+    },
+    engineBadge: {
+      sqliteWal: 'SQLite (WAL) · 7-Day Retention',
+      postgresql: 'PostgreSQL · Unlimited Retention',
+      storageLabel: 'Storage Engine'
+    },
+    timeRanges: {
+      live: 'Live (3m)',
+      oneHour: 'Last 1 Hour',
+      oneDay: 'Last 24 Hours',
+      sevenDays: 'Last 7 Days',
+      thirtyDays: 'Last 30 Days'
+    },
+    kpis: {
+      totalSystems: 'Total Systems',
+      onlineSystems: 'Online',
+      avgCpu: 'Average CPU',
+      totalRam: 'Total Memory',
+      totalContainers: 'Active Containers'
+    },
+    filters: {
+      allEnvironments: 'All Environments',
+      production: 'Production',
+      staging: 'Staging',
+      edge: 'Edge',
+      homelab: 'Homelab',
+      allStatuses: 'All Statuses',
+      online: 'Online',
+      degraded: 'Degraded',
+      offline: 'Offline',
+      sortBy: 'Sort by',
+      sortName: 'By Name',
+      sortCpu: 'By CPU Load',
+      sortRam: 'By RAM Usage',
+      sortLastSeen: 'By Last Heartbeat'
+    },
+    systemRow: {
+      cpu: 'CPU',
+      ram: 'Memory',
+      disk: 'Disk',
+      containers: 'Containers',
+      terminal: 'Terminal',
+      details: 'Details',
+      lastSeen: 'Last seen'
+    },
+    addSheet: {
+      title: 'Add New System',
+      subtitle: 'Deploy Corvus Agent on your host and begin monitoring in seconds.',
+      stepInfoTitle: '1. System Details',
+      stepMethodTitle: '2. Installation Method',
+      stepCommandTitle: '3. Install Command',
+      stepStatusTitle: '4. Connection Status',
+      systemNameLabel: 'System / Server Name',
+      systemNamePlaceholder: 'e.g. vps-frankfurt-01',
+      environmentLabel: 'Environment / Role',
+      tagsLabel: 'Tags (comma separated)',
+      tagsPlaceholder: 'prod, eu-central, hetzner',
+      methodDocker: 'Docker Container (Recommended)',
+      methodBinary: 'Linux Binary / Systemd',
+      commandHint: 'Run this command on your target host with root or sudo privileges:',
+      hubUrlOverride: 'Custom Hub URL (Optional)',
+      waitingHandshake: 'Waiting for agent heartbeat...',
+      waitingHint: 'Once executed on the target host, connection will be auto-detected.',
+      connectedSuccess: 'Connection Established!',
+      connectedDetails: 'Agent connected successfully and initial telemetry received.',
+      goToCockpit: 'Open System Cockpit',
+      finish: 'Done'
+    },
+    cockpit: {
+      tabs: {
+        telemetry: 'Live Telemetry',
+        containers: 'Edge Containers',
+        hardware: 'Hardware & OS',
+        security: 'Security & Agent'
+      },
+      latency: 'Latency',
+      uptime: 'Uptime',
+      agentVersion: 'Agent Version',
+      cpuSparklineTitle: 'CPU Load History',
+      ramBreakdownTitle: 'Memory Breakdown',
+      ramUsed: 'Used',
+      ramCached: 'Cached',
+      ramFree: 'Free',
+      diskTitle: 'Mount Points (Storage)',
+      networkTitle: 'Network I/O Rate',
+      loadAvgTitle: 'Load Average (1m / 5m / 15m)',
+      containersSearch: 'Search containers...',
+      noContainers: 'No containers running on this system',
+      startContainer: 'Start',
+      stopContainer: 'Stop',
+      restartContainer: 'Restart',
+      viewLogs: 'Logs',
+      rotateToken: 'Rotate Token',
+      rotateTokenConfirm: 'Rotating the access key will invalidate the current agent connection. Do you want to proceed?',
+      deleteSystem: 'Remove System',
+      deleteSystemConfirm: 'Are you sure you want to remove this system? Historical telemetry will be deleted.',
+      webTerminal: 'Web Terminal',
+      terminalClose: 'Close Terminal'
+    }
   }
 } as const;

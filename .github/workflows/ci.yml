@@ -62,74 +62,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve Version and Release Status
-        id: version_info
+      - name: Resolve Build Metadata
+        id: build_meta
         run: |
           VERSION=$(python3 -c "
           import re
           with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
               text = f.read()
           m = re.search(r'##\s*\[(\d+\.\d+\.\d+)\]', text)
-          print(m.group(1) if m else '1.5.28')
+          print(m.group(1) if m else '1.5.30')
           ")
-          TAG_NAME="v${VERSION}"
           SHORT_SHA=$(git rev-parse --short HEAD)
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-
-          if git ls-remote --exit-code --tags origin "refs/tags/${TAG_NAME}" >/dev/null 2>&1; then
-            echo "Tag ${TAG_NAME} already exists on remote. Skipping release creation."
-            echo "is_new_release=false" >> $GITHUB_OUTPUT
-            echo "docker_tags=ghcr.io/brhnshn/corvus:latest,ghcr.io/brhnshn/corvus:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
-          else
-            echo "Tag ${TAG_NAME} does not exist on remote. New release will be created!"
-            echo "is_new_release=true" >> $GITHUB_OUTPUT
-            echo "docker_tags=ghcr.io/brhnshn/corvus:latest,ghcr.io/brhnshn/corvus:sha-${SHORT_SHA},ghcr.io/brhnshn/corvus:${VERSION}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create and Push Git Tag
-        if: steps.version_info.outputs.is_new_release == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.version_info.outputs.tag }}" -m "Release ${{ steps.version_info.outputs.tag }}"
-          git push origin "${{ steps.version_info.outputs.tag }}"
-
-      - name: Extract Release Notes from CHANGELOG.md
-        if: steps.version_info.outputs.is_new_release == 'true'
-        run: |
-          python3 -c "
-          import re
-
-          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
-              text = f.read()
-
-          pattern = r'##\s*\[(.*?)\][^\n]*\n(.*?)(?=\n---\s*\n|\n##\s*\[|\Z)'
-          match = re.search(pattern, text, re.DOTALL)
-          notes = match.group(2).strip() if match else ''
-
-          if not notes:
-              notes = 'Routine bug fixes and maintenance improvements.'
-
-          notes += '\n\n---\n**Full Changelog**: https://github.com/brhnshn/corvus/blob/main/CHANGELOG.md'
-
-          with open('RELEASE_BODY.md', 'w', encoding='utf-8') as out:
-              out.write(notes)
-          "
-
-      - name: Create GitHub Release
-        if: steps.version_info.outputs.is_new_release == 'true'
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version_info.outputs.tag }}
-          name: Corvus ${{ steps.version_info.outputs.tag }}
-          body_path: RELEASE_BODY.md
-          draft: false
-          prerelease: false
+          echo "docker_tags=ghcr.io/brhnshn/corvus:latest,ghcr.io/brhnshn/corvus:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -147,9 +94,9 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.version_info.outputs.docker_tags }}
+          tags: ${{ steps.build_meta.outputs.docker_tags }}
           build-args: |
-            APP_VERSION=${{ steps.version_info.outputs.version }}
+            APP_VERSION=${{ steps.build_meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

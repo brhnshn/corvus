@@ -3,7 +3,37 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.31] - 2026-10-11
+## [1.6.0] - 2026-10-12 — Multi-Node Systems Cockpit & Edge Agent Architecture
+
+### Added
+- **Multi-Node Systems Cockpit & Distributed Edge Management (`/systems`)**:
+  - Full end-to-end multi-server fleet management connecting disparate VPS nodes, bare-metal servers, and homelabs to a single Corvus Hub without opening inbound ports.
+  - Implemented database migrations for SQLite (`016_systems_sqlite.sql`) and PostgreSQL (`016_systems_postgres.sql`) with tables: `systems`, `system_tokens`, `system_metrics_1m`, `system_metrics_1h`, and `system_containers_cache`.
+  - Created `SystemTelemetryPoint` (128-byte unmanaged `readonly struct`) and `TelemetryRingBuffer` (`ITelemetryRingBuffer`) storing a 60-point circular telemetry buffer per node in RAM (~7.2 KB/node; ~360 KB total for 50 systems) with zero allocations.
+  - Implemented `MetricsBatchFlusherBackgroundService` executing a 60-second transactional batch flush of 1-minute averaged metrics into `system_metrics_1m`.
+  - Implemented `MetricsRetentionWorker` rolling up 1-minute metrics older than 7 days into `system_metrics_1h` and pruning hourly records older than 30 days (~2.5 MB/month per system disk footprint).
+  - Implemented `SystemRepository` (`ISystemRepository`), `SystemMetricRepository` (`ISystemMetricRepository`), and `SystemStatusService` (`ISystemStatusService`) with compile-time Dapper.AOT and .NET 9 Native AOT source-generated JSON serialization context.
+  - Added full test suite `MultiNodePhase1Tests.cs` bringing test count to 252/252 passing.
+- **Multi-Node Systems Phase 2: Hub Backend Services & Systems API Endpoints**:
+  - Implemented `SystemAuthService` (`ISystemAuthService`) generating cryptographically secure 32-byte node tokens (`crv_node_live_...`), SHA-256 storage, constant-time `FixedTimeEquals` validation, and instant revocation.
+  - Implemented `SystemTunnelManager` (`ISystemTunnelManager`) maintaining active WebSocket tunnels, correlation-tracked Docker RPC requests (`docker_req` / `docker_res`), and binary PTY routing.
+  - Implemented `SystemWatchdogService` monitoring node heartbeats every 5 seconds (online <=10s, degraded <=30s, offline >30s).
+  - Implemented `SystemsEndpoints` mapped under `/api/v1/systems/*` (status, list with RAM telemetry, registration, details, deletion, token rotation, metrics ranges, and remote container start/stop/restart/logs).
+  - Implemented `AgentTunnelEndpoints` at `/api/v1/agent/tunnel` handling outbound TLS/WSS handshakes and real-time telemetry frame ingestion.
+  - Added comprehensive `MultiNodePhase2Tests.cs` test suite bringing total green tests to 254/254.
+- **Multi-Node Systems Phase 3: Corvus Agent Edge Client**:
+  - Built standalone, zero-reflection .NET 9 Native AOT edge agent (`src/Corvus.Agent/`) with sub-10 MB RAM footprint.
+  - Implemented `SystemMetricCollector` collecting CPU, RAM, Disk, Network I/O and Linux Load Averages directly via `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, and `/proc/loadavg` with cross-platform fallbacks.
+  - Implemented `AgentDockerClient` querying local Docker Engine API over `/var/run/docker.sock` Unix Domain Sockets for container status discovery and executing remote RPC actions (`start`, `stop`, `restart`, `logs`).
+  - Implemented `AgentTunnelClient` with outbound TLS/WSS connections, 3-second telemetry streaming, and exponential backoff reconnection with $\pm 500\text{ms}$ jitter ($2\text{s} \to 60\text{s}$).
+  - Provided `Dockerfile.agent` creating a minimal distroless container image (`ghcr.io/corvus/agent:latest`).
+  - Added unit test suite `MultiNodePhase3Tests.cs` bringing test count to 256/256 passing.
+- **Multi-Node Systems Phase 4 & 5: Systems UI Cockpit, Architecture & Verification**:
+  - Implemented modular systems frontend under `src/Corvus.Web/src/pages/Systems/`: `SystemsHeader.tsx`, `SystemsKpis.tsx`, `SystemsFilterBar.tsx`, `SystemRow.tsx`, `SystemsEmptyState.tsx`, `SystemsEngineBadge.tsx`, `AddSystemSheet.tsx`, `SystemDetailModal.tsx`, and state hook `useSystemsPageState.ts`.
+  - Added dedicated API client module `src/Corvus.Web/src/api/systems.ts` and utility helpers `src/Corvus.Web/src/utils/systemsUtils.ts` (byte formatting, status themes, 1-line agent run script generation).
+  - Wired Systems cockpit into `Sidebar.tsx`, `AppRouter.tsx`, and `App.tsx` with code-splitting, zero-lag route transition, and full i18n synchronization (`tr.ts` and `en.ts`).
+  - Verified and passed all 256/256 backend xUnit test suites and 100% clean production Vite frontend build.
+
 
 ### Fixed
 - **React Hook Lifecycle Consistency (`App.tsx`)**:

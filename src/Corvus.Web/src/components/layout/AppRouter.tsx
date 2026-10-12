@@ -14,6 +14,7 @@ interface AppRouterProps {
   ServicesPage: React.ComponentType<{}>;
   ContainersPage: React.ComponentType<{ isAdmin: boolean; initialAction?: string | null; onNavigateToDetail: (id: string, tab?: string) => void }>;
   ContainerDetailPage: React.ComponentType<{ containerId: string; onBack: () => void; isAdmin: boolean }>;
+  SystemsPage: React.ComponentType<{ isAdmin: boolean }>;
   SystemMetricsPage: React.ComponentType<{}>;
   UptimePage: React.ComponentType<{}>;
   ActivityTimelinePage: React.ComponentType<{}>;
@@ -33,6 +34,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   ServicesPage,
   ContainersPage,
   ContainerDetailPage,
+  SystemsPage,
   SystemMetricsPage,
   UptimePage,
   ActivityTimelinePage,
@@ -61,6 +63,8 @@ export const AppRouter: React.FC<AppRouterProps> = ({
           onNavigateToDetail={(id, tab) => onNavigate('containers', id, tab)}
         />
       );
+    case 'systems':
+      return <SystemsPage isAdmin={isAdmin} />;
     case 'metrics':
       return <SystemMetricsPage />;
     case 'uptime':

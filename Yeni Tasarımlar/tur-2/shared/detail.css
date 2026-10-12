@@ -1,0 +1,53 @@
+/* Tur 2 / C — tek bir bileşene yakınlaşma görünümü */
+.crumbs { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.crumbs button { color: var(--text-2); }
+.crumbs button:hover { color: var(--text); }
+.crumbs .esc { margin-left: auto; }
+
+.d-title {
+  width: fit-content; margin-top: 28px;
+  font-size: clamp(48px, 7vw, 84px); font-weight: 500; letter-spacing: -0.04em; line-height: 1;
+  view-transition-name: svc-title;
+}
+.d-lede { --c: var(--ok); margin-top: 20px; max-width: 760px; font-size: clamp(20px, 2.2vw, 26px); line-height: 1.35; letter-spacing: -0.015em; color: var(--text-2); }
+.d-acts { display: flex; gap: 22px; margin-top: 26px; font-size: 15px; }
+.d-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 64px; margin-top: 76px; }
+
+.chart-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+.chart-head .big { font-size: 40px; font-weight: 500; letter-spacing: -0.03em; }
+.chart-head .unit { color: var(--muted); }
+.chart svg { display: block; width: 100%; height: 170px; overflow: visible; }
+.chart .line { fill: none; stroke: var(--text); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.chart .area { fill: var(--text); opacity: .05; }
+.chart .base { stroke: var(--rule-2); vector-effect: non-scaling-stroke; }
+.chart .dead { stroke: var(--err); stroke-width: 2; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+.chart-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+.uptime { display: flex; gap: 3px; }
+.uptime i { flex: 1; height: 22px; border-radius: 1px; background: var(--rule-2); }
+.uptime i.w { background: var(--warn); }
+.uptime i.e { background: var(--err); }
+.mt { margin-top: 56px; }
+
+.neighbors svg { display: block; width: 100%; height: auto; overflow: visible; }
+.neighbors .edge { stroke: var(--rule-2); stroke-width: 1; }
+.neighbors .nb { cursor: pointer; }
+.neighbors .nb text { fill: var(--text-2); font-size: 13px; }
+.neighbors .nb:hover text { fill: var(--text); }
+.neighbors .self text { fill: var(--text); font-size: 14px; font-weight: 500; }
+.neighbors .alone { color: var(--muted); font-size: 15px; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 10px 22px; margin-top: 44px; font-size: 15px; }
+.facts dt { color: var(--muted); }
+
+/* Yakınlaşma geçişi (View Transitions API) */
+::view-transition-old(root) { animation: vt-out .42s cubic-bezier(.2, .8, .2, 1) both; }
+::view-transition-new(root) { animation: vt-in .42s cubic-bezier(.2, .8, .2, 1) both; }
+.vt-back::view-transition-old(root) { animation-name: vt-out-back; }
+.vt-back::view-transition-new(root) { animation-name: vt-in-back; }
+::view-transition-group(svc-title) { animation-duration: .42s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+@keyframes vt-out { to { opacity: 0; transform: scale(1.04); } }
+@keyframes vt-in { from { opacity: 0; transform: scale(.98); } }
+@keyframes vt-out-back { to { opacity: 0; transform: scale(.98); } }
+@keyframes vt-in-back { from { opacity: 0; transform: scale(1.04); } }
+
+@media (max-width: 820px) { .d-grid { grid-template-columns: 1fr; } }
