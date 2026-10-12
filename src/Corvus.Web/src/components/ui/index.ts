@@ -12,3 +12,4 @@ export * from './Toast';
 export * from './EmptyState';
 export * from './SslBadge';
 export * from './HistoryBars';
+export * from './Modal';

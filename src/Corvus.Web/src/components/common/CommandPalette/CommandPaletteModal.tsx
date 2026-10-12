@@ -79,14 +79,14 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Komut Paleti"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-200"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-xs animate-modal-backdrop"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
         ref={modalRef}
-        className="w-full max-w-xl bg-[#1b1d2a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-xl bg-[#1b1d2a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-modal-card"
       >
         <CommandPaletteInput
           value={query}

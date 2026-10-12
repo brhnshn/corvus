@@ -40,11 +40,11 @@ export const DeleteSystemModal: React.FC<DeleteSystemModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-modal-backdrop"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-md rounded-3xl bg-[#1b1d2a] border border-white/10 shadow-2xl p-6 space-y-5"
+        className="w-full max-w-md rounded-3xl bg-[#1b1d2a] border border-white/10 shadow-2xl p-6 space-y-5 animate-modal-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/5 pb-4">

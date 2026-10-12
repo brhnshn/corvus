@@ -36,6 +36,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Modal Entrance Animation & Reusable Modal Architecture**:
+  - Implemented subtle, physics-based modal entrance animations in `index.css`: `@keyframes modal-backdrop-in` (180ms fade-in) and `@keyframes modal-card-in` (220ms `cubic-bezier(0.16, 1, 0.3, 1)` scale `0.96 -> 1` and `translateY(8px -> 0)`), resolving abrupt modal popups.
+  - Created modular `Modal.tsx` in `src/Corvus.Web/src/components/ui/` featuring backdrop click dismiss, ESC keydown listener, body scroll lock management, and standard ARIA accessibility attributes.
+  - Upgraded modal dialogs (`EditSystemModal`, `DeleteSystemModal`, `AddServiceModal`, `EditServiceModal`, `CommandPaletteModal`) with `.animate-modal-backdrop` and `.animate-modal-card`.
+  - Maintained accessibility through existing `@media (prefers-reduced-motion: reduce)` overriding animation duration to 0.01ms.
 - **Systems Page Layout Expansion & Column View Menu (Mockup Alignment)**:
   - Redesigned the Systems cockpit (`/systems`) to faithfully match the spacious HTML mockup: card wrapper with `bg-[#12131e] border-[#242637] rounded-3xl p-6 sm:p-7`, 30px title with node count badge, unified filter search, and refresh trigger.
   - Implemented modular `SystemsColumnsMenu.tsx` providing a "Görüntüle" / "View" column toggle dropdown enabling users to customize visibility for optional metrics (GPU, Temp, Battery, WiFi, Services, Updates) persisted in `localStorage`.

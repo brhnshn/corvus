@@ -36,6 +36,11 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Modal Açılış Yumuşak Geçiş Animasyonu ve Yeniden Kullanılabilir Modal Mimarisi**:
+  - Pencerelerin aniden ve sert bir şekilde açılmasını engellemek için `index.css` içine hafif fizik tabanlı giriş animasyonları eklendi: `@keyframes modal-backdrop-in` (180ms fade-in) ve `@keyframes modal-card-in` (220ms `cubic-bezier(0.16, 1, 0.3, 1)` scale `0.96 -> 1` ve `translateY(8px -> 0)`).
+  - Modüler `src/Corvus.Web/src/components/ui/Modal.tsx` bileşeni inşa edildi; arka plana tıklayarak kapatma, ESC tuşu dinleyicisi, gövde kaydırma kilidi (`overflow: hidden`) ve ARIA erişilebilirlik standartları merkezi olarak sağlandı.
+  - Başta sistem yönetimi ve servisler olmak üzere modallar (`EditSystemModal`, `DeleteSystemModal`, `AddServiceModal`, `EditServiceModal`, `CommandPaletteModal`) `.animate-modal-backdrop` ve `.animate-modal-card` sınıflarıyla donatıldı.
+  - Erişilebilirlik için `@media (prefers-reduced-motion: reduce)` ile animasyon sürelerinin otomatik sıfırlanması korundu.
 - **Sistemler Sayfası Büyütülmüş Düzen ve Sütun Görünümü Menüsü (HTML Mockup Uyumu)**:
   - Sistemler kokpiti (`/systems`), sağlanan HTML mockup tasarımına sadık kalınarak büyütüldü ve modernize edildi: `bg-[#12131e] border-[#242637] rounded-3xl p-6 sm:p-7` kart yapısı, 30px başlık, sayaç rozeti, filtreleme ve yenileme kontrolleri.
   - Modüler `SystemsColumnsMenu.tsx` bileşeni inşa edildi; "Görüntüle" sütun menüsü üzerinden isteğe bağlı metrikler (GPU, Sıcaklık, Pil, Wi-Fi, Servisler, Güncellemeler) açılıp kapatılabilir ve `localStorage` üzerinde saklanır.

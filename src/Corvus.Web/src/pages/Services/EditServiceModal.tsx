@@ -127,8 +127,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-      <div className="sheet-glass border border-white/10 rounded-[28px] p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto animate-modal-backdrop">
+      <div className="sheet-glass border border-white/10 rounded-[28px] p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto animate-modal-card">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div>
             <h3 className="font-semibold text-white text-base">
