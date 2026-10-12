@@ -72,6 +72,19 @@ export function getSystemStatusTheme(status: SystemStatus): {
         badgeBorder: 'border-[#f87171]/20'
       };
     case 'pending':
+      return {
+        dotColor: 'bg-[#fbbf24]',
+        textColor: 'text-[#fbbf24]',
+        badgeBg: 'bg-[#fbbf24]/10',
+        badgeBorder: 'border-[#fbbf24]/20'
+      };
+    case 'paused':
+      return {
+        dotColor: 'bg-[#9ba0b5]',
+        textColor: 'text-[#9ba0b5]',
+        badgeBg: 'bg-white/10',
+        badgeBorder: 'border-white/15'
+      };
     default:
       return {
         dotColor: 'bg-[#d5d5dc]',

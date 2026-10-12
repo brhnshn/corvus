@@ -1,6 +1,6 @@
 export type TelemetryTimeRange = 'live' | '1h' | '24h' | '7d' | '30d';
 
-export type SystemStatus = 'online' | 'degraded' | 'offline' | 'pending';
+export type SystemStatus = 'online' | 'degraded' | 'offline' | 'pending' | 'paused';
 
 export interface SystemStatusDto {
   engine: 'sqlite' | 'postgresql';
@@ -102,6 +102,12 @@ export interface CreateSystemRequest {
   environment?: string;
   tags?: string[];
   notes?: string;
+}
+
+export interface UpdateSystemRequest {
+  name?: string;
+  tags?: string[];
+  status?: string;
 }
 
 export interface CreateSystemResponse {

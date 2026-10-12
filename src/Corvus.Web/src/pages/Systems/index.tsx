@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSystemsPageState } from './useSystemsPageState';
 import { SystemsTable } from './SystemsTable';
 import { SystemsEmptyState } from './SystemsEmptyState';
 import { AddSystemSheet } from './AddSystemSheet';
+import { EditSystemModal } from './EditSystemModal';
+import { DeleteSystemModal } from './DeleteSystemModal';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { Plus, RefreshCw, Server } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import type { PageId } from '../../components/Sidebar';
+import type { SystemSummaryDto } from '../../types';
 
-import { invalidateCache } from '../../api';
+import { api, invalidateCache } from '../../api';
 
 interface SystemsPageProps {
   isAdmin?: boolean;
@@ -34,12 +37,25 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
     refresh
   } = useSystemsPageState();
 
+  const [editingSystem, setEditingSystem] = useState<SystemSummaryDto | null>(null);
+  const [deletingSystem, setDeletingSystem] = useState<SystemSummaryDto | null>(null);
+
   const handleSelectSystem = (systemId: string) => {
     localStorage.setItem('corvus_active_system_id', systemId);
     invalidateCache();
     window.dispatchEvent(new CustomEvent('corvus_active_system_changed', { detail: { systemId } }));
     if (onNavigate) {
       onNavigate('dashboard');
+    }
+  };
+
+  const handleTogglePause = async (sys: SystemSummaryDto) => {
+    try {
+      const nextStatus = sys.status === 'paused' ? 'online' : 'paused';
+      await api.updateSystem(sys.id, { status: nextStatus });
+      refresh();
+    } catch (err) {
+      console.error('Sistem durumu değiştirilemedi:', err);
     }
   };
 
@@ -98,6 +114,9 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
             onSelectSystem={handleSelectSystem}
             sortBy={sortBy}
             onSortByChange={setSortBy}
+            onEditSystem={isAdmin ? setEditingSystem : undefined}
+            onTogglePauseSystem={isAdmin ? handleTogglePause : undefined}
+            onDeleteSystem={isAdmin ? setDeletingSystem : undefined}
           />
         )}
       </section>
@@ -107,6 +126,22 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onSystemCreated={refresh}
+      />
+
+      {/* Sistem Düzenleme Modalı */}
+      <EditSystemModal
+        system={editingSystem}
+        isOpen={Boolean(editingSystem)}
+        onClose={() => setEditingSystem(null)}
+        onUpdated={refresh}
+      />
+
+      {/* Sistem Silme Onay Modalı */}
+      <DeleteSystemModal
+        system={deletingSystem}
+        isOpen={Boolean(deletingSystem)}
+        onClose={() => setDeletingSystem(null)}
+        onDeleted={refresh}
       />
     </div>
   );

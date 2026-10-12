@@ -36,6 +36,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **System Action Dropdown Menu & Node Lifecycle Management**:
+  - Implemented modular `SystemActionMenu.tsx` providing comprehensive node operations: Edit system (name & tags), Pause/Resume monitoring, Copy system name, Copy hostname/IP, and Delete node.
+  - Implemented `EditSystemModal.tsx` backed by new `PUT /api/v1/systems/{id}` endpoint and compile-time Native AOT serialization context.
+  - Implemented `DeleteSystemModal.tsx` confirmation dialog for securely decommissioning nodes via `DELETE /api/v1/systems/{id}`.
+  - Replaced misleading `%0.0` CPU and `0 B` RAM/Disk values on `pending` (awaiting agent) and `paused` systems with dedicated badges (`Awaiting Agent` / `Paused`) and clean `-` placeholders, strictly adhering to real-data zero-dummy integrity rules.
 - **Navbar & Sidebar Layout Deconfliction & Single Source of Truth**:
   - Resolved height and position overlapping between `Navbar.tsx` and `Sidebar.tsx`; `Sidebar` now strictly mounts below the persistent header (`top-16`, `h-[calc(100vh-4rem)]`, `z-30`).
   - Removed duplicate brand header and logo from `Sidebar.tsx`; unified the responsive sidebar toggle (`PanelLeftOpen` / `PanelLeftClose`) into `Navbar.tsx`.

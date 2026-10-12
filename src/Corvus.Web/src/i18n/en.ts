@@ -745,7 +745,34 @@ export const en = {
       network: 'Network',
       containers: 'Containers',
       host: 'Host',
-      active: 'Active'
+      active: 'Active',
+      pendingAgent: 'Awaiting Agent',
+      paused: 'Paused'
+    },
+    actions: {
+      edit: 'Edit',
+      pause: 'Pause',
+      resume: 'Resume',
+      copyName: 'Copy name',
+      copyHost: 'Copy host',
+      delete: 'Delete',
+      copied: 'Copied',
+      more: 'Actions'
+    },
+    deleteModal: {
+      title: 'Delete System',
+      desc: 'Are you sure you want to delete "{name}"? This action cannot be undone and all telemetry records will be wiped.',
+      confirm: 'Yes, Delete',
+      cancel: 'Cancel',
+      deleting: 'Deleting...'
+    },
+    editModal: {
+      title: 'Edit System',
+      nameLabel: 'System Name',
+      tagsLabel: 'Tags (comma-separated)',
+      save: 'Save',
+      cancel: 'Cancel',
+      saving: 'Saving...'
     },
     detail: {
       backToFleet: 'Back to Fleet',

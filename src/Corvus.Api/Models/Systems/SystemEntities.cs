@@ -91,6 +91,12 @@ public record CreateSystemRequest(
     string? Notes = null
 );
 
+public record UpdateSystemRequest(
+    string? Name = null,
+    List<string>? Tags = null,
+    string? Status = null
+);
+
 public record CreateSystemResponse(
     SystemEntity System,
     string NodeKey,

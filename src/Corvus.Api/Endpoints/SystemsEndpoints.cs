@@ -182,6 +182,37 @@ public static class SystemsEndpoints
             return Results.Json(detail, CorvusJsonSerializerContext.Default.SystemDetailDto);
         });
 
+        // 4b. Update System (Name, Tags, Status / Paused)
+        group.MapPut("/{id}", async (
+            string id,
+            UpdateSystemRequest request,
+            ISystemRepository repo) =>
+        {
+            var system = await repo.GetByIdAsync(id);
+            if (system == null) return Results.NotFound();
+
+            if (!string.IsNullOrWhiteSpace(request.Name))
+            {
+                system.Name = request.Name.Trim();
+            }
+
+            if (request.Tags != null)
+            {
+                system.TagsJson = JsonSerializer.Serialize(request.Tags, CorvusJsonSerializerContext.Default.ListString);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                system.Status = request.Status.Trim();
+            }
+
+            system.UpdatedAt = DateTime.UtcNow.ToString("o");
+            await repo.UpdateAsync(system);
+
+            return Results.Json(new GenericApiResponse(true, "Sistem güncellendi."),
+                CorvusJsonSerializerContext.Default.GenericApiResponse);
+        }).RequireAdmin();
+
         // 5. Delete System
         group.MapDelete("/{id}", async (
             string id,

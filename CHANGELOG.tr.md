@@ -36,6 +36,11 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Sistem Aksiyon Menüsü ve Sunucu Yaşam Döngüsü Yönetimi**:
+  - Modüler `SystemActionMenu.tsx` bileşeni geliştirilerek sunucu satırlarına kapsamlı aksiyon menüsü eklendi: Sistemi Düzenle (isim ve etiketler), İzlemeyi Duraklat / Devam Ettir, Adı Kopyala, Ana Bilgisayarı Kopyala ve Sistemi Sil.
+  - Sistem adı ve etiketlerini güncellemek için `EditSystemModal.tsx` ile arka uç `PUT /api/v1/systems/{id}` API uç noktası ve AOT JSON serileştiricisi entegre edildi.
+  - Yanlışlıkla sunucu silinmesini önleyen onay pencereli `DeleteSystemModal.tsx` bileşeni eklendi (`DELETE /api/v1/systems/{id}`).
+  - Ajanı henüz bağlanmamış (`pending`) veya duraklatılmış (`paused`) sistemlerde yanıltıcı sahte `%0.0` ve `0 B` gösterimi engellendi; yerine `Ajan Bekleniyor` rozeti ve temiz tire (`-`) gösterimi sağlandı.
 - **Navbar & Sidebar Düzen Çakışması ve Tekil Doğruluk Kaynağı**:
   - `Navbar.tsx` ile `Sidebar.tsx` arasındaki yükseklik ve konum çakışması giderildi; sol kenar çubuğu (`Sidebar`) artık kalıcı üst barın altından (`top-16`, `h-[calc(100vh-4rem)]`, `z-30`) başlar.
   - `Sidebar.tsx` içindeki mükerrer Corvus logosu ve marka başlığı kaldırıldı; duyarlı menü açma/kapatma butonu (`PanelLeftOpen` / `PanelLeftClose`) `Navbar.tsx` içerisine taşındı.

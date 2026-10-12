@@ -6,6 +6,7 @@ import type {
   SystemDownsampledPoint,
   CreateSystemRequest,
   CreateSystemResponse,
+  UpdateSystemRequest,
   SystemContainerCacheEntity,
   DockerRpcResponse,
   TelemetryTimeRange
@@ -27,6 +28,15 @@ export const systemsApi = {
       body: JSON.stringify(req)
     });
     invalidateCache('/v1/systems/status');
+    return res;
+  },
+
+  updateSystem: async (id: string, req: UpdateSystemRequest) => {
+    const res = await fetchJson<{ success: boolean; message?: string }>(`/v1/systems/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(req)
+    });
+    invalidateCache('/v1/systems');
     return res;
   },
 

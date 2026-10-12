@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpDown, ChevronRight, Boxes } from 'lucide-react';
 import type { SystemSummaryDto } from '../../types';
 import { formatBytes, getSystemStatusTheme } from '../../utils/systemsUtils';
+import { SystemActionMenu } from './SystemActionMenu';
 import { useI18n } from '../../i18n';
 
 interface SystemsTableProps {
@@ -9,13 +10,19 @@ interface SystemsTableProps {
   onSelectSystem: (id: string) => void;
   sortBy?: string;
   onSortByChange: (s: string) => void;
+  onEditSystem?: (system: SystemSummaryDto) => void;
+  onTogglePauseSystem?: (system: SystemSummaryDto) => void;
+  onDeleteSystem?: (system: SystemSummaryDto) => void;
 }
 
 export const SystemsTable: React.FC<SystemsTableProps> = ({
   systems,
   onSelectSystem,
   sortBy: _sortBy,
-  onSortByChange
+  onSortByChange,
+  onEditSystem,
+  onTogglePauseSystem,
+  onDeleteSystem
 }) => {
   const { t } = useI18n();
 
@@ -83,8 +90,10 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
           <tbody className="divide-y divide-white/5">
             {systems.map((system) => {
               const theme = getSystemStatusTheme(system.status);
-              const cpuVal = typeof system.currentCpuPercent === 'number' ? system.currentCpuPercent : 0;
+              const isPending = system.status === 'pending';
+              const isPaused = system.status === 'paused';
 
+              const cpuVal = typeof system.currentCpuPercent === 'number' ? system.currentCpuPercent : 0;
               const ramUsed = system.currentRamUsedBytes ?? 0;
               const ramTotal = system.currentRamTotalBytes ?? 1;
               const ramPercent = ramTotal > 0 ? Math.min(100, Math.round((ramUsed / ramTotal) * 100)) : 0;
@@ -129,64 +138,82 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 2. İşlemci (Yüzde + İlerleme Çubuğu) */}
                   <td className="py-4 px-5">
-                    <div className="flex items-center gap-2.5 min-w-[130px]">
-                      <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
-                        %{cpuVal.toFixed(1)}
+                    {isPending ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                        {t('systems.table.pendingAgent')}
                       </span>
-                      <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            cpuVal > 85 ? 'bg-red-400' : cpuVal > 65 ? 'bg-amber-400' : 'bg-[#34d399]'
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(4, cpuVal))}%` }}
-                        />
+                    ) : isPaused ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-white/10 border border-white/15 text-[#9ba0b5]">
+                        {t('systems.table.paused')}
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-2.5 min-w-[130px]">
+                        <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
+                          %{cpuVal.toFixed(1)}
+                        </span>
+                        <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              cpuVal > 85 ? 'bg-red-400' : cpuVal > 65 ? 'bg-amber-400' : 'bg-[#34d399]'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(4, cpuVal))}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </td>
 
                   {/* 3. Bellek (RAM) */}
                   <td className="py-4 px-5">
-                    <div className="flex items-center gap-2.5 min-w-[150px]">
-                      <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
-                        %{ramPercent}
-                      </span>
-                      <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            ramPercent > 85 ? 'bg-red-400' : ramPercent > 65 ? 'bg-amber-400' : 'bg-sky-400'
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(4, ramPercent))}%` }}
-                        />
+                    {isPending || isPaused ? (
+                      <span className="text-[#9ba0b5] font-mono text-xs">-</span>
+                    ) : (
+                      <div className="flex items-center gap-2.5 min-w-[150px]">
+                        <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
+                          %{ramPercent}
+                        </span>
+                        <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              ramPercent > 85 ? 'bg-red-400' : ramPercent > 65 ? 'bg-amber-400' : 'bg-sky-400'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(4, ramPercent))}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] text-[#9ba0b5] font-mono hidden md:inline-block">
+                          {formatBytes(ramUsed, 0)}
+                        </span>
                       </div>
-                      <span className="text-[11px] text-[#9ba0b5] font-mono hidden md:inline-block">
-                        {formatBytes(ramUsed, 0)}
-                      </span>
-                    </div>
+                    )}
                   </td>
 
                   {/* 4. Depolama Alanı (Disk) */}
                   <td className="py-4 px-5">
-                    <div className="flex items-center gap-2.5 min-w-[150px]">
-                      <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
-                        %{diskPercent}
-                      </span>
-                      <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            diskPercent > 90 ? 'bg-red-400' : diskPercent > 75 ? 'bg-amber-400' : 'bg-amber-400/80'
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(4, diskPercent))}%` }}
-                        />
+                    {isPending || isPaused ? (
+                      <span className="text-[#9ba0b5] font-mono text-xs">-</span>
+                    ) : (
+                      <div className="flex items-center gap-2.5 min-w-[150px]">
+                        <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
+                          %{diskPercent}
+                        </span>
+                        <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              diskPercent > 90 ? 'bg-red-400' : diskPercent > 75 ? 'bg-amber-400' : 'bg-amber-400/80'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(4, diskPercent))}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] text-[#9ba0b5] font-mono hidden md:inline-block">
+                          {formatBytes(diskUsed, 0)}
+                        </span>
                       </div>
-                      <span className="text-[11px] text-[#9ba0b5] font-mono hidden md:inline-block">
-                        {formatBytes(diskUsed, 0)}
-                      </span>
-                    </div>
+                    )}
                   </td>
 
                   {/* 5. Yük Ortalaması (Gerçek Veri) */}
                   <td className="py-4 px-5 font-mono text-xs text-[#eceef6]">
-                    {system.loadAvg1m != null ? (
+                    {!isPending && !isPaused && system.loadAvg1m != null ? (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                         <span>
@@ -200,7 +227,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 6. Ağ Hızı (Gerçek Veri) */}
                   <td className="py-4 px-5 font-mono text-xs text-[#9ba0b5]">
-                    {system.netRxBytesSec != null ? (
+                    {!isPending && !isPaused && system.netRxBytesSec != null ? (
                       <span className="text-[#eceef6]">{formatBytes(system.netRxBytesSec)}/s</span>
                     ) : (
                       <span>-</span>
@@ -209,16 +236,28 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 7. Hizmetler / Konteyner Sayısı */}
                   <td className="py-4 px-5 text-center font-mono">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-xs text-[#eceef6]">
-                      <Boxes className="w-3.5 h-3.5 text-[#9ba0b5]" />
-                      <span>{system.activeContainerCount} {t('systems.table.active')}</span>
-                    </span>
+                    {isPending || isPaused ? (
+                      <span className="text-[#9ba0b5]">-</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-xs text-[#eceef6]">
+                        <Boxes className="w-3.5 h-3.5 text-[#9ba0b5]" />
+                        <span>{system.activeContainerCount} {t('systems.table.active')}</span>
+                      </span>
+                    )}
                   </td>
 
-                  {/* 8. Detaya Git Oku */}
+                  {/* 8. Aksiyon Menüsü & Detaya Git Oku */}
                   <td className="py-4 px-5 text-right">
-                    <div className="flex items-center justify-end text-[#9ba0b5] group-hover:text-white transition-colors">
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <div className="flex items-center justify-end gap-1.5 text-[#9ba0b5]">
+                      {onEditSystem && onTogglePauseSystem && onDeleteSystem && (
+                        <SystemActionMenu
+                          system={system}
+                          onEdit={onEditSystem}
+                          onTogglePause={onTogglePauseSystem}
+                          onDelete={onDeleteSystem}
+                        />
+                      )}
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 group-hover:text-white transition-transform" />
                     </div>
                   </td>
                 </tr>

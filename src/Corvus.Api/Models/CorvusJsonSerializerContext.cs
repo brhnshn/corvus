@@ -332,6 +332,7 @@ public record NotificationResult(
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemContainerCacheEntity))]
 [JsonSerializable(typeof(List<Corvus.Api.Models.Systems.SystemContainerCacheEntity>))]
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.CreateSystemRequest))]
+[JsonSerializable(typeof(Corvus.Api.Models.Systems.UpdateSystemRequest))]
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.CreateSystemResponse))]
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemSummaryDto))]
 [JsonSerializable(typeof(List<Corvus.Api.Models.Systems.SystemSummaryDto>))]

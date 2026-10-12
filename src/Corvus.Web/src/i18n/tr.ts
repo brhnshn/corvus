@@ -747,7 +747,34 @@ export const tr: TranslationDictionary = {
       network: 'Ağ',
       containers: 'Hizmetler / Konteyner',
       host: 'Host',
-      active: 'Aktif'
+      active: 'Aktif',
+      pendingAgent: 'Ajan Bekleniyor',
+      paused: 'Duraklatıldı'
+    },
+    actions: {
+      edit: 'Düzenle',
+      pause: 'Duraklat',
+      resume: 'Devam Ettir',
+      copyName: 'Adı kopyala',
+      copyHost: 'Ana bilgisayarı kopyala',
+      delete: 'Sil',
+      copied: 'Kopyalandı',
+      more: 'İşlemler'
+    },
+    deleteModal: {
+      title: 'Sistemi Sil',
+      desc: '"{name}" sistemini silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm telemetri kayıtları silinir.',
+      confirm: 'Evet, Sil',
+      cancel: 'İptal',
+      deleting: 'Siliniyor...'
+    },
+    editModal: {
+      title: 'Sistemi Düzenle',
+      nameLabel: 'Sistem Adı',
+      tagsLabel: 'Etiketler (virgülle ayırın)',
+      save: 'Kaydet',
+      cancel: 'İptal',
+      saving: 'Kaydediliyor...'
     },
     detail: {
       backToFleet: 'Filoya Dön',
