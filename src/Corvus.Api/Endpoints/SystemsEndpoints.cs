@@ -140,7 +140,7 @@ public static class SystemsEndpoints
             );
 
             return Results.Json(response, CorvusJsonSerializerContext.Default.CreateSystemResponse);
-        });
+        }).RequireAdmin();
 
         // 4. Get System Details
         group.MapGet("/{id}", async (
@@ -205,7 +205,7 @@ public static class SystemsEndpoints
 
             return Results.Json(new GenericApiResponse(deleted > 0, deleted > 0 ? "Sistem silindi." : "Sistem bulunamadı."),
                 CorvusJsonSerializerContext.Default.GenericApiResponse);
-        });
+        }).RequireAdmin();
 
         // 6. Revoke Token
         group.MapPost("/{id}/token/revoke", async (
@@ -227,7 +227,7 @@ public static class SystemsEndpoints
 
             return Results.Json(new GenericApiResponse(true, "Erişim anahtarı iptal edildi."),
                 CorvusJsonSerializerContext.Default.GenericApiResponse);
-        });
+        }).RequireAdmin();
 
         // 7. Telemetry Metrics History (live RAM or downsampled DB)
         group.MapGet("/{id}/metrics", async (
@@ -350,7 +350,7 @@ public static class SystemsEndpoints
             var response = await tunnelManager.SendDockerRequestAsync(id, rpcReq, TimeSpan.FromSeconds(20));
 
             return Results.Json(response, CorvusJsonSerializerContext.Default.DockerRpcResponse);
-        });
+        }).RequireAdmin();
 
         // 10. Docker Logs
         group.MapGet("/{id}/containers/{cid}/logs", async (
