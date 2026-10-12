@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSystemsPageState } from './useSystemsPageState';
-import { SystemsNavbar } from './SystemsNavbar';
 import { SystemsTable } from './SystemsTable';
 import { SystemsEmptyState } from './SystemsEmptyState';
 import { AddSystemSheet } from './AddSystemSheet';
-import { ProfileModal } from './ProfileModal';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
+import { Plus, RefreshCw, Server } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import type { PageId } from '../../components/Sidebar';
 
@@ -17,8 +18,6 @@ interface SystemsPageProps {
 
 export const SystemsPage: React.FC<SystemsPageProps> = ({
   isAdmin = true,
-  username,
-  role,
   onNavigate
 }) => {
   const { t } = useI18n();
@@ -26,16 +25,12 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
     systems,
     filteredSystems,
     isLoading,
-    searchQuery,
-    setSearchQuery,
     sortBy,
     setSortBy,
     isAddOpen,
     setIsAddOpen,
     refresh
   } = useSystemsPageState();
-
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleSelectSystem = (systemId: string) => {
     localStorage.setItem('corvus_active_system_id', systemId);
@@ -45,41 +40,49 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0e15] text-[#eceef6] flex flex-col">
-      {/* Üst Bar: Corvus Logo + Canlı Arama + Araçlar + Kullanıcı Ayarları + "+ Sistem Ekle" */}
-      <SystemsNavbar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onRefresh={refresh}
-        isLoading={isLoading}
-        onAddClick={() => setIsAddOpen(true)}
-        onOpenProfile={() => setIsProfileOpen(true)}
-        isAdmin={isAdmin}
-      />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
-        {/* Tablo Üstü Başlık & Sistem Sayacı */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-          <div>
-            <h1 className="text-xl font-bold text-[#eceef6] tracking-tight">
-              {t('systems.allSystems')}
-            </h1>
-            <p className="text-xs text-[#9ba0b5] mt-0.5">
-              {t('systems.allSystemsDesc')}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[#9ba0b5] font-mono">
+    <div className="space-y-6 animate-rv">
+      {/* Corvus Midnight v2 PageHeader Yapısı */}
+      <PageHeader
+        title={t('systems.allSystems')}
+        subtitle={t('systems.allSystemsDesc')}
+        badge={
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-white/5 border border-white/10 text-[#9ba0b5]">
+            <Server className="w-3 h-3 text-indigo-400" />
+            <span>
               {t('systems.systemsCount', {
                 filtered: String(filteredSystems.length),
                 total: String(systems.length)
               })}
             </span>
-          </div>
-        </div>
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="secondary"
+              onClick={refresh}
+              disabled={isLoading}
+              icon={<RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />}
+              aria-label={t('common.refresh')}
+            >
+              <span className="hidden sm:inline">{t('common.refresh')}</span>
+            </Button>
 
-        {/* Sistemler Tablosu (Bir sunucuya tıklandığında doğrudan ana Corvus ekranı açılır) */}
+            {isAdmin && (
+              <Button
+                variant="primary"
+                onClick={() => setIsAddOpen(true)}
+                icon={<Plus className="w-4 h-4 stroke-[2.5]" />}
+              >
+                <span>{t('systems.addSystemButton')}</span>
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      {/* Sistemler Tablosu */}
+      <section className="w-full">
         {filteredSystems.length === 0 ? (
           <SystemsEmptyState
             onAddClick={() => setIsAddOpen(true)}
@@ -93,7 +96,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
             onSortByChange={setSortBy}
           />
         )}
-      </main>
+      </section>
 
       {/* Yeni Sistem Ekleme Yan Paneli */}
       <AddSystemSheet
@@ -101,16 +104,9 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
         onClose={() => setIsAddOpen(false)}
         onSystemCreated={refresh}
       />
-
-      {/* Kullanıcı Profili Modalı (Layout bozulmadan açılır) */}
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        username={username}
-        role={role}
-      />
     </div>
   );
 };
 
 export default SystemsPage;
+

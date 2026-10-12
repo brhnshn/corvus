@@ -36,8 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Persistent Global Navbar & Scaled Corvus Design Hierarchy**:
+  - Unified header architecture with a persistent top bar (`Navbar.tsx`) permanently active across all views (both Fleet `/` and intra-node views like Dashboard, Containers, Services).
+  - Preserved continuous page flow: The top bar never disappears; entering a node seamlessly mounts the left sidebar (`Sidebar.tsx`) beneath the header.
+  - Profile is now rendered as a first-class route (`/profile`) accessible directly from the top navigation bar with clean URL mapping.
+  - Scaled up the Systems fleet section to match standard Corvus Midnight v2 proportions (`max-w-[1400px]`, `PageHeader`, `rounded-3xl`, larger row paddings, and higher progress bars).
 - **Fleet Welcome Screen Layout Isolation & Return Breadcrumb**:
-  - Modalized the User Management and Profile panel (`ProfileModal.tsx`) directly above the Fleet view, eliminating unintended jumps into the classical sidebar layout on profile access.
   - Removed "Systems" from the active node's sidebar (`Sidebar.tsx`) and mobile bottom bar (`BottomNav.tsx`), placing an intuitive breadcrumb return link (`← All Systems [/]`) at the top of the node sidebar to navigate back to the root fleet cockpit.
   - Eradicated synthetic disk alert thresholds (`SystemsAlertBanner.tsx`) that flagged local disk usage without user-configured alarm rules.
 - **Direct Corvus Cockpit Transition on Server Selection**:

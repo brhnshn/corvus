@@ -385,6 +385,7 @@ export const App: React.FC = () => {
       role={authStatus?.role}
       onLogout={authStatus?.authEnabled ? handleLogout : undefined}
       onOpenCommandPalette={openCmd}
+      onRefresh={() => invalidateCache()}
     >
       <ChunkErrorBoundary>
         <Suspense fallback={<PageLoader />}>

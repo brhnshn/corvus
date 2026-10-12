@@ -20,11 +20,11 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#161824]/60 overflow-hidden shadow-xl backdrop-blur-sm">
+    <div className="rounded-3xl border border-white/10 bg-[#161824]/75 overflow-hidden shadow-2xl backdrop-blur-md">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs whitespace-nowrap">
+        <table className="w-full text-left text-[13px] whitespace-nowrap">
           <thead>
-            <tr className="border-b border-white/10 bg-white/[0.02] text-[#9ba0b5] select-none font-medium">
+            <tr className="border-b border-white/10 bg-white/[0.03] text-[#9ba0b5] select-none font-medium text-xs">
               <th
                 onClick={() => onSortByChange('name')}
                 className="py-3 px-4 cursor-pointer hover:text-[#eceef6] transition-colors"
@@ -100,17 +100,17 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                   className="group hover:bg-white/[0.04] transition-colors cursor-pointer"
                 >
                   {/* 1. Sistem Adı, Durum & Host Etiketi */}
-                  <td className="py-3.5 px-4 font-medium">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`block w-2 h-2 rounded-full ${theme.dotColor} shrink-0`} />
+                  <td className="py-4 px-5 font-medium">
+                    <div className="flex items-center gap-3">
+                      <span className={`block w-2.5 h-2.5 rounded-full ${theme.dotColor} shrink-0`} />
 
                       <div className="flex items-center gap-2">
-                        <span className="text-[#eceef6] group-hover:text-white font-semibold">
+                        <span className="text-[#eceef6] group-hover:text-white font-semibold text-sm">
                           {system.name}
                         </span>
 
                         {system.id === 'local-host' && (
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-400/25 text-[10px] font-mono font-medium text-indigo-300">
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-400/25 text-[10px] font-mono font-medium text-indigo-300">
                             {t('systems.table.host')}
                           </span>
                         )}
@@ -128,12 +128,12 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                   </td>
 
                   {/* 2. İşlemci (Yüzde + İlerleme Çubuğu) */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2 min-w-[120px]">
-                      <span className="font-mono text-[#eceef6] w-12 text-right">
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-2.5 min-w-[130px]">
+                      <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
                         %{cpuVal.toFixed(1)}
                       </span>
-                      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden max-w-[80px]">
+                      <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             cpuVal > 85 ? 'bg-red-400' : cpuVal > 65 ? 'bg-amber-400' : 'bg-[#34d399]'
@@ -145,12 +145,12 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                   </td>
 
                   {/* 3. Bellek (RAM) */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2 min-w-[140px]">
-                      <span className="font-mono text-[#eceef6] w-12 text-right">
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-2.5 min-w-[150px]">
+                      <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
                         %{ramPercent}
                       </span>
-                      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden max-w-[80px]">
+                      <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             ramPercent > 85 ? 'bg-red-400' : ramPercent > 65 ? 'bg-amber-400' : 'bg-sky-400'
@@ -158,19 +158,19 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                           style={{ width: `${Math.min(100, Math.max(4, ramPercent))}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-[#9ba0b5] font-mono hidden md:inline-block">
+                      <span className="text-[11px] text-[#9ba0b5] font-mono hidden md:inline-block">
                         {formatBytes(ramUsed, 0)}
                       </span>
                     </div>
                   </td>
 
                   {/* 4. Depolama Alanı (Disk) */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2 min-w-[140px]">
-                      <span className="font-mono text-[#eceef6] w-12 text-right">
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-2.5 min-w-[150px]">
+                      <span className="font-mono text-[#eceef6] w-12 text-right font-medium text-xs">
                         %{diskPercent}
                       </span>
-                      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden max-w-[80px]">
+                      <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden max-w-[90px]">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
                             diskPercent > 90 ? 'bg-red-400' : diskPercent > 75 ? 'bg-amber-400' : 'bg-amber-400/80'
@@ -178,14 +178,14 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                           style={{ width: `${Math.min(100, Math.max(4, diskPercent))}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-[#9ba0b5] font-mono hidden md:inline-block">
+                      <span className="text-[11px] text-[#9ba0b5] font-mono hidden md:inline-block">
                         {formatBytes(diskUsed, 0)}
                       </span>
                     </div>
                   </td>
 
                   {/* 5. Yük Ortalaması (Gerçek Veri) */}
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#eceef6]">
+                  <td className="py-4 px-5 font-mono text-xs text-[#eceef6]">
                     {system.loadAvg1m != null ? (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
@@ -199,26 +199,26 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                   </td>
 
                   {/* 6. Ağ Hızı (Gerçek Veri) */}
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#9ba0b5]">
+                  <td className="py-4 px-5 font-mono text-xs text-[#9ba0b5]">
                     {system.netRxBytesSec != null ? (
-                      <span>{formatBytes(system.netRxBytesSec)}/s</span>
+                      <span className="text-[#eceef6]">{formatBytes(system.netRxBytesSec)}/s</span>
                     ) : (
                       <span>-</span>
                     )}
                   </td>
 
                   {/* 7. Hizmetler / Konteyner Sayısı */}
-                  <td className="py-3.5 px-4 text-center font-mono">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[11px] text-[#eceef6]">
-                      <Boxes className="w-3 h-3 text-[#9ba0b5]" />
+                  <td className="py-4 px-5 text-center font-mono">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-xs text-[#eceef6]">
+                      <Boxes className="w-3.5 h-3.5 text-[#9ba0b5]" />
                       <span>{system.activeContainerCount} {t('systems.table.active')}</span>
                     </span>
                   </td>
 
                   {/* 8. Detaya Git Oku */}
-                  <td className="py-3.5 px-4 text-right">
+                  <td className="py-4 px-5 text-right">
                     <div className="flex items-center justify-end text-[#9ba0b5] group-hover:text-white transition-colors">
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </td>
                 </tr>

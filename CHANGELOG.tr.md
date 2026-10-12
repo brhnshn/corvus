@@ -36,8 +36,12 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Kalıcı Üst Navbar Mimarisi ve Ölçeklendirilmiş Corvus Tasarım Hiyerarşisi**:
+  - Tüm sayfalarda (hem Filo `/` karşılama ekranında hem de bir sunucunun içine girildiğinde Genel Bakış, Konteynerler, Servisler sayfalarında) kalıcı olarak çalışan tekil bir üst bar (`Navbar.tsx`) entegre edildi.
+  - Sayfa akışının bozulması önlendi: Üst bar hiçbir zaman kaybolmaz; bir sunucuya tıklandığında sol kenar çubuğu (`Sidebar.tsx`) bu üst barın altına pürüzsüzce oturur.
+  - Profil görünümü doğrudan URL rotasına (`/profile`) bağlanan bağımsız bir sayfa olarak açılır hale getirildi.
+  - Tüm Sistemler tablosu ve bölümü diğer Corvus sayfaları standartlarına (`PageHeader`, `max-w-[1400px]`, `rounded-3xl`, genişletilmiş satır dolguları ve ilerleme çubukları) uygun olarak büyütüldü.
 - **Sistem Filosu Karşılama Ekranı Düzeni ve Geri Dönüş Breadcrumb Mimarisi**:
-  - Kullanıcı Yönetimi ve Profil paneli (`ProfileModal.tsx`), Filo ekranı üzerinde modal olarak açılarak profil tıklandığında aniden klasik sol menülü düzene zıplama sorunu ortadan kaldırıldı.
   - Seçilen sunucunun sol menüsünden (`Sidebar.tsx`) ve mobil alt bardan (`BottomNav.tsx`) "Sistemler" öğesi kaldırılarak, menünün en tepesine üst seviyedeki filo kokpitine (`/`) geri dönüş sağlayan temiz bir breadcrumb bağlantısı (`← Tüm Sistemler [/]`) eklendi.
   - Kullanıcı tarafından tanımlanmamış yerel disk doluluğunu alarm gibi gösteren yapay uyarı şeridi (`SystemsAlertBanner.tsx`) kod tabanından tamamen temizlendi.
 - **Sunucu Seçiminde Doğrudan Corvus Ana Paneline Geçiş Mimarisi**:
