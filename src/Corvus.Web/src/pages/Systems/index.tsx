@@ -5,14 +5,15 @@ import { SystemsAlertBanner } from './SystemsAlertBanner';
 import { SystemsTable } from './SystemsTable';
 import { SystemsEmptyState } from './SystemsEmptyState';
 import { AddSystemSheet } from './AddSystemSheet';
-import { SystemDetailPageView } from './SystemDetailPageView';
 import { useI18n } from '../../i18n';
+import type { PageId } from '../../components/Sidebar';
 
 interface SystemsPageProps {
   isAdmin?: boolean;
+  onNavigate?: (page: PageId, containerId?: string | null, tab?: string | null) => void;
 }
 
-export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
+export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true, onNavigate }) => {
   const { t } = useI18n();
   const {
     systems,
@@ -24,8 +25,6 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
     setSortBy,
     isAddOpen,
     setIsAddOpen,
-    selectedSystemId,
-    setSelectedSystemId,
     refresh
   } = useSystemsPageState();
 
@@ -39,29 +38,23 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
     return diskPct > 65 || (s.currentCpuPercent ?? 0) > 85;
   });
 
-  // KATMAN 2: Eğer bir sisteme tıklandıysa, doğrudan o sistemin yönetim kokpitini aç
-  if (selectedSystemId) {
-    return (
-      <div className="min-h-screen bg-[#0d0e15] text-[#eceef6]">
-        <SystemDetailPageView
-          systemId={selectedSystemId}
-          onBack={() => setSelectedSystemId(null)}
-          isAdmin={isAdmin}
-        />
-      </div>
-    );
-  }
+  const handleSelectSystem = (systemId: string) => {
+    localStorage.setItem('corvus_active_system_id', systemId);
+    if (onNavigate) {
+      onNavigate('dashboard');
+    }
+  };
 
-  // KATMAN 1: TÜM SİSTEMLER GİRİŞ EKRANI (TAM EKRAN FİLO GÖRÜNÜMÜ)
   return (
     <div className="min-h-screen bg-[#0d0e15] text-[#eceef6] flex flex-col">
-      {/* Üst Bar: Corvus Logo + Canlı Arama + Araçlar + "+ Sistem Ekle" */}
+      {/* Üst Bar: Corvus Logo + Canlı Arama + Araçlar + Kullanıcı Ayarları + "+ Sistem Ekle" */}
       <SystemsNavbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onRefresh={refresh}
         isLoading={isLoading}
         onAddClick={() => setIsAddOpen(true)}
+        onOpenProfile={onNavigate ? () => onNavigate('profile') : undefined}
         isAdmin={isAdmin}
       />
 
@@ -73,7 +66,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
             metricName={t('systems.alert.thresholdExceeded')}
             conditionText={`${alertSystem.name}: CPU > %85 / Disk > %65`}
             onDismiss={() => setDismissAlert(true)}
-            onViewAlerts={() => setSelectedSystemId(alertSystem.id)}
+            onViewAlerts={() => handleSelectSystem(alertSystem.id)}
           />
         )}
 
@@ -98,7 +91,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
           </div>
         </div>
 
-        {/* Sistemler Tablosu */}
+        {/* Sistemler Tablosu (Bir sunucuya tıklandığında doğrudan ana Corvus ekranı açılır) */}
         {filteredSystems.length === 0 ? (
           <SystemsEmptyState
             onAddClick={() => setIsAddOpen(true)}
@@ -107,7 +100,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
         ) : (
           <SystemsTable
             systems={filteredSystems}
-            onSelectSystem={setSelectedSystemId}
+            onSelectSystem={handleSelectSystem}
             sortBy={sortBy}
             onSortByChange={setSortBy}
           />

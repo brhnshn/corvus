@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Search, Plus, RefreshCw } from 'lucide-react';
+import { Search, Plus, RefreshCw, User as UserIcon } from 'lucide-react';
 import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { useI18n } from '../../i18n';
 
@@ -9,6 +9,7 @@ interface SystemsNavbarProps {
   onRefresh: () => void;
   isLoading: boolean;
   onAddClick: () => void;
+  onOpenProfile?: () => void;
   isAdmin: boolean;
 }
 
@@ -18,6 +19,7 @@ export const SystemsNavbar: React.FC<SystemsNavbarProps> = ({
   onRefresh,
   isLoading,
   onAddClick,
+  onOpenProfile,
   isAdmin
 }) => {
   const { t } = useI18n();
@@ -92,6 +94,18 @@ export const SystemsNavbar: React.FC<SystemsNavbarProps> = ({
         <div className="hidden sm:block">
           <LanguageSwitch variant="compact" />
         </div>
+
+        {/* Kullanıcı Ayarları / Profil Butonu */}
+        {onOpenProfile && (
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            title={t('userManagement.openProfile')}
+            className="p-2 rounded-xl text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
+          >
+            <UserIcon className="w-4 h-4" />
+          </button>
+        )}
 
         {/* + Sistem Ekle Butonu */}
         {isAdmin && (

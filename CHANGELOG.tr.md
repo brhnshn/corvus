@@ -36,6 +36,11 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Sunucu Seçiminde Doğrudan Corvus Ana Paneline Geçiş Mimarisi**:
+  - Gereksiz ve kafa karıştırıcı olan ayrı detay sayfası (`SystemDetailPageView.tsx`) ve motor rozeti (`SystemsEngineBadge.tsx`) projeden tamamen silindi.
+  - Filo tablosundan herhangi bir sunucuya tıklandığında, kullanıcının doğrudan bildiği ve yönettiği orijinal Corvus ekranına (`Genel Bakış`, `Servisler`, `Konteynerler`, `Metrikler`, `Uptime`, `Ayarlar`) sol kenar çubuğu (Sidebar) aktif olarak geçiş yapması sağlandı.
+  - Filo üst barına (`SystemsNavbar.tsx`) Kullanıcı Ayarları / Profil kısayolu eklendi; genel kullanıcı yönetim ve profil ayarlarına ilk ekrandan erişim sağlandı.
+  - Sunucuya özel yapılandırmalar (Docker ayarları, sunucu metrik saklama vb.) seçilen sunucunun kendi sol menüsündeki Ayarlar (`Settings`) sayfasında bırakıldı.
 - **Sistemler Filosu İyileştirmeleri, Tam i18n Desteği ve Hata Giderme**:
   - `SystemDetailPageView.tsx` içindeki `TypeError: Cannot read properties of undefined (reading 'toFixed')` çalışma zamanı çökmesi; tüm metrik, CPU ve yük ortalaması hesaplamalarına eksiksiz null kontrolü eklenerek tamamen giderildi.
   - `App.tsx` içindeki `ChunkErrorBoundary` sınıfı, genel React bileşen çalışma zamanı hataları ile gerçek dinamik chunk yükleme hatalarını kesin olarak ayırt edecek şekilde güçlendirildi; böylece bileşen hatalarında yanlış "Yeni Sürüm Algılandı" döngüsü engellendi.

@@ -36,6 +36,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Direct Corvus Cockpit Transition on Server Selection**:
+  - Completely deleted the redundant, separate detail view (`SystemDetailPageView.tsx`) and unnecessary engine badge (`SystemsEngineBadge.tsx`).
+  - Clicking any server in the fleet table now smoothly transitions directly into the full, authentic Corvus cockpit (`Dashboard`, `Services`, `Containers`, `Metrics`, `Uptime`, `Settings`) with the primary sidebar active.
+  - Added user management / profile shortcut to the fleet top navigation bar (`SystemsNavbar.tsx`), granting direct access to global user settings.
+  - Host-specific configurations (Docker daemon, system retention) remain inside the selected server's native Settings page.
 - **Systems Fleet Polish, Full i18n & Error Handling**:
   - Eliminated `TypeError: Cannot read properties of undefined (reading 'toFixed')` runtime crash in `SystemDetailPageView.tsx` by introducing complete null-safety guards across all metrics, CPU percentages, and load average calculations.
   - Hardened `ChunkErrorBoundary` in `App.tsx` to strictly distinguish between dynamic chunk loading errors and general React component runtime exceptions, preventing false "New Version Detected" reload loops.
