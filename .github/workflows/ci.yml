@@ -27,7 +27,7 @@ jobs:
         run: dotnet restore tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj
 
       - name: Build and Test
-        run: dotnet test tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj --configuration Release --verbosity normal
+        run: dotnet test tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj --configuration Release --verbosity normal --logger "console;verbosity=detailed"
 
   frontend-build:
     name: Frontend React Build

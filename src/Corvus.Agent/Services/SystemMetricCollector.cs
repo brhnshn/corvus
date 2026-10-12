@@ -107,7 +107,9 @@ public class SystemMetricCollector : ISystemMetricCollector
 
         // Cross-platform GC memory fallback
         long mem = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
-        return (GC.GetTotalMemory(false), mem > 0 ? mem : 4L * 1024 * 1024 * 1024);
+        long totalRam = mem > 0 ? mem : 4L * 1024 * 1024 * 1024;
+        long usedRam = GC.GetTotalMemory(false);
+        return (usedRam > 0 ? usedRam : 512L * 1024 * 1024, totalRam);
     }
 
     private static long ParseMemInfoKb(string line)
@@ -115,7 +117,7 @@ public class SystemMetricCollector : ISystemMetricCollector
         var parts = line.Split(':', StringSplitOptions.TrimEntries);
         if (parts.Length == 2)
         {
-            var numStr = parts[1].Split(' ')[0];
+            var numStr = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
             if (long.TryParse(numStr, out long kb)) return kb;
         }
         return 0;
@@ -125,13 +127,15 @@ public class SystemMetricCollector : ISystemMetricCollector
     {
         try
         {
-            string rootPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "C:\\" : "/";
-            var drive = new DriveInfo(rootPath);
-            if (drive.IsReady)
+            var drives = DriveInfo.GetDrives();
+            foreach (var d in drives)
             {
-                long total = drive.TotalSize;
-                long free = drive.AvailableFreeSpace;
-                return (total - free, total);
+                if (d.IsReady && d.TotalSize > 0)
+                {
+                    long total = d.TotalSize;
+                    long free = d.AvailableFreeSpace;
+                    return (Math.Max(0, total - free), total);
+                }
             }
         }
         catch { }
