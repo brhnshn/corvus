@@ -36,6 +36,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Systems Page Layout Expansion & Column View Menu (Mockup Alignment)**:
+  - Redesigned the Systems cockpit (`/systems`) to faithfully match the spacious HTML mockup: card wrapper with `bg-[#12131e] border-[#242637] rounded-3xl p-6 sm:p-7`, 30px title with node count badge, unified filter search, and refresh trigger.
+  - Implemented modular `SystemsColumnsMenu.tsx` providing a "Görüntüle" / "View" column toggle dropdown enabling users to customize visibility for optional metrics (GPU, Temp, Battery, WiFi, Services, Updates) persisted in `localStorage`.
+  - Upgraded table layout with `SystemsTable.tsx` featuring full SVG header icons, sort indicators, monospace meter progress bars (`<b>%{percent}</b> <bar><i /></bar> <em>{used}</em>`), host tags (`#7c7cff`), and non-propagating action menus.
+  - Expanded `AppLayout.tsx` standalone container max width to `max-w-[1500px]` matching the 1500px `.wrap` grid specification.
 - **System Action Dropdown Menu & Node Lifecycle Management**:
   - Implemented modular `SystemActionMenu.tsx` providing comprehensive node operations: Edit system (name & tags), Pause/Resume monitoring, Copy system name, Copy hostname/IP, and Delete node.
   - Implemented `EditSystemModal.tsx` backed by new `PUT /api/v1/systems/{id}` endpoint and compile-time Native AOT serialization context.

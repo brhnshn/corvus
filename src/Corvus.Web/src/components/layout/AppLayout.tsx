@@ -81,7 +81,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             <main
               className={`
                 flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-32 lg:pb-12
-                ${isNavStandalone ? 'max-w-[1400px]' : 'max-w-[1240px]'}
+                ${isNavStandalone ? 'max-w-[1500px]' : 'max-w-[1240px]'}
               `}
             >
               {children}

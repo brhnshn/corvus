@@ -36,6 +36,11 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Sistemler Sayfası Büyütülmüş Düzen ve Sütun Görünümü Menüsü (HTML Mockup Uyumu)**:
+  - Sistemler kokpiti (`/systems`), sağlanan HTML mockup tasarımına sadık kalınarak büyütüldü ve modernize edildi: `bg-[#12131e] border-[#242637] rounded-3xl p-6 sm:p-7` kart yapısı, 30px başlık, sayaç rozeti, filtreleme ve yenileme kontrolleri.
+  - Modüler `SystemsColumnsMenu.tsx` bileşeni inşa edildi; "Görüntüle" sütun menüsü üzerinden isteğe bağlı metrikler (GPU, Sıcaklık, Pil, Wi-Fi, Servisler, Güncellemeler) açılıp kapatılabilir ve `localStorage` üzerinde saklanır.
+  - `SystemsTable.tsx` tablosu genişletildi: Sütun başlık ikonları, yön sıralama okları, monospace gösterge çubukları (`<b>%{percent}</b> <bar><i /></bar> <em>{kullanım}</em>`), mor host etiketi (`#7c7cff`) ve satır tıklamasından izole aksiyon menüsü eklendi.
+  - `AppLayout.tsx` bağımsız görünüm maksimum genişliği HTML mockup `.wrap` standardına uygun olarak `max-w-[1500px]` seviyesine genişletildi.
 - **Sistem Aksiyon Menüsü ve Sunucu Yaşam Döngüsü Yönetimi**:
   - Modüler `SystemActionMenu.tsx` bileşeni geliştirilerek sunucu satırlarına kapsamlı aksiyon menüsü eklendi: Sistemi Düzenle (isim ve etiketler), İzlemeyi Duraklat / Devam Ettir, Adı Kopyala, Ana Bilgisayarı Kopyala ve Sistemi Sil.
   - Sistem adı ve etiketlerini güncellemek için `EditSystemModal.tsx` ile arka uç `PUT /api/v1/systems/{id}` API uç noktası ve AOT JSON serileştiricisi entegre edildi.
