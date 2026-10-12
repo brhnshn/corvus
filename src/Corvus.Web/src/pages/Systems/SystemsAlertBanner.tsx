@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, ChevronRight, X } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 interface SystemsAlertBannerProps {
   systemName: string;
@@ -16,6 +17,8 @@ export const SystemsAlertBanner: React.FC<SystemsAlertBannerProps> = ({
   onDismiss,
   onViewAlerts
 }) => {
+  const { t } = useI18n();
+
   return (
     <div className="rounded-2xl border border-red-500/20 bg-red-950/20 px-4 py-3 text-red-200 flex items-center justify-between gap-4 transition-all animate-fade-in shadow-xs">
       <div className="flex items-center gap-3 min-w-0">
@@ -39,7 +42,7 @@ export const SystemsAlertBanner: React.FC<SystemsAlertBannerProps> = ({
             onClick={onViewAlerts}
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-xs font-medium text-red-200 transition-colors cursor-pointer"
           >
-            <span>Uyarıları görüntüle</span>
+            <span>{t('systems.alert.viewAlerts')}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         )}

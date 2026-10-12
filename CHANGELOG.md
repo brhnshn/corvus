@@ -36,6 +36,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Systems Fleet Polish, Full i18n & Error Handling**:
+  - Eliminated `TypeError: Cannot read properties of undefined (reading 'toFixed')` runtime crash in `SystemDetailPageView.tsx` by introducing complete null-safety guards across all metrics, CPU percentages, and load average calculations.
+  - Hardened `ChunkErrorBoundary` in `App.tsx` to strictly distinguish between dynamic chunk loading errors and general React component runtime exceptions, preventing false "New Version Detected" reload loops.
+  - Replaced all hardcoded Turkish/English strings across `SystemsNavbar.tsx`, `SystemsTable.tsx`, `SystemsAlertBanner.tsx`, `SystemDetailPageView.tsx`, and `Systems/index.tsx` with unified, strongly-typed i18n keys (`en.ts` and `tr.ts`).
+  - Powered the fleet table with real live load averages and network throughput directly from backend `SystemSummaryDto` and `TelemetryRingBuffer`, eliminating all mock/dummy values.
+  - Activated real `Ctrl+K` keyboard shortcut autofocus on the systems search input and removed clutter/pulsing animations and non-functional buttons.
+  - Removed confusing database buffer badge (`SystemsEngineBadge`) from the fleet view per UX feedback.
 - **Systems Cockpit 2-Layer Fleet Navigation & Standalone Landing View**:
   - Implemented the 2-layer fleet architecture inspired by modern minimalist server monitors:
     - **Layer 1 (Landing Fleet Screen):** Rendered completely full-screen without desktop sidebars or bottom navigation (`AppLayout.tsx`). Features `SystemsNavbar.tsx` (Corvus logo, fleet badge, Ctrl+K search, actions, and `+ Sistem ekle`), an active threshold alert banner (`SystemsAlertBanner.tsx`), and a rich horizontal fleet metrics table (`SystemsTable.tsx`) displaying status, CPU %, RAM %, Disk %, Load Averages, Network throughput, and active container tallies.

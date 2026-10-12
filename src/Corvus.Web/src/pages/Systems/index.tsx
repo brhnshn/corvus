@@ -4,19 +4,19 @@ import { SystemsNavbar } from './SystemsNavbar';
 import { SystemsAlertBanner } from './SystemsAlertBanner';
 import { SystemsTable } from './SystemsTable';
 import { SystemsEmptyState } from './SystemsEmptyState';
-import { SystemsEngineBadge } from './SystemsEngineBadge';
 import { AddSystemSheet } from './AddSystemSheet';
 import { SystemDetailPageView } from './SystemDetailPageView';
+import { useI18n } from '../../i18n';
 
 interface SystemsPageProps {
   isAdmin?: boolean;
 }
 
 export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
+  const { t } = useI18n();
   const {
     systems,
     filteredSystems,
-    status,
     isLoading,
     searchQuery,
     setSearchQuery,
@@ -31,7 +31,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
 
   const [dismissAlert, setDismissAlert] = useState(false);
 
-  // Eşik aşımı uyarısı (Örn: Burhan-Server Disk Kullanımı %65 aşıyor gibi Beszel banner'ı)
+  // Eşik aşımı uyarısı (Disk > %65 veya CPU > %85)
   const alertSystem = systems.find(s => {
     const diskUsed = s.currentDiskUsedBytes ?? 0;
     const diskTotal = s.currentDiskTotalBytes ?? 1;
@@ -39,7 +39,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
     return diskPct > 65 || (s.currentCpuPercent ?? 0) > 85;
   });
 
-  // KATMAN 2: Eğer bir sisteme tıklandıysa, doğrudan o sistemin detay görünümünü aç
+  // KATMAN 2: Eğer bir sisteme tıklandıysa, doğrudan o sistemin yönetim kokpitini aç
   if (selectedSystemId) {
     return (
       <div className="min-h-screen bg-[#0d0e15] text-[#eceef6]">
@@ -52,10 +52,10 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
     );
   }
 
-  // KATMAN 1: BESZEL İLHAMLI İLK AÇILIŞ - TÜM SİSTEMLER GİRİŞ EKRANI (TAM EKRAN, SİDEBAR'SIZ)
+  // KATMAN 1: TÜM SİSTEMLER GİRİŞ EKRANI (TAM EKRAN FİLO GÖRÜNÜMÜ)
   return (
     <div className="min-h-screen bg-[#0d0e15] text-[#eceef6] flex flex-col">
-      {/* Üst Bar: Corvus Logo + Arama Çubuğu + Araçlar + "+ Sistem Ekle" */}
+      {/* Üst Bar: Corvus Logo + Canlı Arama + Araçlar + "+ Sistem Ekle" */}
       <SystemsNavbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -63,40 +63,42 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
         isLoading={isLoading}
         onAddClick={() => setIsAddOpen(true)}
         isAdmin={isAdmin}
-        alertCount={alertSystem ? 1 : 0}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
-        {/* Beszel Tarzı Aktif Eşik / Uyarı Banner'ı */}
+        {/* Aktif Eşik / Kaynak Kullanım Uyarısı */}
         {alertSystem && !dismissAlert && (
           <SystemsAlertBanner
             systemName={alertSystem.name}
-            metricName="Disk / Kaynak Kullanımı"
-            conditionText="Son 1 dakika içinde %65 sınırını aşıyor"
+            metricName={t('systems.alert.thresholdExceeded')}
+            conditionText={`${alertSystem.name}: CPU > %85 / Disk > %65`}
             onDismiss={() => setDismissAlert(true)}
             onViewAlerts={() => setSelectedSystemId(alertSystem.id)}
           />
         )}
 
-        {/* Tablo Üstü Başlık & Filtreler */}
+        {/* Tablo Üstü Başlık & Sistem Sayacı */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
           <div>
             <h1 className="text-xl font-bold text-[#eceef6] tracking-tight">
-              Tüm Sistemler
+              {t('systems.allSystems')}
             </h1>
             <p className="text-xs text-[#9ba0b5] mt-0.5">
-              Daha fazla bilgi ve yönetim için bir sisteme tıklayın.
+              {t('systems.allSystemsDesc')}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-[#9ba0b5] font-mono">
-              {filteredSystems.length}/{systems.length} Sistem
+              {t('systems.systemsCount', {
+                filtered: String(filteredSystems.length),
+                total: String(systems.length)
+              })}
             </span>
           </div>
         </div>
 
-        {/* Sistemler Tablosu (Beszel Ekran Görüntüsü 1'deki Gibi) */}
+        {/* Sistemler Tablosu */}
         {filteredSystems.length === 0 ? (
           <SystemsEmptyState
             onAddClick={() => setIsAddOpen(true)}
@@ -110,11 +112,6 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true }) => {
             onSortByChange={setSortBy}
           />
         )}
-
-        {/* Motor & Durum Göstergesi Rozeti */}
-        <div className="pt-2">
-          <SystemsEngineBadge status={status} />
-        </div>
       </main>
 
       {/* Yeni Sistem Ekleme Yan Paneli */}

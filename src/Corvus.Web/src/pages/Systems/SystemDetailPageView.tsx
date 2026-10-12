@@ -3,6 +3,7 @@ import { ArrowLeft, Cpu, HardDrive, Boxes, Activity, Play, Square, RotateCw, Ref
 import { api } from '../../api';
 import type { SystemDetailDto, SystemDownsampledPoint, TelemetryTimeRange } from '../../types';
 import { formatBytes, getSystemStatusTheme } from '../../utils/systemsUtils';
+import { useI18n } from '../../i18n';
 
 interface SystemDetailPageViewProps {
   systemId: string;
@@ -15,7 +16,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
   onBack,
   isAdmin
 }) => {
-
+  const { t } = useI18n();
   const [detail, setDetail] = useState<SystemDetailDto | null>(null);
   const [metrics, setMetrics] = useState<SystemDownsampledPoint[]>([]);
   const [range, setRange] = useState<TelemetryTimeRange>('live');
@@ -30,7 +31,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
         api.getMetrics(systemId, range)
       ]);
       setDetail(d);
-      setMetrics(m);
+      setMetrics(Array.isArray(m) ? m : []);
     } catch (err) {
       console.error('Sistem detayları yüklenemedi:', err);
     } finally {
@@ -48,7 +49,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-3">
         <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
-        <span className="text-xs font-mono text-[#9ba0b5]">Sistem telemetrisi yükleniyor...</span>
+        <span className="text-xs font-mono text-[#9ba0b5]">{t('systems.detail.loadingTelemetry')}</span>
       </div>
     );
   }
@@ -56,12 +57,12 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
   if (!detail) {
     return (
       <div className="py-20 text-center space-y-4">
-        <p className="text-sm text-red-400">Sistem bulunamadı veya çevrimdışı.</p>
+        <p className="text-sm text-red-400">{t('systems.detail.notFound')}</p>
         <button
           onClick={onBack}
-          className="px-4 py-2 rounded-xl bg-white/10 text-xs text-white hover:bg-white/20"
+          className="px-4 py-2 rounded-xl bg-white/10 text-xs text-white hover:bg-white/20 cursor-pointer"
         >
-          Sistemler Listesine Dön
+          {t('systems.detail.backToList')}
         </button>
       </div>
     );
@@ -76,9 +77,23 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
       setActionMsg(res.message || 'İşlem tamamlandı.');
       loadData();
     } catch (err: any) {
-      setActionMsg(`Hata: ${err.message}`);
+      setActionMsg(`Hata: ${err?.message || 'İşlem başarısız'}`);
     }
   };
+
+  const lp = detail.latestPoint;
+  const cpuPercentVal = typeof lp?.cpuPercent === 'number' ? lp.cpuPercent.toFixed(1) : '0.0';
+  const load1 = typeof lp?.loadAvg1m === 'number' ? lp.loadAvg1m.toFixed(2) : '-';
+  const load5 = typeof lp?.loadAvg5m === 'number' ? lp.loadAvg5m.toFixed(2) : '-';
+  const load15 = typeof lp?.loadAvg15m === 'number' ? lp.loadAvg15m.toFixed(2) : '-';
+
+  const ramUsed = lp?.ramUsedBytes ?? 0;
+  const ramTotal = lp?.ramTotalBytes ?? 1;
+  const ramPct = ramTotal > 0 ? Math.min(100, Math.round((ramUsed / ramTotal) * 100)) : 0;
+
+  const diskUsed = lp?.diskUsedBytes ?? 0;
+  const diskTotal = lp?.diskTotalBytes ?? 1;
+  const diskPct = diskTotal > 0 ? Math.min(100, Math.round((diskUsed / diskTotal) * 100)) : 0;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 animate-fade-in">
@@ -89,7 +104,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
             type="button"
             onClick={onBack}
             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer"
-            title="Tüm Sistemlere Dön"
+            title={t('systems.detail.backToFleet')}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -102,16 +117,16 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
               </h2>
               {detail.system.id === 'local-host' && (
                 <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-400/30 text-[10px] font-semibold text-indigo-300">
-                  Ana Sunucu (Host)
+                  {t('systems.detail.hostNode')}
                 </span>
               )}
             </div>
 
-            {/* Sistem Meta Bilgileri (Beszel 2. ekran görüntüsündeki gibi) */}
+            {/* Sistem Meta Bilgileri */}
             <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs font-mono text-[#9ba0b5]">
               <span className="flex items-center gap-1 text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <span>{detail.system.status === 'online' ? 'Açık' : detail.system.status}</span>
+                <span>{detail.system.status === 'online' ? t('common.online') : detail.system.status}</span>
               </span>
               <span>·</span>
               <span>{detail.system.hostname || 'host'}</span>
@@ -119,15 +134,19 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
               <span>{detail.system.ipAddress || '127.0.0.1'}</span>
               <span>·</span>
               <span className="truncate max-w-[200px]">{detail.system.osInfo || 'Linux'}</span>
-              <span>·</span>
-              <span>{detail.latestPoint ? `${detail.latestPoint.cpuCores} Çekirdek` : 'CPU'}</span>
-              <span>·</span>
-              <span>{formatBytes(detail.latestPoint?.ramTotalBytes)}</span>
+              {lp && (
+                <>
+                  <span>·</span>
+                  <span>{lp.cpuCores} Core</span>
+                  <span>·</span>
+                  <span>{formatBytes(lp.ramTotalBytes)}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Sağ: Zaman Aralığı Seçici (1s, 24s, 7g, 30g) */}
+        {/* Sağ: Zaman Aralığı Seçici */}
         <div className="flex items-center gap-2 self-start md:self-center">
           <div className="flex items-center bg-white/5 rounded-xl p-0.5 border border-white/5 font-mono text-xs">
             {(['live', '1h', '24h', '7d', '30d'] as TelemetryTimeRange[]).map((r) => (
@@ -141,14 +160,14 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
                     : 'text-[#9ba0b5] hover:text-[#eceef6]'
                 }`}
               >
-                {r === 'live' ? 'Canlı' : r}
+                {r === 'live' ? t('systems.timeRanges.live') : r}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Alt Sekmeler: Çekirdek (Core/CPU/RAM) | Ağ | Depolama Alanı | Konteynerler | Güvenlik */}
+      {/* Alt Sekmeler: Çekirdek | Ağ | Depolama Alanı | Konteynerler | Güvenlik */}
       <div className="flex items-center gap-1 border-b border-white/10 pb-2 overflow-x-auto text-xs font-medium">
         <button
           type="button"
@@ -160,7 +179,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
           }`}
         >
           <Cpu className="w-4 h-4 text-indigo-400" />
-          <span>Çekirdek</span>
+          <span>{t('systems.detail.tabs.core')}</span>
         </button>
 
         <button
@@ -173,7 +192,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
           }`}
         >
           <Activity className="w-4 h-4 text-emerald-400" />
-          <span>Ağ</span>
+          <span>{t('systems.detail.tabs.network')}</span>
         </button>
 
         <button
@@ -186,7 +205,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
           }`}
         >
           <HardDrive className="w-4 h-4 text-amber-400" />
-          <span>Depolama alanı</span>
+          <span>{t('systems.detail.tabs.storage')}</span>
         </button>
 
         <button
@@ -199,7 +218,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
           }`}
         >
           <Boxes className="w-4 h-4 text-sky-400" />
-          <span>Konteynerler ({detail.containers.length})</span>
+          <span>{t('systems.detail.tabs.containers')} ({detail.containers.length})</span>
         </button>
 
         {isAdmin && (
@@ -213,7 +232,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
             }`}
           >
             <Shield className="w-4 h-4 text-purple-400" />
-            <span>Ayarlar & Güvenlik</span>
+            <span>{t('systems.detail.tabs.security')}</span>
           </button>
         )}
       </div>
@@ -233,31 +252,34 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
             <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-[#eceef6]">CPU Kullanımı</h3>
-                  <p className="text-[11px] text-[#9ba0b5]">Sistem genelinde ortalama CPU kullanımı</p>
+                  <h3 className="text-sm font-semibold text-[#eceef6]">{t('systems.detail.cpuUsage')}</h3>
+                  <p className="text-[11px] text-[#9ba0b5]">{t('systems.detail.cpuSubtitle')}</p>
                 </div>
                 <div className="text-lg font-bold font-mono text-[#eceef6]">
-                  %{detail.latestPoint ? detail.latestPoint.cpuPercent.toFixed(1) : '0.0'}
+                  %{cpuPercentVal}
                 </div>
               </div>
 
               {/* CPU Çizelgesi */}
               <div className="h-40 flex items-end gap-1 pt-6">
                 {metrics.length > 0 ? (
-                  metrics.map((m, idx) => (
-                    <div
-                      key={idx}
-                      className="flex-1 bg-indigo-500/80 hover:bg-indigo-400 rounded-t transition-all group relative"
-                      style={{ height: `${Math.max(4, Math.min(100, m.cpuPercent))}%` }}
-                    >
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
-                        %{m.cpuPercent.toFixed(1)} · {new Date(m.timestamp).toLocaleTimeString()}
+                  metrics.map((m, idx) => {
+                    const mCpu = typeof m?.cpuPercent === 'number' ? m.cpuPercent : 0;
+                    return (
+                      <div
+                        key={idx}
+                        className="flex-1 bg-indigo-500/80 hover:bg-indigo-400 rounded-t transition-all group relative"
+                        style={{ height: `${Math.max(4, Math.min(100, mCpu))}%` }}
+                      >
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
+                          %{mCpu.toFixed(1)} · {m.timestamp ? new Date(m.timestamp).toLocaleTimeString() : ''}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs text-[#9ba0b5] font-mono">
-                    Canlı veri akışı bekleniyor...
+                    {t('systems.detail.loadingTelemetry')}
                   </div>
                 )}
               </div>
@@ -267,24 +289,22 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
             <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-[#eceef6]">Yük Ortalaması</h3>
-                  <p className="text-[11px] text-[#9ba0b5]">Zaman içindeki sistem yükü ortalamaları</p>
+                  <h3 className="text-sm font-semibold text-[#eceef6]">{t('systems.detail.loadAvg')}</h3>
+                  <p className="text-[11px] text-[#9ba0b5]">{t('systems.detail.loadAvgSubtitle')}</p>
                 </div>
                 <div className="text-sm font-bold font-mono text-[#eceef6]">
-                  {detail.latestPoint
-                    ? `${detail.latestPoint.loadAvg1m.toFixed(2)} · ${detail.latestPoint.loadAvg5m.toFixed(2)} · ${detail.latestPoint.loadAvg15m.toFixed(2)}`
-                    : '0.17 0.15 0.12'}
+                  {load1 !== '-' ? `${load1} · ${load5} · ${load15}` : '-'}
                 </div>
               </div>
 
               <div className="h-40 flex items-center justify-center border border-white/5 rounded-xl bg-white/[0.01]">
                 <div className="text-center font-mono text-xs text-[#9ba0b5] space-y-2">
                   <div className="flex items-center justify-center gap-4 text-[11px]">
-                    <span className="text-pink-400">● 1 dk ({detail.latestPoint?.loadAvg1m.toFixed(2) || '0.17'})</span>
-                    <span className="text-indigo-400">● 5 dk ({detail.latestPoint?.loadAvg5m.toFixed(2) || '0.15'})</span>
-                    <span className="text-amber-400">● 15 dk ({detail.latestPoint?.loadAvg15m.toFixed(2) || '0.12'})</span>
+                    <span className="text-pink-400">● {t('systems.detail.load1m')} ({load1})</span>
+                    <span className="text-indigo-400">● {t('systems.detail.load5m')} ({load5})</span>
+                    <span className="text-amber-400">● {t('systems.detail.load15m')} ({load15})</span>
                   </div>
-                  <p className="text-[10px] text-white/40">Çekirdek başına düşen ortalama aktif iş parçacıkları</p>
+                  <p className="text-[10px] text-white/40">{t('systems.detail.loadThreads')}</p>
                 </div>
               </div>
             </div>
@@ -295,19 +315,20 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
             <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-[#eceef6]">Bellek Kullanımı</h3>
-                  <p className="text-[11px] text-[#9ba0b5]">Kayıtlı zamanda kesin RAM kullanımı</p>
+                  <h3 className="text-sm font-semibold text-[#eceef6]">{t('systems.detail.ramUsage')}</h3>
+                  <p className="text-[11px] text-[#9ba0b5]">{t('systems.detail.ramSubtitle')}</p>
                 </div>
                 <div className="text-sm font-bold font-mono text-[#eceef6]">
-                  {formatBytes(detail.latestPoint?.ramUsedBytes)} / {formatBytes(detail.latestPoint?.ramTotalBytes)}
+                  {formatBytes(ramUsed)} / {formatBytes(ramTotal)}
                 </div>
               </div>
 
               <div className="h-32 flex items-end gap-1 pt-6">
                 {metrics.length > 0 ? (
                   metrics.map((m, idx) => {
-                    const total = detail.latestPoint?.ramTotalBytes || 1;
-                    const pct = Math.min(100, Math.round((m.ramUsedBytes / total) * 100));
+                    const total = ramTotal > 0 ? ramTotal : 1;
+                    const mUsed = typeof m?.ramUsedBytes === 'number' ? m.ramUsedBytes : 0;
+                    const pct = Math.min(100, Math.round((mUsed / total) * 100));
                     return (
                       <div
                         key={idx}
@@ -315,14 +336,14 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
                         style={{ height: `${Math.max(4, pct)}%` }}
                       >
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
-                          %{pct} · {formatBytes(m.ramUsedBytes)}
+                          %{pct} · {formatBytes(mUsed)}
                         </div>
                       </div>
                     );
                   })
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs text-[#9ba0b5] font-mono">
-                    Canlı veri akışı bekleniyor...
+                    {t('systems.detail.loadingTelemetry')}
                   </div>
                 )}
               </div>
@@ -331,32 +352,24 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
             {/* Takas (Swap) & Ek Bellek */}
             <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg flex flex-col justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-[#eceef6]">Takas Alanı & Önbellek</h3>
-                <p className="text-[11px] text-[#9ba0b5]">Sistem tarafından kullanılan takas alanı ve disk arabelleği</p>
+                <h3 className="text-sm font-semibold text-[#eceef6]">{t('systems.detail.swapUsage')}</h3>
+                <p className="text-[11px] text-[#9ba0b5]">{t('systems.detail.swapSubtitle')}</p>
               </div>
 
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3 font-mono text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#9ba0b5]">Aktif RAM Doluluğu</span>
-                  <span className="text-[#eceef6]">
-                    %{detail.latestPoint && detail.latestPoint.ramTotalBytes > 0
-                      ? Math.round((detail.latestPoint.ramUsedBytes / detail.latestPoint.ramTotalBytes) * 100)
-                      : 0}
-                  </span>
+                  <span className="text-[#9ba0b5]">{t('systems.detail.activeRam')}</span>
+                  <span className="text-[#eceef6]">%{ramPct}</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-sky-400 transition-all"
-                    style={{
-                      width: `${detail.latestPoint && detail.latestPoint.ramTotalBytes > 0
-                        ? Math.min(100, Math.round((detail.latestPoint.ramUsedBytes / detail.latestPoint.ramTotalBytes) * 100))
-                        : 0}%`
-                    }}
+                    style={{ width: `${ramPct}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-[#9ba0b5]">
-                  <span>Kullanılan: {formatBytes(detail.latestPoint?.ramUsedBytes)}</span>
-                  <span>Toplam: {formatBytes(detail.latestPoint?.ramTotalBytes)}</span>
+                  <span>{t('systems.detail.used')}: {formatBytes(ramUsed)}</span>
+                  <span>{t('systems.detail.total')}: {formatBytes(ramTotal)}</span>
                 </div>
               </div>
             </div>
@@ -369,30 +382,34 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
         <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-4 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-[#eceef6]">Ağ Trafiği (Giriş / Çıkış)</h3>
-              <p className="text-[11px] text-[#9ba0b5]">Saniye başına aktarılan ve alınan bayt miktarı</p>
+              <h3 className="text-sm font-semibold text-[#eceef6]">{t('systems.detail.networkTraffic')}</h3>
+              <p className="text-[11px] text-[#9ba0b5]">{t('systems.detail.networkSubtitle')}</p>
             </div>
             <div className="text-xs font-mono text-emerald-400">
-              {formatBytes(detail.latestPoint?.netRxBytesSec || 0)}/s Alınan
+              {formatBytes(lp?.netRxBytesSec ?? 0)}/s {t('systems.detail.rxLabel')}
             </div>
           </div>
 
           <div className="h-48 flex items-end gap-1 pt-6">
             {metrics.length > 0 ? (
-              metrics.map((m, idx) => (
-                <div
-                  key={idx}
-                  className="flex-1 bg-emerald-500/80 hover:bg-emerald-400 rounded-t transition-all group relative"
-                  style={{ height: `${Math.max(4, Math.min(100, ((m.rxBytesPerSec || 1) / 102400) * 100))}%` }}
-                >
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
-                    Rx: {formatBytes(m.rxBytesPerSec)}/s · Tx: {formatBytes(m.txBytesPerSec)}/s
+              metrics.map((m, idx) => {
+                const rx = typeof m?.rxBytesPerSec === 'number' ? m.rxBytesPerSec : 0;
+                const tx = typeof m?.txBytesPerSec === 'number' ? m.txBytesPerSec : 0;
+                return (
+                  <div
+                    key={idx}
+                    className="flex-1 bg-emerald-500/80 hover:bg-emerald-400 rounded-t transition-all group relative"
+                    style={{ height: `${Math.max(4, Math.min(100, (rx / 102400) * 100))}%` }}
+                  >
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
+                      Rx: {formatBytes(rx)}/s · Tx: {formatBytes(tx)}/s
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="w-full h-full flex items-center justify-center text-xs text-[#9ba0b5] font-mono">
-                Ağ trafiği verisi toplanıyor...
+                {t('systems.detail.loadingTelemetry')}
               </div>
             )}
           </div>
@@ -404,39 +421,35 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
         <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-4 shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-[#eceef6]">Disk ve Depolama Alanı</h3>
-              <p className="text-[11px] text-[#9ba0b5]">Kök dosya sistemi ve bağlı birimlerin doluluk durumu</p>
+              <h3 className="text-sm font-semibold text-[#eceef6]">{t('systems.detail.storageTitle')}</h3>
+              <p className="text-[11px] text-[#9ba0b5]">{t('systems.detail.storageSubtitle')}</p>
             </div>
             <div className="text-sm font-mono font-bold text-[#eceef6]">
-              {formatBytes(detail.latestPoint?.diskUsedBytes)} / {formatBytes(detail.latestPoint?.diskTotalBytes)}
+              {formatBytes(diskUsed)} / {formatBytes(diskTotal)}
             </div>
           </div>
 
           <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden">
             <div
               className="h-full rounded-full bg-amber-400 transition-all duration-500"
-              style={{
-                width: `${detail.latestPoint && detail.latestPoint.diskTotalBytes > 0
-                  ? Math.min(100, Math.round((detail.latestPoint.diskUsedBytes / detail.latestPoint.diskTotalBytes) * 100))
-                  : 0}%`
-              }}
+              style={{ width: `${diskPct}%` }}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 font-mono text-xs">
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-              <span className="text-[#9ba0b5] block text-[10px]">Kullanılan Alan</span>
-              <span className="text-[#eceef6] font-bold text-sm">{formatBytes(detail.latestPoint?.diskUsedBytes)}</span>
+              <span className="text-[#9ba0b5] block text-[10px]">{t('systems.detail.usedSpace')}</span>
+              <span className="text-[#eceef6] font-bold text-sm">{formatBytes(diskUsed)}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-              <span className="text-[#9ba0b5] block text-[10px]">Boş Alan</span>
+              <span className="text-[#9ba0b5] block text-[10px]">{t('systems.detail.freeSpace')}</span>
               <span className="text-[#34d399] font-bold text-sm">
-                {formatBytes((detail.latestPoint?.diskTotalBytes || 0) - (detail.latestPoint?.diskUsedBytes || 0))}
+                {formatBytes(Math.max(0, diskTotal - diskUsed))}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-              <span className="text-[#9ba0b5] block text-[10px]">Toplam Kapasite</span>
-              <span className="text-[#eceef6] font-bold text-sm">{formatBytes(detail.latestPoint?.diskTotalBytes)}</span>
+              <span className="text-[#9ba0b5] block text-[10px]">{t('systems.detail.totalCapacity')}</span>
+              <span className="text-[#eceef6] font-bold text-sm">{formatBytes(diskTotal)}</span>
             </div>
           </div>
         </div>
@@ -447,7 +460,7 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
         <div className="space-y-3">
           {detail.containers.length === 0 ? (
             <div className="py-16 text-center text-xs text-[#9ba0b5] rounded-2xl bg-white/[0.02] border border-white/5">
-              Bu sistem üzerinde çalışan veya önbelleğe alınmış Docker konteyneri bulunamadı.
+              {t('systems.detail.noContainers')}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-2.5">
@@ -516,16 +529,16 @@ export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
         <div className="space-y-4 max-w-2xl">
           {detail.system.id === 'local-host' ? (
             <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-400/20 space-y-2">
-              <h4 className="text-xs font-semibold text-indigo-300">Yerel Sunucu (Host Node)</h4>
+              <h4 className="text-xs font-semibold text-indigo-300">{t('systems.detail.hostNode')}</h4>
               <p className="text-xs text-[#9ba0b5] leading-relaxed">
-                Bu sistem Corvus Hub'ın doğrudan üzerinde çalıştığı ana sunucudur. Doğrudan yerel işletim sistemi ve Docker daemon üzerinden yönetildiği için tünel veya uzaktan erişim belirteci gerektirmez ve silinemez.
+                {t('systems.detail.hostNodeDesc')}
               </p>
             </div>
           ) : (
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
-              <h4 className="text-xs font-semibold text-[#eceef6]">Erişim Belirteci</h4>
+              <h4 className="text-xs font-semibold text-[#eceef6]">{t('systems.detail.tokenTitle')}</h4>
               <p className="text-xs text-[#9ba0b5]">
-                Uç ajan bu sisteme Hub tarafından üretilen kriptografik güvenli anahtar ile bağlıdır.
+                {t('systems.detail.tokenDesc')}
               </p>
             </div>
           )}

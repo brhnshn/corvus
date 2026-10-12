@@ -36,6 +36,13 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Sistemler Filosu İyileştirmeleri, Tam i18n Desteği ve Hata Giderme**:
+  - `SystemDetailPageView.tsx` içindeki `TypeError: Cannot read properties of undefined (reading 'toFixed')` çalışma zamanı çökmesi; tüm metrik, CPU ve yük ortalaması hesaplamalarına eksiksiz null kontrolü eklenerek tamamen giderildi.
+  - `App.tsx` içindeki `ChunkErrorBoundary` sınıfı, genel React bileşen çalışma zamanı hataları ile gerçek dinamik chunk yükleme hatalarını kesin olarak ayırt edecek şekilde güçlendirildi; böylece bileşen hatalarında yanlış "Yeni Sürüm Algılandı" döngüsü engellendi.
+  - `SystemsNavbar.tsx`, `SystemsTable.tsx`, `SystemsAlertBanner.tsx`, `SystemDetailPageView.tsx` ve `Systems/index.tsx` içindeki tüm sabit kodlanmış (hardcoded) metinler tip güvenli i18n sözlüklerine (`tr.ts` ve `en.ts`) taşındı.
+  - Filo tablosundaki Yük Ortalaması ve Ağ Trafiği kolonları, backend `SystemSummaryDto` ve `TelemetryRingBuffer` üzerinden gelen gerçek anlık verilerle beslendi; sahte/dummy değerler tamamen kaldırıldı.
+  - Arama çubuğunda `Ctrl+K` klavye kısayolu işlevsel hale getirildi; gereksiz parlayan animasyonlar (`animate-ping`, `animate-pulse`) ve işlevsiz butonlar kaldırıldı.
+  - Kullanıcı geri bildirimi doğrultusunda filo sayfasının altındaki kafa karıştırıcı `SystemsEngineBadge` (RAM: ~8 KB vb.) rozeti kaldırıldı.
 - **Sistemler (Systems) Kokpiti 2-Kademeli Filo Mimarisi & Bağımsız Giriş Ekranı**:
   - Modern minimalist sunucu yönetim araçlarından ilham alınarak 2-katmanlı filo mimarisi kuruldu:
     - **1. Katman (Giriş Ekranı - Tüm Sistemler Filosu):** Açılışta kenar çubuğu (Sidebar) veya mobil alt bar olmaksızın tam ekran olarak sunulur (`AppLayout.tsx`). Üstte `SystemsNavbar.tsx` (Corvus logosu, arama çubuğu, uyarılar ve `+ Sistem ekle` butonu), aktif eşik uyarısı banner'ı (`SystemsAlertBanner.tsx`) ve her sunucunun durumunu, CPU, RAM, Disk barlarını, Yük Ortalamasını, Ağ hızını ve Konteyner sayısını gösteren yatay `SystemsTable.tsx` tablosunu içerir.

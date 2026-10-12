@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpDown, ChevronRight, Boxes } from 'lucide-react';
 import type { SystemSummaryDto } from '../../types';
 import { formatBytes, getSystemStatusTheme } from '../../utils/systemsUtils';
+import { useI18n } from '../../i18n';
 
 interface SystemsTableProps {
   systems: SystemSummaryDto[];
@@ -13,8 +14,10 @@ interface SystemsTableProps {
 export const SystemsTable: React.FC<SystemsTableProps> = ({
   systems,
   onSelectSystem,
+  sortBy: _sortBy,
   onSortByChange
 }) => {
+  const { t } = useI18n();
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#161824]/60 overflow-hidden shadow-xl backdrop-blur-sm">
@@ -27,7 +30,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                 className="py-3 px-4 cursor-pointer hover:text-[#eceef6] transition-colors"
               >
                 <div className="flex items-center gap-1.5">
-                  <span>Sistem</span>
+                  <span>{t('systems.table.system')}</span>
                   <ArrowUpDown className="w-3 h-3 opacity-60" />
                 </div>
               </th>
@@ -37,7 +40,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                 className="py-3 px-4 cursor-pointer hover:text-[#eceef6] transition-colors"
               >
                 <div className="flex items-center gap-1.5">
-                  <span>İşlemci</span>
+                  <span>{t('systems.table.cpu')}</span>
                   <ArrowUpDown className="w-3 h-3 opacity-60" />
                 </div>
               </th>
@@ -47,32 +50,32 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                 className="py-3 px-4 cursor-pointer hover:text-[#eceef6] transition-colors"
               >
                 <div className="flex items-center gap-1.5">
-                  <span>Bellek</span>
+                  <span>{t('systems.table.ram')}</span>
                   <ArrowUpDown className="w-3 h-3 opacity-60" />
                 </div>
               </th>
 
               <th className="py-3 px-4">
                 <div className="flex items-center gap-1.5">
-                  <span>Depolama alanı</span>
+                  <span>{t('systems.table.disk')}</span>
                   <ArrowUpDown className="w-3 h-3 opacity-60" />
                 </div>
               </th>
 
               <th className="py-3 px-4">
-                <span>Yük Ort.</span>
+                <span>{t('systems.table.loadAvg')}</span>
               </th>
 
               <th className="py-3 px-4">
-                <span>Ağ</span>
+                <span>{t('systems.table.network')}</span>
               </th>
 
               <th className="py-3 px-4 text-center">
-                <span>Hizmetler / Konteyner</span>
+                <span>{t('systems.table.containers')}</span>
               </th>
 
               <th className="py-3 px-4 text-right">
-                <span className="sr-only">Detay</span>
+                <span className="sr-only">{t('common.details')}</span>
               </th>
             </tr>
           </thead>
@@ -80,15 +83,15 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
           <tbody className="divide-y divide-white/5">
             {systems.map((system) => {
               const theme = getSystemStatusTheme(system.status);
-              const cpuVal = system.currentCpuPercent ?? 0;
+              const cpuVal = typeof system.currentCpuPercent === 'number' ? system.currentCpuPercent : 0;
 
               const ramUsed = system.currentRamUsedBytes ?? 0;
               const ramTotal = system.currentRamTotalBytes ?? 1;
-              const ramPercent = Math.min(100, Math.round((ramUsed / ramTotal) * 100));
+              const ramPercent = ramTotal > 0 ? Math.min(100, Math.round((ramUsed / ramTotal) * 100)) : 0;
 
               const diskUsed = system.currentDiskUsedBytes ?? 0;
               const diskTotal = system.currentDiskTotalBytes ?? 1;
-              const diskPercent = Math.min(100, Math.round((diskUsed / diskTotal) * 100));
+              const diskPercent = diskTotal > 0 ? Math.min(100, Math.round((diskUsed / diskTotal) * 100)) : 0;
 
               return (
                 <tr
@@ -99,14 +102,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                   {/* 1. Sistem Adı, Durum & Host Etiketi */}
                   <td className="py-3.5 px-4 font-medium">
                     <div className="flex items-center gap-2.5">
-                      <div className="relative">
-                        <span className={`block w-2 h-2 rounded-full ${theme.dotColor}`} />
-                        {system.status === 'online' && (
-                          <span
-                            className={`absolute -inset-0.5 rounded-full ${theme.dotColor} opacity-75 animate-ping`}
-                          />
-                        )}
-                      </div>
+                      <span className={`block w-2 h-2 rounded-full ${theme.dotColor} shrink-0`} />
 
                       <div className="flex items-center gap-2">
                         <span className="text-[#eceef6] group-hover:text-white font-semibold">
@@ -115,16 +111,16 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                         {system.id === 'local-host' && (
                           <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-400/25 text-[10px] font-mono font-medium text-indigo-300">
-                            Host
+                            {t('systems.table.host')}
                           </span>
                         )}
 
-                        {system.tags.map((t, idx) => (
+                        {system.tags.map((tTag, idx) => (
                           <span
                             key={idx}
                             className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-white/5 text-[10px] text-[#9ba0b5] font-mono"
                           >
-                            {t}
+                            {tTag}
                           </span>
                         ))}
                       </div>
@@ -188,24 +184,34 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                     </div>
                   </td>
 
-                  {/* 5. Yük Ortalaması (Load Avg) */}
+                  {/* 5. Yük Ortalaması (Gerçek Veri) */}
                   <td className="py-3.5 px-4 font-mono text-[11px] text-[#eceef6]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                      <span>0.17 0.15 0.12</span>
-                    </div>
+                    {system.loadAvg1m != null ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                        <span>
+                          {system.loadAvg1m.toFixed(2)} {system.loadAvg5m != null ? system.loadAvg5m.toFixed(2) : '0.00'} {system.loadAvg15m != null ? system.loadAvg15m.toFixed(2) : '0.00'}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[#9ba0b5]">-</span>
+                    )}
                   </td>
 
-                  {/* 6. Ağ Hızı */}
+                  {/* 6. Ağ Hızı (Gerçek Veri) */}
                   <td className="py-3.5 px-4 font-mono text-[11px] text-[#9ba0b5]">
-                    <span>75.88 KB/s</span>
+                    {system.netRxBytesSec != null ? (
+                      <span>{formatBytes(system.netRxBytesSec)}/s</span>
+                    ) : (
+                      <span>-</span>
+                    )}
                   </td>
 
                   {/* 7. Hizmetler / Konteyner Sayısı */}
                   <td className="py-3.5 px-4 text-center font-mono">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[11px] text-[#eceef6]">
                       <Boxes className="w-3 h-3 text-[#9ba0b5]" />
-                      <span>{system.activeContainerCount} Aktif</span>
+                      <span>{system.activeContainerCount} {t('systems.table.active')}</span>
                     </span>
                   </td>
 

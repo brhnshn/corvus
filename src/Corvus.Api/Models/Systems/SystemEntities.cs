@@ -114,7 +114,12 @@ public record SystemSummaryDto(
     long? CurrentDiskUsedBytes,
     long? CurrentDiskTotalBytes,
     int ActiveContainerCount,
-    long? LastPingMs
+    long? LastPingMs,
+    float? LoadAvg1m = null,
+    float? LoadAvg5m = null,
+    float? LoadAvg15m = null,
+    long? NetRxBytesSec = null,
+    long? NetTxBytesSec = null
 );
 
 public record SystemDetailDto(

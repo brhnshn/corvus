@@ -49,6 +49,11 @@ public static class SystemsEndpoints
                 long? currentRamTotal = null;
                 long? currentDiskUsed = null;
                 long? currentDiskTotal = null;
+                float? load1 = null;
+                float? load5 = null;
+                float? load15 = null;
+                long? netRx = null;
+                long? netTx = null;
 
                 if (ringBuffer.TryGetLatest(sys.Id, out var pt))
                 {
@@ -57,6 +62,11 @@ public static class SystemsEndpoints
                     currentRamTotal = pt.RamTotalBytes;
                     currentDiskUsed = pt.DiskUsedBytes;
                     currentDiskTotal = pt.DiskTotalBytes;
+                    load1 = pt.LoadAvg1m;
+                    load5 = pt.LoadAvg5m;
+                    load15 = pt.LoadAvg15m;
+                    netRx = pt.NetRxBytesSec;
+                    netTx = pt.NetTxBytesSec;
                 }
 
                 var containers = ringBuffer.GetCachedContainers(sys.Id);
@@ -79,7 +89,12 @@ public static class SystemsEndpoints
                     CurrentDiskUsedBytes: currentDiskUsed,
                     CurrentDiskTotalBytes: currentDiskTotal,
                     ActiveContainerCount: activeContainers,
-                    LastPingMs: tunnelManager.IsConnected(sys.Id) ? 12 : null
+                    LastPingMs: tunnelManager.IsConnected(sys.Id) ? 12 : null,
+                    LoadAvg1m: load1,
+                    LoadAvg5m: load5,
+                    LoadAvg15m: load15,
+                    NetRxBytesSec: netRx,
+                    NetTxBytesSec: netTx
                 ));
             }
 
