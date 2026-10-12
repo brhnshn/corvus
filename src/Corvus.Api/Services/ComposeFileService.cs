@@ -70,7 +70,9 @@ public class ComposeFileService : IComposeFileService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Compose dosyası okunurken hata: {Project} - {Path}", projectName, resolvedFilePath);
+            _logger.LogError(ex, "Compose dosyası okunurken hata: {Project} - {Path}",
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(projectName),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(resolvedFilePath));
             return new ComposeFileDto
             {
                 ProjectName = projectName,
@@ -110,11 +112,11 @@ public class ComposeFileService : IComposeFileService
             // 2. Güvenli yedek (.bak) oluşturma
             string backupPath = $"{resolvedFilePath}.bak";
             File.Copy(resolvedFilePath, backupPath, overwrite: true);
-            _logger.LogInformation("Compose dosyası yedeği alındı: {BackupPath}", backupPath);
+            _logger.LogInformation("Compose dosyası yedeği alındı: {BackupPath}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(backupPath));
 
             // 3. Dosyayı güvenle kaydet
             await File.WriteAllTextAsync(resolvedFilePath, request.Content, Encoding.UTF8, cancellationToken);
-            _logger.LogInformation("Compose dosyası başarıyla güncellendi: {Path}", resolvedFilePath);
+            _logger.LogInformation("Compose dosyası başarıyla güncellendi: {Path}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(resolvedFilePath));
 
             // 4. İsteğe bağlı Stack Container'larını yeniden başlatma
             if (request.RestartStack)
@@ -141,7 +143,7 @@ public class ComposeFileService : IComposeFileService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Compose dosyası kaydedilirken hata oluştu: {Project}", projectName);
+            _logger.LogError(ex, "Compose dosyası kaydedilirken hata oluştu: {Project}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(projectName));
             return new GenericApiResponse(false, $"Dosya kaydedilemedi: {ex.Message}");
         }
     }

@@ -89,12 +89,15 @@ public class DockerVolumeClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Hacim silinemedi.");
-            _logger.LogWarning("Docker hacim silme hatası ({StatusCode}): {Volume} - {Error}", response.StatusCode, volumeName, error);
+            _logger.LogWarning("Docker hacim silme hatası ({StatusCode}): {Volume} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(volumeName),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Docker hacim silinemedi: {Volume}", volumeName);
+            _logger.LogError(ex, "Docker hacim silinemedi: {Volume}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(volumeName));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }

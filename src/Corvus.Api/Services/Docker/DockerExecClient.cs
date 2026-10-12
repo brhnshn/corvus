@@ -48,7 +48,7 @@ public class DockerExecClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Docker exec instance oluşturulurken hata: {ContainerId}", containerId);
+            _logger.LogError(ex, "Docker exec instance oluşturulurken hata: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return null;
         }
     }

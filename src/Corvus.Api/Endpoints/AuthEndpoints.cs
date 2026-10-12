@@ -47,9 +47,11 @@ public static class AuthEndpoints
 
             // Kayıt olan kullanıcıyı doğrudan oturum açmış olarak işaretle
             string token = auth.GenerateSessionToken(username);
+            bool isSecure = context.Request.IsHttps || string.Equals(context.Request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
             context.Response.Cookies.Append("corvus_session", token, new CookieOptions
             {
                 HttpOnly = true,
+                Secure = isSecure,
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddDays(7)
             });
@@ -85,9 +87,11 @@ public static class AuthEndpoints
             auth.ResetLoginAttempts(clientIp);
 
             string token = auth.GenerateSessionToken(username);
+            bool isLoginSecure = context.Request.IsHttps || string.Equals(context.Request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
             context.Response.Cookies.Append("corvus_session", token, new CookieOptions
             {
                 HttpOnly = true,
+                Secure = isLoginSecure,
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddDays(7)
             });

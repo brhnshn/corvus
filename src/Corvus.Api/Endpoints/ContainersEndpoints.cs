@@ -50,7 +50,9 @@ public static class ContainersEndpoints
             var username = httpContext.User.Identity?.Name ?? "admin";
             var logger = loggerFactory.CreateLogger("ContainersEndpoints");
             logger.LogInformation("Audit: User '{Username}' updated tags for container '{ContainerId}' to [{Tags}]",
-                username, id, string.Join(", ", cleanTags));
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(username),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(id),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(string.Join(", ", cleanTags)));
 
             var tagsJson = JsonSerializer.Serialize(cleanTags, CorvusJsonSerializerContext.Default.ListString);
             broadcaster.Broadcast("container_tags_updated", $"{{\"containerId\":\"{id}\",\"tags\":{tagsJson}}}");
@@ -296,12 +298,16 @@ public static class ContainersEndpoints
                     activeExecId = execId;
                     dockerStream = stream;
                     activeShell = candidate;
-                    logger.LogInformation("Konteyner terminali başlatıldı: Container={ContainerId}, Shell={Shell}", id, candidate);
+                    logger.LogInformation("Konteyner terminali başlatıldı: Container={ContainerId}, Shell={Shell}",
+                        Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(id),
+                        Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(candidate));
                     break;
                 }
                 catch (Exception ex)
                 {
-                    logger.LogDebug(ex, "Kabuk başlatılamadı, fallback deneniyor: Container={ContainerId}, Shell={Shell}", id, candidate);
+                    logger.LogDebug(ex, "Kabuk başlatılamadı, fallback deneniyor: Container={ContainerId}, Shell={Shell}",
+                        Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(id),
+                        Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(candidate));
                 }
             }
 

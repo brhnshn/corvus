@@ -39,6 +39,12 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **React Hook Yaşam Döngüsü Tutarlılığı (`App.tsx`)**:
   - Komut paleti `useCommandPalette` / `fetchCommandItems` `useEffect` hook'u koşullu erken dönüşlerden (`authLoading`, `authStatus`) önce, bileşenin en üst seviyesine taşındı. Kullanıcı giriş yaptıktan sonra tetiklenen ve siyah ekrana yol açan üretim React #310 ("Rendered more hooks than during the previous render") hatası giderildi.
 
+### Güvenlik (Security)
+- **Oturum Çerezi Güvenli İletim Politikası (`AuthEndpoints.cs`)**:
+  - `corvus_session` oturum çerezi, doğrudan HTTPS veya TLS sonlandırmalı ters vekil sunucu (`X-Forwarded-Proto: https`) arkasındayken otomatik olarak `Secure = true` olarak damgalandı. Yerel ağ HTTP homelab erişimini bozmadan şifresiz ortamda oturum çalınması (CWE-319/CWE-614) engellendi.
+- **Log Sahteciliği ve CRLF Enjeksiyonu Koruması (`SecuritySanitizer.cs`)**:
+  - Docker, Compose ve Webhook denetleyici loglarında dış kaynaklı/kullanıcı kaynaklı değerlerin satır sonu (`\r`, `\n`) karakterlerinden arındırılmasını sağlayan `SecuritySanitizer.SanitizeLog` merkezi mekanizması devreye alındı. Log bütünlüğü ve denetim güvenliği (CWE-117) güvenceye alındı.
+
 ### Değiştirilenler (Refactored)
 - **Temiz Dashboard Mimarisi & Görsel Ferahlık**:
   - Genel Bakış (Dashboard) ekranı, deneysel sıkışık çoklu panel bölünmelerinden tamamen arındırılarak Corvus'un ferah, dengeli ve modern Midnight v2 kart düzenine geri getirildi; okunabilirlik ve performans en üst seviyeye çıkarıldı.

@@ -515,7 +515,7 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Channel} test bildirimi başarısız oldu.", channel);
+            _logger.LogError(ex, "{Channel} test bildirimi başarısız oldu.", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(channel));
             return new NotificationResult(false, $"Bildirim gönderilemedi: {ex.Message}");
         }
     }

@@ -53,7 +53,7 @@ public class DockerContainerClient
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Container inspect alınamadı: {ContainerId}", containerId);
+            _logger.LogWarning(ex, "Container inspect alınamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return null;
         }
     }
@@ -69,12 +69,15 @@ public class DockerContainerClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container yeniden başlatılamadı.");
-            _logger.LogWarning("Docker restart hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            _logger.LogWarning("Docker restart hatası ({StatusCode}): {ContainerId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container yeniden başlatılamadı: {ContainerId}", containerId);
+            _logger.LogError(ex, "Container yeniden başlatılamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -95,12 +98,15 @@ public class DockerContainerClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container başlatılamadı.");
-            _logger.LogWarning("Docker start hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            _logger.LogWarning("Docker start hatası ({StatusCode}): {ContainerId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container başlatılamadı: {ContainerId}", containerId);
+            _logger.LogError(ex, "Container başlatılamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -109,7 +115,7 @@ public class DockerContainerClient
     {
         try
         {
-            using var response = await _transport.HttpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/stop?t=10", null, cancellationToken);
+            using var response = await _transport.HttpClient.PostAsync($"/containers/{Uri.EscapeDataString(containerId)}/stop", null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 return new DockerActionResult(true, "Container durduruldu.");
@@ -121,12 +127,15 @@ public class DockerContainerClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container durdurulamadı.");
-            _logger.LogWarning("Docker stop hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            _logger.LogWarning("Docker stop hatası ({StatusCode}): {ContainerId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container durdurulamadı: {ContainerId}", containerId);
+            _logger.LogError(ex, "Container durdurulamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -142,12 +151,15 @@ public class DockerContainerClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container duraklatılamadı.");
-            _logger.LogWarning("Docker pause hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            _logger.LogWarning("Docker pause hatası ({StatusCode}): {ContainerId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container duraklatılamadı: {ContainerId}", containerId);
+            _logger.LogError(ex, "Container duraklatılamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -163,12 +175,15 @@ public class DockerContainerClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container devam ettirilemedi.");
-            _logger.LogWarning("Docker unpause hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            _logger.LogWarning("Docker unpause hatası ({StatusCode}): {ContainerId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container devam ettirilemedi: {ContainerId}", containerId);
+            _logger.LogError(ex, "Container devam ettirilemedi: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -185,12 +200,15 @@ public class DockerContainerClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container silinemedi.");
-            _logger.LogWarning("Docker container silme hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            _logger.LogWarning("Docker container silme hatası ({StatusCode}): {ContainerId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container silinemedi: {ContainerId}", containerId);
+            _logger.LogError(ex, "Container silinemedi: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -209,12 +227,15 @@ public class DockerContainerClient
             }
 
             string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Konteyner limitleri güncellenemedi.");
-            _logger.LogWarning("Docker update hatası ({StatusCode}): {ContainerId} - {Error}", response.StatusCode, containerId, error);
+            _logger.LogWarning("Docker update hatası ({StatusCode}): {ContainerId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Konteyner limitleri güncellenemedi: {ContainerId}", containerId);
+            _logger.LogError(ex, "Konteyner limitleri güncellenemedi: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -395,7 +416,7 @@ public class DockerContainerClient
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Container stats bilgisi alınamadı: {ContainerId}", containerId);
+            _logger.LogWarning(ex, "Container stats bilgisi alınamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return null;
         }
     }

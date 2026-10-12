@@ -104,7 +104,7 @@ public class SmtpChannelSender : ISmtpChannelSender
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "SMTP e-postası gönderilemedi ({Host}:{Port}).", host, port);
+            _logger.LogError(ex, "SMTP e-postası gönderilemedi ({Host}:{Port}).", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(host), port);
             throw;
         }
     }

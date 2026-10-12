@@ -76,7 +76,7 @@ public static class DeployWebhookEndpoints
                 if (recreateRes.Success)
                 {
                     restartedList.Add(targetContainerId);
-                    logger.LogInformation("Webhook ile konteyner yeniden dağıtıldı: {ContainerId}", targetContainerId);
+                    logger.LogInformation("Webhook ile konteyner yeniden dağıtıldı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(targetContainerId));
                     return Results.Json(new DeployWebhookResult
                     {
                         Success = true,
@@ -121,7 +121,9 @@ public static class DeployWebhookEndpoints
                     }
                 }
 
-                logger.LogInformation("Webhook ile Compose stack yeniden dağıtıldı: {Project} ({Count} konteyner)", targetProject, restartedList.Count);
+                logger.LogInformation("Webhook ile Compose stack yeniden dağıtıldı: {Project} ({Count} konteyner)",
+                    Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(targetProject),
+                    restartedList.Count);
                 return Results.Json(new DeployWebhookResult
                 {
                     Success = true,

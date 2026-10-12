@@ -39,6 +39,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **React Hook Lifecycle Consistency (`App.tsx`)**:
   - Relocated the command palette `useCommandPalette` / `fetchCommandItems` effect hook to the component top-level before conditional early returns (`authLoading`, `authStatus`). Resolves production React error #310 ("Rendered more hooks than during the previous render") which caused a black screen after user login.
 
+### Security
+- **Session Cookie Secure Transport Policy (`AuthEndpoints.cs`)**:
+  - Explicitly bound session cookies (`corvus_session`) to `Secure = true` when served over HTTPS or behind TLS-terminating reverse proxies (`X-Forwarded-Proto: https`). Eliminates CWE-319/CWE-614 cleartext token interception vulnerabilities while preserving local HTTP homelab usability.
+- **Log Forging & CRLF Injection Prevention (`SecuritySanitizer.cs`)**:
+  - Implemented `SecuritySanitizer.SanitizeLog` across all Docker, Compose, and Webhook controller endpoints to strip newline control characters (`\r`, `\n`) from external parameters. Protects log integrity against CWE-117 log injection and audit log poisoning.
+
 ### Refactored
 - **Clean Dashboard Architecture & Visual Clarity**:
   - Restored the unified, spacious Midnight v2 dashboard layout as the sole and definitive overview, purging experimental nested layout partitions to preserve optimal readability and performance.

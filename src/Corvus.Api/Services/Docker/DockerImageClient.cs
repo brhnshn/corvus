@@ -79,12 +79,15 @@ public class DockerImageClient
             }
 
             string error = await ExtractErrorMessageAsync(response, "İmaj silinemedi.");
-            _logger.LogWarning("Docker imaj silme hatası ({StatusCode}): {ImageId} - {Error}", response.StatusCode, imageId, error);
+            _logger.LogWarning("Docker imaj silme hatası ({StatusCode}): {ImageId} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(imageId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
             return new DockerActionResult(false, error, (int)response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Docker imaj silinemedi: {ImageId}", imageId);
+            _logger.LogError(ex, "Docker imaj silinemedi: {ImageId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(imageId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
