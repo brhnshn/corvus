@@ -23,5 +23,20 @@
 - **Standart Format (Keep a Changelog):** Değişiklikler; `Eklenenler (Added)`, `Değiştirilenler (Changed)`, `Düzeltilenler (Fixed)`, `Performans (Performance)` ve `Güvenlik (Security)` başlıkları altında, hem teknik terimleri hem de kullanıcıya dokunan faydayı içerecek şekilde açık ve anlaşılır biçimde belgelenir.
 - **Çift Dilli Senkronizasyon:** İngilizce (`CHANGELOG.md`) ve Türkçe (`CHANGELOG.tr.md`) eşzamanlı olarak güncel tutulur.
 
+## 📌 Uluslararasılaştırma (i18n) ve Hardcoded Metin Yasağı
+- **Sabit Metin Yasağı:** Arayüzdeki hiçbir kullanıcı metni (başlık, açıklama, buton, placeholder, tablo başlığı, bildirim, etiket vb.) doğrudan JSX/TSX kodunun içine sabit (hardcoded) yazılamaz.
+- **Çift Dilli Senkronizasyon:** Eklenen veya değiştirilen her yeni metin, eşzamanlı olarak hem `src/Corvus.Web/src/i18n/tr.ts` hem de `src/Corvus.Web/src/i18n/en.ts` dosyalarına eklenmeli ve sayfada `useI18n()` kancası (`t(...)`) üzerinden tip güvenli olarak çağrılmalıdır.
+
+## 📌 Gerçek Veri Disiplini ve Sahte/Süsleme UI Yasağı
+- **Asla Sahte/Dummy Değer Basılamaz:** API'den veya telemetriden henüz gelmeyen ya da o an var olmayan metrikler için arayüze asla uydurma sayılar (örn. "0.17 0.15 0.12", "75 KB/s") yazılamaz. Veri yoksa veya bekleniyorsa temiz bir tire (`-`), boş durum veya yükleniyor göstergesi kullanılmalıdır.
+- **İşlevsiz Buton / Kısayol Eklenemez:** Sırf süs olsun diye tıklanıldığında çalışmayan butonlar, açılmayan pencereler veya klavye dinleyicisi bağlanmamış sahte kısayol rozetleri (örn. çalışmayan `Ctrl+K`) konulamaz. Arayüzdeki her etkileşimli eleman gerçek bir fonksiyona bağlanmalıdır.
+- **Göz Yoran / Yapay Animasyon Yasağı:** Gereksiz `animate-ping`, `animate-pulse` ve parıldayan dikkat dağıtıcı efektler kullanılmamalıdır. Temiz, minimalist ve profesyonel mühendislik estetiği korunmalıdır.
+
+## 📌 Güvenli Sayısal/Nesne Erişimi ve Çökme Dayanıklılığı (Null-Safety)
+- **Güvensiz Metot Çağrısı Yasağı:** API veya dış kaynaktan gelen veriler üzerinde `.toFixed()`, `.map()`, `.filter()` gibi fonksiyonlar asla doğrudan çağrılamaz.
+- **Null-Safe Standart:** Değerlerin `undefined` veya `null` olabileceği varsayılarak daima `typeof val === 'number'` veya `val?.toFixed(...) ?? '-'` gibi güvenli korumalar uygulanmalıdır.
+- **Hata Sınırları (Error Boundaries):** `ErrorBoundary` bileşenleri, bileşen çökmesini dinamik modül (chunk) yükleme hatalarıyla karıştırmamalı; kullanıcıya yanıltıcı bildirimler ("Yeni sürüm algılandı" vb.) yerine gerçek hata durumu ve güvenli kurtarma seçeneği sunmalıdır.
+
+
 
 
