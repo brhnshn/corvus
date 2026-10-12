@@ -33,6 +33,58 @@ public class SystemMetricsCollector : BackgroundService
 
                 var metric = CollectMetrics();
                 await repo.InsertAsync(metric);
+
+                // Yerel Sunucuyu (Host Node) Systems Filosuna Entegre Et
+                var ringBuffer = scope.ServiceProvider.GetRequiredService<Corvus.Api.Services.Systems.ITelemetryRingBuffer>();
+                var sysRepo = scope.ServiceProvider.GetRequiredService<ISystemRepository>();
+
+                long nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                string nowIso = DateTime.UtcNow.ToString("o");
+
+                long ramUsedBytes = metric.RamUsedMb * 1024L * 1024L;
+                long ramTotalBytes = metric.RamTotalMb * 1024L * 1024L;
+                long diskUsedBytes = metric.DiskUsedGb * 1024L * 1024L * 1024L;
+                long diskTotalBytes = metric.DiskTotalGb * 1024L * 1024L * 1024L;
+
+                var point = new Corvus.Api.Models.Systems.SystemTelemetryPoint(
+                    timestampUnixSeconds: nowUnix,
+                    cpuPercent: (float)metric.CpuPercent,
+                    cpuCores: (ushort)Math.Max(1, Environment.ProcessorCount),
+                    ramUsedBytes: ramUsedBytes,
+                    ramTotalBytes: ramTotalBytes,
+                    diskUsedBytes: diskUsedBytes,
+                    diskTotalBytes: diskTotalBytes,
+                    netRxBytesSec: 0,
+                    netTxBytesSec: 0,
+                    loadAvg1m: 0.1f,
+                    loadAvg5m: 0.1f,
+                    loadAvg15m: 0.1f
+                );
+
+                ringBuffer.Push("local-host", in point);
+
+                var existingHost = await sysRepo.GetByIdAsync("local-host");
+                if (existingHost == null)
+                {
+                    await sysRepo.CreateAsync(new Corvus.Api.Models.Systems.SystemEntity
+                    {
+                        Id = "local-host",
+                        Name = "Yerel Sunucu (Host)",
+                        Hostname = Environment.MachineName,
+                        IpAddress = "127.0.0.1",
+                        OsInfo = RuntimeInformation.OSDescription,
+                        AgentVersion = "embedded",
+                        TagsJson = "[\"host\",\"core\"]",
+                        Status = "online",
+                        CreatedAt = nowIso,
+                        UpdatedAt = nowIso,
+                        LastSeenAt = nowIso
+                    });
+                }
+                else
+                {
+                    await sysRepo.UpdateStatusAsync("local-host", "online", nowIso);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

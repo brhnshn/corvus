@@ -174,6 +174,11 @@ public static class SystemsEndpoints
             ITelemetryRingBuffer ringBuffer,
             ISystemTunnelManager tunnelManager) =>
         {
+            if (id == "local-host")
+            {
+                return Results.BadRequest(new GenericApiResponse(false, "Yerel sunucu (Host Node) silinemez."));
+            }
+
             var socket = tunnelManager.GetActiveSocket(id);
             if (socket != null && socket.State == WebSocketState.Open)
             {
@@ -193,6 +198,11 @@ public static class SystemsEndpoints
             ISystemAuthService authService,
             ISystemTunnelManager tunnelManager) =>
         {
+            if (id == "local-host")
+            {
+                return Results.BadRequest(new GenericApiResponse(false, "Yerel sunucu için anahtar iptal edilemez."));
+            }
+
             await authService.RevokeTokenAsync(id);
             var socket = tunnelManager.GetActiveSocket(id);
             if (socket != null && socket.State == WebSocketState.Open)
@@ -292,16 +302,33 @@ public static class SystemsEndpoints
             return Results.Json(containers, CorvusJsonSerializerContext.Default.ListSystemContainerCacheEntity);
         });
 
-        // 9. Remote Docker Container Actions: start | stop | restart
+        // 9. Docker Container Actions: start | stop | restart
         group.MapPost("/{id}/containers/{cid}/{action}", async (
             string id,
             string cid,
             string action,
-            ISystemTunnelManager tunnelManager) =>
+            ISystemTunnelManager tunnelManager,
+            IDockerService dockerService) =>
         {
             if (action is not ("start" or "stop" or "restart"))
             {
                 return Results.BadRequest(new GenericApiResponse(false, "Geçersiz konteyner eylemi."));
+            }
+
+            if (id == "local-host")
+            {
+                var actionRes = action switch
+                {
+                    "start" => await dockerService.StartContainerAsync(cid),
+                    "stop" => await dockerService.StopContainerAsync(cid),
+                    "restart" => await dockerService.RestartContainerAsync(cid),
+                    _ => new DockerActionResult(false, "Bilinmeyen eylem")
+                };
+
+                return Results.Json(new DockerRpcResponse(
+                    Success: actionRes.Success,
+                    Message: actionRes.Message
+                ), CorvusJsonSerializerContext.Default.DockerRpcResponse);
             }
 
             var rpcReq = new DockerRpcRequest(Action: action, ContainerId: cid);
@@ -310,13 +337,24 @@ public static class SystemsEndpoints
             return Results.Json(response, CorvusJsonSerializerContext.Default.DockerRpcResponse);
         });
 
-        // 10. Remote Docker Logs
+        // 10. Docker Logs
         group.MapGet("/{id}/containers/{cid}/logs", async (
             string id,
             string cid,
             int? tail,
-            ISystemTunnelManager tunnelManager) =>
+            ISystemTunnelManager tunnelManager,
+            IDockerService dockerService) =>
         {
+            if (id == "local-host")
+            {
+                var logLines = await dockerService.GetContainerLogsAsync(cid, tail ?? 100);
+                return Results.Json(new DockerRpcResponse(
+                    Success: true,
+                    Message: null,
+                    Logs: logLines
+                ), CorvusJsonSerializerContext.Default.DockerRpcResponse);
+            }
+
             var rpcReq = new DockerRpcRequest(Action: "logs", ContainerId: cid, TailLines: tail ?? 100);
             var response = await tunnelManager.SendDockerRequestAsync(id, rpcReq, TimeSpan.FromSeconds(15));
 

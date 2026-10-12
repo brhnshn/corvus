@@ -108,6 +108,38 @@ public class ContainerDiscoveryService : BackgroundService
                         await repo.SyncDockerBatchAsync(batchServices, activeIds);
                         _lastFingerprint = currentFingerprint;
                     }
+
+                    // Yerel sunucu (local-host) konteyner önbelleğini Systems Cockpit için ringBuffer'a aktar
+                    try
+                    {
+                        var ringBuffer = _services.GetService<Corvus.Api.Services.Systems.ITelemetryRingBuffer>();
+                        if (ringBuffer != null)
+                        {
+                            var cacheList = new List<Corvus.Api.Models.Systems.SystemContainerCacheEntity>(containers.Count);
+                            string nowIso = DateTime.UtcNow.ToString("o");
+                            foreach (var c in containers)
+                            {
+                                cacheList.Add(new Corvus.Api.Models.Systems.SystemContainerCacheEntity
+                                {
+                                    SystemId = "local-host",
+                                    ContainerId = c.Id,
+                                    Name = c.Names?.FirstOrDefault()?.TrimStart('/') ?? c.Id[..Math.Min(12, c.Id.Length)],
+                                    Image = c.Image,
+                                    State = c.State?.ToLowerInvariant() ?? "unknown",
+                                    Status = c.Status,
+                                    CpuPercent = 0,
+                                    MemoryBytes = 0,
+                                    PortsJson = "[]",
+                                    UpdatedAt = nowIso
+                                });
+                            }
+                            if (ringBuffer.TryGetLatest("local-host", out var latestPt))
+                            {
+                                ringBuffer.Push("local-host", in latestPt, cacheList);
+                            }
+                        }
+                    }
+                    catch { }
                 }
                 else
                 {

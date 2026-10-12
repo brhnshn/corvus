@@ -46,6 +46,11 @@ export const SystemRow: React.FC<SystemRowProps> = ({
             <h4 className="text-sm font-semibold text-[#eceef6] group-hover:text-white transition-colors">
               {system.name}
             </h4>
+            {system.id === 'local-host' && (
+              <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-400/30 text-[10px] font-semibold text-indigo-300">
+                Ana Sunucu (Host)
+              </span>
+            )}
             {system.tags.map((tag, idx) => (
               <span
                 key={idx}

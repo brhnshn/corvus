@@ -79,8 +79,8 @@ public class SystemWatchdogService : Microsoft.Extensions.Hosting.BackgroundServ
                 }
             }
 
-            // Eger tunnel aktif bagli degilse degraded veya offline kabul edilir
-            if (!tunnelManager.IsConnected(system.Id) && expectedStatus == "online")
+            // Eger tunnel aktif bagli degilse degraded veya offline kabul edilir (Yerel Hub sunucusu haric)
+            if (system.Id != "local-host" && !tunnelManager.IsConnected(system.Id) && expectedStatus == "online")
             {
                 expectedStatus = "degraded";
             }

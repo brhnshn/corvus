@@ -31,7 +31,7 @@ export const parseCurrentRoute = (): ParsedRoute => {
   if (VALID_PAGES.includes(first)) {
     return { page: first, containerId: null, action: actionParam };
   }
-  return { page: 'dashboard', containerId: null, action: actionParam };
+  return { page: 'systems', containerId: null, action: actionParam };
 };
 
 export function useAppNavigation() {
@@ -45,7 +45,7 @@ export function useAppNavigation() {
       action: isAction ? tab : null
     };
     setCurrentRoute(newRoute);
-    let newPath = page === 'dashboard' ? '/' : `/${page}`;
+    let newPath = page === 'systems' ? '/' : `/${page}`;
     if (page === 'containers' && containerId) {
       newPath = `/containers/${containerId}${tab ? `?tab=${tab}` : ''}`;
     } else if (page === 'containers' && isAction) {

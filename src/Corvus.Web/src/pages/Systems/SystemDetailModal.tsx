@@ -341,34 +341,45 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({
 
           {activeTab === 'security' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
-                <h4 className="text-xs font-semibold text-[#eceef6]">Erişim Belirteci</h4>
-                <p className="text-xs text-[#9ba0b5]">
-                  Ajan bu sisteme Hub tarafından üretilen kriptografik anahtar ile bağlıdır.
-                </p>
-                {isAdmin && (
-                  <button
-                    onClick={handleRevokeToken}
-                    className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-medium transition-colors"
-                  >
-                    {t('systems.cockpit.rotateToken')}
-                  </button>
-                )}
-              </div>
-
-              {isAdmin && (
-                <div className="p-4 rounded-2xl bg-[#f87171]/10 border border-[#f87171]/20 space-y-2">
-                  <h4 className="text-xs font-semibold text-[#f87171]">Tehlikeli Bölge</h4>
-                  <p className="text-xs text-[#9ba0b5]">
-                    Bu sistemi Corvus panelinden kaldırdığınızda tünel kapatılır ve tüm geçmiş metrikler silinir.
+              {systemId === 'local-host' ? (
+                <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-400/20 space-y-2">
+                  <h4 className="text-xs font-semibold text-indigo-300">Yerel Sunucu (Host Node)</h4>
+                  <p className="text-xs text-[#9ba0b5] leading-relaxed">
+                    Bu sistem Corvus Hub'ın doğrudan üzerinde çalıştığı ana sunucudur. Doğrudan yerel işletim sistemi ve Docker daemon üzerinden yönetildiği için tünel veya uzaktan erişim belirteci gerektirmez ve silinemez.
                   </p>
-                  <button
-                    onClick={handleDelete}
-                    className="px-3.5 py-2 rounded-xl bg-[#f87171] hover:bg-red-600 text-white text-xs font-semibold transition-colors"
-                  >
-                    {t('systems.cockpit.deleteSystem')}
-                  </button>
                 </div>
+              ) : (
+                <>
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+                    <h4 className="text-xs font-semibold text-[#eceef6]">Erişim Belirteci</h4>
+                    <p className="text-xs text-[#9ba0b5]">
+                      Ajan bu sisteme Hub tarafından üretilen kriptografik anahtar ile bağlıdır.
+                    </p>
+                    {isAdmin && (
+                      <button
+                        onClick={handleRevokeToken}
+                        className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-medium transition-colors"
+                      >
+                        {t('systems.cockpit.rotateToken')}
+                      </button>
+                    )}
+                  </div>
+
+                  {isAdmin && (
+                    <div className="p-4 rounded-2xl bg-[#f87171]/10 border border-[#f87171]/20 space-y-2">
+                      <h4 className="text-xs font-semibold text-[#f87171]">Tehlikeli Bölge</h4>
+                      <p className="text-xs text-[#9ba0b5]">
+                        Bu sistemi Corvus panelinden kaldırdığınızda tünel kapatılır ve tüm geçmiş metrikler silinir.
+                      </p>
+                      <button
+                        onClick={handleDelete}
+                        className="px-3.5 py-2 rounded-xl bg-[#f87171] hover:bg-red-600 text-white text-xs font-semibold transition-colors"
+                      >
+                        {t('systems.cockpit.deleteSystem')}
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

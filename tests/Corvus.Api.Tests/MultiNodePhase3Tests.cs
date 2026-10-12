@@ -37,4 +37,32 @@ public class MultiNodePhase3Tests
         Assert.NotNull(resp.Message);
         Assert.Contains("Docker socket not found", resp.Message);
     }
+
+    [Fact]
+    public void TelemetryRingBuffer_Stores_And_Retrieves_LocalHost_Telemetry()
+    {
+        var ringBuffer = new Corvus.Api.Services.Systems.TelemetryRingBuffer();
+        var point = new Corvus.Api.Models.Systems.SystemTelemetryPoint(
+            timestampUnixSeconds: DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            cpuPercent: 12.5f,
+            cpuCores: 4,
+            ramUsedBytes: 2048L * 1024L * 1024L,
+            ramTotalBytes: 8192L * 1024L * 1024L,
+            diskUsedBytes: 20L * 1024L * 1024L * 1024L,
+            diskTotalBytes: 100L * 1024L * 1024L * 1024L,
+            netRxBytesSec: 1024,
+            netTxBytesSec: 2048,
+            loadAvg1m: 0.5f,
+            loadAvg5m: 0.3f,
+            loadAvg15m: 0.1f
+        );
+
+        ringBuffer.Push("local-host", in point);
+
+        bool found = ringBuffer.TryGetLatest("local-host", out var retrieved);
+        Assert.True(found);
+        Assert.Equal(12.5f, retrieved.CpuPercent);
+        Assert.Equal(4, retrieved.CpuCores);
+        Assert.Equal(2048L * 1024L * 1024L, retrieved.RamUsedBytes);
+    }
 }

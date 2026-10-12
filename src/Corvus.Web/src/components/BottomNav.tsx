@@ -8,6 +8,7 @@ import {
   Settings,
   User,
   History,
+  Server,
   type LucideIcon,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -32,6 +33,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
   const { t } = useI18n();
 
   const items: NavItem[] = [
+    { id: 'systems', label: t('nav.systems'), full: t('nav.systems'), icon: Server },
     { id: 'dashboard', label: t('nav.dashboard'), full: t('nav.dashboard'), icon: LayoutDashboard },
     { id: 'services', label: t('nav.services'), full: t('nav.services'), icon: Grid },
     { id: 'containers', label: t('nav.containers'), full: t('nav.containers'), icon: Boxes },

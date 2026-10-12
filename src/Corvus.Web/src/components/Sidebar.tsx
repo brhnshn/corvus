@@ -52,10 +52,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   const navItems = [
+    { id: 'systems', label: t('nav.systems'), icon: Server },
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { id: 'services', label: t('nav.services'), icon: Grid },
     { id: 'containers', label: t('nav.containers'), icon: Boxes },
-    { id: 'systems', label: t('nav.systems'), icon: Server },
     { id: 'metrics', label: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), icon: Clock },
     { id: 'activity', label: 'Olay Geçmişi', icon: History },

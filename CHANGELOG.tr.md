@@ -36,6 +36,12 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Sistemler (Systems) Kokpitinin Varsayılan Giriş Ekranı Yapılması & Yerel Sunucu (Host Node) Otomatik Entegrasyonu**:
+  - `useAppNavigation.ts` içerisinde kök rota (`/`) ve varsayılan başlangıç sayfası `systems` (Sistemler) olarak yapılandırıldı. Uygulama açılışında kullanıcı doğrudan sunucu filosu yönetim kokpitiyle karşılanır.
+  - Masaüstü `Sidebar.tsx` ve mobil cam `BottomNav.tsx` menülerinde "Sistemler" ilk sıraya taşındı.
+  - Corvus Hub'ın üzerinde çalıştığı ana makine (`local-host`), `SystemMetricsCollector` tarafından otomatik olarak kayıt edilerek `TelemetryRingBuffer` üzerinden canlı CPU, RAM ve Disk telemetrisiyle anında listeye bağlandı; arayüzde özel "Ana Sunucu (Host)" rozetiyle gösterildi.
+  - `ContainerDiscoveryService` yerel Docker konteynerlerini doğrudan `local-host` önbelleğine aktararak kokpitteki aktif konteyner sayılarını ve detay listesini senkronize etti.
+  - Yerel sunucu watchdog tünel düşmelerine, yanlışlıkla silinmeye veya token döndürülmesine karşı korumaya alındı; yerel konteyner eylemleri (`start`, `stop`, `restart`, `logs`) doğrudan yerel Docker servisine yönlendirildi.
 - **React Hook Yaşam Döngüsü Tutarlılığı (`App.tsx`)**:
   - Komut paleti `useCommandPalette` / `fetchCommandItems` `useEffect` hook'u koşullu erken dönüşlerden (`authLoading`, `authStatus`) önce, bileşenin en üst seviyesine taşındı. Kullanıcı giriş yaptıktan sonra tetiklenen ve siyah ekrana yol açan üretim React #310 ("Rendered more hooks than during the previous render") hatası giderildi.
 

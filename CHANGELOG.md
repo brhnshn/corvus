@@ -36,6 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Systems Cockpit as Default Landing View & Local Host Auto-Registration**:
+  - Configured `/systems` as the primary default home route (`/`) in `useAppNavigation.ts`, greeting users immediately with the multi-server Fleet Cockpit instead of a blank or secondary screen.
+  - Positioned Systems (`nav.systems`) as the top item in both desktop `Sidebar.tsx` and mobile glass `BottomNav.tsx`.
+  - Added automatic registration and live telemetry bridging for the Hub server itself (`local-host`) via `SystemMetricsCollector`: the host node appears immediately with live CPU, RAM, and Disk metrics, and is labeled with a dedicated "Ana Sunucu (Host)" badge.
+  - Connected `ContainerDiscoveryService` directly to `TelemetryRingBuffer` for `local-host`, keeping active container counts and details populated in the Cockpit in real-time.
+  - Protected `local-host` from watchdog deactivations, token revocation, or accidental deletion, while routing local container actions (`start`, `stop`, `restart`, `logs`) directly to local Docker services.
 - **React Hook Lifecycle Consistency (`App.tsx`)**:
   - Relocated the command palette `useCommandPalette` / `fetchCommandItems` effect hook to the component top-level before conditional early returns (`authLoading`, `authStatus`). Resolves production React error #310 ("Rendered more hooks than during the previous render") which caused a black screen after user login.
 
