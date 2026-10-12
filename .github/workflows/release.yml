@@ -28,6 +28,11 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Allow ICMP Sockets for Tests
+        run: |
+          sudo sysctl -w net.ipv4.ping_group_range="0 2147483647" || true
+          sudo setcap cap_net_raw+ep $(which dotnet) || true
+
       - name: Run Backend Tests
         run: dotnet test tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj --configuration Release --verbosity normal --logger "console;verbosity=detailed"
 
