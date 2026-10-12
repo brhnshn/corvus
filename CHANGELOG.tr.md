@@ -36,6 +36,9 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Navbar & Sidebar Düzen Çakışması Giderimi ve Profil Sayfası İzolasyonu**:
+  - Profil sayfasında (`/profile`) gereksizce beliren sol menü (`Sidebar`) ve mobil çubuk kaldırıldı; Profil sayfası da tıpkı Filo ekranı gibi üst Navbar altında bağımsız tam genişlikli olarak izole edildi.
+  - Sol kenar çubuğunun (Sidebar) altındaki mükerrer profil kutusu ve dil seçici tamamen kaldırıldı; profil yönetimi, çıkış yapma ve dil değiştirme tek merkez olarak üst Navbar'da toplandı.
 - **Kalıcı Üst Navbar Mimarisi ve Ölçeklendirilmiş Corvus Tasarım Hiyerarşisi**:
   - Tüm sayfalarda (hem Filo `/` karşılama ekranında hem de bir sunucunun içine girildiğinde Genel Bakış, Konteynerler, Servisler sayfalarında) kalıcı olarak çalışan tekil bir üst bar (`Navbar.tsx`) entegre edildi.
   - Sayfa akışının bozulması önlendi: Üst bar hiçbir zaman kaybolmaz; bir sunucuya tıklandığında sol kenar çubuğu (`Sidebar.tsx`) bu üst barın altına pürüzsüzce oturur.

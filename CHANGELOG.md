@@ -36,6 +36,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Navbar & Sidebar Layout Deconfliction & Profile Route Isolation**:
+  - Eliminated sidebar and mobile nav interference on the Profile page (`/profile`); profile management now renders in full-width standalone layout under the persistent top navbar just like the Fleet view.
+  - Removed duplicate profile card and language toggle from the Sidebar footer, keeping user profile, logout, and language switching unified exclusively in the top navigation bar.
 - **Persistent Global Navbar & Scaled Corvus Design Hierarchy**:
   - Unified header architecture with a persistent top bar (`Navbar.tsx`) permanently active across all views (both Fleet `/` and intra-node views like Dashboard, Containers, Services).
   - Preserved continuous page flow: The top bar never disappears; entering a node seamlessly mounts the left sidebar (`Sidebar.tsx`) beneath the header.

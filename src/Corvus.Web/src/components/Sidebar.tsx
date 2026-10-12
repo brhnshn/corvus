@@ -6,8 +6,6 @@ import {
   Activity, 
   Clock, 
   Settings, 
-  User as UserIcon, 
-  LogOut,
   PanelLeftClose,
   Search,
   History,
@@ -15,16 +13,12 @@ import {
 } from 'lucide-react';
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
-import { LanguageSwitch } from './LanguageSwitch';
 
 export type PageId = 'dashboard' | 'services' | 'containers' | 'systems' | 'metrics' | 'uptime' | 'activity' | 'settings' | 'profile';
 
 interface SidebarProps {
   currentPage: PageId;
   onSelectPage: (page: PageId) => void;
-  username?: string | null;
-  role?: string | null;
-  onLogout?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onOpenCommandPalette?: () => void;
@@ -33,9 +27,6 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ 
   currentPage, 
   onSelectPage,
-  username,
-  role,
-  onLogout,
   isCollapsed = false,
   onToggleCollapse,
   onOpenCommandPalette,
@@ -177,62 +168,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </nav>
 
-      {/* User Profile Footer */}
-      {username && (
-        <div className="p-3 border-t border-white/10 bg-[#0d0e15]/40">
-          <div
-            className={`
-              flex items-center justify-between border rounded-2xl px-2.5 py-2 transition-all
-              ${
-                currentPage === 'profile'
-                  ? 'bg-white/10 border-white/20'
-                  : 'bg-[#1b1d2a] border-white/10 hover:border-white/20'
-              }
-            `}
-          >
-            <button
-              type="button"
-              onClick={() => onSelectPage('profile')}
-              className="flex items-center gap-2.5 overflow-hidden text-left hover:opacity-90 transition-opacity cursor-pointer flex-1 min-w-0 pr-2 group"
-              title={t('userManagement.openProfile')}
-            >
-              <div
-                className={`
-                  w-7 h-7 rounded-full flex items-center justify-center shrink-0 border
-                  ${
-                    currentPage === 'profile'
-                      ? 'bg-indigo-500/30 border-indigo-400/50 text-indigo-200'
-                      : 'bg-white/10 border-white/15 text-[#d5d5dc]'
-                  }
-                `}
-              >
-                <UserIcon className="w-3.5 h-3.5" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-[#eceef6] truncate">
-                  {username}
-                </span>
-                <span className="text-[10px] text-[#9ba0b5] uppercase tracking-wider font-mono">
-                  {role === 'admin' ? t('userManagement.roleAdmin') : t('userManagement.roleViewer')}
-                </span>
-              </div>
-            </button>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                title={t('nav.logout')}
-                className="text-[#9ba0b5] hover:text-[#f87171] p-1.5 rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Dynamic Version & Language Switch Footer */}
-      <div className="px-3.5 py-2.5 border-t border-white/10 bg-[#0d0e15]/30 flex items-center justify-between text-[11px] text-[#9ba0b5]">
+      {/* Dynamic Version Footer (Dil seçimi ve Profil üst Navbarda yer alır) */}
+      <div className="px-4 py-3 border-t border-white/10 bg-[#0d0e15]/30 flex items-center justify-between text-[11px] text-[#9ba0b5]">
         <div className="flex items-center gap-2">
           <a
             href="https://github.com/brhnshn/corvus/releases"
@@ -262,8 +199,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </a>
           )}
         </div>
-
-        <LanguageSwitch variant="compact" />
       </div>
     </aside>
   );

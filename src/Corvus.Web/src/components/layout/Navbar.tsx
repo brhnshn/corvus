@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Search, RefreshCw, User as UserIcon, Server, PanelLeftOpen } from 'lucide-react';
+import { Search, RefreshCw, User as UserIcon, Server, PanelLeftOpen, LogOut } from 'lucide-react';
 import { LanguageSwitch } from '../LanguageSwitch';
 import { useI18n } from '../../i18n';
 import type { PageId } from '../Sidebar';
@@ -12,6 +12,7 @@ export interface NavbarProps {
   onOpenCommandPalette?: () => void;
   username?: string | null;
   role?: string | null;
+  onLogout?: () => void;
   activeSystemName?: string | null;
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
@@ -24,6 +25,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isRefreshing = false,
   onOpenCommandPalette,
   username,
+  role: _role,
+  onLogout,
   activeSystemName,
   isSidebarCollapsed,
   onToggleSidebar,
@@ -163,6 +166,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           )}
         </button>
+
+        {/* Çıkış Yap Butonu */}
+        {onLogout && (
+          <button
+            type="button"
+            onClick={onLogout}
+            title={t('nav.logout')}
+            className="p-2 rounded-xl text-[#9ba0b5] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </header>
   );

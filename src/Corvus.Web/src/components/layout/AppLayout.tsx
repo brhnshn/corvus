@@ -39,7 +39,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     });
   };
 
-  const isFleetHome = currentPage === 'systems';
+  // Sol menü (Sidebar) ve Mobil Bar: Sadece sunucu içindeki operasyonel sayfalarda açılır.
+  // 'systems' (Filo) ve 'profile' (Kullanıcı Yönetimi) sayfalarında gizlenir.
+  const isNavStandalone = currentPage === 'systems' || currentPage === 'profile';
 
   return (
     <ToastProvider>
@@ -53,36 +55,34 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onOpenCommandPalette={onOpenCommandPalette}
           username={username}
           role={role}
+          onLogout={onLogout}
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleSidebar={toggleSidebar}
         />
 
         <div className="flex-1 flex flex-col lg:flex-row relative">
-          {/* Desktop Sidebar: Sadece bir sunucu sayfasına girildiğinde açılır, Tüm Sistemler'de gizlidir */}
-          {!isFleetHome && (
+          {/* Desktop Sidebar: Yalnızca bir sunucunun içine girildiğinde açılır. Filo ve Profil ekranlarında asla açılmaz. */}
+          {!isNavStandalone && (
             <Sidebar
               currentPage={currentPage}
               onSelectPage={onSelectPage}
-              username={username}
-              role={role}
-              onLogout={onLogout}
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={toggleSidebar}
               onOpenCommandPalette={onOpenCommandPalette}
             />
           )}
 
-          {/* Ana İçerik Alanı: Corvus Midnight v2 genişliği */}
+          {/* Ana İçerik Alanı */}
           <div
             className={`
               flex-1 flex flex-col min-w-0 transition-[margin] duration-300 ease-[cubic-bezier(.22,1,.36,1)]
-              ${!isFleetHome && !isSidebarCollapsed ? 'lg:ml-64' : 'lg:ml-0'}
+              ${!isNavStandalone && !isSidebarCollapsed ? 'lg:ml-64' : 'lg:ml-0'}
             `}
           >
             <main
               className={`
                 flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-28 lg:pb-12
-                ${isFleetHome ? 'max-w-[1400px]' : 'max-w-[1240px]'}
+                ${isNavStandalone ? 'max-w-[1400px]' : 'max-w-[1240px]'}
               `}
             >
               {children}
@@ -90,7 +90,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </div>
 
           {/* Mobil Cam Altbar: Yalnızca sunucu içi sayfalarda aktif */}
-          {!isFleetHome && (
+          {!isNavStandalone && (
             <BottomNav currentPage={currentPage} onSelectPage={onSelectPage} />
           )}
         </div>
