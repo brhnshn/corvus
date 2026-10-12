@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Search, RefreshCw, User as UserIcon, Server, PanelLeftOpen, LogOut } from 'lucide-react';
+import { Search, RefreshCw, User as UserIcon, Server, PanelLeftOpen, PanelLeftClose, LogOut } from 'lucide-react';
 import { LanguageSwitch } from '../LanguageSwitch';
 import { useI18n } from '../../i18n';
 import type { PageId } from '../Sidebar';
@@ -50,16 +50,20 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="h-16 border-b border-white/10 bg-[#161824]/90 backdrop-blur-xl sticky top-0 z-30 px-3 sm:px-6 flex items-center justify-between gap-3 sm:gap-4 select-none">
       {/* Sol: Logo + Sistem Başlığı veya Geri Dönüş Breadcrumb */}
       <div className="flex items-center gap-3 shrink-0 min-w-0">
-        {/* Sidebar kapalıyken kenar çubuğunu açma butonu */}
-        {!isFleetView && isSidebarCollapsed && onToggleSidebar && (
+        {/* Sidebar açma/kapatma butonu (yalnızca sunucu içi operasyonel sayfalarda) */}
+        {!isFleetView && onToggleSidebar && (
           <button
             type="button"
             onClick={onToggleSidebar}
-            title="Menüyü Göster"
-            aria-label="Menüyü Göster"
+            title={isSidebarCollapsed ? "Menüyü Göster" : "Menüyü Gizle"}
+            aria-label={isSidebarCollapsed ? "Menüyü Göster" : "Menüyü Gizle"}
             className="p-1.5 rounded-xl text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
           >
-            <PanelLeftOpen className="w-4 h-4" />
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="w-4 h-4" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
           </button>
         )}
 
@@ -88,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-[#9ba0b5]/50">/</span>
           {isFleetView ? (
             <span className="text-[11px] font-mono text-[#eceef6] bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
-              {t('systems.fleet')}
+              {t('nav.systems')}
             </span>
           ) : (
             <button

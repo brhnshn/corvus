@@ -67,7 +67,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               currentPage={currentPage}
               onSelectPage={onSelectPage}
               isCollapsed={isSidebarCollapsed}
-              onToggleCollapse={toggleSidebar}
               onOpenCommandPalette={onOpenCommandPalette}
             />
           )}
@@ -81,19 +80,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           >
             <main
               className={`
-                flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-28 lg:pb-12
+                flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-32 lg:pb-12
                 ${isNavStandalone ? 'max-w-[1400px]' : 'max-w-[1240px]'}
               `}
             >
               {children}
             </main>
           </div>
-
-          {/* Mobil Cam Altbar: Yalnızca sunucu içi sayfalarda aktif */}
-          {!isNavStandalone && (
-            <BottomNav currentPage={currentPage} onSelectPage={onSelectPage} />
-          )}
         </div>
+
+        {/* Mobil Cam Altbar: Viewport seviyesinde sabit (fixed) ve z-50 katmanında */}
+        {!isNavStandalone && (
+          <BottomNav currentPage={currentPage} onSelectPage={onSelectPage} />
+        )}
       </div>
     </ToastProvider>
   );

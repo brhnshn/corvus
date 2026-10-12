@@ -9,6 +9,8 @@ import { Plus, RefreshCw, Server } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import type { PageId } from '../../components/Sidebar';
 
+import { invalidateCache } from '../../api';
+
 interface SystemsPageProps {
   isAdmin?: boolean;
   username?: string | null;
@@ -34,6 +36,8 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
 
   const handleSelectSystem = (systemId: string) => {
     localStorage.setItem('corvus_active_system_id', systemId);
+    invalidateCache();
+    window.dispatchEvent(new CustomEvent('corvus_active_system_changed', { detail: { systemId } }));
     if (onNavigate) {
       onNavigate('dashboard');
     }

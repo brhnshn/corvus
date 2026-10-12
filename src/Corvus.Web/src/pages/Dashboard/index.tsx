@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   api, 
+  invalidateCache,
   type DashboardSummary, 
   type Service, 
   type PushMonitor, 
@@ -100,14 +101,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       }
     };
 
+    const handleSystemChange = () => {
+      invalidateCache();
+      if (isMountedRef.current) {
+        loadData(true);
+      }
+    };
+
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('corvus_event', handleCorvusEvent);
+    window.addEventListener('corvus_active_system_changed', handleSystemChange);
 
     return () => {
       isMountedRef.current = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('corvus_event', handleCorvusEvent);
+      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
     };
   }, [loadData]);
 

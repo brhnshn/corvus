@@ -36,6 +36,20 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Navbar & Sidebar Düzen Çakışması ve Tekil Doğruluk Kaynağı**:
+  - `Navbar.tsx` ile `Sidebar.tsx` arasındaki yükseklik ve konum çakışması giderildi; sol kenar çubuğu (`Sidebar`) artık kalıcı üst barın altından (`top-16`, `h-[calc(100vh-4rem)]`, `z-30`) başlar.
+  - `Sidebar.tsx` içindeki mükerrer Corvus logosu ve marka başlığı kaldırıldı; duyarlı menü açma/kapatma butonu (`PanelLeftOpen` / `PanelLeftClose`) `Navbar.tsx` içerisine taşındı.
+  - Kullanıcı profil yönetimi, oturum kapatma ve dil seçici mükerrerlikleri tamamen temizlenerek yalnızca kalıcı `Navbar.tsx` üzerinde birleştirildi.
+- **Terminoloji ve Buton İyileştirmeleri ("Filo" Temizliği ve "+ +" Buton Düzeltmesi)**:
+  - İstenmeyen "Filo" ibaresi arayüz başlıklarından, breadcrumb yollarından ve dil sözlüklerinden (`tr.ts`, `en.ts`) kaldırılarak endüstri standardı "Sistemler" terimine geçildi.
+  - `SystemsPage` ve i18n dosyalarındaki `+ + Sistem Ekle` çift artı hatası, i18n metninden artı simgesi kaldırılarak (`Sistem Ekle`) düzeltildi.
+- **Duyarlı Tasarım: Mobil Alt Barın (BottomNav) Viewport Tabanına Sabitlenmesi**:
+  - `BottomNav.tsx`, iç içe geçmiş flex kapsayıcılardan doğrudan ana sayfa kök seviyesine (`fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50`) taşındı. Böylece sayfa sonuna kayma problemi çözüldü ve ekranın altında sabit kalması sağlandı.
+  - İçeriğin mobil alt barın arkasında kalmaması için `main` alanına güvenli alt dolgu (`pb-32`) uygulandı.
+- **Sunucu Seçiminde Sayfa Yüklenmeme Sorunu ve Çoklu Sistem Önbellek Ayrımı**:
+  - Sistemler tablosunda bir sunucuya tıklandığında `invalidateCache()` tetiklenerek ve `corvus_active_system_changed` olayı fırlatılarak Genel Bakış (Dashboard) sayfasının anında taze verilerle yüklenmesi sağlandı.
+  - `DashboardPage` içine aktif sunucu değişimi dinleyicisi eklenerek sunucu geçişinde otomatik veri yenileme devreye alındı.
+  - `http.ts` içerisindeki `fetchCachedJson` önbellek anahtarları seçili sunucu kimliğiyle bölümlendi (`${activeSystemId}:${url}`) ve istek başlıklarına `X-System-Id` eklendi.
 - **Navbar & Sidebar Düzen Çakışması Giderimi ve Profil Sayfası İzolasyonu**:
   - Profil sayfasında (`/profile`) gereksizce beliren sol menü (`Sidebar`) ve mobil çubuk kaldırıldı; Profil sayfası da tıpkı Filo ekranı gibi üst Navbar altında bağımsız tam genişlikli olarak izole edildi.
   - Sol kenar çubuğunun (Sidebar) altındaki mükerrer profil kutusu ve dil seçici tamamen kaldırıldı; profil yönetimi, çıkış yapma ve dil değiştirme tek merkez olarak üst Navbar'da toplandı.

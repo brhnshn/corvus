@@ -1,13 +1,22 @@
 const API_BASE = '/api';
 
+function getActiveSystemId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('corvus_active_system_id');
+}
+
 export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const activeSystemId = getActiveSystemId();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(activeSystemId ? { 'X-System-Id': activeSystemId } : {}),
+    ...((options?.headers as Record<string, string>) || {})
+  };
+
   const res = await fetch(`${API_BASE}${url}`, {
     credentials: options?.credentials ?? 'include',
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers
-    }
+    headers
   });
 
   if (!res.ok) {
@@ -47,6 +56,11 @@ interface CacheEntry<T> {
 
 const apiCache = new Map<string, CacheEntry<unknown>>();
 
+function getCacheKey(url: string): string {
+  const activeSystemId = getActiveSystemId() || 'default';
+  return `${activeSystemId}:${url}`;
+}
+
 export function invalidateCache(urlPattern?: string): void {
   if (!urlPattern) {
     apiCache.clear();
@@ -64,8 +78,9 @@ export async function fetchCachedJson<T>(url: string, options?: RequestInit, ttl
     return fetchJson<T>(url, options);
   }
 
+  const cacheKey = getCacheKey(url);
   const now = Date.now();
-  const cached = apiCache.get(url) as CacheEntry<T> | undefined;
+  const cached = apiCache.get(cacheKey) as CacheEntry<T> | undefined;
 
   // Cache geçerliyse doğrudan döndür
   if (cached && (now - cached.timestamp < cached.ttl)) {
@@ -76,17 +91,17 @@ export async function fetchCachedJson<T>(url: string, options?: RequestInit, ttl
   if (cached) {
     fetchJson<T>(url, options)
       .then(freshData => {
-        apiCache.set(url, { data: freshData, timestamp: Date.now(), ttl: ttlMs });
+        apiCache.set(cacheKey, { data: freshData, timestamp: Date.now(), ttl: ttlMs });
       })
       .catch(() => {
         // Arka plan fetch başarısız olursa mevcut cache'i koru (TTL uzat)
-        apiCache.set(url, { data: cached.data, timestamp: Date.now(), ttl: ttlMs });
+        apiCache.set(cacheKey, { data: cached.data, timestamp: Date.now(), ttl: ttlMs });
       });
     return cached.data;
   }
 
   // İlk kez yükleme: gerçekten bekle
   const data = await fetchJson<T>(url, options);
-  apiCache.set(url, { data, timestamp: now, ttl: ttlMs });
+  apiCache.set(cacheKey, { data, timestamp: now, ttl: ttlMs });
   return data;
 }

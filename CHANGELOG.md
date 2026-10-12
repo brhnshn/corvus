@@ -36,6 +36,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Navbar & Sidebar Layout Deconfliction & Single Source of Truth**:
+  - Resolved height and position overlapping between `Navbar.tsx` and `Sidebar.tsx`; `Sidebar` now strictly mounts below the persistent header (`top-16`, `h-[calc(100vh-4rem)]`, `z-30`).
+  - Removed duplicate brand header and logo from `Sidebar.tsx`; unified the responsive sidebar toggle (`PanelLeftOpen` / `PanelLeftClose`) into `Navbar.tsx`.
+  - Consolidated user profile, logout, and language switching exclusively into the persistent top `Navbar.tsx`.
+- **Terminology & Button Polish ("Filo" and "+ +" Fixes)**:
+  - Completely eradicated the unwanted "Filo" / "Fleet" terminology from UI headers, breadcrumbs, and localization strings, adopting clean industry-standard "Sistemler" / "Systems".
+  - Fixed the duplicate `+ + Add System` icon/label bug in `SystemsPage` and i18n files (`tr.ts`, `en.ts`).
+- **Responsive Mobile Bottom Bar Viewport Pinning**:
+  - Lifted `BottomNav.tsx` out of nested layout flex containers directly into root layout with `fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50`, ensuring it remains permanently pinned to the bottom of the viewport on mobile devices.
+  - Added bottom padding `pb-32` on main layout container to prevent mobile bottom bar overlapping interactive content.
+- **System Selection Dashboard Loading & Active Context Cache Partitioning**:
+  - Fixed dashboard not loading immediately when entering a node from the systems table by invoking `invalidateCache()` and dispatching `corvus_active_system_changed` on system selection.
+  - Added event listener in `DashboardPage` to immediately trigger a fresh fetch when the active node changes.
+  - Partitioned `fetchCachedJson` keys in `http.ts` by active system ID (`${activeSystemId}:${url}`) and attached `X-System-Id` request header, preventing cross-host cache contamination.
 - **Navbar & Sidebar Layout Deconfliction & Profile Route Isolation**:
   - Eliminated sidebar and mobile nav interference on the Profile page (`/profile`); profile management now renders in full-width standalone layout under the persistent top navbar just like the Fleet view.
   - Removed duplicate profile card and language toggle from the Sidebar footer, keeping user profile, logout, and language switching unified exclusively in the top navigation bar.

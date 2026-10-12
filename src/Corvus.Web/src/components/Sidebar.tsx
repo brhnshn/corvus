@@ -6,7 +6,6 @@ import {
   Activity, 
   Clock, 
   Settings, 
-  PanelLeftClose,
   Search,
   History,
   ArrowLeft,
@@ -20,7 +19,6 @@ interface SidebarProps {
   currentPage: PageId;
   onSelectPage: (page: PageId) => void;
   isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
   onOpenCommandPalette?: () => void;
 }
 
@@ -28,7 +26,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentPage, 
   onSelectPage,
   isCollapsed = false,
-  onToggleCollapse,
   onOpenCommandPalette,
 }) => {
   const [versionInfo, setVersionInfo] = React.useState<VersionInfo | null>(null);
@@ -55,42 +52,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={`
-        hidden lg:flex flex-col h-screen fixed left-0 top-0 select-none z-40
+        hidden lg:flex flex-col h-[calc(100vh-4rem)] fixed left-0 top-16 select-none z-30
         w-64 bg-[#1b1d2a] border-r border-white/10
         transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]
         ${isCollapsed ? '-translate-x-full' : 'translate-x-0'}
       `}
     >
-      {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
-        <div className="flex items-center gap-3 min-w-0">
-          <img 
-            src="/logo_transparent.png" 
-            alt="Corvus" 
-            className="w-8 h-8 object-contain shrink-0"
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-          <span className="font-bold text-base tracking-wider text-[#eceef6] leading-tight font-mono">
-            CORVUS
-          </span>
-        </div>
-
-        {/* Kenar Çubuğunu Kapatma / Daraltma Butonu */}
-        {onToggleCollapse && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            title="Menüyü Gizle"
-            aria-label="Menüyü Gizle"
-            className="p-1.5 rounded-lg text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
-          >
-            <PanelLeftClose className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {/* Tüm Sistemler Geri Dönüş Butonu */}

@@ -52,11 +52,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
     <nav
       aria-label="Ana gezinme"
       className="
-        fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-[520px] lg:hidden
+        fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-[520px] lg:hidden
         h-16 rounded-full p-1.5 select-none
-        bg-[#1b1d2a]/55 backdrop-blur-2xl backdrop-saturate-[1.9]
+        bg-[#1b1d2a]/85 backdrop-blur-2xl backdrop-saturate-[1.9]
         border border-white/15
-        shadow-[0_10px_30px_rgba(0,0,0,.4),inset_0_1px_0_rgba(255,255,255,.22)]
+        shadow-[0_10px_30px_rgba(0,0,0,.6),inset_0_1px_0_rgba(255,255,255,.22)]
       "
     >
       <div className="relative h-full">
