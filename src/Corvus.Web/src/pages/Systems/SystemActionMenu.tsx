@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   MoreVertical, 
   Pencil, 
@@ -27,23 +28,73 @@ export const SystemActionMenu: React.FC<SystemActionMenuProps> = ({
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [copiedType, setCopiedType] = useState<'name' | 'host' | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+
+  const calculatePosition = () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuWidth = 192; // 12rem (w-48)
+    const menuHeight = 220; // approximate menu height
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const shouldOpenUp = spaceBelow < menuHeight && rect.top > menuHeight;
+
+    const top = shouldOpenUp 
+      ? Math.max(8, rect.top - menuHeight - 6) 
+      : Math.min(window.innerHeight - menuHeight - 8, rect.bottom + 6);
+    const left = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, rect.right - menuWidth));
+
+    setCoords({ top, left });
+  };
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      calculatePosition();
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(target) && 
+        buttonRef.current && 
+        !buttonRef.current.contains(target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleScrollOrResize = () => {
+      setIsOpen(false);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         setIsOpen(false);
       }
     };
 
     document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('touchstart', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('touchstart', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
 
@@ -62,13 +113,11 @@ export const SystemActionMenu: React.FC<SystemActionMenuProps> = ({
   const hostValue = system.hostname || system.ipAddress || system.id;
 
   return (
-    <div className="relative inline-block text-left" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+    <>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleToggle}
         aria-label={t('systems.actions.more')}
         title={t('systems.actions.more')}
         className={`
@@ -82,10 +131,13 @@ export const SystemActionMenu: React.FC<SystemActionMenuProps> = ({
         <MoreVertical className="w-4 h-4" />
       </button>
 
-      {isOpen && (
+      {isOpen && coords && createPortal(
         <div 
-          className="absolute right-0 mt-2 w-48 rounded-2xl border border-white/10 bg-[#161824] shadow-2xl backdrop-blur-xl p-1.5 z-50 animate-in fade-in-50 zoom-in-95 duration-150 select-none"
+          ref={menuRef}
+          style={{ top: `${coords.top}px`, left: `${coords.left}px` }}
+          className="fixed w-48 rounded-2xl border border-white/10 bg-[#161824] shadow-2xl backdrop-blur-xl p-1.5 z-[9999] animate-modal-card select-none"
           role="menu"
+          onClick={(e) => e.stopPropagation()}
         >
           {/* 1. Düzenle */}
           <button
@@ -179,8 +231,9 @@ export const SystemActionMenu: React.FC<SystemActionMenuProps> = ({
               </button>
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 };

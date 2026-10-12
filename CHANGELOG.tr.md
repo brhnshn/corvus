@@ -36,6 +36,10 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Sistemler Tablosu Aksiyon Menüsü Kırpılma ve Portal Konumlandırma Düzeltmesi**:
+  - `SystemActionMenu.tsx` bileşeni React Portal (`createPortal(..., document.body)`) ve `fixed z-[9999]` katmanına taşındı; böylece tablonun `overflow-x-auto` yatay kaydırma kutusu ve kart çerçeveleri tarafından menünün kesilmesi/altta kalıp görünmemesi sorunu kökten çözüldü.
+  - Dinamik ekran yüksekliği algılama eklendi: Butonun altında yeterli alan kalmadığında (tablonun alt satırları veya ekranın altı) menü otomatik olarak **yukarı doğru** (`openUp`) açılır.
+  - Sayfa kaydırıldığında, pencere boyutu değiştiğinde veya ESC tuşuna basıldığında menünün pürüzsüzce kapanması sağlandı.
 - **Modal Açılış Yumuşak Geçiş Animasyonu ve Yeniden Kullanılabilir Modal Mimarisi**:
   - Pencerelerin aniden ve sert bir şekilde açılmasını engellemek için `index.css` içine hafif fizik tabanlı giriş animasyonları eklendi: `@keyframes modal-backdrop-in` (180ms fade-in) ve `@keyframes modal-card-in` (220ms `cubic-bezier(0.16, 1, 0.3, 1)` scale `0.96 -> 1` ve `translateY(8px -> 0)`).
   - Modüler `src/Corvus.Web/src/components/ui/Modal.tsx` bileşeni inşa edildi; arka plana tıklayarak kapatma, ESC tuşu dinleyicisi, gövde kaydırma kilidi (`overflow: hidden`) ve ARIA erişilebilirlik standartları merkezi olarak sağlandı.

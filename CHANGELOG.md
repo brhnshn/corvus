@@ -36,6 +36,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **System Action Dropdown Menu Clipping & Portal Positioning**:
+  - Re-architected `SystemActionMenu.tsx` to render via React Portal (`createPortal(..., document.body)`), completely eliminating clipping caused by table `overflow-x-auto` and card container borders.
+  - Implemented dynamic boundary detection calculating available screen height below the trigger button: automatically flips menu to open upwards when near the bottom of the table or viewport.
+  - Added listeners to automatically dismiss dropdown on scroll, window resize, ESC key, or backdrop click.
 - **Modal Entrance Animation & Reusable Modal Architecture**:
   - Implemented subtle, physics-based modal entrance animations in `index.css`: `@keyframes modal-backdrop-in` (180ms fade-in) and `@keyframes modal-card-in` (220ms `cubic-bezier(0.16, 1, 0.3, 1)` scale `0.96 -> 1` and `translateY(8px -> 0)`), resolving abrupt modal popups.
   - Created modular `Modal.tsx` in `src/Corvus.Web/src/components/ui/` featuring backdrop click dismiss, ESC keydown listener, body scroll lock management, and standard ARIA accessibility attributes.
