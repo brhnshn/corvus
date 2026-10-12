@@ -30,6 +30,7 @@ export const tr: TranslationDictionary = {
     metrics: 'Sistem Metrikleri',
     metricsShort: 'Metrikler',
     systems: 'Sistemler',
+    backToSystems: 'Tüm Sistemler',
     uptime: 'Uptime',
     activity: 'Olay Geçmişi',
     settings: 'Ayarlar',

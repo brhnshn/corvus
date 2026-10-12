@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
 import { useSystemsPageState } from './useSystemsPageState';
 import { SystemsNavbar } from './SystemsNavbar';
-import { SystemsAlertBanner } from './SystemsAlertBanner';
 import { SystemsTable } from './SystemsTable';
 import { SystemsEmptyState } from './SystemsEmptyState';
 import { AddSystemSheet } from './AddSystemSheet';
+import { ProfileModal } from './ProfileModal';
 import { useI18n } from '../../i18n';
 import type { PageId } from '../../components/Sidebar';
 
 interface SystemsPageProps {
   isAdmin?: boolean;
+  username?: string | null;
+  role?: string | null;
   onNavigate?: (page: PageId, containerId?: string | null, tab?: string | null) => void;
 }
 
-export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true, onNavigate }) => {
+export const SystemsPage: React.FC<SystemsPageProps> = ({
+  isAdmin = true,
+  username,
+  role,
+  onNavigate
+}) => {
   const { t } = useI18n();
   const {
     systems,
@@ -28,15 +35,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true, onNavi
     refresh
   } = useSystemsPageState();
 
-  const [dismissAlert, setDismissAlert] = useState(false);
-
-  // Eşik aşımı uyarısı (Disk > %65 veya CPU > %85)
-  const alertSystem = systems.find(s => {
-    const diskUsed = s.currentDiskUsedBytes ?? 0;
-    const diskTotal = s.currentDiskTotalBytes ?? 1;
-    const diskPct = (diskUsed / diskTotal) * 100;
-    return diskPct > 65 || (s.currentCpuPercent ?? 0) > 85;
-  });
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleSelectSystem = (systemId: string) => {
     localStorage.setItem('corvus_active_system_id', systemId);
@@ -54,22 +53,11 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true, onNavi
         onRefresh={refresh}
         isLoading={isLoading}
         onAddClick={() => setIsAddOpen(true)}
-        onOpenProfile={onNavigate ? () => onNavigate('profile') : undefined}
+        onOpenProfile={() => setIsProfileOpen(true)}
         isAdmin={isAdmin}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
-        {/* Aktif Eşik / Kaynak Kullanım Uyarısı */}
-        {alertSystem && !dismissAlert && (
-          <SystemsAlertBanner
-            systemName={alertSystem.name}
-            metricName={t('systems.alert.thresholdExceeded')}
-            conditionText={`${alertSystem.name}: CPU > %85 / Disk > %65`}
-            onDismiss={() => setDismissAlert(true)}
-            onViewAlerts={() => handleSelectSystem(alertSystem.id)}
-          />
-        )}
-
         {/* Tablo Üstü Başlık & Sistem Sayacı */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
           <div>
@@ -112,6 +100,14 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({ isAdmin = true, onNavi
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onSystemCreated={refresh}
+      />
+
+      {/* Kullanıcı Profili Modalı (Layout bozulmadan açılır) */}
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        username={username}
+        role={role}
       />
     </div>
   );

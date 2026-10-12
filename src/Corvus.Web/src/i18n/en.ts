@@ -28,6 +28,7 @@ export const en = {
     metrics: 'System Metrics',
     metricsShort: 'Metrics',
     systems: 'Systems',
+    backToSystems: 'All Systems',
     uptime: 'Uptime',
     activity: 'Activity Log',
     settings: 'Settings',

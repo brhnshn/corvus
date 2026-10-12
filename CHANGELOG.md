@@ -36,6 +36,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Fleet Welcome Screen Layout Isolation & Return Breadcrumb**:
+  - Modalized the User Management and Profile panel (`ProfileModal.tsx`) directly above the Fleet view, eliminating unintended jumps into the classical sidebar layout on profile access.
+  - Removed "Systems" from the active node's sidebar (`Sidebar.tsx`) and mobile bottom bar (`BottomNav.tsx`), placing an intuitive breadcrumb return link (`← All Systems [/]`) at the top of the node sidebar to navigate back to the root fleet cockpit.
+  - Eradicated synthetic disk alert thresholds (`SystemsAlertBanner.tsx`) that flagged local disk usage without user-configured alarm rules.
 - **Direct Corvus Cockpit Transition on Server Selection**:
   - Completely deleted the redundant, separate detail view (`SystemDetailPageView.tsx`) and unnecessary engine badge (`SystemsEngineBadge.tsx`).
   - Clicking any server in the fleet table now smoothly transitions directly into the full, authentic Corvus cockpit (`Dashboard`, `Services`, `Containers`, `Metrics`, `Uptime`, `Settings`) with the primary sidebar active.

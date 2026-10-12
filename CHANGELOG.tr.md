@@ -36,6 +36,10 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Sistem Filosu Karşılama Ekranı Düzeni ve Geri Dönüş Breadcrumb Mimarisi**:
+  - Kullanıcı Yönetimi ve Profil paneli (`ProfileModal.tsx`), Filo ekranı üzerinde modal olarak açılarak profil tıklandığında aniden klasik sol menülü düzene zıplama sorunu ortadan kaldırıldı.
+  - Seçilen sunucunun sol menüsünden (`Sidebar.tsx`) ve mobil alt bardan (`BottomNav.tsx`) "Sistemler" öğesi kaldırılarak, menünün en tepesine üst seviyedeki filo kokpitine (`/`) geri dönüş sağlayan temiz bir breadcrumb bağlantısı (`← Tüm Sistemler [/]`) eklendi.
+  - Kullanıcı tarafından tanımlanmamış yerel disk doluluğunu alarm gibi gösteren yapay uyarı şeridi (`SystemsAlertBanner.tsx`) kod tabanından tamamen temizlendi.
 - **Sunucu Seçiminde Doğrudan Corvus Ana Paneline Geçiş Mimarisi**:
   - Gereksiz ve kafa karıştırıcı olan ayrı detay sayfası (`SystemDetailPageView.tsx`) ve motor rozeti (`SystemsEngineBadge.tsx`) projeden tamamen silindi.
   - Filo tablosundan herhangi bir sunucuya tıklandığında, kullanıcının doğrudan bildiği ve yönettiği orijinal Corvus ekranına (`Genel Bakış`, `Servisler`, `Konteynerler`, `Metrikler`, `Uptime`, `Ayarlar`) sol kenar çubuğu (Sidebar) aktif olarak geçiş yapması sağlandı.
