@@ -13,13 +13,18 @@ public interface IAgentDockerClient
 
 public class AgentDockerClient : IAgentDockerClient
 {
-    private const string SocketPath = "/var/run/docker.sock";
+    private readonly string _socketPath;
+
+    public AgentDockerClient(string socketPath = "/var/run/docker.sock")
+    {
+        _socketPath = socketPath;
+    }
 
     public async Task<List<SystemContainerCacheEntity>> GetContainersAsync(CancellationToken ct = default)
     {
         var containers = new List<SystemContainerCacheEntity>();
 
-        if (!File.Exists(SocketPath))
+        if (!File.Exists(_socketPath))
         {
             return containers; // Docker soketi yoksa veya Windows yerel test ise boş liste
         }
@@ -67,7 +72,7 @@ public class AgentDockerClient : IAgentDockerClient
 
     public async Task<DockerRpcResponse> ExecuteRpcActionAsync(DockerRpcRequest request, CancellationToken ct = default)
     {
-        if (!File.Exists(SocketPath))
+        if (!File.Exists(_socketPath))
         {
             return new DockerRpcResponse(Success: false, Message: "Docker socket not found on agent host.");
         }
@@ -111,10 +116,10 @@ public class AgentDockerClient : IAgentDockerClient
         }
     }
 
-    private static async Task<string> SendDockerHttpAsync(string method, string path, CancellationToken ct)
+    private async Task<string> SendDockerHttpAsync(string method, string path, CancellationToken ct)
     {
         using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-        var endpoint = new UnixDomainSocketEndPoint(SocketPath);
+        var endpoint = new UnixDomainSocketEndPoint(_socketPath);
         await socket.ConnectAsync(endpoint, ct);
 
         string request = $"{method} {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
