@@ -34,7 +34,15 @@ jobs:
           sudo setcap cap_net_raw+ep $(which dotnet) || true
 
       - name: Run Backend Tests
-        run: dotnet test tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj --configuration Release --verbosity normal --logger "console;verbosity=detailed"
+        run: |
+          dotnet test tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj --configuration Release --logger "trx;LogFileName=test_results.trx" || TEST_FAILED=1
+          if [ -f "tests/Corvus.Api.Tests/TestResults/test_results.trx" ]; then
+            echo "=== FAILED TESTS FROM TRX ==="
+            cat tests/Corvus.Api.Tests/TestResults/test_results.trx | grep -E "(testName|ErrorMessage|StackTrace)" | head -n 30 || true
+          fi
+          if [ "$TEST_FAILED" = "1" ]; then
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

@@ -32,7 +32,18 @@ jobs:
           sudo setcap cap_net_raw+ep $(which dotnet) || true
 
       - name: Build and Test
-        run: dotnet test tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj --configuration Release --verbosity normal --logger "console;verbosity=detailed"
+        run: |
+          dotnet test tests/Corvus.Api.Tests/Corvus.Api.Tests.csproj --configuration Release --logger "trx;LogFileName=test_results.trx" || TEST_FAILED=1
+          if [ -f "tests/Corvus.Api.Tests/TestResults/test_results.trx" ]; then
+            echo "### ❌ Test Failure Summary" >> $GITHUB_STEP_SUMMARY
+            grep -E "UnitTestResult.*outcome=\"Failed\"" tests/Corvus.Api.Tests/TestResults/test_results.trx >> $GITHUB_STEP_SUMMARY || true
+            grep -A 10 -E "<ErrorMessage>" tests/Corvus.Api.Tests/TestResults/test_results.trx >> $GITHUB_STEP_SUMMARY || true
+            echo "=== FAILED TESTS FROM TRX ==="
+            cat tests/Corvus.Api.Tests/TestResults/test_results.trx | grep -E "(testName|ErrorMessage|StackTrace)" | head -n 30 || true
+          fi
+          if [ "$TEST_FAILED" = "1" ]; then
+            exit 1
+          fi
 
   frontend-build:
     name: Frontend React Build
