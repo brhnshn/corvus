@@ -36,12 +36,12 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
-- **Sistemler (Systems) Kokpitinin Varsayılan Giriş Ekranı Yapılması & Yerel Sunucu (Host Node) Otomatik Entegrasyonu**:
-  - `useAppNavigation.ts` içerisinde kök rota (`/`) ve varsayılan başlangıç sayfası `systems` (Sistemler) olarak yapılandırıldı. Uygulama açılışında kullanıcı doğrudan sunucu filosu yönetim kokpitiyle karşılanır.
-  - Masaüstü `Sidebar.tsx` ve mobil cam `BottomNav.tsx` menülerinde "Sistemler" ilk sıraya taşındı.
-  - Corvus Hub'ın üzerinde çalıştığı ana makine (`local-host`), `SystemMetricsCollector` tarafından otomatik olarak kayıt edilerek `TelemetryRingBuffer` üzerinden canlı CPU, RAM ve Disk telemetrisiyle anında listeye bağlandı; arayüzde özel "Ana Sunucu (Host)" rozetiyle gösterildi.
-  - `ContainerDiscoveryService` yerel Docker konteynerlerini doğrudan `local-host` önbelleğine aktararak kokpitteki aktif konteyner sayılarını ve detay listesini senkronize etti.
-  - Yerel sunucu watchdog tünel düşmelerine, yanlışlıkla silinmeye veya token döndürülmesine karşı korumaya alındı; yerel konteyner eylemleri (`start`, `stop`, `restart`, `logs`) doğrudan yerel Docker servisine yönlendirildi.
+- **Sistemler (Systems) Kokpiti 2-Kademeli Filo Mimarisi & Bağımsız Giriş Ekranı**:
+  - Modern minimalist sunucu yönetim araçlarından ilham alınarak 2-katmanlı filo mimarisi kuruldu:
+    - **1. Katman (Giriş Ekranı - Tüm Sistemler Filosu):** Açılışta kenar çubuğu (Sidebar) veya mobil alt bar olmaksızın tam ekran olarak sunulur (`AppLayout.tsx`). Üstte `SystemsNavbar.tsx` (Corvus logosu, arama çubuğu, uyarılar ve `+ Sistem ekle` butonu), aktif eşik uyarısı banner'ı (`SystemsAlertBanner.tsx`) ve her sunucunun durumunu, CPU, RAM, Disk barlarını, Yük Ortalamasını, Ağ hızını ve Konteyner sayısını gösteren yatay `SystemsTable.tsx` tablosunu içerir.
+    - **2. Katman (Seçili Sistem Yönetim Paneli):** Filodaki herhangi bir sunucuya tıklandığında popup modal yerine doğrudan `SystemDetailPageView.tsx` ekranına geçilir. Üstte sunucu meta bilgileri (IP, işletim sistemi, çekirdek, RAM), zaman aralığı seçici (`live`, `1h`, `24h`, `7d`, `30d`), Çekirdek/Ağ/Depolama/Konteynerler/Güvenlik sekmeleri ve filoya tek tıkla geri dönme butonu sunulur.
+  - Corvus Hub'ın üzerinde çalıştığı ana makine (`local-host`), `SystemMetricsCollector` tarafından dairesel bellek tamponuna ve veritabanına otomatik kaydedilerek listede ilk canlı düğüm olarak gösterildi.
+  - Detay açılışında yaşanan chunk yükleme ve "Yeni Sürüm Algılandı" takılma sorunu giderildi.
 - **React Hook Yaşam Döngüsü Tutarlılığı (`App.tsx`)**:
   - Komut paleti `useCommandPalette` / `fetchCommandItems` `useEffect` hook'u koşullu erken dönüşlerden (`authLoading`, `authStatus`) önce, bileşenin en üst seviyesine taşındı. Kullanıcı giriş yaptıktan sonra tetiklenen ve siyah ekrana yol açan üretim React #310 ("Rendered more hooks than during the previous render") hatası giderildi.
 

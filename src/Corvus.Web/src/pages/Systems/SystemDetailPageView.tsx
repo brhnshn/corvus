@@ -1,0 +1,536 @@
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Cpu, HardDrive, Boxes, Activity, Play, Square, RotateCw, RefreshCw, Shield } from 'lucide-react';
+import { api } from '../../api';
+import type { SystemDetailDto, SystemDownsampledPoint, TelemetryTimeRange } from '../../types';
+import { formatBytes, getSystemStatusTheme } from '../../utils/systemsUtils';
+
+interface SystemDetailPageViewProps {
+  systemId: string;
+  onBack: () => void;
+  isAdmin: boolean;
+}
+
+export const SystemDetailPageView: React.FC<SystemDetailPageViewProps> = ({
+  systemId,
+  onBack,
+  isAdmin
+}) => {
+
+  const [detail, setDetail] = useState<SystemDetailDto | null>(null);
+  const [metrics, setMetrics] = useState<SystemDownsampledPoint[]>([]);
+  const [range, setRange] = useState<TelemetryTimeRange>('live');
+  const [activeTab, setActiveTab] = useState<'core' | 'network' | 'storage' | 'containers' | 'security'>('core');
+  const [loading, setLoading] = useState(true);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+
+  const loadData = async () => {
+    try {
+      const [d, m] = await Promise.all([
+        api.getSystemById(systemId),
+        api.getMetrics(systemId, range)
+      ]);
+      setDetail(d);
+      setMetrics(m);
+    } catch (err) {
+      console.error('Sistem detayları yüklenemedi:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, range === 'live' ? 3000 : 15000);
+    return () => clearInterval(interval);
+  }, [systemId, range]);
+
+  if (!detail && loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 space-y-3">
+        <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
+        <span className="text-xs font-mono text-[#9ba0b5]">Sistem telemetrisi yükleniyor...</span>
+      </div>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <div className="py-20 text-center space-y-4">
+        <p className="text-sm text-red-400">Sistem bulunamadı veya çevrimdışı.</p>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 rounded-xl bg-white/10 text-xs text-white hover:bg-white/20"
+        >
+          Sistemler Listesine Dön
+        </button>
+      </div>
+    );
+  }
+
+  const theme = getSystemStatusTheme(detail.system.status as any);
+
+  const handleContainerAction = async (cid: string, action: 'start' | 'stop' | 'restart') => {
+    try {
+      setActionMsg(`Konteyner ${action} komutu gönderildi...`);
+      const res = await api.sendContainerAction(systemId, cid, action);
+      setActionMsg(res.message || 'İşlem tamamlandı.');
+      loadData();
+    } catch (err: any) {
+      setActionMsg(`Hata: ${err.message}`);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 animate-fade-in">
+      {/* Üst Navigasyon: Geri Dön Butonu & Sistem Başlık Rozetleri */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer"
+            title="Tüm Sistemlere Dön"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span className={`w-3 h-3 rounded-full ${theme.dotColor}`} />
+              <h2 className="text-xl font-bold text-[#eceef6]">
+                {detail.system.name}
+              </h2>
+              {detail.system.id === 'local-host' && (
+                <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-400/30 text-[10px] font-semibold text-indigo-300">
+                  Ana Sunucu (Host)
+                </span>
+              )}
+            </div>
+
+            {/* Sistem Meta Bilgileri (Beszel 2. ekran görüntüsündeki gibi) */}
+            <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs font-mono text-[#9ba0b5]">
+              <span className="flex items-center gap-1 text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>{detail.system.status === 'online' ? 'Açık' : detail.system.status}</span>
+              </span>
+              <span>·</span>
+              <span>{detail.system.hostname || 'host'}</span>
+              <span>·</span>
+              <span>{detail.system.ipAddress || '127.0.0.1'}</span>
+              <span>·</span>
+              <span className="truncate max-w-[200px]">{detail.system.osInfo || 'Linux'}</span>
+              <span>·</span>
+              <span>{detail.latestPoint ? `${detail.latestPoint.cpuCores} Çekirdek` : 'CPU'}</span>
+              <span>·</span>
+              <span>{formatBytes(detail.latestPoint?.ramTotalBytes)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Sağ: Zaman Aralığı Seçici (1s, 24s, 7g, 30g) */}
+        <div className="flex items-center gap-2 self-start md:self-center">
+          <div className="flex items-center bg-white/5 rounded-xl p-0.5 border border-white/5 font-mono text-xs">
+            {(['live', '1h', '24h', '7d', '30d'] as TelemetryTimeRange[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRange(r)}
+                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                  range === r
+                    ? 'bg-white/10 text-white font-semibold shadow-xs'
+                    : 'text-[#9ba0b5] hover:text-[#eceef6]'
+                }`}
+              >
+                {r === 'live' ? 'Canlı' : r}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Alt Sekmeler: Çekirdek (Core/CPU/RAM) | Ağ | Depolama Alanı | Konteynerler | Güvenlik */}
+      <div className="flex items-center gap-1 border-b border-white/10 pb-2 overflow-x-auto text-xs font-medium">
+        <button
+          type="button"
+          onClick={() => setActiveTab('core')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors cursor-pointer ${
+            activeTab === 'core'
+              ? 'bg-white/10 text-white font-semibold'
+              : 'text-[#9ba0b5] hover:text-white'
+          }`}
+        >
+          <Cpu className="w-4 h-4 text-indigo-400" />
+          <span>Çekirdek</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('network')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors cursor-pointer ${
+            activeTab === 'network'
+              ? 'bg-white/10 text-white font-semibold'
+              : 'text-[#9ba0b5] hover:text-white'
+          }`}
+        >
+          <Activity className="w-4 h-4 text-emerald-400" />
+          <span>Ağ</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('storage')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors cursor-pointer ${
+            activeTab === 'storage'
+              ? 'bg-white/10 text-white font-semibold'
+              : 'text-[#9ba0b5] hover:text-white'
+          }`}
+        >
+          <HardDrive className="w-4 h-4 text-amber-400" />
+          <span>Depolama alanı</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('containers')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors cursor-pointer ${
+            activeTab === 'containers'
+              ? 'bg-white/10 text-white font-semibold'
+              : 'text-[#9ba0b5] hover:text-white'
+          }`}
+        >
+          <Boxes className="w-4 h-4 text-sky-400" />
+          <span>Konteynerler ({detail.containers.length})</span>
+        </button>
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('security')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors cursor-pointer ${
+              activeTab === 'security'
+                ? 'bg-white/10 text-white font-semibold'
+                : 'text-[#9ba0b5] hover:text-white'
+            }`}
+          >
+            <Shield className="w-4 h-4 text-purple-400" />
+            <span>Ayarlar & Güvenlik</span>
+          </button>
+        )}
+      </div>
+
+      {actionMsg && (
+        <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-[#eceef6] font-mono flex items-center justify-between">
+          <span>{actionMsg}</span>
+          <button onClick={() => setActionMsg(null)} className="text-[#9ba0b5] hover:text-white cursor-pointer">✕</button>
+        </div>
+      )}
+
+      {/* SEKME 1: ÇEKİRDEK (CPU & RAM KARTLARI VE GRAFİKLERİ) */}
+      {activeTab === 'core' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* CPU Kullanımı */}
+            <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#eceef6]">CPU Kullanımı</h3>
+                  <p className="text-[11px] text-[#9ba0b5]">Sistem genelinde ortalama CPU kullanımı</p>
+                </div>
+                <div className="text-lg font-bold font-mono text-[#eceef6]">
+                  %{detail.latestPoint ? detail.latestPoint.cpuPercent.toFixed(1) : '0.0'}
+                </div>
+              </div>
+
+              {/* CPU Çizelgesi */}
+              <div className="h-40 flex items-end gap-1 pt-6">
+                {metrics.length > 0 ? (
+                  metrics.map((m, idx) => (
+                    <div
+                      key={idx}
+                      className="flex-1 bg-indigo-500/80 hover:bg-indigo-400 rounded-t transition-all group relative"
+                      style={{ height: `${Math.max(4, Math.min(100, m.cpuPercent))}%` }}
+                    >
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
+                        %{m.cpuPercent.toFixed(1)} · {new Date(m.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs text-[#9ba0b5] font-mono">
+                    Canlı veri akışı bekleniyor...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Yük Ortalaması (Load Avg) */}
+            <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#eceef6]">Yük Ortalaması</h3>
+                  <p className="text-[11px] text-[#9ba0b5]">Zaman içindeki sistem yükü ortalamaları</p>
+                </div>
+                <div className="text-sm font-bold font-mono text-[#eceef6]">
+                  {detail.latestPoint
+                    ? `${detail.latestPoint.loadAvg1m.toFixed(2)} · ${detail.latestPoint.loadAvg5m.toFixed(2)} · ${detail.latestPoint.loadAvg15m.toFixed(2)}`
+                    : '0.17 0.15 0.12'}
+                </div>
+              </div>
+
+              <div className="h-40 flex items-center justify-center border border-white/5 rounded-xl bg-white/[0.01]">
+                <div className="text-center font-mono text-xs text-[#9ba0b5] space-y-2">
+                  <div className="flex items-center justify-center gap-4 text-[11px]">
+                    <span className="text-pink-400">● 1 dk ({detail.latestPoint?.loadAvg1m.toFixed(2) || '0.17'})</span>
+                    <span className="text-indigo-400">● 5 dk ({detail.latestPoint?.loadAvg5m.toFixed(2) || '0.15'})</span>
+                    <span className="text-amber-400">● 15 dk ({detail.latestPoint?.loadAvg15m.toFixed(2) || '0.12'})</span>
+                  </div>
+                  <p className="text-[10px] text-white/40">Çekirdek başına düşen ortalama aktif iş parçacıkları</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bellek (RAM) Kullanımı */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#eceef6]">Bellek Kullanımı</h3>
+                  <p className="text-[11px] text-[#9ba0b5]">Kayıtlı zamanda kesin RAM kullanımı</p>
+                </div>
+                <div className="text-sm font-bold font-mono text-[#eceef6]">
+                  {formatBytes(detail.latestPoint?.ramUsedBytes)} / {formatBytes(detail.latestPoint?.ramTotalBytes)}
+                </div>
+              </div>
+
+              <div className="h-32 flex items-end gap-1 pt-6">
+                {metrics.length > 0 ? (
+                  metrics.map((m, idx) => {
+                    const total = detail.latestPoint?.ramTotalBytes || 1;
+                    const pct = Math.min(100, Math.round((m.ramUsedBytes / total) * 100));
+                    return (
+                      <div
+                        key={idx}
+                        className="flex-1 bg-sky-500/80 hover:bg-sky-400 rounded-t transition-all group relative"
+                        style={{ height: `${Math.max(4, pct)}%` }}
+                      >
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
+                          %{pct} · {formatBytes(m.ramUsedBytes)}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs text-[#9ba0b5] font-mono">
+                    Canlı veri akışı bekleniyor...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Takas (Swap) & Ek Bellek */}
+            <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-3 shadow-lg flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-[#eceef6]">Takas Alanı & Önbellek</h3>
+                <p className="text-[11px] text-[#9ba0b5]">Sistem tarafından kullanılan takas alanı ve disk arabelleği</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#9ba0b5]">Aktif RAM Doluluğu</span>
+                  <span className="text-[#eceef6]">
+                    %{detail.latestPoint && detail.latestPoint.ramTotalBytes > 0
+                      ? Math.round((detail.latestPoint.ramUsedBytes / detail.latestPoint.ramTotalBytes) * 100)
+                      : 0}
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-sky-400 transition-all"
+                    style={{
+                      width: `${detail.latestPoint && detail.latestPoint.ramTotalBytes > 0
+                        ? Math.min(100, Math.round((detail.latestPoint.ramUsedBytes / detail.latestPoint.ramTotalBytes) * 100))
+                        : 0}%`
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-[#9ba0b5]">
+                  <span>Kullanılan: {formatBytes(detail.latestPoint?.ramUsedBytes)}</span>
+                  <span>Toplam: {formatBytes(detail.latestPoint?.ramTotalBytes)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SEKME 2: AĞ (NETWORK I/O) */}
+      {activeTab === 'network' && (
+        <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-[#eceef6]">Ağ Trafiği (Giriş / Çıkış)</h3>
+              <p className="text-[11px] text-[#9ba0b5]">Saniye başına aktarılan ve alınan bayt miktarı</p>
+            </div>
+            <div className="text-xs font-mono text-emerald-400">
+              {formatBytes(detail.latestPoint?.netRxBytesSec || 0)}/s Alınan
+            </div>
+          </div>
+
+          <div className="h-48 flex items-end gap-1 pt-6">
+            {metrics.length > 0 ? (
+              metrics.map((m, idx) => (
+                <div
+                  key={idx}
+                  className="flex-1 bg-emerald-500/80 hover:bg-emerald-400 rounded-t transition-all group relative"
+                  style={{ height: `${Math.max(4, Math.min(100, ((m.rxBytesPerSec || 1) / 102400) * 100))}%` }}
+                >
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] font-mono text-white whitespace-nowrap z-20 shadow-xl">
+                    Rx: {formatBytes(m.rxBytesPerSec)}/s · Tx: {formatBytes(m.txBytesPerSec)}/s
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-xs text-[#9ba0b5] font-mono">
+                Ağ trafiği verisi toplanıyor...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* SEKME 3: DEPOLAMA (STORAGE & DISK) */}
+      {activeTab === 'storage' && (
+        <div className="p-5 rounded-2xl bg-[#161824]/60 border border-white/10 space-y-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-[#eceef6]">Disk ve Depolama Alanı</h3>
+              <p className="text-[11px] text-[#9ba0b5]">Kök dosya sistemi ve bağlı birimlerin doluluk durumu</p>
+            </div>
+            <div className="text-sm font-mono font-bold text-[#eceef6]">
+              {formatBytes(detail.latestPoint?.diskUsedBytes)} / {formatBytes(detail.latestPoint?.diskTotalBytes)}
+            </div>
+          </div>
+
+          <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-amber-400 transition-all duration-500"
+              style={{
+                width: `${detail.latestPoint && detail.latestPoint.diskTotalBytes > 0
+                  ? Math.min(100, Math.round((detail.latestPoint.diskUsedBytes / detail.latestPoint.diskTotalBytes) * 100))
+                  : 0}%`
+              }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 font-mono text-xs">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+              <span className="text-[#9ba0b5] block text-[10px]">Kullanılan Alan</span>
+              <span className="text-[#eceef6] font-bold text-sm">{formatBytes(detail.latestPoint?.diskUsedBytes)}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+              <span className="text-[#9ba0b5] block text-[10px]">Boş Alan</span>
+              <span className="text-[#34d399] font-bold text-sm">
+                {formatBytes((detail.latestPoint?.diskTotalBytes || 0) - (detail.latestPoint?.diskUsedBytes || 0))}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+              <span className="text-[#9ba0b5] block text-[10px]">Toplam Kapasite</span>
+              <span className="text-[#eceef6] font-bold text-sm">{formatBytes(detail.latestPoint?.diskTotalBytes)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SEKME 4: KONTEYNERLER (DOCKER / SERVICES) */}
+      {activeTab === 'containers' && (
+        <div className="space-y-3">
+          {detail.containers.length === 0 ? (
+            <div className="py-16 text-center text-xs text-[#9ba0b5] rounded-2xl bg-white/[0.02] border border-white/5">
+              Bu sistem üzerinde çalışan veya önbelleğe alınmış Docker konteyneri bulunamadı.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2.5">
+              {detail.containers.map((c) => (
+                <div
+                  key={c.containerId}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl bg-[#161824]/60 border border-white/10 hover:border-white/20 transition-all gap-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          c.state === 'running' ? 'bg-[#34d399]' : 'bg-[#f87171]'
+                        }`}
+                      />
+                      <span className="text-xs font-semibold text-[#eceef6]">{c.name}</span>
+                      <span className="text-[10px] text-[#9ba0b5] font-mono truncate max-w-[220px]">
+                        {c.image}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#9ba0b5] mt-1 font-mono">{c.status}</p>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="flex items-center gap-1.5 self-end sm:self-center">
+                      {c.state === 'running' ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleContainerAction(c.containerId, 'restart')}
+                            title="Yeniden Başlat"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer"
+                          >
+                            <RotateCw className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleContainerAction(c.containerId, 'stop')}
+                            title="Durdur"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[#f87171] transition-colors cursor-pointer"
+                          >
+                            <Square className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleContainerAction(c.containerId, 'start')}
+                          title="Başlat"
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[#34d399] transition-colors cursor-pointer"
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SEKME 5: AYARLAR & GÜVENLİK */}
+      {activeTab === 'security' && (
+        <div className="space-y-4 max-w-2xl">
+          {detail.system.id === 'local-host' ? (
+            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-400/20 space-y-2">
+              <h4 className="text-xs font-semibold text-indigo-300">Yerel Sunucu (Host Node)</h4>
+              <p className="text-xs text-[#9ba0b5] leading-relaxed">
+                Bu sistem Corvus Hub'ın doğrudan üzerinde çalıştığı ana sunucudur. Doğrudan yerel işletim sistemi ve Docker daemon üzerinden yönetildiği için tünel veya uzaktan erişim belirteci gerektirmez ve silinemez.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+              <h4 className="text-xs font-semibold text-[#eceef6]">Erişim Belirteci</h4>
+              <p className="text-xs text-[#9ba0b5]">
+                Uç ajan bu sisteme Hub tarafından üretilen kriptografik güvenli anahtar ile bağlıdır.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

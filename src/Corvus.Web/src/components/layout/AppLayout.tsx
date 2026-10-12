@@ -35,6 +35,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     });
   };
 
+  const isSystemsHome = currentPage === 'systems';
+
+  if (isSystemsHome) {
+    return (
+      <ToastProvider>
+        <div className="min-h-screen bg-[#0d0e15] text-[#eceef6]">
+          {children}
+        </div>
+      </ToastProvider>
+    );
+  }
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-[#0d0e15] text-[#eceef6] flex flex-col lg:flex-row relative">

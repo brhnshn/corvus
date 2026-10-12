@@ -36,12 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
-- **Systems Cockpit as Default Landing View & Local Host Auto-Registration**:
-  - Configured `/systems` as the primary default home route (`/`) in `useAppNavigation.ts`, greeting users immediately with the multi-server Fleet Cockpit instead of a blank or secondary screen.
-  - Positioned Systems (`nav.systems`) as the top item in both desktop `Sidebar.tsx` and mobile glass `BottomNav.tsx`.
-  - Added automatic registration and live telemetry bridging for the Hub server itself (`local-host`) via `SystemMetricsCollector`: the host node appears immediately with live CPU, RAM, and Disk metrics, and is labeled with a dedicated "Ana Sunucu (Host)" badge.
-  - Connected `ContainerDiscoveryService` directly to `TelemetryRingBuffer` for `local-host`, keeping active container counts and details populated in the Cockpit in real-time.
-  - Protected `local-host` from watchdog deactivations, token revocation, or accidental deletion, while routing local container actions (`start`, `stop`, `restart`, `logs`) directly to local Docker services.
+- **Systems Cockpit 2-Layer Fleet Navigation & Standalone Landing View**:
+  - Implemented the 2-layer fleet architecture inspired by modern minimalist server monitors:
+    - **Layer 1 (Landing Fleet Screen):** Rendered completely full-screen without desktop sidebars or bottom navigation (`AppLayout.tsx`). Features `SystemsNavbar.tsx` (Corvus logo, fleet badge, Ctrl+K search, actions, and `+ Sistem ekle`), an active threshold alert banner (`SystemsAlertBanner.tsx`), and a rich horizontal fleet metrics table (`SystemsTable.tsx`) displaying status, CPU %, RAM %, Disk %, Load Averages, Network throughput, and active container tallies.
+    - **Layer 2 (Dedicated System Detail View):** Clicking any system in the fleet smoothly transitions to `SystemDetailPageView.tsx` with top system metadata, time range selector (`live`, `1h`, `24h`, `7d`, `30d`), and dedicated tabs (Core/CPU/RAM, Network, Storage, Containers, Security) with a 1-click back button to the fleet.
+  - Automatically registered and bridged the Corvus Hub host server (`local-host`) into the circular telemetry ring buffer and database with live CPU, RAM, Disk, and local Docker container caching.
+  - Fixed chunk error boundary re-render issue when navigating into node details.
 - **React Hook Lifecycle Consistency (`App.tsx`)**:
   - Relocated the command palette `useCommandPalette` / `fetchCommandItems` effect hook to the component top-level before conditional early returns (`authLoading`, `authStatus`). Resolves production React error #310 ("Rendered more hooks than during the previous render") which caused a black screen after user login.
 

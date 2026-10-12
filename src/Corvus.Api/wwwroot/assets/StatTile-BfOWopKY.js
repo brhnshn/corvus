@@ -1,4 +1,4 @@
-import"./api-DDTAlbf-.js";import{zt as e}from"./vendor-icons-eQPRMu5H.js";import{t}from"./vendor-react-Dd4uDdhK.js";import{t as n}from"./ProgressBar-DRH3zRQ5.js";e();var r=t(),i=({label:e,value:t,unit:i,icon:a,progress:o,metricType:s,variant:c,footer:l,onClick:u,className:d=``})=>(0,r.jsxs)(`div`,{onClick:u,className:`
+import"./api-DDTAlbf-.js";import{Bt as e}from"./vendor-icons-ESdzaxwO.js";import{t}from"./vendor-react-C_mCH5fF.js";import{t as n}from"./ProgressBar-cVCinB7u.js";e();var r=t(),i=({label:e,value:t,unit:i,icon:a,progress:o,metricType:s,variant:c,footer:l,onClick:u,className:d=``})=>(0,r.jsxs)(`div`,{onClick:u,className:`
         surface rounded-[20px] p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 transition-colors duration-250 select-none
         ${u?`cursor-pointer hover:bg-white/[0.12] active:scale-[0.98]`:`hover:bg-white/[0.08]`}
         ${d}
