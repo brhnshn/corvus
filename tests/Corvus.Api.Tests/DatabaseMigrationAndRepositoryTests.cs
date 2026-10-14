@@ -540,8 +540,8 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
 
         string svcId = svc.Id;
 
-        // 2. Insert checks for yesterday (completed day) and today (uncompleted day)
-        var twoDaysAgo = DateTime.UtcNow.AddDays(-2);
+        // 2. Insert checks for completed day (two days ago) and today (uncompleted day)
+        var twoDaysAgo = DateTime.UtcNow.Date.AddDays(-2).AddHours(12);
         string dateTwoDaysAgo = twoDaysAgo.ToString("yyyy-MM-dd");
 
         await uptimeRepo.InsertAsync(new UptimeCheck
@@ -572,11 +572,11 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
             IsTransition = true
         });
 
-        // Today check (within 1 hour ago)
+        // Today check (current UTC moment)
         await uptimeRepo.InsertAsync(new UptimeCheck
         {
             ServiceId = svcId,
-            CheckedAt = DateTime.UtcNow.AddHours(-1).ToString("o"),
+            CheckedAt = DateTime.UtcNow.ToString("o"),
             Status = "up",
             ResponseTimeMs = 30,
             IsTransition = false

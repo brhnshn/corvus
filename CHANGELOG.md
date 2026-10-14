@@ -18,8 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `ActivityLogEndpoints.cs` & `ActivityLogRepository.cs`: Added `systemId` filtering support across audit records.
   - `ActivityTimeline/index.tsx` & `ActivityTimelineFilter.tsx`: Added an interactive scope switch (`[ Active Node | All Fleet ]`) allowing operators to inspect either node-specific actions or fleet-wide activity.
   - Synchronized type-safe i18n keys for Activity Timeline in both `en.ts` and `tr.ts`.
-- **Test Coverage**:
+- **Test Coverage & Flakiness Prevention**:
   - Added node isolation tests `ServicesRepository_SystemId_Isolation_WorksCorrectly` and `GetPagedAsync_WithSystemId_FiltersCorrectly` (294/294 tests passing).
+  - Fixed a flaky midnight boundary condition in `UptimeRepository_SmartRetentionAndRollup_WorksCorrectly` where executing tests near 23:40 UTC rolled over into the next calendar day, normalizing timestamps to midday.
 
 ---
 

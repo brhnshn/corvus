@@ -18,8 +18,9 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - `ActivityLogEndpoints.cs` ve `ActivityLogRepository.cs`: Olay kayıtları için `systemId` filtreleme altyapısı kuruldu.
   - `ActivityTimeline/index.tsx` ve `ActivityTimelineFilter.tsx`: `[ Aktif Düğüm | Tüm Filo ]` geçiş anahtarı eklenerek operatörlerin hem yalnızca seçili sunucudaki olayları hem de tüm filo genelindeki olayları filtreleyebilmesi sağlandı.
   - `tr.ts` ve `en.ts` dosyalarına Olay Geçmişi için tip güvenli yeni i18n çevirileri eklendi.
-- **Birim Test Kapsamı**:
+- **Birim Test Kapsamı ve Zaman Dilimi Dayanıklılığı**:
   - `ServicesRepository_SystemId_Isolation_WorksCorrectly` ve `GetPagedAsync_WithSystemId_FiltersCorrectly` testleri yazılarak sistem bazlı izolasyon doğrulandı (294/294 test başarılı).
+  - Gece yarısına yakın saatlerde (23:40 UTC) CI üzerinde çalıştırıldığında gün sınırını aşarak testin 2 gün üretmesine sebep olan `UptimeRepository_SmartRetentionAndRollup_WorksCorrectly` testi gün ortasına (`.Date.AddDays(-2).AddHours(12)`) sabitlenerek saat dilimi dalgalanması (flakiness) tamamen çözüldü.
 
 ---
 
