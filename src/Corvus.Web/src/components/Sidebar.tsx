@@ -116,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'containers', label: t('nav.containers') || 'Konteynerler', icon: Boxes },
     { id: 'metrics', label: t('nav.metrics') || 'Sistem Metrikleri', icon: Activity },
     { id: 'uptime', label: t('nav.uptime') || 'Uptime', icon: Clock },
-    { id: 'activity', label: 'Olay Geçmişi', icon: History },
+    { id: 'activity', label: t('nav.activity') || 'Olay Geçmişi', icon: History },
     { id: 'settings', label: t('nav.settings') || 'Ayarlar', icon: Settings },
   ] as const;
 
@@ -124,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       className={`sidebar ${isCollapsed ? '-translate-x-full lg:translate-x-0' : ''}`}
       style={{ width: `${sidebarWidth}px` }}
-      aria-label="Sol Menü"
+      aria-label={t('nav.navigation') || 'Sol Menü'}
     >
       {/* Sidebar Draggable Resizer */}
       <div
@@ -149,13 +149,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           type="button"
           className="system-selector"
           onClick={() => onSelectPage('systems')}
-          title="Sistem Değiştir / Tüm Sistemler"
+          title={t('nav.switchSystem') || 'Sistem Değiştir / Tüm Sistemler'}
         >
           <span className="flex items-center gap-1.5 truncate">
             <StatusDot status="up" size={6} />
             <span className="mono font-semibold truncate">{activeSystemName}</span>
           </span>
-          <span className="text-[11px] text-[var(--text-muted)] shrink-0">← Tüm Sistemler</span>
+          <span className="text-[11px] text-[var(--text-muted)] shrink-0">← {t('nav.backToSystems') || 'Tüm Sistemler'}</span>
         </button>
 
         {/* Command Palette Trigger */}
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             className="cmd-trigger"
             onClick={onOpenCommandPalette}
-            title="Komut Paletini Aç (Ctrl K)"
+            title={t('nav.openCommandPalette') || 'Komut Paletini Aç (Ctrl K)'}
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5" />
@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         />
 
-        <div className="nav-section-title">Navigasyon</div>
+        <div className="nav-section-title">{t('nav.navigation') || 'Navigasyon'}</div>
 
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -222,14 +222,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Footer: Live Status & Version / Memory footprint */}
+      {/* Footer: Live Status & Version */}
       <div className="sidebar-footer">
         <a
           href="/status"
           target="_blank"
           rel="noopener noreferrer"
           className="footer-link"
-          title="Herkese Açık Canlı Durum Sayfası"
+          title={t('nav.publicStatusPage') || 'Herkese Açık Canlı Durum Sayfası'}
         >
           <span className="flex items-center gap-1.5">
             <Terminal className="w-3.5 h-3.5 text-[var(--text-muted)]" />
@@ -240,7 +240,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="version-row">
           <span>Corvus {versionInfo ? `v${versionInfo.currentVersion}` : 'v1.6.0'}</span>
-          <span className="mono text-[var(--cloud-300)]">21.8 MB RAM</span>
+          {versionInfo?.isUpdateAvailable ? (
+            <span className="mono text-[11px] text-[var(--status-warn)]">{t('nav.updateAvailable') || 'Güncelleme var'}</span>
+          ) : (
+            <span className="mono text-[11px] text-[var(--text-muted)]">{t('nav.upToDate') || 'güncel'}</span>
+          )}
         </div>
       </div>
     </aside>

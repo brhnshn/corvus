@@ -7,6 +7,7 @@ public interface IComposeFileService
 {
     Task<ComposeFileDto> GetComposeFileAsync(string projectName, CancellationToken cancellationToken = default);
     Task<GenericApiResponse> SaveComposeFileAsync(string projectName, SaveComposeFileRequest request, CancellationToken cancellationToken = default);
+    Task<ComposeDeployResult> DeployComposeAsync(string projectName, CancellationToken cancellationToken = default);
 }
 
 public class ComposeFileService : IComposeFileService
@@ -59,11 +60,27 @@ public class ComposeFileService : IComposeFileService
             string content = await File.ReadAllTextAsync(resolvedFilePath, Encoding.UTF8, cancellationToken);
             var fileInfo = new FileInfo(resolvedFilePath);
 
+            string dir = Path.GetDirectoryName(resolvedFilePath) ?? "";
+            string envPath = Path.Combine(dir, ".env");
+            string? envContent = null;
+            bool envExists = File.Exists(envPath);
+            if (envExists)
+            {
+                try
+                {
+                    envContent = await File.ReadAllTextAsync(envPath, Encoding.UTF8, cancellationToken);
+                }
+                catch { }
+            }
+
             return new ComposeFileDto
             {
                 ProjectName = projectName,
                 FilePath = resolvedFilePath,
                 Content = content,
+                EnvContent = envContent,
+                EnvFilePath = envPath,
+                EnvExists = envExists,
                 LastModified = fileInfo.LastWriteTimeUtc,
                 Exists = true
             };
@@ -95,6 +112,17 @@ public class ComposeFileService : IComposeFileService
             return new GenericApiResponse(false, "Compose dosya içeriği boş olamaz.");
         }
 
+        // Sözcüksel (Lexical) doğrulama: YAML içerisinde TAB yasağı kontrolü
+        string[] lines = request.Content.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i];
+            if (line.StartsWith('\t') || line.TrimStart().StartsWith('\t'))
+            {
+                return new GenericApiResponse(false, $"Sözdizimi hatası: Satır {i + 1} sekme karakteri (TAB) içeriyor. YAML standardında girintileme için boşluk (space) kullanılmalıdır.");
+            }
+        }
+
         string? resolvedFilePath = await ResolveComposeFilePathAsync(projectName, cancellationToken);
         if (string.IsNullOrWhiteSpace(resolvedFilePath))
         {
@@ -117,6 +145,19 @@ public class ComposeFileService : IComposeFileService
             // 3. Dosyayı güvenle kaydet
             await File.WriteAllTextAsync(resolvedFilePath, request.Content, Encoding.UTF8, cancellationToken);
             _logger.LogInformation("Compose dosyası başarıyla güncellendi: {Path}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(resolvedFilePath));
+
+            // 3b. Varsa .env dosyasını güvenle kaydet
+            if (request.EnvContent != null)
+            {
+                string dir = Path.GetDirectoryName(resolvedFilePath) ?? "";
+                string envPath = Path.Combine(dir, ".env");
+                if (File.Exists(envPath))
+                {
+                    File.Copy(envPath, $"{envPath}.bak", overwrite: true);
+                }
+                await File.WriteAllTextAsync(envPath, request.EnvContent, Encoding.UTF8, cancellationToken);
+                _logger.LogInformation(".env dosyası kaydedildi: {EnvPath}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(envPath));
+            }
 
             // 4. İsteğe bağlı Stack Container'larını yeniden başlatma
             if (request.RestartStack)
@@ -145,6 +186,89 @@ public class ComposeFileService : IComposeFileService
         {
             _logger.LogError(ex, "Compose dosyası kaydedilirken hata oluştu: {Project}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(projectName));
             return new GenericApiResponse(false, $"Dosya kaydedilemedi: {ex.Message}");
+        }
+    }
+
+    public async Task<ComposeDeployResult> DeployComposeAsync(string projectName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            return new ComposeDeployResult { Success = false, Error = "Proje adı boş olamaz." };
+        }
+
+        string? resolvedFilePath = await ResolveComposeFilePathAsync(projectName, cancellationToken);
+        if (string.IsNullOrWhiteSpace(resolvedFilePath) || !File.Exists(resolvedFilePath))
+        {
+            return new ComposeDeployResult { Success = false, Error = $"'{projectName}' için compose dosyası bulunamadı." };
+        }
+
+        string workingDir = Path.GetDirectoryName(resolvedFilePath) ?? AppContext.BaseDirectory;
+
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"compose -f \"{resolvedFilePath}\" up -d --remove-orphans",
+                WorkingDirectory = workingDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            System.Diagnostics.Process? proc = null;
+            try
+            {
+                proc = System.Diagnostics.Process.Start(psi);
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // docker bulunamadıysa docker-compose dene
+                psi.FileName = "docker-compose";
+                psi.Arguments = $"-f \"{resolvedFilePath}\" up -d --remove-orphans";
+                proc = System.Diagnostics.Process.Start(psi);
+            }
+
+            if (proc == null)
+            {
+                return new ComposeDeployResult { Success = false, Error = "Docker Compose işlemi başlatılamadı." };
+            }
+
+            using (proc)
+            {
+                string stdOut = await proc.StandardOutput.ReadToEndAsync(cancellationToken);
+                string stdErr = await proc.StandardError.ReadToEndAsync(cancellationToken);
+                await proc.WaitForExitAsync(cancellationToken);
+
+                string fullOutput = string.IsNullOrWhiteSpace(stdErr)
+                    ? stdOut
+                    : (string.IsNullOrWhiteSpace(stdOut) ? stdErr : $"{stdOut}\n{stdErr}").Trim();
+
+                bool success = proc.ExitCode == 0;
+                if (success)
+                {
+                    _dockerService.InvalidateContainersCache();
+                }
+
+                return new ComposeDeployResult
+                {
+                    Success = success,
+                    Output = fullOutput,
+                    ExitCode = proc.ExitCode,
+                    Error = success ? null : fullOutput
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Compose deploy hatası: {Project}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(projectName));
+            return new ComposeDeployResult
+            {
+                Success = false,
+                ExitCode = -1,
+                Error = $"Dağıtım yürütülemedi: {ex.Message}"
+            };
         }
     }
 

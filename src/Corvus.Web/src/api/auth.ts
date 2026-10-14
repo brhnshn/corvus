@@ -47,6 +47,12 @@ export const authApi = {
       method: 'DELETE'
     }),
 
+  updateUserRole: (id: string, role: string) =>
+    fetchJson<{ success: boolean; message?: string }>(`/users/${id}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role })
+    }),
+
   logout: async () => {
     const res = await fetchJson<{ success: boolean; message?: string }>('/auth/logout', {
       method: 'POST'

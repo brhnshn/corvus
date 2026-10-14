@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertCircle, AlertTriangle, ChevronRight, ShieldAlert } from 'lucide-react';
+import { AlertStrip } from '../../components/ui/AlertStrip';
+import { Button } from '../../components/ui/Button';
 import type { Service, DockerContainer, PushMonitor } from '../../types';
 
 export interface AttentionAlertsProps {
@@ -31,97 +32,134 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
   if (!hasIssues) return null;
 
   return (
-    <div className="space-y-2 animate-rv" style={{ animationDelay: '160ms' }}>
+    <div className="space-y-2">
       {/* Erişilemeyen Servisler */}
       {downServices.map((service) => (
-        <div
+        <AlertStrip
           key={service.id}
-          onClick={() => onNavigate?.('services')}
-          className="flex items-center gap-3 p-3.5 rounded-[16px] bg-[#f87171]/10 border border-[#f87171]/35 cursor-pointer transition-transform duration-200 active:scale-[0.98] hover:bg-[#f87171]/15"
-        >
-          <AlertCircle className="w-5 h-5 text-[#f87171] shrink-0" />
-          <div className="min-w-0 flex-1">
-            <b className="text-[13.5px] font-semibold text-[#eceef6] block truncate">
-              {service.name} erişilemiyor
-            </b>
-            <small className="text-xs text-[#9ba0b5] block truncate">
-              {service.url || `${service.checkType?.toUpperCase()} servisi`} yanıt vermiyor
-            </small>
-          </div>
-          <span className="text-xs font-semibold text-[#f87171] flex items-center gap-1 shrink-0 ml-auto">
-            İncele <ChevronRight className="w-4 h-4" />
-          </span>
-        </div>
+          type="danger"
+          message={
+            <span>
+              <strong>{service.name}</strong> erişilemiyor{' '}
+              <span className="opacity-75 font-mono text-[11px]">
+                ({service.url || `${service.checkType?.toUpperCase()} servisi`} yanıt vermiyor)
+              </span>
+            </span>
+          }
+          action={
+            onNavigate && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onNavigate('services')}
+              >
+                Servise Git →
+              </Button>
+            )
+          }
+        />
       ))}
 
       {/* Yavaş / Bozulmuş Servisler */}
       {degradedServices.map((service) => (
-        <div
+        <AlertStrip
           key={service.id}
-          onClick={() => onNavigate?.('services')}
-          className="flex items-center gap-3 p-3.5 rounded-[16px] bg-[#fbbf24]/08 border border-[#fbbf24]/30 cursor-pointer transition-transform duration-200 active:scale-[0.98] hover:bg-[#fbbf24]/12"
-        >
-          <AlertTriangle className="w-5 h-5 text-[#fbbf24] shrink-0" />
-          <div className="min-w-0 flex-1">
-            <b className="text-[13.5px] font-semibold text-[#eceef6] block truncate">
-              {service.name} performans düşüşü
-            </b>
-            <small className="text-xs text-[#9ba0b5] block truncate">
-              Yanıt süresi eşiğin üzerinde veya kararsız çalışıyor
-            </small>
-          </div>
-          <span className="text-xs font-semibold text-[#fbbf24] flex items-center gap-1 shrink-0 ml-auto">
-            Git <ChevronRight className="w-4 h-4" />
-          </span>
-        </div>
+          type="warn"
+          message={
+            <span>
+              <strong>{service.name}</strong> performans düşüşü tespit edildi (yanıt süresi yüksek)
+            </span>
+          }
+          action={
+            onNavigate && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onNavigate('services')}
+              >
+                İncele →
+              </Button>
+            )
+          }
+        />
       ))}
 
       {/* SSL Süresi Yaklaşanlar */}
       {sslWarnings.map((service) => (
-        <div
+        <AlertStrip
           key={`ssl-${service.id}`}
-          onClick={() => onNavigate?.('services')}
-          className="flex items-center gap-3 p-3.5 rounded-[16px] bg-[#fbbf24]/08 border border-[#fbbf24]/30 cursor-pointer transition-transform duration-200 active:scale-[0.98] hover:bg-[#fbbf24]/12"
-        >
-          <ShieldAlert className="w-5 h-5 text-[#fbbf24] shrink-0" />
-          <div className="min-w-0 flex-1">
-            <b className="text-[13.5px] font-semibold text-[#eceef6] block truncate">
-              {service.name} SSL sertifikası yakında dolacak
-            </b>
-            <small className="text-xs text-[#9ba0b5] block">
-              Kalan süre: {service.sslExpiryDays} gün
-            </small>
-          </div>
-          <span className="text-xs font-semibold text-[#fbbf24] flex items-center gap-1 shrink-0 ml-auto">
-            Git <ChevronRight className="w-4 h-4" />
-          </span>
-        </div>
+          type="warn"
+          message={
+            <span>
+              <strong>{service.name}</strong> SSL sertifikası yakında dolacak (kalan: {service.sslExpiryDays} gün)
+            </span>
+          }
+          action={
+            onNavigate && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onNavigate('services')}
+              >
+                Görüntüle →
+              </Button>
+            )
+          }
+        />
       ))}
 
       {/* Beklenmedik Şekilde Durmuş Konteynerler */}
       {stoppedContainers.map((container) => {
         const cleanName = (container.Names?.[0] || container.Id).replace(/^\//, '');
         return (
-          <div
+          <AlertStrip
             key={container.Id}
-            onClick={() => onNavigate?.('containers')}
-            className="flex items-center gap-3 p-3.5 rounded-[16px] bg-[#f87171]/08 border border-[#f87171]/30 cursor-pointer transition-transform duration-200 active:scale-[0.98] hover:bg-[#f87171]/12"
-          >
-            <AlertCircle className="w-5 h-5 text-[#f87171] shrink-0" />
-            <div className="min-w-0 flex-1">
-              <b className="text-[13.5px] font-semibold text-[#eceef6] block truncate">
-                {cleanName} konteyneri durdu
-              </b>
-              <small className="text-xs text-[#9ba0b5] font-mono block truncate">
-                {container.Status || 'Exited'}
-              </small>
-            </div>
-            <span className="text-xs font-semibold text-[#f87171] flex items-center gap-1 shrink-0 ml-auto">
-              Konteynere Git <ChevronRight className="w-4 h-4" />
-            </span>
-          </div>
+            type="danger"
+            message={
+              <span>
+                <strong>{cleanName}</strong> konteyneri durdu{' '}
+                <span className="opacity-75 font-mono text-[11px]">({container.Status || 'Exited'})</span>
+              </span>
+            }
+            action={
+              onNavigate && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onNavigate('containers')}
+                >
+                  Konteynerlere Git →
+                </Button>
+              )
+            }
+          />
         );
       })}
+
+      {/* Arıza Veren Push Monitor'ler */}
+      {failedPushMonitors.map((pm) => (
+        <AlertStrip
+          key={pm.id}
+          type="danger"
+          message={
+            <span>
+              <strong>{pm.name}</strong> cron kalp atışı (heartbeat) kesildi
+            </span>
+          }
+          action={
+            onNavigate && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onNavigate('uptime')}
+              >
+                Uptime Takibi →
+              </Button>
+            )
+          }
+        />
+      ))}
     </div>
   );
 };
+

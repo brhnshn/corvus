@@ -28,6 +28,18 @@ public static class UsersEndpoints
             return Results.Ok(new GenericApiResponse(true, "Kullanıcı başarıyla oluşturuldu."));
         });
 
+        group.MapPut("/{id}/role", async (string id, UpdateUserRoleRequest request, HttpContext context, IAuthService auth) =>
+        {
+            string currentUsername = context.Items["Corvus_User"] as string ?? string.Empty;
+            var (success, error) = await auth.UpdateUserRoleAsync(id, request.Role, currentUsername);
+            if (!success)
+            {
+                return Results.BadRequest(new GenericApiResponse(false, error ?? "Kullanıcı rolü güncellenemedi."));
+            }
+
+            return Results.Ok(new GenericApiResponse(true, "Kullanıcı rolü başarıyla güncellendi."));
+        });
+
         group.MapDelete("/{id}", async (string id, HttpContext context, IAuthService auth) =>
         {
             string currentUsername = context.Items["Corvus_User"] as string ?? string.Empty;

@@ -126,3 +126,17 @@ export interface DockerRpcResponse {
   message?: string;
   logs?: string[];
 }
+
+export interface SystemdUnitDto {
+  name: string;
+  description: string;
+  loadState: string;
+  activeState: string;
+  subState: string;
+  memoryBytes?: number | null;
+}
+
+export interface SystemdLogsDto {
+  unit: string;
+  logs: string[];
+}

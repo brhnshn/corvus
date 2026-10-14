@@ -1,16 +1,19 @@
 import React from 'react';
-import { ProgressBar } from '../../components/ui/ProgressBar';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { TableWrap } from '../../components/ui/ExpandableTable';
 import { formatBytes } from '../../utils/format';
 import type { DockerContainer, ContainerStats } from '../../types';
 
 export interface TopResourcesCardProps {
   containers: DockerContainer[];
   statsMap?: Record<string, ContainerStats>;
+  onNavigate?: (page: 'containers') => void;
 }
 
 export const TopResourcesCard: React.FC<TopResourcesCardProps> = ({
   containers,
   statsMap = {},
+  onNavigate,
 }) => {
   // Konteynerleri RAM kullanımına göre sırala
   const containerListWithStats = containers.map((c) => {
@@ -18,11 +21,13 @@ export const TopResourcesCard: React.FC<TopResourcesCardProps> = ({
     const stat = statsMap[c.Id];
     const ramBytes = stat?.memoryUsageBytes ?? 0;
     const ramPercent = stat?.memoryPercent ?? 0;
+    const cpuPercent = stat?.cpuPercent ?? 0;
     return {
       id: c.Id,
       name: cleanName,
       ramBytes,
       ramPercent,
+      cpuPercent,
     };
   });
 
@@ -31,48 +36,66 @@ export const TopResourcesCard: React.FC<TopResourcesCardProps> = ({
     .sort((a, b) => b.ramBytes - a.ramBytes)
     .slice(0, 5);
 
-  const maxRam = Math.max(...topContainers.map((c) => c.ramBytes), 1024 * 1024 * 100);
-
   return (
-    <section className="surface rounded-[22px] p-4 sm:p-5 flex flex-col justify-between animate-rv" style={{ animationDelay: '240ms' }}>
-      <div className="flex items-center justify-between mb-3.5">
-        <div>
-          <b className="text-base font-semibold text-[#eceef6] block leading-snug">
-            En Çok Kaynak Kullananlar
-          </b>
-          <small className="font-mono text-xs text-[#9ba0b5]">
-            RAM'e göre ilk 5 konteyner
-          </small>
-        </div>
-      </div>
-
-      {topContainers.length === 0 ? (
-        <div className="text-center py-6 text-xs text-[#9ba0b5]">
-          Henüz kaynak istatistiği toplanmadı
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {topContainers.map((item) => {
-            const ratio = Math.min(100, Math.max(8, Math.round((item.ramBytes / maxRam) * 100)));
-            const ramLabel = item.ramBytes > 0 ? formatBytes(item.ramBytes) : 'Belirsiz';
-
-            return (
-              <div key={item.id} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-[#eceef6] truncate max-w-[200px]">
-                    {item.name}
-                  </span>
-                  <span className="font-mono text-[11.5px] text-[#9ba0b5]">
-                    {ramLabel}
-                  </span>
-                </div>
-                {/* Midnight v2: Durumsuz oran çubuğu tek renk nötr (neutral-bar) */}
-                <ProgressBar value={ratio} variant="neutral" height={5} />
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
+    <Card>
+      <CardHeader
+        action={
+          onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('containers')}
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--cloud-100)] transition-colors cursor-pointer"
+            >
+              Tümünü Gör →
+            </button>
+          )
+        }
+      >
+        <CardTitle>En Çok Kaynak Tüketen Konteynerler</CardTitle>
+      </CardHeader>
+      <CardContent className="!p-0">
+        {topContainers.length === 0 ? (
+          <div className="text-center py-6 text-xs text-[var(--text-muted)]">
+            Henüz kaynak istatistiği toplanmadı
+          </div>
+        ) : (
+          <TableWrap>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Konteyner</th>
+                  <th>CPU</th>
+                  <th>Bellek</th>
+                  <th style={{ textAlign: 'right' }}>Bellek Oranı</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topContainers.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="data-row cursor-pointer"
+                    onClick={() => onNavigate?.('containers')}
+                  >
+                    <td className="font-mono text-xs font-medium text-[var(--cloud-100)]">
+                      {item.name}
+                    </td>
+                    <td className="font-mono text-xs tabular-nums text-[var(--text-secondary)]">
+                      {item.cpuPercent ? `%${item.cpuPercent.toFixed(1)}` : '-'}
+                    </td>
+                    <td className="font-mono text-xs tabular-nums text-[var(--cloud-200)]">
+                      {item.ramBytes > 0 ? formatBytes(item.ramBytes) : '-'}
+                    </td>
+                    <td style={{ textAlign: 'right' }} className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
+                      {item.ramPercent ? `%${item.ramPercent.toFixed(1)}` : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableWrap>
+        )}
+      </CardContent>
+    </Card>
   );
 };
+

@@ -37,7 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
     { id: 'containers', label: t('nav.containers'), full: t('nav.containers'), icon: Boxes },
     { id: 'metrics', label: t('nav.metricsShort'), full: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), full: t('nav.uptime'), icon: Clock },
-    { id: 'activity', label: 'Geçmiş', full: 'Olay Geçmişi', icon: History },
+    { id: 'activity', label: t('nav.activityShort'), full: t('nav.activity'), icon: History },
     { id: 'settings', label: t('nav.settings'), full: t('nav.settings'), icon: Settings },
     { id: 'profile', label: t('nav.profileShort'), full: t('nav.profile'), icon: User },
   ];
@@ -50,7 +50,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
 
   return (
     <nav
-      aria-label="Ana gezinme"
+      aria-label={t('nav.navigation') || 'Ana gezinme'}
       className="
         fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-[520px] lg:hidden
         h-16 rounded-full p-1.5 select-none

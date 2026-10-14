@@ -8,12 +8,14 @@ export interface ContainersHeaderProps {
   onPruneClick: () => void;
   onRefreshClick: () => void;
   refreshing?: boolean;
+  isAdmin?: boolean;
 }
 
 export const ContainersHeader: React.FC<ContainersHeaderProps> = ({
   onPruneClick,
   onRefreshClick,
   refreshing = false,
+  isAdmin = true,
 }) => {
   const { t } = useI18n();
 
@@ -23,14 +25,16 @@ export const ContainersHeader: React.FC<ContainersHeaderProps> = ({
       subtitle={t('containers.subtitle')}
       actions={
         <div className="flex items-center gap-2">
-          <Button
-            variant="danger"
-            onClick={onPruneClick}
-            icon={<Trash2 className="w-4 h-4" />}
-          >
-            <span className="hidden sm:inline">Sistem Temizliği</span>
-            <span className="sm:hidden">Temizlik</span>
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="danger"
+              onClick={onPruneClick}
+              icon={<Trash2 className="w-4 h-4" />}
+            >
+              <span className="hidden sm:inline">Sistem Temizliği</span>
+              <span className="sm:hidden">Temizlik</span>
+            </Button>
+          )}
 
           <Button
             variant="secondary"

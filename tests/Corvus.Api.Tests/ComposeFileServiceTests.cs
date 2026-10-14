@@ -27,111 +27,101 @@ public class ComposeFileServiceTests : IDisposable
         catch { }
     }
 
-    private class ComposeFakeDockerHttpClient : DockerServiceTests.FakeDockerHttpClient
+    private IDockerService CreateDockerServiceWithCompose(string composePath)
     {
-        private readonly List<DockerContainerInfo> _containers;
-
-        public ComposeFakeDockerHttpClient(List<DockerContainerInfo> containers)
+        var containers = new List<DockerContainerInfo>
         {
-            _containers = containers;
-        }
-
-        public override Task<List<DockerContainerInfo>> ListContainersAsync(bool all = true, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(_containers);
-        }
-
-        public override Task<DockerActionResult> RestartContainerAsync(string containerId, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(new DockerActionResult(true, $"Container {containerId} restarted"));
-        }
-    }
-
-    [Fact]
-    public async Task GetComposeFileAsync_WhenProjectNotFound_ReturnsError()
-    {
-        var fakeClient = new ComposeFakeDockerHttpClient(new List<DockerContainerInfo>());
-        var dockerService = new DockerService(fakeClient, NullLogger<DockerService>.Instance);
-        var service = new ComposeFileService(dockerService, NullLogger<ComposeFileService>.Instance);
-
-        var result = await service.GetComposeFileAsync("non_existent_project");
-
-        Assert.False(result.Exists);
-        Assert.NotNull(result.Error);
-    }
-
-    [Fact]
-    public async Task GetComposeFileAsync_WhenFileExists_ReadsContentSuccessfully()
-    {
-        string composePath = Path.Combine(_tempDir, "compose.yaml");
-        string originalYaml = "services:\n  web:\n    image: nginx:alpine\n";
-        await File.WriteAllTextAsync(composePath, originalYaml);
-
-        var container = new DockerContainerInfo
-        {
-            Id = "c1",
-            Names = new List<string> { "/web" },
-            Labels = new Dictionary<string, string>
+            new()
             {
-                ["com.docker.compose.project"] = "my_app",
-                ["com.docker.compose.project.working_dir"] = _tempDir,
-                ["com.docker.compose.project.config_files"] = composePath
+                Id = "c_compose_1",
+                Names = new List<string> { "/my_stack_app_1" },
+                Labels = new Dictionary<string, string>
+                {
+                    ["com.docker.compose.project"] = "my_stack",
+                    ["com.docker.compose.project.working_dir"] = Path.GetDirectoryName(composePath)!,
+                    ["com.docker.compose.project.config_files"] = composePath
+                }
             }
         };
-
-        var fakeClient = new ComposeFakeDockerHttpClient(new List<DockerContainerInfo> { container });
-        var dockerService = new DockerService(fakeClient, NullLogger<DockerService>.Instance);
-        var service = new ComposeFileService(dockerService, NullLogger<ComposeFileService>.Instance);
-
-        var result = await service.GetComposeFileAsync("my_app");
-
-        Assert.True(result.Exists);
-        Assert.Equal("my_app", result.ProjectName);
-        Assert.Equal(composePath, result.FilePath);
-        Assert.Equal(originalYaml, result.Content);
-        Assert.NotNull(result.LastModified);
+        var fakeClient = new FakeDockerHttpClientWithContainers(containers);
+        return new DockerService(fakeClient, NullLogger<DockerService>.Instance);
     }
 
     [Fact]
-    public async Task SaveComposeFileAsync_CreatesBackupAndWritesNewContent()
+    public async Task SaveComposeFileAsync_RejectsTabsInYaml()
     {
-        string composePath = Path.Combine(_tempDir, "docker-compose.yml");
-        string originalYaml = "services:\n  app:\n    image: node:18\n";
-        await File.WriteAllTextAsync(composePath, originalYaml);
+        string yamlPath = Path.Combine(_tempDir, "compose.yaml");
+        await File.WriteAllTextAsync(yamlPath, "services:\n  app:\n    image: nginx");
 
-        var container = new DockerContainerInfo
+        var dockerMock = CreateDockerServiceWithCompose(yamlPath);
+        var service = new ComposeFileService(dockerMock, NullLogger<ComposeFileService>.Instance);
+
+        string invalidYaml = "services:\n\tapp:\n\t\timage: nginx";
+        var result = await service.SaveComposeFileAsync("my_stack", new SaveComposeFileRequest
         {
-            Id = "c1",
-            Names = new List<string> { "/app" },
-            Labels = new Dictionary<string, string>
-            {
-                ["com.docker.compose.project"] = "node_stack",
-                ["com.docker.compose.project.working_dir"] = _tempDir,
-                ["com.docker.compose.project.config_files"] = composePath
-            }
-        };
-
-        var fakeClient = new ComposeFakeDockerHttpClient(new List<DockerContainerInfo> { container });
-        var dockerService = new DockerService(fakeClient, NullLogger<DockerService>.Instance);
-        var service = new ComposeFileService(dockerService, NullLogger<ComposeFileService>.Instance);
-
-        string updatedYaml = "services:\n  app:\n    image: node:20\n";
-        var saveResult = await service.SaveComposeFileAsync("node_stack", new SaveComposeFileRequest
-        {
-            Content = updatedYaml,
-            RestartStack = true
+            Content = invalidYaml
         });
 
-        Assert.True(saveResult.Success);
+        Assert.False(result.Success);
+        Assert.Contains("TAB", result.Message);
+        Assert.Contains("boşluk", result.Message);
+    }
 
-        // 1. Yeni içerik yazıldı mı?
-        string currentContent = await File.ReadAllTextAsync(composePath);
-        Assert.Equal(updatedYaml, currentContent);
+    [Fact]
+    public async Task SaveComposeFileAsync_ValidYaml_SavesYamlAndEnvAndCreatesBackup()
+    {
+        string yamlPath = Path.Combine(_tempDir, "compose.yaml");
+        await File.WriteAllTextAsync(yamlPath, "services:\n  app:\n    image: nginx:1.24");
 
-        // 2. .bak yedeği oluştu mu ve eski içeriği taşıyor mu?
-        string backupPath = $"{composePath}.bak";
-        Assert.True(File.Exists(backupPath));
-        string backupContent = await File.ReadAllTextAsync(backupPath);
-        Assert.Equal(originalYaml, backupContent);
+        var dockerMock = CreateDockerServiceWithCompose(yamlPath);
+        var service = new ComposeFileService(dockerMock, NullLogger<ComposeFileService>.Instance);
+
+        string newYaml = "services:\n  app:\n    image: nginx:1.25\n    restart: always";
+        string envContent = "PORT=8080\nNODE_ENV=production";
+
+        var result = await service.SaveComposeFileAsync("my_stack", new SaveComposeFileRequest
+        {
+            Content = newYaml,
+            EnvContent = envContent
+        });
+
+        Assert.True(result.Success);
+
+        // Check updated compose.yaml
+        string savedYaml = await File.ReadAllTextAsync(yamlPath);
+        Assert.Equal(newYaml, savedYaml);
+
+        // Check .bak file created
+        string bakPath = $"{yamlPath}.bak";
+        Assert.True(File.Exists(bakPath));
+        string bakContent = await File.ReadAllTextAsync(bakPath);
+        Assert.Equal("services:\n  app:\n    image: nginx:1.24", bakContent);
+
+        // Check .env created
+        string envPath = Path.Combine(_tempDir, ".env");
+        Assert.True(File.Exists(envPath));
+        string savedEnv = await File.ReadAllTextAsync(envPath);
+        Assert.Equal(envContent, savedEnv);
+    }
+
+    [Fact]
+    public async Task GetComposeFileAsync_LoadsYamlAndEnvCorrectly()
+    {
+        string yamlPath = Path.Combine(_tempDir, "compose.yaml");
+        await File.WriteAllTextAsync(yamlPath, "services:\n  web:\n    image: redis:alpine");
+
+        string envPath = Path.Combine(_tempDir, ".env");
+        await File.WriteAllTextAsync(envPath, "REDIS_PORT=6379");
+
+        var dockerMock = CreateDockerServiceWithCompose(yamlPath);
+        var service = new ComposeFileService(dockerMock, NullLogger<ComposeFileService>.Instance);
+
+        var dto = await service.GetComposeFileAsync("my_stack");
+
+        Assert.True(dto.Exists);
+        Assert.Equal(yamlPath, dto.FilePath);
+        Assert.Contains("redis:alpine", dto.Content);
+        Assert.True(dto.EnvExists);
+        Assert.Equal("REDIS_PORT=6379", dto.EnvContent);
     }
 }

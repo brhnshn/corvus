@@ -3,9 +3,40 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.0] - 2026-10-12 — Multi-Node Systems Cockpit & Edge Agent Architecture
+## [1.6.0] - 2026-10-14 — Multi-Node Systems Cockpit, Edge Agent, RBAC, Visual Compose & Systemd Management
 
 ### Added
+- **SSE Telemetry Streaming & 100ms Live Sync**:
+  - Replaced browser HTTP polling with real-time Server-Sent Events (`GET /api/v1/systems/{id}/stream` and `/api/v1/metrics/stream`).
+  - Added `useSystemMetricsStream` hook with exponential backoff and fallback capability.
+- **Graceful Shutdown & Zero-Loss RAM Flush**:
+  - Implemented application stopping lifetime hook in `MetricsBatchFlusherBackgroundService` to flush all uncommitted RAM telemetry points directly to disk on `SIGTERM`.
+- **Role-Based Access Control (RBAC) & Viewer Role**:
+  - Added database migrations `017_users_rbac_sqlite.sql` and `017_users_rbac_postgres.sql` introducing `role` column (`admin`, `operator`, `viewer`).
+  - Enforced `CorvusAuthFilter` blocking mutating endpoints (`POST`, `PUT`, `DELETE`) for viewer accounts (`403 Forbidden`).
+  - Added `UsersTab.tsx` user and role management interface with modal and safe state updates.
+- **Visual Compose & .env Editor**:
+  - Implemented `PUT /api/v1/compose/{stackName}` with lexical TAB character detection and automatic `.bak` backup creation.
+  - Implemented `POST /api/v1/compose/{stackName}/deploy` executing `docker compose up -d` with streamed execution output.
+  - Enhanced `ComposeConfigModal.tsx` with side-by-side YAML and .env tabs and inline feedback buttons.
+- **One-Click Image Update (Pull & Recreate)**:
+  - Integrated OCI registry digest comparison with container state discovery.
+  - Implemented `POST /api/v1/containers/{id}/recreate` preserving host configs, mounts, and network settings with automatic rollback on failure.
+  - Added matte amber "Update Available" badges and instant recreate action in Containers UI.
+- **Systemd Service & Process Management**:
+  - Created `ISystemdServiceClient` & `SystemdServiceClient` with strict command injection protection (`^[a-zA-Z0-9@_.-]+\.service$`) and non-Linux OS guards.
+  - Added REST endpoints for listing system units, executing `start`/`stop`/`restart`, and streaming `journalctl` logs.
+  - Added `SystemdUnitsTab.tsx` with search, active/failed/inactive filters, journalctl logs modal, and confirm modals.
+  - Integrated Systemd tab into both Services and Systems Cockpit views.
+- **Command Center & Keyboard Fast Actions (Ctrl+K)**:
+  - Transformed Command Palette into an actionable command center:
+    - `> restart <container>` with Undo toast support.
+    - `> logs <container>` opening instant live SSE container log view.
+    - `> switch <system>` seamlessly changing active cluster node.
+    - `> check <service>` performing instantaneous HTTP/TCP health probe with latency feedback.
+- **Frontend Test Suite (Vitest)**:
+  - Configured Vitest and `@testing-library/react` in `Corvus.Web`.
+  - Added unit test suites covering HTTP caching, formatting, fuzzy matching, and ObsidianUI primitives (`AnimatedNumber`, `SegmentedTabs`, `ExpandableTable`, `StatusBadge`).
 - **Multi-Node Systems Cockpit & Distributed Edge Management (`/systems`)**:
   - Full end-to-end multi-server fleet management connecting disparate VPS nodes, bare-metal servers, and homelabs to a single Corvus Hub without opening inbound ports.
   - Implemented database migrations for SQLite (`016_systems_sqlite.sql`) and PostgreSQL (`016_systems_postgres.sql`) with tables: `systems`, `system_tokens`, `system_metrics_1m`, `system_metrics_1h`, and `system_containers_cache`.
@@ -36,6 +67,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- Fixed command palette fuzzy scoring ranking exact prefix matches and commands at the top.
+- Fixed non-Linux fallback behavior for journalctl log queries.
 - **ObsidianUI Design System & Motion Engine Infrastructure (Phases 1-4)**:
   - Implemented ObsidianUI design tokens in `index.css`: Greyish Cloud White (`--cloud-100`..`--cloud-500`), matte obsidian surfaces (`--bg-canvas`..`--bg-active`), 1px hairline borders (`--border-hairline`), and zero-gradient / zero-glow principles.
   - Built motion design system in `src/lib/motion.ts`: Spring physics, stagger tokens, runtime motion scale controller (1x, 0.35x Slow-Mo, Instant), and Dark/Light theme mode manager.

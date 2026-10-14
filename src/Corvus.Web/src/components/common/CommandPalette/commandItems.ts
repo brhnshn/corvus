@@ -8,26 +8,33 @@ import {
   User as UserIcon,
   Play,
   RotateCw,
-  FileText,
   Terminal,
   ExternalLink,
   History,
-  Trash2
+  Trash2,
+  Server
 } from 'lucide-react';
 import type { CommandItem } from './types';
 import type { PageId } from '../../Sidebar';
-import { api } from '../../../api/client';
+import { api, invalidateCache } from '../../../api';
 
 interface GenerateCommandItemsOptions {
-  t: (key: any) => string;
+  t: (key: any, params?: any) => string;
   onNavigate: (page: PageId, containerId?: string | null, tab?: string | null) => void;
   onRefreshData?: () => void;
+  toast?: {
+    success: (msg: string, onUndo?: () => void) => void;
+    warn: (msg: string, onUndo?: () => void) => void;
+    error: (msg: string, onUndo?: () => void) => void;
+    info: (msg: string, onUndo?: () => void) => void;
+  };
 }
 
 export async function fetchCommandItems({
   t,
   onNavigate,
   onRefreshData,
+  toast,
 }: GenerateCommandItemsOptions): Promise<CommandItem[]> {
   const items: CommandItem[] = [
     // Sayfalar
@@ -127,13 +134,14 @@ export async function fetchCommandItems({
     },
   ];
 
-  // Konteynerleri API'den dinamik olarak listeye ekle
+  // 1. Konteynerleri API'den dinamik olarak çek ve komutları ekle
   try {
     const containers = await api.getContainers();
     containers.forEach((c) => {
       const name = c.Names?.[0]?.replace(/^\//, '') || c.Id.substring(0, 12);
       const isRunning = c.State === 'running';
 
+      // Temel konteyner gezinme öğesi
       items.push({
         id: `container-${c.Id}`,
         title: name,
@@ -143,28 +151,124 @@ export async function fetchCommandItems({
         onSelect: () => onNavigate('containers', c.Id),
       });
 
-      // Hızlı terminal ve log aksiyonları
-      if (isRunning) {
-        items.push({
-          id: `container-logs-${c.Id}`,
-          title: `${name} — Canlı Loglar`,
-          subtitle: 'Konteyner konsol log akışı',
-          category: 'containers',
-          icon: FileText,
-          onSelect: () => onNavigate('containers', c.Id, 'logs'),
-        });
-        items.push({
-          id: `container-terminal-${c.Id}`,
-          title: `${name} — Web Terminali`,
-          subtitle: 'Etkileşimli kabuk oturumu (sh/bash)',
-          category: 'containers',
-          icon: Terminal,
-          onSelect: () => onNavigate('containers', c.Id, 'terminal'),
-        });
-      }
+      // Modül 3.1: > restart <container_name> (Geri Al / Undo destekli)
+      items.push({
+        id: `cmd-restart-${c.Id}`,
+        title: `> restart ${name}`,
+        subtitle: t('commandPalette.restartDesc'),
+        category: 'commands',
+        icon: RotateCw,
+        onSelect: async () => {
+          try {
+            await api.restartContainer(c.Id);
+            invalidateCache('/containers');
+            invalidateCache('/dashboard');
+            toast?.info(
+              t('commandPalette.containerRestarted', { name }),
+              async () => {
+                try {
+                  await api.stopContainer(c.Id);
+                  invalidateCache('/containers');
+                  invalidateCache('/dashboard');
+                  toast?.warn(t('commandPalette.containerUndone', { name }));
+                } catch (undoErr) {
+                  console.error('Failed to undo container restart', undoErr);
+                }
+              }
+            );
+          } catch (err: unknown) {
+            console.error('Failed to restart container', err);
+            toast?.error(`Hata: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        },
+      });
+
+      // Modül 3.1: > logs <container_name> (Doğrudan SSE log modalını aç)
+      items.push({
+        id: `cmd-logs-${c.Id}`,
+        title: `> logs ${name}`,
+        subtitle: t('commandPalette.logsDesc'),
+        category: 'commands',
+        icon: Terminal,
+        onSelect: () => onNavigate('containers', c.Id, 'logs'),
+      });
     });
   } catch {
-    // Konteynerler çekilemezse temel menü öğeleriyle devam et
+    // Konteynerler çekilemezse devam et
+  }
+
+  // 2. Sistem Düğümlerini Çek ve > switch <system_name> komutlarını ekle
+  try {
+    const systems = await api.getSystems();
+    if (Array.isArray(systems)) {
+      systems.forEach((s) => {
+        items.push({
+          id: `cmd-switch-${s.id}`,
+          title: `> switch ${s.name}`,
+          subtitle: `${t('commandPalette.switchDesc')} (${s.ipAddress || s.hostname || s.id.substring(0, 8)})`,
+          category: 'commands',
+          icon: Server,
+          onSelect: () => {
+            try {
+              localStorage.setItem('corvus_active_system_id', s.id);
+              window.dispatchEvent(new CustomEvent('corvus_system_switch', { detail: s }));
+              onNavigate('systems', s.id);
+              toast?.success(t('commandPalette.switchedToSystem', { name: s.name }));
+            } catch (err) {
+              console.error('Failed to switch system', err);
+            }
+          },
+        });
+      });
+    }
+  } catch {
+    // Sistemler çekilemezse devam et
+  }
+
+  // 3. Servisleri Çek ve > check <service_name> anlık HTTP/TCP yoklamasını ekle
+  try {
+    const services = await api.getServices();
+    if (Array.isArray(services)) {
+      services.forEach((s) => {
+        items.push({
+          id: `cmd-check-${s.id}`,
+          title: `> check ${s.name}`,
+          subtitle: `${t('commandPalette.checkDesc')} (${s.checkType || 'HTTP'})`,
+          category: 'commands',
+          icon: Activity,
+          onSelect: async () => {
+            toast?.info(t('commandPalette.checking'));
+            try {
+              const res = await api.testConnection({
+                url: s.url,
+                port: s.port,
+                checkType: s.checkType,
+                ignoreTls: s.ignoreTls,
+                timeoutSeconds: 5
+              });
+              if (res.success) {
+                toast?.success(t('commandPalette.serviceCheckSuccess', { 
+                  name: s.name, 
+                  latency: res.responseTimeMs ?? 0 
+                }));
+              } else {
+                toast?.warn(t('commandPalette.serviceCheckFailed', { 
+                  name: s.name, 
+                  message: res.message || 'Yanıt alınamadı' 
+                }));
+              }
+            } catch (err: unknown) {
+              toast?.error(t('commandPalette.serviceCheckFailed', { 
+                name: s.name, 
+                message: err instanceof Error ? err.message : String(err) 
+              }));
+            }
+          },
+        });
+      });
+    }
+  } catch {
+    // Servisler çekilemezse devam et
   }
 
   return items;

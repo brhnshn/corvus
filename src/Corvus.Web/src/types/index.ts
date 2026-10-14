@@ -129,6 +129,23 @@ export interface SystemMetric {
   networkTxBytes: number;
 }
 
+export interface SystemTelemetryStreamDto {
+  systemId: string;
+  timestampUnixSeconds: number;
+  cpuPercent: number;
+  cpuCores: number;
+  ramUsedBytes: number;
+  ramTotalBytes: number;
+  diskUsedBytes: number;
+  diskTotalBytes: number;
+  netRxBytesSec: number;
+  netTxBytesSec: number;
+  loadAvg1m: number;
+  loadAvg5m: number;
+  loadAvg15m: number;
+  runningContainersCount: number;
+}
+
 export interface BackupEvent {
   id: number;
   token: string;
@@ -170,7 +187,7 @@ export interface AuthStatus {
 export interface UserDto {
   id: string;
   username: string;
-  role: 'admin' | 'viewer' | string;
+  role: 'admin' | 'operator' | 'viewer' | string;
   createdAt: string;
 }
 
@@ -388,6 +405,9 @@ export interface ComposeFileDto {
   projectName: string;
   filePath: string;
   content: string;
+  envContent?: string | null;
+  envFilePath?: string | null;
+  envExists?: boolean;
   lastModified?: string | null;
   exists: boolean;
   error?: string | null;
@@ -395,7 +415,15 @@ export interface ComposeFileDto {
 
 export interface SaveComposeFileRequest {
   content: string;
+  envContent?: string | null;
   restartStack?: boolean;
+}
+
+export interface ComposeDeployResult {
+  success: boolean;
+  output: string;
+  exitCode: number;
+  error?: string | null;
 }
 
 export interface AlertRule {

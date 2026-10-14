@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { api, type SystemMetric } from '../../api/client';
 import { RefreshCw } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { PageStage, MotionItem } from '../../components/ui/MotionStage';
+import { StatusDot } from '../../components/ui/StatusDot';
+import { useSystemMetricsStream } from '../../hooks';
 import { SystemKpiCards } from './SystemKpiCards';
 import { CpuMetricsChart } from './CpuMetricsChart';
 import { RamMetricsChart } from './RamMetricsChart';
@@ -12,6 +15,9 @@ export const SystemMetricsPage: React.FC = () => {
   const [metrics, setMetrics] = useState<SystemMetric[]>([]);
   const [range, setRange] = useState('24h');
   const [loading, setLoading] = useState(true);
+
+  // Canlı SSE Telemetri Akışı (100ms Sync)
+  const { latestMetric: streamMetric, isConnected: isLiveStream } = useSystemMetricsStream();
 
   const isMountedRef = React.useRef(true);
 
@@ -30,9 +36,11 @@ export const SystemMetricsPage: React.FC = () => {
     isMountedRef.current = true;
     loadData();
 
+    // SSE bağlıysa periyodik polling aralığını gevşet (60s), bağlı değilse 15s fallback
+    const pollIntervalMs = isLiveStream ? 60000 : 15000;
     const interval = setInterval(() => {
       if (!document.hidden && isMountedRef.current) loadData();
-    }, 15000);
+    }, pollIntervalMs);
 
     const onVisible = () => {
       if (!document.hidden && isMountedRef.current) loadData();
@@ -44,7 +52,7 @@ export const SystemMetricsPage: React.FC = () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [loadData]);
+  }, [loadData, isLiveStream]);
 
   const ranges = [
     { id: '1h', label: t('metrics.range1h') || '1 Saat' },
@@ -77,78 +85,84 @@ export const SystemMetricsPage: React.FC = () => {
     };
   });
 
-  const latest = metrics.length > 0 ? metrics[metrics.length - 1] : null;
+  const latest = streamMetric || (metrics.length > 0 ? metrics[metrics.length - 1] : null);
 
   return (
-    <div className="space-y-3 sm:space-y-4 animate-rv">
+    <PageStage className="space-y-4">
       {/* Başlık ve Zaman Aralığı Seçici */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6]">
-              {t('metrics.title') || 'Sistem Metrikleri'}
-            </h1>
-            <span className="font-mono font-semibold text-[11px] px-2.5 py-0.5 rounded-[12px] bg-emerald-400/15 text-[#34d399] inline-flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-dot-pulse" />
-              <span>15s</span>
-            </span>
+      <MotionItem staggerIndex={0}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--cloud-100)]">
+                {t('metrics.title') || 'Sistem Metrikleri'}
+              </h1>
+              <span className="badge flex items-center gap-1.5 px-2 py-0.5 text-xs">
+                <StatusDot status={isLiveStream ? "up" : "warn"} />
+                <span className="font-mono text-[11px] text-[var(--cloud-200)]">
+                  {isLiveStream ? t('metrics.liveSync') : '15s'}
+                </span>
+              </span>
+            </div>
+            <p className="text-xs sm:text-[13px] text-[var(--text-secondary)] mt-0.5">
+              {t('metrics.subtitle') || 'Zaman serisi sistem kaynağı tüketim grafikleri'}
+            </p>
           </div>
-          <p className="text-[13px] text-[#9ba0b5] mt-0.5">
-            {t('metrics.subtitle') || 'Zaman serisi sistem kaynağı tüketim grafikleri'}
-          </p>
-        </div>
 
-        {/* Range Segment */}
-        <div className="glass rounded-[19px] p-[3px] flex gap-0.5 overflow-x-auto max-w-full">
-          {ranges.map((r) => {
-            const isActive = range === r.id;
-            return (
-              <button
-                key={r.id}
-                onClick={() => setRange(r.id)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-[16px] transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#d5d5dc] text-[#1b1d2a] shadow-xs'
-                    : 'text-[#9ba0b5] hover:text-[#eceef6]'
-                }`}
-              >
-                {r.label}
-              </button>
-            );
-          })}
+          {/* Range Tabs (ObsidianUI sliding pill tabs) */}
+          <div className="tabs">
+            {ranges.map((r) => {
+              const isActive = range === r.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => setRange(r.id)}
+                  className={`tab ${isActive ? 'active' : ''}`}
+                >
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </MotionItem>
 
       {loading && metrics.length === 0 && (
-        <div className="surface rounded-[22px] p-12 flex flex-col items-center justify-center text-[#9ba0b5] gap-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-[#d5d5dc]" />
+        <div className="card p-12 flex flex-col items-center justify-center text-[var(--text-muted)] gap-3">
+          <RefreshCw className="w-6 h-6 animate-spin text-[var(--cloud-200)]" />
           <span className="text-xs font-mono">{t('common.loading') || 'Veriler yükleniyor...'}</span>
         </div>
       )}
 
       {/* 1. Üst KPI Özet Kartları (CPU, RAM, Disk) */}
-      <SystemKpiCards metrics={metrics} latestMetric={latest} />
+      <MotionItem staggerIndex={1}>
+        <SystemKpiCards metrics={metrics} latestMetric={latest} />
+      </MotionItem>
 
       {/* 2. CPU ve RAM Grafikleri Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5">
-        <CpuMetricsChart 
-          data={chartData} 
-          currentCpu={latest ? latest.cpuPercent : 0} 
-        />
-        <RamMetricsChart 
-          data={chartData} 
-          currentRamGb={latest ? +(latest.ramUsedMb / 1024).toFixed(1) : 0} 
-          totalRamGb={latest ? +(latest.ramTotalMb / 1024).toFixed(1) : 0} 
-        />
-      </div>
+      <MotionItem staggerIndex={2}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+          <CpuMetricsChart 
+            data={chartData} 
+            currentCpu={latest ? latest.cpuPercent : 0} 
+          />
+          <RamMetricsChart 
+            data={chartData} 
+            currentRamGb={latest ? +(latest.ramUsedMb / 1024).toFixed(1) : 0} 
+            totalRamGb={latest ? +(latest.ramTotalMb / 1024).toFixed(1) : 0} 
+          />
+        </div>
+      </MotionItem>
 
       {/* 3. Disk Depolama Durumu Kartı */}
       {latest && (
-        <DiskStorageCard 
-          diskUsedGb={latest.diskUsedGb} 
-          diskTotalGb={latest.diskTotalGb} 
-        />
+        <MotionItem staggerIndex={3}>
+          <DiskStorageCard 
+            diskUsedGb={latest.diskUsedGb} 
+            diskTotalGb={latest.diskTotalGb} 
+          />
+        </MotionItem>
       )}
-    </div>
+    </PageStage>
   );
 };

@@ -11,6 +11,7 @@ public interface IUserRepository
     Task<int> GetCountAsync();
     Task CreateAsync(User user);
     Task<bool> UpdatePasswordAsync(string username, string newPasswordHash);
+    Task<bool> UpdateRoleAsync(string id, string newRole);
     Task<bool> DeleteAsync(string id);
 }
 
@@ -113,6 +114,14 @@ public class UserRepository : IUserRepository
             });
         }
         return list;
+    }
+
+    public async Task<bool> UpdateRoleAsync(string id, string newRole)
+    {
+        using var conn = _db.CreateConnection();
+        const string sql = "UPDATE users SET role = @Role WHERE id = @Id;";
+        int affected = await conn.ExecuteAsync(sql, new { Role = newRole, Id = id });
+        return affected > 0;
     }
 
     public async Task<bool> DeleteAsync(string id)

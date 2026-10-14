@@ -6,6 +6,8 @@ import { PingUptimeTab } from './PingUptimeTab';
 import { PushMonitorsTab } from './PushMonitorsTab';
 import { IncidentsTab } from './IncidentsTab';
 
+import { PageStage, MotionItem } from '../../components/ui/MotionStage';
+
 export const UptimePage: React.FC = () => {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'uptime' | 'snitch' | 'incidents'>('uptime');
@@ -109,63 +111,62 @@ export const UptimePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4 animate-rv">
+    <PageStage className="space-y-6">
       {/* Header and Tab Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <MotionItem staggerIndex={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6]">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             {t('uptime.title') || 'Gelişmiş Uptime & SSL Takibi'}
           </h1>
-          <p className="text-[13px] text-[#9ba0b5] mt-0.5">
+          <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">
             {t('uptime.subtitle') || 'Yüksek hassasiyetli erişilebilirlik ve güvenlik sertifikası izleme'}
           </p>
         </div>
 
         {/* Tab Segment Controls */}
-        <div className="glass rounded-[19px] p-[3px] flex gap-0.5 self-start sm:self-auto max-w-full overflow-x-auto no-scrollbar">
+        <div className="tabs self-start sm:self-auto overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-[16px] text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#d5d5dc] text-[#1b1d2a] shadow-xs'
-                    : 'text-[#9ba0b5] hover:text-[#eceef6]'
-                }`}
+                className={`tab ${isActive ? 'active' : ''}`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#1b1d2a]' : 'text-[#9ba0b5]'}`} />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
-      </div>
+      </MotionItem>
 
-      {/* Tab 1: HTTP & TCP Ping Uptime */}
-      {activeTab === 'uptime' && (
-        <PingUptimeTab
-          services={services}
-          selectedServiceId={selectedServiceId}
-          onSelectService={setSelectedServiceId}
-          onRefreshServices={fetchServices}
-        />
-      )}
+      <MotionItem staggerIndex={1}>
+        {/* Tab 1: HTTP & TCP Ping Uptime */}
+        {activeTab === 'uptime' && (
+          <PingUptimeTab
+            services={services}
+            selectedServiceId={selectedServiceId}
+            onSelectService={setSelectedServiceId}
+            onRefreshServices={fetchServices}
+          />
+        )}
 
-      {/* Tab 2: Dead Man's Snitch */}
-      {activeTab === 'snitch' && (
-        <PushMonitorsTab
-          snitches={snitches}
-          loading={loadingSnitches}
-          onRefresh={fetchSnitches}
-        />
-      )}
+        {/* Tab 2: Dead Man's Snitch */}
+        {activeTab === 'snitch' && (
+          <PushMonitorsTab
+            snitches={snitches}
+            loading={loadingSnitches}
+            onRefresh={fetchSnitches}
+          />
+        )}
 
-      {/* Tab 3: Incidents & Announcements */}
-      {activeTab === 'incidents' && <IncidentsTab />}
-    </div>
+        {/* Tab 3: Incidents & Announcements */}
+        {activeTab === 'incidents' && <IncidentsTab />}
+      </MotionItem>
+    </PageStage>
   );
 };
 

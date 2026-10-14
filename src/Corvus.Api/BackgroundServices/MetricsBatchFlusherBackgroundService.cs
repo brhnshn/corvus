@@ -49,7 +49,22 @@ public class MetricsBatchFlusherBackgroundService : Microsoft.Extensions.Hosting
         }
     }
 
-    private async Task FlushBatchAsync(CancellationToken stoppingToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("MetricsBatchFlusherBackgroundService durduruluyor, kapanis oncesi telemetri arabellegi diske bosaltiliyor...");
+        try
+        {
+            await FlushBatchAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Uygulama kapanirken telemetri arabellegi diske bosaltilamadi.");
+        }
+
+        await base.StopAsync(cancellationToken);
+    }
+
+    public async Task FlushBatchAsync(CancellationToken stoppingToken = default)
     {
         var snapshot = _ringBuffer.DrainForBatchFlush();
         if (snapshot.Count == 0) return;

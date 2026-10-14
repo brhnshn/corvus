@@ -12,6 +12,7 @@ import {
   type CommandItem 
 } from './components/common/CommandPalette';
 import { PageTransition } from './components/common/PageTransition';
+import { useToast } from './components/ui/Toast';
 
 // Chunk yükleme hatalarını (yeni dağıtımlarda 404 veren eski JS dosyalarını) yakalayıp tazeleyen dirençli lazy sarmalayıcı
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -144,6 +145,7 @@ import { AppRouter } from './components/layout/AppRouter';
 
 export const App: React.FC = () => {
   const { t } = useI18n();
+  const toast = useToast();
   const isStatusPath = window.location.pathname === '/status' || window.location.pathname.startsWith('/status');
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [authLoading, setAuthLoading] = useState(!isStatusPath);
@@ -308,9 +310,10 @@ export const App: React.FC = () => {
         t,
         onNavigate: navigateTo,
         onRefreshData: () => invalidateCache(),
+        toast,
       }).then(setCommandItems);
     }
-  }, [isCmdOpen, t, navigateTo]);
+  }, [isCmdOpen, t, navigateTo, toast]);
 
   // Roadmap 1.6: Halka Açık Şifresiz Durum Sayfası
   if (isStatusPath) {

@@ -11,7 +11,9 @@ import {
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
-// Modüler Alt Bileşenler (Midnight v2 & Clean Architecture)
+// Modüler Alt Bileşenler (ObsidianUI & Clean Architecture)
+import { PageStage, MotionItem } from '../../components/ui/MotionStage';
+import { useSystemMetricsStream } from '../../hooks';
 import { DashboardHeader } from './DashboardHeader';
 import { SystemBanner } from './SystemBanner';
 import { DashboardKpis } from './DashboardKpis';
@@ -21,7 +23,7 @@ import { TopResourcesCard } from './TopResourcesCard';
 import { RecentEventsCard, type EventItem } from './RecentEventsCard';
 
 export interface DashboardPageProps {
-  onNavigate?: (page: 'services' | 'containers' | 'metrics' | 'uptime' | 'settings') => void;
+  onNavigate?: (page: 'services' | 'containers' | 'metrics' | 'uptime' | 'settings' | 'activity') => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
@@ -38,6 +40,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
+
+  // Canlı SSE Telemetri Akışı (100ms Sync)
+  const { latestMetric: streamMetric, isConnected: isLiveStream } = useSystemMetricsStream();
 
   const loadData = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh && isMountedRef.current) setRefreshing(true);
@@ -164,71 +169,89 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     : `${downServices} kesinti, ${stoppedContainers.length} durmuş konteyner, ${sslWarningCount} SSL uyarısı`;
 
   return (
-    <div className="space-y-3.5 sm:space-y-4">
+    <PageStage className="space-y-4">
       {/* 1. Başlık & Hızlı İşlemler */}
-      <DashboardHeader
-        subtitle={
-          isOverallHealthy
-            ? 'Sistem telemetrisi ve anlık operasyonel durum'
-            : `${totalIssues} servis veya konteyner dikkat gerektiriyor`
-        }
-        memoryUsageMb={28}
-        onRefresh={() => loadData(true)}
-        refreshing={refreshing}
-        onNavigate={onNavigate}
-      />
+      <MotionItem staggerIndex={0}>
+        <DashboardHeader
+          subtitle={
+            isOverallHealthy
+              ? 'Sistem telemetrisi ve anlık operasyonel durum'
+              : `${totalIssues} servis veya konteyner dikkat gerektiriyor`
+          }
+          memoryUsageMb={28}
+          isLiveStream={isLiveStream}
+          onRefresh={() => loadData(true)}
+          refreshing={refreshing}
+          onNavigate={onNavigate}
+        />
+      </MotionItem>
 
       {/* Hata Uyarısı */}
       {error && (
-        <div className="p-3.5 rounded-[16px] bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>{t('common.error')}: {error}</span>
-        </div>
+        <MotionItem staggerIndex={1}>
+          <div className="p-3.5 rounded-[var(--radius-sm)] bg-[var(--status-down-bg)] border border-[rgba(229,83,75,0.3)] text-[var(--status-down)] text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{t('common.error')}: {error}</span>
+          </div>
+        </MotionItem>
       )}
 
       {/* 2. Sistem Durum Banner'ı */}
-      <SystemBanner
-        status={bannerStatus}
-        message={bannerMessage}
-        subtext={bannerSubtext}
-        lastCheckText="son kontrol az önce"
-      />
+      <MotionItem staggerIndex={1}>
+        <SystemBanner
+          status={bannerStatus}
+          message={bannerMessage}
+          subtext={bannerSubtext}
+          lastCheckText="son kontrol az önce"
+          onNavigate={onNavigate}
+        />
+      </MotionItem>
 
       {/* 3. KPI İstatistik Şeridi + Disk Durumu */}
-      <DashboardKpis
-        summary={summary}
-        metrics={summary?.latestMetrics}
-        onNavigate={onNavigate}
-      />
+      <MotionItem staggerIndex={2}>
+        <DashboardKpis
+          summary={summary}
+          metrics={streamMetric || summary?.latestMetrics}
+          onNavigate={onNavigate}
+        />
+      </MotionItem>
 
       {/* 4. Dikkat Gerektiren Kritik Olaylar */}
-      <AttentionAlerts
-        services={services}
-        stoppedContainers={stoppedContainers}
-        failedPushMonitors={failedPushMonitors}
-        onNavigate={onNavigate}
-      />
+      <MotionItem staggerIndex={3}>
+        <AttentionAlerts
+          services={services}
+          stoppedContainers={stoppedContainers}
+          failedPushMonitors={failedPushMonitors}
+          onNavigate={onNavigate}
+        />
+      </MotionItem>
 
       {/* 5. Docker Konteynerleri Genel Bakış */}
-      <DockerOverviewSection
-        containers={containers}
-        onNavigate={onNavigate}
-      />
+      <MotionItem staggerIndex={4}>
+        <DockerOverviewSection
+          containers={containers}
+          onNavigate={onNavigate}
+        />
+      </MotionItem>
 
       {/* 6. En Çok Kaynak Kullananlar & Son Olaylar İkili Bölüm */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-3.5">
-        <TopResourcesCard
-          containers={containers}
-          statsMap={containerStats}
-        />
-        <RecentEventsCard
-          services={services}
-          containers={containers}
-          lastBackup={summary?.lastBackup}
-          liveEvents={liveEvents}
-        />
-      </div>
-    </div>
+      <MotionItem staggerIndex={5}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+          <TopResourcesCard
+            containers={containers}
+            statsMap={containerStats}
+            onNavigate={onNavigate ? () => onNavigate('containers') : undefined}
+          />
+          <RecentEventsCard
+            services={services}
+            containers={containers}
+            lastBackup={summary?.lastBackup}
+            liveEvents={liveEvents}
+            onNavigate={onNavigate ? () => onNavigate('activity') : undefined}
+          />
+        </div>
+      </MotionItem>
+    </PageStage>
   );
 };
 

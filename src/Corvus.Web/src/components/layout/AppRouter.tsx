@@ -11,14 +11,14 @@ interface AppRouterProps {
   role?: string | null;
   onNavigate: (page: PageId, containerId?: string | null, tab?: string | null) => void;
   DashboardPage: React.ComponentType<{ onNavigate: (page: PageId, containerId?: string | null, tab?: string | null) => void }>;
-  ServicesPage: React.ComponentType<{}>;
-  ContainersPage: React.ComponentType<{ isAdmin: boolean; initialAction?: string | null; onNavigateToDetail: (id: string, tab?: string) => void }>;
-  ContainerDetailPage: React.ComponentType<{ containerId: string; onBack: () => void; isAdmin: boolean }>;
+  ServicesPage: React.ComponentType<{ isAdmin?: boolean; role?: string | null }>;
+  ContainersPage: React.ComponentType<{ isAdmin: boolean; role?: string | null; initialAction?: string | null; onNavigateToDetail: (id: string, tab?: string) => void }>;
+  ContainerDetailPage: React.ComponentType<{ containerId: string; onBack: () => void; isAdmin: boolean; role?: string | null }>;
   SystemsPage: React.ComponentType<{ isAdmin: boolean; username?: string | null; role?: string | null; onNavigate?: (page: PageId, containerId?: string | null, tab?: string | null) => void }>;
   SystemMetricsPage: React.ComponentType<{}>;
   UptimePage: React.ComponentType<{}>;
   ActivityTimelinePage: React.ComponentType<{}>;
-  SettingsPage: React.ComponentType<{}>;
+  SettingsPage: React.ComponentType<{ isAdmin?: boolean; username?: string | null; role?: string | null }>;
   ProfilePage: React.ComponentType<{ username?: string; role?: string }>;
 }
 
@@ -45,7 +45,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
     case 'dashboard':
       return <DashboardPage onNavigate={onNavigate} />;
     case 'services':
-      return <ServicesPage />;
+      return <ServicesPage isAdmin={isAdmin} role={role} />;
     case 'containers':
       if (selectedContainerId) {
         return (
@@ -53,12 +53,14 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             containerId={selectedContainerId}
             onBack={() => onNavigate('containers')}
             isAdmin={isAdmin}
+            role={role}
           />
         );
       }
       return (
         <ContainersPage
           isAdmin={isAdmin}
+          role={role}
           initialAction={initialAction}
           onNavigateToDetail={(id, tab) => onNavigate('containers', id, tab)}
         />
@@ -72,7 +74,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
     case 'activity':
       return <ActivityTimelinePage />;
     case 'settings':
-      return <SettingsPage />;
+      return <SettingsPage isAdmin={isAdmin} username={username} role={role} />;
     case 'profile':
       return <ProfilePage username={username ?? undefined} role={role ?? undefined} />;
     default:

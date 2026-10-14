@@ -1,4 +1,7 @@
 import React from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { TableWrap } from '../../components/ui/ExpandableTable';
+import { StatusDot } from '../../components/ui/StatusDot';
 import type { Service, DockerContainer, BackupEvent } from '../../types';
 
 export interface EventItem {
@@ -6,6 +9,7 @@ export interface EventItem {
   status: 'ok' | 'warn' | 'err';
   title: string;
   timeAgo: string;
+  category?: string;
 }
 
 export interface RecentEventsCardProps {
@@ -13,6 +17,7 @@ export interface RecentEventsCardProps {
   containers: DockerContainer[];
   lastBackup?: BackupEvent;
   liveEvents?: EventItem[];
+  onNavigate?: (page: 'activity') => void;
 }
 
 export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
@@ -20,6 +25,7 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
   containers,
   lastBackup,
   liveEvents = [],
+  onNavigate,
 }) => {
   // Canlı verilerden son 24 saatlik durum olayları türet
   const generatedEvents: EventItem[] = [];
@@ -33,6 +39,7 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
       status: isRunning ? 'ok' : 'err',
       title: `${cleanName} ${isRunning ? 'çalışıyor' : 'durdu'}`,
       timeAgo: c.Status || 'az önce',
+      category: 'Konteyner',
     });
   });
 
@@ -44,8 +51,9 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
       generatedEvents.push({
         id: `ssl-${s.id}`,
         status: s.sslExpiryDays! < 7 ? 'err' : 'warn',
-        title: `${s.name} SSL sertifikası ${s.sslExpiryDays} gün içinde dolacak`,
-        timeAgo: 'aktif uyarı',
+        title: `${s.name} SSL sertifikası yakında dolacak`,
+        timeAgo: `${s.sslExpiryDays} gün kaldı`,
+        category: 'Güvenlik',
       });
     });
 
@@ -54,56 +62,81 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
     generatedEvents.push({
       id: `backup-${lastBackup.id}`,
       status: lastBackup.status === 'success' ? 'ok' : 'err',
-      title: `Sistem yedeklemesi ${lastBackup.status === 'success' ? 'tamamlandı' : 'başarısız oldu'}`,
+      title: `Sistem yedeklemesi ${lastBackup.status === 'success' ? 'başarılı' : 'başarısız'}`,
       timeAgo: new Date(lastBackup.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      category: 'Yedek',
     });
   }
 
   // Birleştirilmiş olay listesi
   const allEvents = [...liveEvents, ...generatedEvents].slice(0, 5);
 
-  const dotColors = {
-    ok: 'bg-[#34d399] shadow-[0_0_0_4px_rgba(52,211,153,0.18)]',
-    warn: 'bg-[#fbbf24] shadow-[0_0_0_4px_rgba(251,191,36,0.18)]',
-    err: 'bg-[#f87171] shadow-[0_0_0_4px_rgba(248,113,113,0.18)]',
-  };
-
   return (
-    <section className="surface rounded-[22px] p-4 sm:p-5 flex flex-col justify-between animate-rv" style={{ animationDelay: '280ms' }}>
-      <div className="flex items-center justify-between mb-3.5">
-        <div>
-          <b className="text-base font-semibold text-[#eceef6] block leading-snug">
-            Son Olaylar
-          </b>
-          <small className="font-mono text-xs text-[#9ba0b5]">
-            son 24 saat
-          </small>
-        </div>
-      </div>
-
-      {allEvents.length === 0 ? (
-        <div className="text-center py-6 text-xs text-[#9ba0b5]">
-          Kayıtlı sistem olayı bulunmuyor
-        </div>
-      ) : (
-        <ul className="space-y-3.5 list-none">
-          {allEvents.map((evt) => (
-            <li key={evt.id} className="flex items-start gap-3 text-[13px] leading-snug">
-              <span
-                className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${dotColors[evt.status]}`}
-              />
-              <div className="min-w-0 flex-1">
-                <span className="text-[#eceef6] font-medium block truncate">
-                  {evt.title}
-                </span>
-                <small className="font-mono text-[11px] text-[#9ba0b5] block mt-0.5">
-                  {evt.timeAgo}
-                </small>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <Card>
+      <CardHeader
+        action={
+          onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('activity')}
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--cloud-100)] transition-colors cursor-pointer"
+            >
+              Tüm Geçmiş →
+            </button>
+          )
+        }
+      >
+        <CardTitle>Son Gerçekleşen Olaylar</CardTitle>
+      </CardHeader>
+      <CardContent className="!p-0">
+        {allEvents.length === 0 ? (
+          <div className="text-center py-6 text-xs text-[var(--text-muted)]">
+            Kayıtlı sistem olayı bulunmuyor
+          </div>
+        ) : (
+          <TableWrap>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: 80 }}>Zaman</th>
+                  <th>Olay Tanımı</th>
+                  <th style={{ textAlign: 'right' }}>Kategori</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allEvents.map((evt) => {
+                  const dotStatus = evt.status === 'ok' ? 'up' : evt.status === 'warn' ? 'warn' : 'down';
+                  return (
+                    <tr
+                      key={evt.id}
+                      className="data-row cursor-pointer"
+                      onClick={() => onNavigate?.('activity')}
+                    >
+                      <td className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
+                        {evt.timeAgo}
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <StatusDot status={dotStatus} />
+                          <span className="text-xs text-[var(--cloud-100)] font-medium truncate max-w-[220px]">
+                            {evt.title}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <span className="badge text-[10px]">
+                          {evt.category || 'Sistem'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </TableWrap>
+        )}
+      </CardContent>
+    </Card>
   );
 };
+

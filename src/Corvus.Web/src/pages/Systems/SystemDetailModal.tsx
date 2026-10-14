@@ -4,6 +4,7 @@ import { api } from '../../api';
 import type { SystemDetailDto, SystemDownsampledPoint, TelemetryTimeRange } from '../../types';
 import { formatBytes, getSystemStatusTheme } from '../../utils/systemsUtils';
 import { useI18n } from '../../i18n';
+import { SystemdUnitsTab } from '../Services/SystemdUnitsTab';
 
 interface SystemDetailModalProps {
   systemId: string;
@@ -23,7 +24,7 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({
   const [detail, setDetail] = useState<SystemDetailDto | null>(null);
   const [metrics, setMetrics] = useState<SystemDownsampledPoint[]>([]);
   const [range, setRange] = useState<TelemetryTimeRange>('live');
-  const [activeTab, setActiveTab] = useState<'telemetry' | 'containers' | 'security'>('telemetry');
+  const [activeTab, setActiveTab] = useState<'telemetry' | 'containers' | 'systemd' | 'security'>('telemetry');
   const [loading, setLoading] = useState(true);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
@@ -149,6 +150,16 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({
               }`}
             >
               {t('systems.cockpit.tabs.containers')} ({detail.containers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('systemd')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                activeTab === 'systemd'
+                  ? 'bg-white/10 text-[#eceef6]'
+                  : 'text-[#9ba0b5] hover:text-[#eceef6]'
+              }`}
+            >
+              {t('systems.cockpit.tabs.systemd')}
             </button>
             <button
               onClick={() => setActiveTab('security')}
@@ -336,6 +347,12 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {activeTab === 'systemd' && (
+            <div className="p-4 overflow-y-auto">
+              <SystemdUnitsTab isAdmin={isAdmin} selectedSystemId={systemId} />
             </div>
           )}
 

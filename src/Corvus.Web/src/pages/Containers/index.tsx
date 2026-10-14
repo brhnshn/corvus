@@ -19,25 +19,30 @@ import { FilterChip } from '../../components/ui/FilterChip';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
-import { tagHue } from '../../utils/tagHue';
 import { useI18n } from '../../i18n';
+import { tagHue } from '../../utils/tagHue';
+import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { useEntityGrouping, deriveSmartGroup } from '../../utils/grouping';
 
 import { useContainersPageState } from './useContainersPageState';
 
 export interface ContainersPageProps {
   isAdmin?: boolean;
+  role?: string | null;
   onNavigateToDetail?: (id: string, defaultTab?: string) => void;
   initialAction?: string | null;
 }
 
 export const ContainersPage: React.FC<ContainersPageProps> = ({ 
   isAdmin = true,
+  role,
   onNavigateToDetail,
   initialAction
 }) => {
   const { t } = useI18n();
   const toast = useToast();
+  const isViewer = role === 'viewer';
+  const effectiveIsAdmin = isAdmin && !isViewer;
 
   const {
     containers,
@@ -110,52 +115,60 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
   };
 
   return (
-    <div className="space-y-3.5 sm:space-y-4">
+    <PageStage className="space-y-4">
       {/* 1. Başlık & Hızlı İşlemler */}
-      <ContainersHeader
-        onPruneClick={() => setShowPruneModal(true)}
-        onRefreshClick={() => loadContainers(true)}
-        refreshing={refreshing}
-      />
+      <MotionItem staggerIndex={0}>
+        <ContainersHeader
+          isAdmin={effectiveIsAdmin}
+          onPruneClick={() => setShowPruneModal(true)}
+          onRefreshClick={() => loadContainers(true)}
+          refreshing={refreshing}
+        />
+      </MotionItem>
 
       {/* 2. KPI İstatistik Şeridi */}
-      <ContainersStats
-        containers={containers}
-        selectedState={selectedState}
-        onFilterState={(st) => setSelectedState((prev) => (prev === st ? null : st))}
-      />
+      <MotionItem staggerIndex={1}>
+        <ContainersStats
+          containers={containers}
+          selectedState={selectedState}
+          onFilterState={(st) => setSelectedState((prev) => (prev === st ? null : st))}
+        />
+      </MotionItem>
 
-      {/* 3. Arama Çubuğu & Görünüm Segmenti (Midnight v2 .tools) */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap animate-rv">
-        <div className="flex-1 min-w-[200px]">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="İsim, imaj veya port ara…"
+      {/* 3. Arama Çubuğu & Görünüm Segmenti */}
+      <MotionItem staggerIndex={2}>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+          <div className="flex-1 min-w-[200px]">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="İsim, imaj veya port ara…"
+            />
+          </div>
+
+          <Segment
+            value={viewMode}
+            onChange={(v) => setViewMode(v as 'flat' | 'compose')}
+            options={[
+              {
+                value: 'flat',
+                label: 'Liste',
+                icon: <List className="w-3.5 h-3.5" />,
+              },
+              {
+                value: 'compose',
+                label: 'Gruplar',
+                icon: <Layers className="w-3.5 h-3.5" />,
+              },
+            ]}
           />
         </div>
-
-        <Segment
-          value={viewMode}
-          onChange={(v) => setViewMode(v as 'flat' | 'compose')}
-          options={[
-            {
-              value: 'flat',
-              label: 'Liste',
-              icon: <List className="w-3.5 h-3.5" />,
-            },
-            {
-              value: 'compose',
-              label: 'Gruplar',
-              icon: <Layers className="w-3.5 h-3.5" />,
-            },
-          ]}
-        />
-      </div>
+      </MotionItem>
 
       {/* 4. Filtre Çipleri (Etiketler + Tümü) */}
       {(tagsWithCounts.length > 0 || selectedTag || selectedState) && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none animate-rv">
+        <MotionItem staggerIndex={2}>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <FilterChip
             label="Tümü"
             count={containers.length}
@@ -182,6 +195,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
             );
           })}
         </div>
+      </MotionItem>
       )}
 
       {/* Yükleniyor Durumu */}
@@ -227,53 +241,55 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
       )}
 
       {/* 5. Konteyner Listesi: Düz Liste vs Gruplanmış Görünüm */}
-      {filteredContainers.length > 0 && viewMode === 'flat' && (
-        <ContainerList
-          items={filteredContainers}
-          statsMap={statsMap}
-          actionInProgress={actionInProgress}
-          onAction={handleAction}
-          onOpenSheet={(c) => setSheetContainer(c)}
-          onInspect={handleInspect}
-          selectedTag={selectedTag}
-          onSelectTag={setSelectedTag}
-          isAdmin={isAdmin}
-          onOpenImageUpdate={(c) => setImageUpdateContainer({
-            id: c.Id,
-            name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
-            image: c.Image
-          })}
-        />
-      )}
+      <MotionItem staggerIndex={3}>
+        {filteredContainers.length > 0 && viewMode === 'flat' && (
+          <ContainerList
+            items={filteredContainers}
+            statsMap={statsMap}
+            actionInProgress={actionInProgress}
+            onAction={handleAction}
+            onOpenSheet={(c) => setSheetContainer(c)}
+            onInspect={handleInspect}
+            selectedTag={selectedTag}
+            onSelectTag={setSelectedTag}
+            isAdmin={effectiveIsAdmin}
+            onOpenImageUpdate={(c) => setImageUpdateContainer({
+              id: c.Id,
+              name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
+              image: c.Image
+            })}
+          />
+        )}
 
-      {filteredContainers.length > 0 && viewMode === 'compose' && (
-        <ComposeStackGroup
-          groups={groups}
-          collapsed={collapsed}
-          onToggleCollapse={toggleCollapse}
-          onRenameGroup={renameGroup}
-          dragOverGroup={dragOverGroup}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          statsMap={statsMap}
-          actionInProgress={actionInProgress}
-          onAction={handleAction}
-          onOpenSheet={(c) => setSheetContainer(c)}
-          onInspect={handleInspect}
-          selectedTag={selectedTag}
-          onSelectTag={setSelectedTag}
-          isAdmin={isAdmin}
-          onOpenComposeConfig={(name) => setComposeConfigProject(name)}
-          onOpenImageUpdate={(c) => setImageUpdateContainer({
-            id: c.Id,
-            name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
-            image: c.Image
-          })}
-        />
-      )}
+        {filteredContainers.length > 0 && viewMode === 'compose' && (
+          <ComposeStackGroup
+            groups={groups}
+            collapsed={collapsed}
+            onToggleCollapse={toggleCollapse}
+            onRenameGroup={renameGroup}
+            dragOverGroup={dragOverGroup}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            statsMap={statsMap}
+            actionInProgress={actionInProgress}
+            onAction={handleAction}
+            onOpenSheet={(c) => setSheetContainer(c)}
+            onInspect={handleInspect}
+            selectedTag={selectedTag}
+            onSelectTag={setSelectedTag}
+            isAdmin={effectiveIsAdmin}
+            onOpenComposeConfig={(name) => setComposeConfigProject(name)}
+            onOpenImageUpdate={(c) => setImageUpdateContainer({
+              id: c.Id,
+              name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
+              image: c.Image
+            })}
+          />
+        )}
+      </MotionItem>
 
       {/* Konteyner İşlemler Paneli (Midnight v2 Sheet) */}
       <ContainerActionSheet
@@ -285,7 +301,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
         onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
         onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
         onEditTags={(c) => setEditingTagsContainer(c)}
-        isAdmin={isAdmin}
+        isAdmin={effectiveIsAdmin}
       />
 
       {/* Konteyner Detay & Canlı Yapılandırma Modalı */}
@@ -295,7 +311,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           containerSummary={selectedInspectContainer}
           liveStats={statsMap[selectedInspectContainer.Id]}
           isOpen={!!selectedInspectContainer}
-          isAdmin={isAdmin}
+          isAdmin={effectiveIsAdmin}
           onClose={() => setSelectedInspectContainer(null)}
           onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
           onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
@@ -358,7 +374,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
         <ComposeConfigModal
           projectName={composeConfigProject}
           isOpen={!!composeConfigProject}
-          isAdmin={isAdmin}
+          isAdmin={effectiveIsAdmin}
           onClose={() => setComposeConfigProject(null)}
           onSuccess={() => {
             loadContainers(true);
@@ -366,7 +382,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           }}
         />
       )}
-    </div>
+    </PageStage>
   );
 };
 

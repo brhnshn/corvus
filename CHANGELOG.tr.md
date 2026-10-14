@@ -3,9 +3,39 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.6.0] - 2026-10-12 — Çoklu Sistem Yönetimi ("Sistemler") ve Uç Ajan Mimarisi
+## [1.6.0] - 2026-10-14 — Çoklu Sistem Kokpiti, Uç Ajan, RBAC, Görsel Compose ve Systemd Yönetimi
 
 ### Eklenenler (Added)
+- **SSE Telemetri Akışı ve 100ms Canlı Senkronizasyon**:
+  - Tarayıcı HTTP yoklama (polling) yükü kaldırılarak Server-Sent Events tabanlı gerçek zamanlı veri akışı sağlandı (`GET /api/v1/systems/{id}/stream` ve `/api/v1/metrics/stream`).
+  - Üstel geri çekilme (exponential backoff) ve otomatik kurtarma mekanizmalı `useSystemMetricsStream` hook'u geliştirildi.
+- **Kapanışta Sıfır Kayıplı RAM Flush (Graceful Shutdown)**:
+  - `MetricsBatchFlusherBackgroundService` içine uygulama durdurulurken (`ApplicationStopping` / `SIGTERM`) arabellekteki tüm yazılmamış telemetri noktalarını anında diske yazan zorunlu `FlushAsync` entegrasyonu sağlandı.
+- **Rol Tabanlı Erişim Kontrolü (RBAC) ve İzleyici (Viewer) Rolü**:
+  - `017_users_rbac_sqlite.sql` ve `017_users_rbac_postgres.sql` migrasyonlarıyla `users` tablosuna `role` sütunu (`admin`, `operator`, `viewer`) eklendi.
+  - `CorvusAuthFilter` ile yazma/değiştirme yapan tüm uç noktalar (`POST`, `PUT`, `DELETE`) `viewer` rolü için `403 Forbidden` ile koruma altına alındı.
+  - `UsersTab.tsx` kullanıcı ve yetki yönetim arayüzü inşa edildi.
+- **Görsel Compose & .env Düzenleyicisi ve Dağıtım Motoru**:
+  - YAML sekme (TAB) karakterlerini derleme öncesi denetleyen, `.bak` otomatik yedeklemesi alan `PUT /api/v1/compose/{stackName}` uç noktası eklendi.
+  - `POST /api/v1/compose/{stackName}/deploy` ile `docker compose up -d` komutunu çalıştırıp anlık çıktısını sunan dağıtım motoru kuruldu.
+  - `ComposeConfigModal.tsx` bileşeni sekmeli ve düzenlenebilir kod editörüne dönüştürüldü.
+- **Tek Tıkla İmaj Güncelleme (Pull & Recreate)**:
+  - OCI registry digest karşılaştırması konteyner yaşam döngüsüyle bağlandı.
+  - Konteyner ayarlarını, hacimlerini ve portlarını koruyarak yeni imajı çeken, hata anında otomatik geri alma (rollback) yapan `POST /api/v1/containers/{id}/recreate` uç noktası geliştirildi.
+  - Konteynerler ekranına mat kehribar "Güncelleme Mevcut" rozeti ve aksiyon butonları eklendi.
+- **Systemd Servis ve Süreç Yönetimi**:
+  - Komut enjeksiyonunu engelleyen (`^[a-zA-Z0-9@_.-]+\.service$`) ve Linux harici sistemlerde güvenle çalışan `SystemdServiceClient` oluşturuldu.
+  - Sistem birimlerini listeleme, başlatma/durdurma/yeniden başlatma ve `journalctl` log akışı uç noktaları kuruldu.
+  - `SystemdUnitsTab.tsx` bileşeniyle arama, durum filtreleri, journalctl modalı ve aksiyon onayları geliştirildi; Servisler ve Sistemler sayfalarına entegre edildi.
+- **Gelişmiş Komut Merkezi ve Klavye Aksiyonları (Ctrl+K)**:
+  - Komut paleti aksiyon çalıştıran bir komuta merkezine dönüştürüldü:
+    - `> restart <container>`: Konteyneri doğrudan yeniden başlatır ve Geri Al (Undo) bildirimini sunar.
+    - `> logs <container>`: Canlı SSE log modalını açar.
+    - `> switch <system>`: Aktif sunucu düğümünü anında değiştirir.
+    - `> check <service>`: İlgili servise anlık HTTP/TCP yoklaması göndererek yanıt süresini bildirir.
+- **Frontend Test Altyapısı (Vitest)**:
+  - `Corvus.Web` projesine Vitest ve `@testing-library/react` kuruldu.
+  - HTTP önbellekleme, formatlama, bulanık arama ve ObsidianUI temel bileşenleri (`AnimatedNumber`, `SegmentedTabs`, `ExpandableTable`, `StatusBadge`) için 29 adet birim testi yazıldı.
 - **Çoklu Sistem Yönetimi Kokpiti ve Dağıtık Uç Ajanı (`/systems`)**:
   - Dışa doğru (outbound) güvenli TLS tüneliyle hiçbir port açma zorunluluğu olmaksızın farklı VPS, sunucu ve homelab ortamlarını tek merkezden yöneten sistem mimarisi.
   - SQLite (`016_systems_sqlite.sql`) ve PostgreSQL (`016_systems_postgres.sql`) migrasyonları uygulandı: `systems`, `system_tokens`, `system_metrics_1m`, `system_metrics_1h` ve `system_containers_cache` tabloları ve indeksleri oluşturuldu.
@@ -36,6 +66,8 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- Komut paletinde prefix ve komut eşleşmelerinin en üst sırada listelenmesi sağlandı.
+- Linux harici sistemlerde journalctl log sorgularının çökme yaşanmadan açıklayıcı mesaj dönmesi sağlandı.
 - **ObsidianUI Tasarım Sistemi ve Motion Design Altyapısı (Faz 1–4)**:
   - `index.css` içine ObsidianUI tasarım jetonları entegre edildi: Grimsi Bulut Beyazı (`--cloud-100`..`--cloud-500`), Mat Obsidyen yüzeyler (`--bg-canvas`..`--bg-active`), 1px keskin saç teli kenarlıklar (`--border-hairline`) ve sıfır gradyan / sıfır parlama disiplini.
   - `src/lib/motion.ts` hareket motoru kuruldu: Yay (Spring) fiziği, kademeli (stagger) jetonları, çalışma zamanı hareket hızı çarpanı (1x Hız, 0.35x Slow-Mo, Anında) ve Koyu/Açık tema yöneticisi.

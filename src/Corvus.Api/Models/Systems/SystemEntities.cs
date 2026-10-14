@@ -155,7 +155,10 @@ public record AgentTelemetryPayload(
 public record DockerRpcRequest(
     string Action,
     string? ContainerId = null,
-    int? TailLines = 100
+    int? TailLines = 100,
+    string? ProjectName = null,
+    string? FileContent = null,
+    string? EnvContent = null
 );
 
 public record DockerRpcResponse(

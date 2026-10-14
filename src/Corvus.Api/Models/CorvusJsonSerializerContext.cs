@@ -172,6 +172,10 @@ public record CreateUserRequest(
     string Role
 );
 
+public record UpdateUserRoleRequest(
+    string Role
+);
+
 public record UserDto(
     string Id,
     string Username,
@@ -244,6 +248,7 @@ public record NotificationResult(
 [JsonSerializable(typeof(AuthStatusResponse))]
 [JsonSerializable(typeof(ChangePasswordRequest))]
 [JsonSerializable(typeof(CreateUserRequest))]
+[JsonSerializable(typeof(UpdateUserRoleRequest))]
 [JsonSerializable(typeof(UserDto))]
 [JsonSerializable(typeof(List<UserDto>))]
 [JsonSerializable(typeof(GenericApiResponse))]
@@ -312,6 +317,10 @@ public record NotificationResult(
 [JsonSerializable(typeof(ContainerImageRecreateRequest))]
 [JsonSerializable(typeof(ComposeFileDto))]
 [JsonSerializable(typeof(SaveComposeFileRequest))]
+[JsonSerializable(typeof(ComposeDeployResult))]
+[JsonSerializable(typeof(DockerContainerCreateRequest))]
+[JsonSerializable(typeof(DockerNetworkingConfigRequest))]
+[JsonSerializable(typeof(DockerContainerCreateResponse))]
 [JsonSerializable(typeof(DeployWebhookRequest))]
 [JsonSerializable(typeof(DeployWebhookResult))]
 [JsonSerializable(typeof(AlertRule))]
@@ -343,6 +352,12 @@ public record NotificationResult(
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.DockerRpcResponse))]
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemDownsampledPoint))]
 [JsonSerializable(typeof(List<Corvus.Api.Models.Systems.SystemDownsampledPoint>))]
+[JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemTelemetryStreamDto))]
+[JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemTelemetryPoint))]
+[JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemdUnitDto))]
+[JsonSerializable(typeof(List<Corvus.Api.Models.Systems.SystemdUnitDto>))]
+[JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemdActionRequest))]
+[JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemdLogsDto))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }

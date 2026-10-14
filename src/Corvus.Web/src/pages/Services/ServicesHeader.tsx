@@ -11,6 +11,7 @@ export interface ServicesHeaderProps {
   onAddClick: () => void;
   onRefreshClick: () => void;
   refreshing?: boolean;
+  isAdmin?: boolean;
 }
 
 export const ServicesHeader: React.FC<ServicesHeaderProps> = ({
@@ -19,6 +20,7 @@ export const ServicesHeader: React.FC<ServicesHeaderProps> = ({
   onAddClick,
   onRefreshClick,
   refreshing = false,
+  isAdmin = true,
 }) => {
   const { t } = useI18n();
 
@@ -36,14 +38,16 @@ export const ServicesHeader: React.FC<ServicesHeaderProps> = ({
             />
           </div>
 
-          <Button
-            variant="primary"
-            onClick={onAddClick}
-            icon={<Plus className="w-4 h-4" />}
-            className="shrink-0"
-          >
-            <span>{t('services.addService')}</span>
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="primary"
+              onClick={onAddClick}
+              icon={<Plus className="w-4 h-4" />}
+              className="shrink-0"
+            >
+              <span>{t('services.addService')}</span>
+            </Button>
+          )}
 
           <Button
             variant="icon"

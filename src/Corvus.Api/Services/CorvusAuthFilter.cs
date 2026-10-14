@@ -5,6 +5,9 @@ namespace Corvus.Api.Services;
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class RequireAdminAttribute : Attribute { }
 
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+public class AllowViewerAttribute : Attribute { }
+
 public static class RouteHandlerBuilderAdminExtensions
 {
     public static RouteHandlerBuilder RequireAdmin(this RouteHandlerBuilder builder)
@@ -15,6 +18,16 @@ public static class RouteHandlerBuilderAdminExtensions
     public static RouteGroupBuilder RequireAdmin(this RouteGroupBuilder builder)
     {
         return builder.WithMetadata(new RequireAdminAttribute());
+    }
+
+    public static RouteHandlerBuilder AllowViewer(this RouteHandlerBuilder builder)
+    {
+        return builder.WithMetadata(new AllowViewerAttribute());
+    }
+
+    public static RouteGroupBuilder AllowViewer(this RouteGroupBuilder builder)
+    {
+        return builder.WithMetadata(new AllowViewerAttribute());
     }
 }
 
@@ -64,14 +77,32 @@ public class CorvusAuthFilter : IEndpointFilter
         httpContext.Items["Corvus_User"] = username;
         httpContext.Items["Corvus_Role"] = role;
 
-        // RBAC Denetimi: Eğer uç nokta RequireAdminAttribute istiyorsa ve rol admin değilse 403 Forbidden dön
         var endpoint = httpContext.GetEndpoint();
-        bool requiresAdmin = endpoint?.Metadata.GetMetadata<RequireAdminAttribute>() != null;
 
+        // RBAC Denetimi 1: Eğer uç nokta RequireAdminAttribute istiyorsa ve rol admin değilse 403 Forbidden dön
+        bool requiresAdmin = endpoint?.Metadata.GetMetadata<RequireAdminAttribute>() != null;
         if (requiresAdmin && !string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase))
         {
             return Results.Json(
                 new GenericApiResponse(false, "Bu işlem için 'admin' yetkisi gerekmektedir."),
+                CorvusJsonSerializerContext.Default.GenericApiResponse,
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        // RBAC Denetimi 2: Salt-okunur (viewer) kullanıcılar kaynak değiştirici (POST, PUT, DELETE, PATCH) işlemleri yapamaz
+        bool isMutatingMethod = HttpMethods.IsPost(httpContext.Request.Method) ||
+                               HttpMethods.IsPut(httpContext.Request.Method) ||
+                               HttpMethods.IsDelete(httpContext.Request.Method) ||
+                               HttpMethods.IsPatch(httpContext.Request.Method);
+
+        bool isAllowedForViewer = endpoint?.Metadata.GetMetadata<AllowViewerAttribute>() != null ||
+                                 httpContext.Request.Path.StartsWithSegments("/api/auth/logout", StringComparison.OrdinalIgnoreCase) ||
+                                 httpContext.Request.Path.StartsWithSegments("/api/auth/change-password", StringComparison.OrdinalIgnoreCase);
+
+        if (string.Equals(role, "viewer", StringComparison.OrdinalIgnoreCase) && isMutatingMethod && !isAllowedForViewer)
+        {
+            return Results.Json(
+                new GenericApiResponse(false, "Salt-okunur (viewer) hesabı bu işlemi gerçekleştiremez."),
                 CorvusJsonSerializerContext.Default.GenericApiResponse,
                 statusCode: StatusCodes.Status403Forbidden);
         }

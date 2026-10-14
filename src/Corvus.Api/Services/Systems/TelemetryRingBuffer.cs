@@ -1,10 +1,13 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 using Corvus.Api.Models.Systems;
 
 namespace Corvus.Api.Services.Systems;
 
 public interface ITelemetryRingBuffer
 {
+    event Action<string, SystemTelemetryPoint>? OnPointPushed;
     void Push(string systemId, in SystemTelemetryPoint point, IReadOnlyList<SystemContainerCacheEntity>? containers = null);
     bool TryGetLatest(string systemId, out SystemTelemetryPoint point);
     IReadOnlyList<SystemTelemetryPoint> GetRecentPoints(string systemId, int count = 60);
@@ -13,6 +16,7 @@ public interface ITelemetryRingBuffer
     long EstimateMemoryBytes();
     void RemoveSystem(string systemId);
     IReadOnlyDictionary<string, SystemTelemetryPoint[]> DrainForBatchFlush();
+    IAsyncEnumerable<SystemTelemetryPoint> StreamAsync(string systemId, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -21,6 +25,7 @@ public interface ITelemetryRingBuffer
 /// </summary>
 public class TelemetryRingBuffer : ITelemetryRingBuffer
 {
+    public event Action<string, SystemTelemetryPoint>? OnPointPushed;
     private const int BufferCapacity = 60;
 
     private sealed class NodeBuffer
@@ -114,6 +119,7 @@ public class TelemetryRingBuffer : ITelemetryRingBuffer
     {
         var buffer = _buffers.GetOrAdd(systemId, _ => new NodeBuffer());
         buffer.Push(in point, containers);
+        OnPointPushed?.Invoke(systemId, point);
     }
 
     public bool TryGetLatest(string systemId, out SystemTelemetryPoint point)
@@ -172,5 +178,43 @@ public class TelemetryRingBuffer : ITelemetryRingBuffer
             }
         }
         return result;
+    }
+
+    public async IAsyncEnumerable<SystemTelemetryPoint> StreamAsync(string systemId, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var channel = Channel.CreateBounded<SystemTelemetryPoint>(new BoundedChannelOptions(50)
+        {
+            FullMode = BoundedChannelFullMode.DropOldest,
+            SingleWriter = false,
+            SingleReader = true
+        });
+
+        // Varsa ilk olarak en son noktayı hemen gönder (100ms sync)
+        if (TryGetLatest(systemId, out var latest))
+        {
+            channel.Writer.TryWrite(latest);
+        }
+
+        void Handler(string id, SystemTelemetryPoint pt)
+        {
+            if (string.Equals(id, systemId, StringComparison.OrdinalIgnoreCase))
+            {
+                channel.Writer.TryWrite(pt);
+            }
+        }
+
+        OnPointPushed += Handler;
+        try
+        {
+            await foreach (var pt in channel.Reader.ReadAllAsync(cancellationToken))
+            {
+                yield return pt;
+            }
+        }
+        finally
+        {
+            OnPointPushed -= Handler;
+            channel.Writer.TryComplete();
+        }
     }
 }

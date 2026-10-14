@@ -7,12 +7,13 @@ import {
   RotateCw, 
   Copy, 
   Check, 
-  Loader2,
   Layers
 } from 'lucide-react';
 import { containersApi } from '../../api';
 import type { ContainerImageUpdateInfo } from '../../types';
 import { useI18n } from '../../i18n';
+import { Button } from '../../components/ui/Button';
+import { useToast } from '../../components/ui/Toast';
 
 interface ImageUpdateModalProps {
   containerId: string;
@@ -34,6 +35,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
   isAdmin = true
 }) => {
   const { t } = useI18n();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(false);
   const [recreating, setRecreating] = useState(false);
@@ -75,17 +77,22 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
     if (!isAdmin) return;
     setRecreating(true);
     setErrorMessage(null);
+    toast.info(t('containers.imagePullingAndRecreating') || 'İmaj çekiliyor ve konteyner yeniden oluşturuluyor...');
     try {
       const res = await containersApi.recreateContainer(containerId, true);
       if (res.success) {
+        toast.success(res.message || 'Konteyner güncellendi ve başarıyla yeniden başlatıldı.');
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        setErrorMessage(res.message || 'Yeniden başlatma başarısız oldu.');
+        const err = res.message || 'Yeniden başlatma başarısız oldu.';
+        setErrorMessage(err);
+        toast.error(err);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Konteyner yeniden başlatılırken hata oluştu.';
       setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setRecreating(false);
     }
@@ -100,127 +107,133 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !recreating) onClose();
+      }}
+    >
       <div 
-        className="w-full max-w-lg bg-[#14151b] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[#eceef6]"
+        className="w-full max-w-lg bg-[var(--bg-card)] border border-[var(--border-hairline)] rounded-[var(--radius-lg)] shadow-2xl flex flex-col overflow-hidden text-[var(--text-primary)] animate-modal-card"
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+        <div className="px-5 py-4 border-b border-[var(--border-hairline)] flex items-center justify-between bg-[var(--bg-subtle)]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <div className="p-2 rounded-[var(--radius-sm)] bg-[var(--bg-card)] text-[var(--status-warn)] border border-[var(--border-hairline)]">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-semibold leading-tight">{t('containers.imageUpdateTitle') || 'Konteyner İmaj Güncellemesi'}</h3>
-              <p className="text-xs text-[#9ba0b5] mt-0.5">{containerName}</p>
+              <h3 className="text-base font-bold tracking-tight text-[var(--text-primary)]">
+                {t('containers.imageUpdateTitle') || 'Konteyner İmaj Güncellemesi'}
+              </h3>
+              <p className="text-xs font-mono text-[var(--text-secondary)] mt-0.5">{containerName}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors"
+            disabled={recreating}
+            className="p-1.5 rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-5 space-y-4">
           {loading ? (
-            <div className="py-12 flex flex-col items-center justify-center gap-3 text-[#9ba0b5]">
-              <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-              <p className="text-sm">{t('containers.checkingUpdate') || 'Kontrol ediliyor...'}</p>
+            <div className="py-12 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)]">
+              <RotateCw className="w-7 h-7 animate-spin text-[var(--cloud-200)]" />
+              <p className="text-xs font-mono">{t('containers.checkingUpdate') || 'Kontrol ediliyor...'}</p>
             </div>
           ) : (
             <>
               {/* Status Banner */}
               {updateInfo?.hasUpdate ? (
-                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="p-3.5 rounded-[var(--radius-sm)] bg-[var(--status-warn-bg)] border border-[var(--status-warn)]/30 flex items-start gap-3">
+                  <Sparkles className="w-4 h-4 text-[var(--status-warn)] shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <h4 className="text-sm font-semibold text-emerald-300">
+                    <h4 className="text-xs font-semibold text-[var(--status-warn)]">
                       {t('containers.updateAvailable') || 'Güncelleme Mevcut'}
                     </h4>
-                    <p className="text-xs text-emerald-400/90 leading-relaxed">
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                       {t('containers.updateFoundDesc') || 'Uzak depoda bu imaj etiketi için yeni bir sürüm tespit edildi.'}
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="p-3.5 rounded-[var(--radius-sm)] bg-[var(--status-up-bg)] border border-[var(--status-up)]/30 flex items-start gap-3">
+                  <CheckCircle2 className="w-4 h-4 text-[var(--status-up)] shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-[#eceef6]">
+                    <h4 className="text-xs font-semibold text-[var(--status-up)]">
                       {t('containers.upToDate') || 'İmaj Güncel'}
                     </h4>
-                    <p className="text-xs text-[#9ba0b5] leading-relaxed">
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                       {t('containers.noUpdateFound') || 'Konteyner en son imaj digest sürümünü kullanıyor.'}
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Error Notice if any */}
+              {/* Error Notice */}
               {errorMessage && (
-                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2.5 text-xs text-red-400">
+                <div className="p-3 rounded-[var(--radius-sm)] bg-[var(--status-down-bg)] border border-[var(--status-down)]/30 flex items-center gap-2.5 text-xs text-[var(--status-down)]">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
-              {/* Image & Digest Information Grid */}
-              <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#9ba0b5] flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5" />
+              {/* Grid Info */}
+              <div className="space-y-2.5 rounded-[var(--radius-sm)] border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-3.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--text-secondary)] flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-[var(--cloud-400)]" />
                     {t('containers.image') || 'İmaj'}
                   </span>
-                  <span className="font-mono text-[#eceef6] truncate max-w-[260px] font-medium" title={imageName}>
+                  <span className="font-mono text-[var(--text-primary)] truncate max-w-[260px] font-semibold" title={imageName}>
                     {imageName}
                   </span>
                 </div>
 
-                <div className="border-t border-white/5 pt-2 flex items-center justify-between text-xs">
-                  <span className="text-[#9ba0b5]">{t('containers.registrySource') || 'Kayıt Defteri'}</span>
-                  <span className="font-medium text-[#eceef6]">
+                <div className="border-t border-[var(--border-hairline)] pt-2 flex items-center justify-between">
+                  <span className="text-[var(--text-secondary)]">{t('containers.registrySource') || 'Kayıt Defteri'}</span>
+                  <span className="font-medium font-mono text-[var(--text-primary)]">
                     {updateInfo?.registry || 'registry-1.docker.io'}
                   </span>
                 </div>
 
-                {/* Local Digest */}
-                <div className="border-t border-white/5 pt-2 flex items-center justify-between text-xs">
-                  <span className="text-[#9ba0b5]">{t('containers.localDigest') || 'Yerel Digest'}</span>
+                <div className="border-t border-[var(--border-hairline)] pt-2 flex items-center justify-between">
+                  <span className="text-[var(--text-secondary)]">{t('containers.localDigest') || 'Yerel Digest'}</span>
                   <div className="flex items-center gap-1.5 font-mono">
-                    <span className="text-[#9ba0b5]" title={updateInfo?.localDigest || ''}>
+                    <span className="text-[var(--text-muted)]" title={updateInfo?.localDigest || ''}>
                       {truncateDigest(updateInfo?.localDigest)}
                     </span>
                     {updateInfo?.localDigest && (
                       <button
                         onClick={() => handleCopy(updateInfo.localDigest!, 'local')}
-                        className="p-1 hover:text-[#eceef6] text-[#9ba0b5] transition-colors rounded hover:bg-white/[0.08]"
+                        className="p-1 hover:text-[var(--text-primary)] text-[var(--text-muted)] transition-colors rounded cursor-pointer"
                         title="Digest'ı Kopyala"
                       >
-                        {copiedDigest === 'local' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedDigest === 'local' ? <Check className="w-3 h-3 text-[var(--status-up)]" /> : <Copy className="w-3 h-3" />}
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* Remote Digest */}
-                <div className="border-t border-white/5 pt-2 flex items-center justify-between text-xs">
-                  <span className="text-[#9ba0b5]">{t('containers.remoteDigest') || 'Uzak Registry Digest'}</span>
+                <div className="border-t border-[var(--border-hairline)] pt-2 flex items-center justify-between">
+                  <span className="text-[var(--text-secondary)]">{t('containers.remoteDigest') || 'Uzak Registry Digest'}</span>
                   <div className="flex items-center gap-1.5 font-mono">
-                    <span className={updateInfo?.hasUpdate ? "text-emerald-400 font-medium" : "text-[#9ba0b5]"} title={updateInfo?.remoteDigest || ''}>
+                    <span className={updateInfo?.hasUpdate ? "text-[var(--status-warn)] font-semibold" : "text-[var(--text-muted)]"} title={updateInfo?.remoteDigest || ''}>
                       {truncateDigest(updateInfo?.remoteDigest)}
                     </span>
                     {updateInfo?.remoteDigest && (
                       <button
                         onClick={() => handleCopy(updateInfo.remoteDigest!, 'remote')}
-                        className="p-1 hover:text-[#eceef6] text-[#9ba0b5] transition-colors rounded hover:bg-white/[0.08]"
+                        className="p-1 hover:text-[var(--text-primary)] text-[var(--text-muted)] transition-colors rounded cursor-pointer"
                         title="Digest'ı Kopyala"
                       >
-                        {copiedDigest === 'remote' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedDigest === 'remote' ? <Check className="w-3 h-3 text-[var(--status-up)]" /> : <Copy className="w-3 h-3" />}
                       </button>
                     )}
                   </div>
@@ -231,43 +244,38 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-white/10 bg-white/[0.02] flex items-center justify-between">
-          <button
+        <div className="px-5 py-3.5 border-t border-[var(--border-hairline)] bg-[var(--bg-subtle)] flex items-center justify-between gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={loadUpdateInfo}
             disabled={loading || recreating}
-            className="flex items-center gap-1.5 text-xs text-[#9ba0b5] hover:text-[#eceef6] px-2.5 py-1.5 rounded-lg hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+            icon={<RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >
-            <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            {t('containers.checkUpdate') || 'Güncellemeyi Kontrol Et'}
-          </button>
+            <span>{t('common.refresh')}</span>
+          </Button>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onClose}
               disabled={recreating}
-              className="px-3.5 py-1.5 text-xs font-medium rounded-lg border border-white/10 hover:bg-white/[0.08] text-[#9ba0b5] hover:text-[#eceef6] transition-colors"
             >
-              {t('common.close') || 'Kapat'}
-            </button>
+              <span>{t('common.close')}</span>
+            </Button>
 
             {isAdmin && (
-              <button
+              <Button
+                variant="cloud"
+                size="sm"
                 onClick={handleRecreate}
                 disabled={loading || recreating}
-                className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                isLoading={recreating}
+                icon={<RotateCw className="w-3.5 h-3.5" />}
               >
-                {recreating ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    {t('containers.recreating') || 'Yeniden başlatılıyor...'}
-                  </>
-                ) : (
-                  <>
-                    <RotateCw className="w-3.5 h-3.5" />
-                    {t('containers.recreateContainer') || 'İmajı Çek & Yeniden Başlat'}
-                  </>
-                )}
-              </button>
+                <span>{recreating ? (t('containers.recreating') || 'Yeniden başlatılıyor...') : (t('containers.imagePullAndRecreate') || 'Pull & Recreate')}</span>
+              </Button>
             )}
           </div>
         </div>

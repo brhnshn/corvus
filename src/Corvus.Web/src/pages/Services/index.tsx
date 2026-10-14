@@ -15,15 +15,29 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
 import { tagHue } from '../../utils/tagHue';
+import { PageStage, MotionItem } from '../../components/ui/MotionStage';
+import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
+import { SystemdUnitsTab } from './SystemdUnitsTab';
 
-export const ServicesPage: React.FC = () => {
+export interface ServicesPageProps {
+  isAdmin?: boolean;
+  role?: string | null;
+}
+
+export const ServicesPage: React.FC<ServicesPageProps> = ({
+  isAdmin = true,
+  role = 'admin'
+}) => {
   const { t } = useI18n();
   const toast = useToast();
+  const isViewer = role === 'viewer';
+  const effectiveIsAdmin = isAdmin && !isViewer;
 
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'containers' | 'systemd'>('containers');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
@@ -188,52 +202,77 @@ export const ServicesPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-3.5 sm:space-y-4">
-      {/* 1. Başlık & Arama & Hızlı Aksiyonlar */}
-      <ServicesHeader
-        search={search}
-        onSearchChange={setSearch}
-        onAddClick={() => setShowAddModal(true)}
-        onRefreshClick={() => loadServices(true)}
-        refreshing={refreshing}
-      />
+    <PageStage className="space-y-4">
+      {/* 0. Görünüm Modu Sekmesi (Konteyner Servisleri ↔ Systemd Servisleri) */}
+      <MotionItem staggerIndex={0}>
+        <div className="flex items-center justify-between">
+          <SegmentedTabs
+            tabs={[
+              { id: 'containers', label: t('services.tabContainerServices'), meta: services.length },
+              { id: 'systemd', label: t('services.tabSystemdUnits') },
+            ]}
+            activeTab={viewMode}
+            onChange={(id) => setViewMode(id as 'containers' | 'systemd')}
+          />
+        </div>
+      </MotionItem>
+
+      {viewMode === 'systemd' ? (
+        <SystemdUnitsTab isAdmin={effectiveIsAdmin} />
+      ) : (
+        <>
+          {/* 1. Başlık & Arama & Hızlı Aksiyonlar */}
+          <MotionItem staggerIndex={1}>
+            <ServicesHeader
+              isAdmin={effectiveIsAdmin}
+              search={search}
+              onSearchChange={setSearch}
+              onAddClick={() => setShowAddModal(true)}
+              onRefreshClick={() => loadServices(true)}
+              refreshing={refreshing}
+            />
+          </MotionItem>
 
       {/* 2. KPI İstatistik Şeridi */}
-      <ServicesStats
-        services={services}
-        selectedStatus={selectedStatus}
-        onFilterStatus={(st) => setSelectedStatus((prev) => (prev === st ? null : st))}
-      />
+      <MotionItem staggerIndex={1}>
+        <ServicesStats
+          services={services}
+          selectedStatus={selectedStatus}
+          onFilterStatus={(st) => setSelectedStatus((prev) => (prev === st ? null : st))}
+        />
+      </MotionItem>
 
       {/* 3. Filtre Çipleri (Etiketler + Tümü) */}
       {(tagsWithCounts.length > 0 || selectedTag || selectedStatus) && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none animate-rv">
-          <FilterChip
-            label="Tümü"
-            count={services.length}
-            selected={!selectedTag && !selectedStatus}
-            onClick={() => {
-              setSelectedTag(null);
-              setSelectedStatus(null);
-            }}
-          />
+        <MotionItem staggerIndex={2}>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <FilterChip
+              label="Tümü"
+              count={services.length}
+              selected={!selectedTag && !selectedStatus}
+              onClick={() => {
+                setSelectedTag(null);
+                setSelectedStatus(null);
+              }}
+            />
 
-          {tagsWithCounts.map(({ tag, count }) => {
-            const h = tagHue(tag);
-            return (
-              <FilterChip
-                key={tag}
-                label={tag}
-                count={count}
-                dotColor={`hsl(${h} 80% 65%)`}
-                selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-                onClick={() =>
-                  setSelectedTag((prev) => (prev?.toLowerCase() === tag.toLowerCase() ? null : tag))
-                }
-              />
-            );
-          })}
-        </div>
+            {tagsWithCounts.map(({ tag, count }) => {
+              const h = tagHue(tag);
+              return (
+                <FilterChip
+                  key={tag}
+                  label={tag}
+                  count={count}
+                  dotColor={`hsl(${h} 80% 65%)`}
+                  selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
+                  onClick={() =>
+                    setSelectedTag((prev) => (prev?.toLowerCase() === tag.toLowerCase() ? null : tag))
+                  }
+                />
+              );
+            })}
+          </div>
+        </MotionItem>
       )}
 
       {/* Yükleniyor Durumu */}
@@ -283,43 +322,48 @@ export const ServicesPage: React.FC = () => {
       )}
 
       {/* 4. Gruplanmış Kart Izgarası */}
-      {groups.map((group) => {
-        if (group.items.length === 0) return null;
+      <MotionItem staggerIndex={3}>
+        {groups.map((group) => {
+          if (group.items.length === 0) return null;
 
-        return (
-          <GroupSection
-            key={group.name}
-            title={group.name}
-            count={group.items.length}
-            isCollapsed={!!collapsed[group.name]}
-            onToggleCollapse={() => toggleCollapse(group.name)}
-            onRenameGroup={(newName) => renameGroup(group.name, newName)}
-            isDragOver={dragOverGroup === group.name}
-            onDragOver={(e) => handleDragOver(e, group.name)}
-            onDragLeave={() => handleDragLeave(group.name)}
-            onDrop={(e) => handleDrop(e, group.name)}
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {group.items.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  globalIndex={services.findIndex((s) => s.id === service.id)}
-                  totalServices={services.length}
-                  isDragging={draggingId === service.id}
-                  reordering={reordering}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onMove={handleMove}
-                  onDelete={(id, name) => setDeletingService({ id, name })}
-                  onEdit={setEditingService}
-                  onSelectTag={setSelectedTag}
-                />
-              ))}
-            </div>
-          </GroupSection>
-        );
-      })}
+          return (
+            <GroupSection
+              key={group.name}
+              title={group.name}
+              count={group.items.length}
+              isCollapsed={!!collapsed[group.name]}
+              onToggleCollapse={() => toggleCollapse(group.name)}
+              onRenameGroup={(newName) => renameGroup(group.name, newName)}
+              isDragOver={dragOverGroup === group.name}
+              onDragOver={(e) => handleDragOver(e, group.name)}
+              onDragLeave={() => handleDragLeave(group.name)}
+              onDrop={(e) => handleDrop(e, group.name)}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {group.items.map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    globalIndex={services.findIndex((s) => s.id === service.id)}
+                    totalServices={services.length}
+                    isDragging={draggingId === service.id}
+                    reordering={reordering}
+                    isAdmin={effectiveIsAdmin}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onMove={handleMove}
+                    onDelete={(id, name) => setDeletingService({ id, name })}
+                    onEdit={setEditingService}
+                    onSelectTag={setSelectedTag}
+                  />
+                ))}
+              </div>
+            </GroupSection>
+          );
+        })}
+      </MotionItem>
+      </>
+      )}
 
       {/* Servis Ekleme Modalı */}
       <AddServiceModal
@@ -352,7 +396,7 @@ export const ServicesPage: React.FC = () => {
         onConfirm={confirmDelete}
         loading={deleteLoading}
       />
-    </div>
+    </PageStage>
   );
 };
 

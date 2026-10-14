@@ -16,6 +16,7 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Button } from '../../components/ui/Button';
 import { formatBytes } from '../../utils/format';
 import { ContainerQuickActions } from './ContainerQuickActions';
+import { useI18n } from '../../i18n';
 
 export interface ContainerRowProps {
   container: DockerContainer;
@@ -54,6 +55,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   onOpenImageUpdate,
   hasUpdate = false,
 }) => {
+  const { t } = useI18n();
   const rawName = container.Names?.[0] || container.Id.slice(0, 12);
   const cleanName = rawName.replace(/^\//, '');
   const shortId = container.Id.slice(0, 12);
@@ -82,31 +84,31 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
     <div
       onClick={handleRowClick}
       className="
-        surface rounded-[20px] p-3.5 sm:p-4 select-none
-        cursor-pointer hover:bg-white/[0.08] hover:border-white/15 active:scale-[0.998] transition-all duration-150 animate-rv
+        bg-[var(--bg-card)] border border-[var(--border-hairline)] rounded-[var(--radius-sm)] p-3.5 select-none
+        cursor-pointer hover:border-[var(--cloud-400)] transition-all duration-150
         flex flex-col gap-3
-        lg:grid lg:grid-cols-[2.1fr_1.5fr_1.8fr_1fr_190px] lg:items-center lg:gap-4 lg:py-3 lg:px-4.5
+        lg:grid lg:grid-cols-[2.1fr_1.5fr_1.8fr_1fr_190px] lg:items-center lg:gap-4 lg:py-2.5 lg:px-4
       "
     >
       {/* 1. İsim & ID & Hızlı Eylemler & Etiketler */}
-      <div className="flex items-start gap-3 min-w-0">
+      <div className="flex items-start gap-2.5 min-w-0">
         <span
           className={`
-            w-2.5 h-2.5 rounded-full mt-1.5 shrink-0
-            ${isRunning ? 'bg-[#34d399] animate-dot-pulse' : isPaused ? 'bg-[#fbbf24]' : 'bg-[#f87171]'}
+            w-2 h-2 rounded-full mt-1.5 shrink-0
+            ${isRunning ? 'bg-[var(--status-up)]' : isPaused ? 'bg-[var(--status-warn)]' : 'bg-[var(--status-down)]'}
           `}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <b
-              className="text-[14px] sm:text-[15px] font-semibold text-[#eceef6] hover:text-white truncate leading-snug"
+              className="text-[13.5px] font-mono font-semibold text-[var(--cloud-100)] hover:text-white truncate leading-snug"
               title={cleanName}
             >
               {cleanName}
             </b>
 
             {composeProject && (
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/25 text-indigo-300">
+              <span className="badge mono text-[10px]">
                 {composeProject}
               </span>
             )}
@@ -118,11 +120,11 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
                   e.stopPropagation();
                   onOpenImageUpdate(container);
                 }}
-                title="İmaj Güncellemesi Mevcut"
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold hover:bg-emerald-500/25 transition-colors cursor-pointer"
+                title={t('containers.imageUpdateAvailable')}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-sm)] text-[10px] font-medium font-sans bg-[var(--status-warn-bg)] text-[var(--status-warn)] border border-[var(--status-warn)]/30 hover:brightness-110 transition-colors cursor-pointer"
               >
                 <Sparkles className="w-2.5 h-2.5" />
-                <span>Güncelleme</span>
+                <span>{t('containers.imageUpdateAvailable')}</span>
               </button>
             )}
           </div>

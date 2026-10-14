@@ -139,5 +139,15 @@ export const containersApi = {
     invalidateCache('/services');
     invalidateCache('/dashboard');
     return res;
+  },
+
+  deployCompose: async (projectName: string) => {
+    const res = await fetchJson<import('../types').ComposeDeployResult>(`/compose/${encodeURIComponent(projectName)}/deploy`, {
+      method: 'POST'
+    });
+    invalidateCache('/containers');
+    invalidateCache('/services');
+    invalidateCache('/dashboard');
+    return res;
   }
 };

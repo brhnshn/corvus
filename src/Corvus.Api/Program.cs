@@ -59,6 +59,7 @@ builder.Services.AddSingleton<Corvus.Api.Services.Systems.ITelemetryRingBuffer, 
 builder.Services.AddScoped<Corvus.Api.Services.Systems.ISystemStatusService, Corvus.Api.Services.Systems.SystemStatusService>();
 builder.Services.AddScoped<Corvus.Api.Services.Systems.ISystemAuthService, Corvus.Api.Services.Systems.SystemAuthService>();
 builder.Services.AddSingleton<Corvus.Api.Services.Systems.ISystemTunnelManager, Corvus.Api.Services.Systems.SystemTunnelManager>();
+builder.Services.AddSingleton<Corvus.Api.Services.Systems.ISystemdServiceClient, Corvus.Api.Services.Systems.SystemdServiceClient>();
 
 // Arka Plan Servisleri
 builder.Services.AddHostedService<ContainerDiscoveryService>();

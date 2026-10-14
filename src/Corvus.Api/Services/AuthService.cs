@@ -23,6 +23,7 @@ public interface IAuthService
     Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string username, string currentPassword, string newPassword);
     Task<List<UserDto>> GetAllUsersAsync();
     Task<(bool Success, string? ErrorMessage)> CreateUserAsync(string username, string password, string role);
+    Task<(bool Success, string? ErrorMessage)> UpdateUserRoleAsync(string id, string newRole, string currentUsername);
     Task<(bool Success, string? ErrorMessage)> DeleteUserAsync(string id, string currentUsername);
     bool IsLoginRateLimited(string ipOrKey);
     void RecordLoginFailure(string ipOrKey);
@@ -395,7 +396,13 @@ public class AuthService : IAuthService
             return (false, "Şifre en az 4 karakter olmalıdır.");
         }
 
-        string cleanRole = string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) ? "admin" : "viewer";
+        string cleanRole = role?.Trim().ToLowerInvariant() switch
+        {
+            "admin" => "admin",
+            "operator" => "operator",
+            "viewer" => "viewer",
+            _ => "viewer"
+        };
 
         var existing = await _userRepo.GetByUsernameAsync(cleanUser);
         if (existing != null || (await _userRepo.GetCountAsync() == 0 && string.Equals(cleanUser, _defaultUser, StringComparison.OrdinalIgnoreCase)))
@@ -413,6 +420,46 @@ public class AuthService : IAuthService
         };
 
         await _userRepo.CreateAsync(user);
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? ErrorMessage)> UpdateUserRoleAsync(string id, string newRole, string currentUsername)
+    {
+        var user = await _userRepo.GetByIdAsync(id);
+        if (user == null)
+        {
+            return (false, "Kullanıcı bulunamadı.");
+        }
+
+        string cleanRole = newRole?.Trim().ToLowerInvariant() switch
+        {
+            "admin" => "admin",
+            "operator" => "operator",
+            "viewer" => "viewer",
+            _ => "viewer"
+        };
+
+        if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase) && cleanRole != "admin")
+        {
+            return (false, "Kendi yönetici rolünüzü değiştiremezsiniz.");
+        }
+
+        if (string.Equals(user.Role, "admin", StringComparison.OrdinalIgnoreCase) && cleanRole != "admin")
+        {
+            var allUsers = await _userRepo.GetAllAsync();
+            int adminCount = allUsers.Count(u => string.Equals(u.Role, "admin", StringComparison.OrdinalIgnoreCase));
+            if (adminCount <= 1)
+            {
+                return (false, "Sistemdeki son yönetici rolü değiştirilemez.");
+            }
+        }
+
+        bool updated = await _userRepo.UpdateRoleAsync(id, cleanRole);
+        if (!updated)
+        {
+            return (false, "Rol güncellenemedi.");
+        }
+
         return (true, null);
     }
 

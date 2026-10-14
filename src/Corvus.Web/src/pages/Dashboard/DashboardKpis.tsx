@@ -1,7 +1,10 @@
 import React from 'react';
-import { Server, Boxes, Cpu, HardDrive } from 'lucide-react';
-import { StatTile } from '../../components/ui/StatTile';
-import { ProgressBar } from '../../components/ui/ProgressBar';
+import { HardDrive } from 'lucide-react';
+import { KpiRow } from '../../components/ui/KpiRow';
+import { KpiCard } from '../../components/ui/KpiCard';
+import { StatusDot } from '../../components/ui/StatusDot';
+import { AnimatedBar } from '../../components/ui/AnimatedBar';
+import { Card } from '../../components/ui/Card';
 import { useI18n } from '../../i18n';
 import type { DashboardSummary, SystemMetric } from '../../types';
 
@@ -39,70 +42,82 @@ export const DashboardKpis: React.FC<DashboardKpisProps> = ({
   const diskPercent = diskTotalGb > 0 ? Math.round((diskUsedGb / diskTotalGb) * 100) : 0;
 
   return (
-    <div className="space-y-2.5 sm:space-y-3 animate-rv" style={{ animationDelay: '120ms' }}>
-      {/* 4'lü StatTile Izgarası */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-        <StatTile
+    <div className="space-y-3">
+      {/* 4'lü ObsidianUI KPI Izgarası */}
+      <KpiRow>
+        <KpiCard
           label={t('nav.services')}
-          value={`${healthyServices}/${totalServices}`}
-          unit="aktif"
-          icon={<Server className="w-4 h-4" />}
-          progress={servicesRatio}
-          variant={servicesRatio === 100 ? 'ok' : servicesRatio >= 75 ? 'warn' : 'err'}
+          meta={<StatusDot status={servicesRatio === 100 ? 'up' : servicesRatio >= 75 ? 'warn' : 'down'} />}
+          value={`${healthyServices} / ${totalServices}`}
+          subtext={`${healthyServices} aktif, ${totalServices - healthyServices} sorunlu`}
           onClick={() => onNavigate?.('services')}
         />
 
-        <StatTile
+        <KpiCard
           label={t('nav.containers')}
-          value={`${runningContainers}/${totalContainers}`}
-          unit="çalışıyor"
-          icon={<Boxes className="w-4 h-4" />}
-          progress={containersRatio}
-          variant={containersRatio === 100 ? 'ok' : containersRatio >= 75 ? 'warn' : 'err'}
+          meta={<StatusDot status={containersRatio === 100 ? 'up' : containersRatio >= 75 ? 'warn' : 'down'} />}
+          value={`${runningContainers} / ${totalContainers}`}
+          subtext={`${runningContainers} aktif, ${totalContainers - runningContainers} durdu`}
           onClick={() => onNavigate?.('containers')}
         />
 
-        <StatTile
-          label="CPU Yükü"
-          value={`%${cpuPercent}`}
-          unit="anlık"
-          icon={<Cpu className="w-4 h-4" />}
-          progress={cpuPercent}
-          metricType="cpu"
+        <KpiCard
+          label="Sistem CPU Yükü"
+          meta={<span className="badge text-[10px]">{cpuPercent > 80 ? 'Yüksek' : 'Normal'}</span>}
+          value={cpuPercent}
+          prefix="%"
+          decimals={0}
+          barPercentage={cpuPercent}
+          barColor={cpuPercent > 80 ? 'var(--status-down)' : cpuPercent > 60 ? 'var(--status-warn)' : 'var(--cloud-200)'}
+          subtext="Anlık işlemci tüketimi"
           onClick={() => onNavigate?.('metrics')}
         />
 
-        <StatTile
-          label="RAM Kullanımı"
-          value={`${ramUsedGb} GB`}
-          unit={`/ ${ramTotalGb} GB`}
-          icon={<HardDrive className="w-4 h-4" />}
-          progress={ramRatio}
-          metricType="ram"
+        <KpiCard
+          label="RAM Tüketimi"
+          meta={<span className="badge text-[10px]">%{ramRatio}</span>}
+          value={parseFloat(ramUsedGb)}
+          decimals={1}
+          suffix={` / ${ramTotalGb} GB`}
+          barPercentage={ramRatio}
+          barColor={ramRatio > 85 ? 'var(--status-down)' : ramRatio > 70 ? 'var(--status-warn)' : 'var(--cloud-200)'}
+          subtext="Kullanılan / Toplam bellek"
           onClick={() => onNavigate?.('metrics')}
         />
-      </div>
+      </KpiRow>
 
-      {/* Disk Durumu Geniş Kartı */}
-      <div
+      {/* Disk Durumu İnce Kartı */}
+      <Card
         onClick={() => onNavigate?.('metrics')}
-        className="surface rounded-[20px] p-4 flex flex-col gap-2.5 transition-colors duration-250 cursor-pointer hover:bg-white/[0.08]"
+        className="cursor-pointer"
       >
         <div className="flex items-center gap-3">
-          <span className="w-8 h-8 rounded-[11px] border border-white/10 bg-white/[0.07] flex items-center justify-center text-[#eceef6] shrink-0">
+          <span className="w-8 h-8 rounded-[var(--radius-sm)] border border-[var(--border-hairline)] bg-[var(--bg-subtle)] flex items-center justify-center text-[var(--cloud-200)] shrink-0">
             <HardDrive className="w-4 h-4" />
           </span>
           <div className="flex items-baseline gap-2 min-w-0">
-            <b className="text-[15px] font-semibold text-[#eceef6]">Disk Durumu</b>
-            <small className="text-xs text-[#9ba0b5] font-mono">({diskFreeGb} GB Boş)</small>
+            <b className="text-[13.5px] font-semibold text-[var(--cloud-100)]">Disk Durumu (Root)</b>
+            <span className="text-xs text-[var(--text-muted)] font-mono tabular-nums">
+              ({diskFreeGb} GB Boş)
+            </span>
           </div>
           <div className="ml-auto text-right leading-tight">
-            <span className="text-[20px] font-bold tracking-[-0.5px] text-[#eceef6]">%{diskPercent}</span>
-            <small className="block font-mono text-[11px] text-[#9ba0b5]">{diskUsedGb} / {diskTotalGb} GB</small>
+            <span className="text-[16px] font-mono font-bold tabular-nums text-[var(--cloud-100)]">
+              %{diskPercent}
+            </span>
+            <span className="block font-mono text-[11px] text-[var(--text-muted)] tabular-nums">
+              {diskUsedGb} / {diskTotalGb} GB
+            </span>
           </div>
         </div>
-        <ProgressBar value={diskPercent} metricType="disk" height={6} />
-      </div>
+        <div className="mt-3">
+          <AnimatedBar
+            percentage={diskPercent}
+            color={diskPercent > 85 ? 'var(--status-down)' : diskPercent > 70 ? 'var(--status-warn)' : 'var(--cloud-200)'}
+          />
+        </div>
+      </Card>
     </div>
   );
 };
+

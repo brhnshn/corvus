@@ -31,12 +31,31 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   // Arama filtreleme
   const filteredItems = useMemo(() => {
-    if (!query.trim()) return items;
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+
+    const isCommandPrefix = q.startsWith('>');
+    const normalizedQuery = isCommandPrefix ? q.slice(1).trim() : q;
+
     return items
       .map((item) => {
-        const textToMatch = `${item.title} ${item.subtitle || ''} ${item.category}`;
-        const res = fuzzyMatch(query, textToMatch);
-        return { item, match: res.match, score: res.score };
+        const titleLower = item.title.toLowerCase();
+        const textToMatch = `${item.title} ${item.subtitle || ''} ${item.category}`.toLowerCase();
+        
+        let boost = 0;
+        // Exact prefix match gets a large boost
+        if (titleLower.startsWith(q) || (isCommandPrefix && titleLower.startsWith(`> ${normalizedQuery}`))) {
+          boost += 100;
+        } else if (titleLower.includes(normalizedQuery)) {
+          boost += 50;
+        }
+
+        if (isCommandPrefix && item.category === 'commands') {
+          boost += 60;
+        }
+
+        const res = fuzzyMatch(normalizedQuery || q, textToMatch);
+        return { item, match: res.match || boost > 0, score: res.score + boost };
       })
       .filter((res) => res.match)
       .sort((a, b) => b.score - a.score)
@@ -108,16 +127,16 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         <div className="px-4 py-2 border-t border-white/10 bg-[#0d0e15]/40 flex items-center justify-between text-[11px] text-[#9ba0b5]">
           <div className="flex items-center gap-3">
             <span>
-              <kbd className="px-1 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[9px] mr-1">↑↓</kbd> Gezin
+              <kbd className="px-1 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[9px] mr-1">↑↓</kbd> {t('commandPalette.navigate')}
             </span>
             <span>
-              <kbd className="px-1 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[9px] mr-1">↵</kbd> Seç
+              <kbd className="px-1 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[9px] mr-1">↵</kbd> {t('commandPalette.select')}
             </span>
             <span>
-              <kbd className="px-1 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[9px] mr-1">esc</kbd> Kapat
+              <kbd className="px-1 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[9px] mr-1">esc</kbd> {t('commandPalette.close')}
             </span>
           </div>
-          <span className="font-mono text-[10px]">Corvus v1.5</span>
+          <span className="font-mono text-[10px]">Corvus v1.6.0</span>
         </div>
       </div>
     </div>

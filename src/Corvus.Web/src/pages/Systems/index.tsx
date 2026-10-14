@@ -14,6 +14,8 @@ import type { SystemSummaryDto } from '../../types';
 
 import { api, invalidateCache } from '../../api';
 
+import { PageStage, MotionItem } from '../../components/ui/MotionStage';
+
 const DEFAULT_VISIBLE_COLUMNS: Record<SystemColumnKey, boolean> = {
   system: true,
   cpu: true,
@@ -38,8 +40,10 @@ interface SystemsPageProps {
 
 export const SystemsPage: React.FC<SystemsPageProps> = ({
   isAdmin = true,
+  role,
   onNavigate
 }) => {
+  const effectiveIsAdmin = isAdmin && role !== 'viewer';
   const { t } = useI18n();
   const {
     systems,
@@ -106,97 +110,95 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
   };
 
   return (
-    <div className="space-y-4 animate-rv">
-      {/* Genişletilmiş HTML Mockup Stili Ana Kart */}
-      <section className="bg-[#12131e] border border-[#242637] rounded-3xl p-6 sm:p-7 shadow-2xl">
-        {/* Başlık & Araçlar (Header & Tools) */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl sm:text-[30px] font-bold tracking-tight text-[#eceef5] flex items-center gap-3">
-              <span>{t('systems.allSystems')}</span>
-              <span className="font-mono text-xs font-normal text-[#7c7cff] bg-[#1a1b30] border border-[#2a2c4d] rounded-lg px-2.5 py-1">
-                {t('systems.systemsCount', {
-                  filtered: String(filteredSystems.length),
-                  total: String(systems.length)
-                })}
-              </span>
-            </h1>
-            <p className="text-sm text-[#8b90a7] mt-1.5">
-              {t('systems.allSystemsDesc')}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5 flex-wrap w-full lg:w-auto">
-            {/* Hızlı Filtreleme Kutusu */}
-            <div className="relative flex-1 sm:w-56 lg:w-60">
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('systems.filterPlaceholder')}
-                className="w-full h-11 px-3.5 py-2 pl-9 rounded-xl bg-[#0d0e17] border border-[#242637] focus:border-[#7c7cff] focus:outline-none text-sm text-[#eceef5] placeholder:text-[#8b90a7] transition-all"
-              />
-              <Search className="w-4 h-4 text-[#8b90a7] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+    <PageStage className="space-y-6">
+      {/* ObsidianUI Sistem Kartı */}
+      <MotionItem staggerIndex={0}>
+        <section className="card p-6 sm:p-7 space-y-6">
+          {/* Başlık & Araçlar (Header & Tools) */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-3">
+                <span>{t('systems.allSystems')}</span>
+                <span className="font-mono text-xs font-semibold text-[var(--cloud-200)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] rounded-[var(--radius-sm)] px-2.5 py-1">
+                  {t('systems.systemsCount', {
+                    filtered: String(filteredSystems.length),
+                    total: String(systems.length)
+                  })}
+                </span>
+              </h1>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">
+                {t('systems.allSystemsDesc')}
+              </p>
             </div>
 
-            {/* Görüntüle (Sütun Seçici Menü) */}
-            <SystemsColumnsMenu
-              visibleColumns={visibleColumns}
-              onToggleColumn={handleToggleColumn}
-            />
+            <div className="flex items-center gap-2.5 flex-wrap w-full lg:w-auto">
+              {/* Hızlı Filtreleme Kutusu */}
+              <div className="relative flex-1 sm:w-56 lg:w-60">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('systems.filterPlaceholder')}
+                  className="input w-full h-10 pl-9 font-sans text-xs"
+                />
+                <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
 
-            {/* Yenile Butonu */}
-            <button
-              type="button"
-              onClick={refresh}
-              disabled={isLoading}
-              className="h-11 px-3.5 flex items-center gap-2 bg-[#0d0e17] border border-[#242637] hover:border-white/20 rounded-xl text-sm font-semibold text-[#eceef5] hover:bg-[#171929] transition-all cursor-pointer disabled:opacity-50"
-              aria-label={t('common.refresh')}
-              title={t('common.refresh')}
-            >
-              <RefreshCw className={`w-4 h-4 text-[#8b90a7] ${isLoading ? 'animate-spin text-[#7c7cff]' : ''}`} />
-              <span className="hidden sm:inline">{t('common.refresh')}</span>
-            </button>
+              {/* Görüntüle (Sütun Seçici Menü) */}
+              <SystemsColumnsMenu
+                visibleColumns={visibleColumns}
+                onToggleColumn={handleToggleColumn}
+              />
 
-            {/* Sistem Ekle Butonu */}
-            {isAdmin && (
+              {/* Yenile Butonu */}
               <Button
-                variant="primary"
-                onClick={() => setIsAddOpen(true)}
-                icon={<Plus className="w-4 h-4 stroke-[2.5]" />}
-                className="h-11 px-4"
+                variant="secondary"
+                onClick={refresh}
+                disabled={isLoading}
+                icon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[var(--cloud-200)]' : ''}`} />}
               >
-                <span>{t('systems.addSystemButton')}</span>
+                <span className="hidden sm:inline">{t('common.refresh')}</span>
               </Button>
-            )}
+
+              {/* Sistem Ekle Butonu */}
+              {effectiveIsAdmin && (
+                <Button
+                  variant="primary"
+                  onClick={() => setIsAddOpen(true)}
+                  icon={<Plus className="w-4 h-4 stroke-[2.5]" />}
+                >
+                  <span>{t('systems.addSystemButton')}</span>
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Tablo Alanı */}
-        {filteredSystems.length === 0 ? (
-          <SystemsEmptyState
-            onAddClick={() => setIsAddOpen(true)}
-            isAdmin={isAdmin}
-          />
-        ) : (
-          <SystemsTable
-            systems={filteredSystems}
-            onSelectSystem={handleSelectSystem}
-            sortBy={sortBy}
-            sortDirection={sortDirection}
-            onSortByChange={handleSortChange}
-            visibleColumns={visibleColumns}
-            onEditSystem={isAdmin ? setEditingSystem : undefined}
-            onTogglePauseSystem={isAdmin ? handleTogglePause : undefined}
-            onDeleteSystem={isAdmin ? setDeletingSystem : undefined}
-          />
-        )}
+          {/* Tablo Alanı */}
+          {filteredSystems.length === 0 ? (
+            <SystemsEmptyState
+              onAddClick={() => setIsAddOpen(true)}
+              isAdmin={effectiveIsAdmin}
+            />
+          ) : (
+            <SystemsTable
+              systems={filteredSystems}
+              onSelectSystem={handleSelectSystem}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
+              onSortByChange={handleSortChange}
+              visibleColumns={visibleColumns}
+              onEditSystem={effectiveIsAdmin ? setEditingSystem : undefined}
+              onTogglePauseSystem={effectiveIsAdmin ? handleTogglePause : undefined}
+              onDeleteSystem={effectiveIsAdmin ? setDeletingSystem : undefined}
+            />
+          )}
 
-        {/* Footer Dipnot */}
-        <div className="text-right text-[#8b90a7] text-xs mt-3.5 select-none font-mono">
-          {t('systems.footerNote')}
-        </div>
-      </section>
+          {/* Footer Dipnot */}
+          <div className="text-right text-[var(--text-muted)] text-xs pt-1 select-none font-mono">
+            {t('systems.footerNote')}
+          </div>
+        </section>
+      </MotionItem>
 
       {/* Yeni Sistem Ekleme Yan Paneli */}
       <AddSystemSheet
@@ -220,7 +222,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
         onClose={() => setDeletingSystem(null)}
         onDeleted={refresh}
       />
-    </div>
+    </PageStage>
   );
 };
 

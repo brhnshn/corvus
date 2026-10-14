@@ -293,6 +293,7 @@ public class RoadmapFeaturesTests
         public Task<int> GetCountAsync() => Task.FromResult(0);
         public Task CreateAsync(User user) => Task.CompletedTask;
         public Task<bool> UpdatePasswordAsync(string username, string newPasswordHash) => Task.FromResult(true);
+        public Task<bool> UpdateRoleAsync(string id, string newRole) => Task.FromResult(true);
         public Task<bool> DeleteAsync(string id) => Task.FromResult(true);
     }
 

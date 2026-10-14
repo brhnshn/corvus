@@ -800,7 +800,16 @@ public class DockerService : IDockerService
         }
 
         string imageName = inspect.Config?.Image ?? inspect.Image ?? string.Empty;
-        if (pullLatest && !string.IsNullOrWhiteSpace(imageName))
+        if (string.IsNullOrWhiteSpace(imageName))
+        {
+            return new DockerActionResult(false, "Konteynerin imaj bilgisi çözülemedi.", 400);
+        }
+
+        string originalName = (inspect.Name ?? "").TrimStart('/');
+        bool wasRunning = inspect.State?.Running == true;
+
+        // 1. Yeni imajı çek
+        if (pullLatest)
         {
             _logger.LogInformation("Konteyner yeniden oluşturma öncesi güncel imaj çekiliyor: {Image}", imageName);
             bool pulled = await _client.PullImageAsync(imageName, cancellationToken);
@@ -810,14 +819,77 @@ public class DockerService : IDockerService
             }
         }
 
-        var restartResult = await RestartContainerAsync(containerId, cancellationToken);
-        if (restartResult.Success)
+        // 2. Çalışıyorsa eski konteyneri durdur
+        if (wasRunning)
         {
-            InvalidateContainersCache();
-            return new DockerActionResult(true, "Konteyner güncellendi ve başarıyla yeniden başlatıldı.");
+            var stopRes = await _client.StopContainerAsync(containerId, cancellationToken);
+            if (!stopRes.Success)
+            {
+                return new DockerActionResult(false, $"Mevcut konteyner durdurulamadı: {stopRes.Message}", 500);
+            }
         }
 
-        return restartResult;
+        // 3. Eski konteyneri geçici bir isme yeniden adlandır (rollback emniyeti)
+        string backupName = $"{originalName}_old_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+        var renameRes = await _client.RenameContainerAsync(containerId, backupName, cancellationToken);
+        if (!renameRes.Success)
+        {
+            if (wasRunning) await _client.StartContainerAsync(containerId, cancellationToken);
+            return new DockerActionResult(false, $"Konteyner yeniden adlandırılamadı: {renameRes.Message}", 500);
+        }
+
+        // 4. Yeni konteyneri aynı yapılandırmayla oluştur
+        var createReq = new DockerContainerCreateRequest
+        {
+            Image = imageName,
+            Cmd = inspect.Config?.Cmd,
+            Entrypoint = inspect.Config?.Entrypoint,
+            WorkingDir = inspect.Config?.WorkingDir,
+            User = inspect.Config?.User,
+            Env = inspect.Config?.Env,
+            Labels = inspect.Config?.Labels,
+            HostConfig = inspect.HostConfig,
+            NetworkingConfig = inspect.NetworkSettings?.Networks != null
+                ? new DockerNetworkingConfigRequest { EndpointsConfig = inspect.NetworkSettings.Networks }
+                : null
+        };
+
+        var createRes = await _client.CreateContainerAsync(originalName, createReq, cancellationToken);
+        if (createRes == null || string.IsNullOrWhiteSpace(createRes.Id))
+        {
+            _logger.LogError("Yeni konteyner oluşturulamadı, eski konteyner geri alınıyor: {Name}", originalName);
+            // Rollback: eski ismi geri ver, çalışıyorsa yeniden başlat
+            await _client.RenameContainerAsync(containerId, originalName, cancellationToken);
+            if (wasRunning) await _client.StartContainerAsync(containerId, cancellationToken);
+            return new DockerActionResult(false, "Yeni konteyner oluşturulamadı. Eski konteyner geri yüklendi.", 500);
+        }
+
+        string newContainerId = createRes.Id;
+
+        // 5. Yeni konteyneri başlat
+        var startRes = await _client.StartContainerAsync(newContainerId, cancellationToken);
+        if (!startRes.Success)
+        {
+            _logger.LogError("Yeni konteyner başlatılamadı, geri alma yapılıyor: {NewId}", newContainerId);
+            // Rollback: oluşturulan yeni konteyneri sil, eski konteynerin adını düzeltip başlat
+            await _client.DeleteContainerAsync(newContainerId, force: true, removeVolumes: false, cancellationToken);
+            await _client.RenameContainerAsync(containerId, originalName, cancellationToken);
+            if (wasRunning) await _client.StartContainerAsync(containerId, cancellationToken);
+            return new DockerActionResult(false, $"Yeni konteyner başlatılamadı ({startRes.Message}). Eski konteyner geri yüklendi.", 500);
+        }
+
+        // 6. Başarılı oldu! Eski geçici konteyneri temizle (volumeleri silmeden koru)
+        try
+        {
+            await _client.DeleteContainerAsync(containerId, force: true, removeVolumes: false, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Eski yedek konteyner silinirken uyarı: {OldId}", containerId);
+        }
+
+        InvalidateContainersCache();
+        return new DockerActionResult(true, $"Konteyner '{originalName}' güncel imajla başarıyla yeniden oluşturuldu ve başlatıldı.");
     }
 }
 

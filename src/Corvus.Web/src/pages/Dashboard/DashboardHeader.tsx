@@ -1,11 +1,13 @@
 import React from 'react';
 import { Plus, Boxes, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { StatusDot } from '../../components/ui/StatusDot';
 import { useI18n } from '../../i18n';
 
 export interface DashboardHeaderProps {
   subtitle: string;
   memoryUsageMb?: number;
+  isLiveStream?: boolean;
   onRefresh: () => void;
   refreshing: boolean;
   onNavigate?: (page: 'services' | 'containers' | 'metrics' | 'uptime' | 'settings') => void;
@@ -14,6 +16,7 @@ export interface DashboardHeaderProps {
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   subtitle,
   memoryUsageMb = 28,
+  isLiveStream = false,
   onRefresh,
   refreshing,
   onNavigate,
@@ -21,43 +24,47 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className="space-y-3.5 mb-3.5 animate-rv">
+    <div className="space-y-3 mb-2">
       {/* Üst Başlık & Canlı Durum Rozeti */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-[26px] font-bold tracking-[-0.5px] text-[#eceef6]">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--cloud-100)]">
             {t('dashboard.title')}
           </h1>
-          <p className="text-[13px] text-[#9ba0b5] mt-1">
+          <p className="text-xs sm:text-[13px] text-[var(--text-secondary)] mt-0.5">
             {subtitle}
           </p>
         </div>
 
         {/* Canlı Sistem & Corvus Bellek Rozeti */}
-        <div className="flex items-center gap-3">
-          <div className="glass inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full font-mono text-xs font-medium text-[#9ba0b5]">
-            <span className="w-2 h-2 rounded-full bg-[#34d399] animate-dot-pulse shrink-0" />
-            <span className="text-[#eceef6]">Corvus {memoryUsageMb} MB</span>
+        <div className="flex items-center gap-2">
+          <div className="badge flex items-center gap-1.5 px-2.5 py-1 text-xs">
+            <StatusDot status={isLiveStream ? "up" : "warn"} />
+            <span className="font-mono text-[11px] text-[var(--cloud-200)]">
+              Corvus AOT {memoryUsageMb} MB {isLiveStream ? '· 100ms Sync' : ''}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Hızlı Aksiyon Butonları (Midnight v2 .qa şeridi) */}
+      {/* Hızlı Aksiyon Butonları */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {onNavigate && (
           <>
             <Button
-              variant="primary"
+              variant="cloud"
+              size="sm"
               onClick={() => onNavigate('services')}
-              icon={<Plus className="w-4 h-4" />}
+              icon={<Plus className="w-3.5 h-3.5" />}
             >
               <span>{t('dashboard.addService')}</span>
             </Button>
 
             <Button
-              variant="secondary"
+              variant="default"
+              size="sm"
               onClick={() => onNavigate('containers')}
-              icon={<Boxes className="w-4 h-4" />}
+              icon={<Boxes className="w-3.5 h-3.5" />}
             >
               <span>{t('dashboard.viewContainers')}</span>
             </Button>
@@ -68,17 +75,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           href="/status"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 h-[38px] px-3.5 rounded-full border border-white/10 bg-white/[0.08] text-[13px] font-semibold text-[#eceef6] hover:bg-white/[0.14] transition-colors cursor-pointer shrink-0"
+          className="btn btn-sm btn-ghost inline-flex items-center gap-1.5 shrink-0"
         >
-          <ExternalLink className="w-4 h-4 shrink-0 text-[#9ba0b5]" />
+          <ExternalLink className="w-3.5 h-3.5 text-[var(--text-muted)]" />
           <span>{t('nav.liveStatus')}</span>
         </a>
 
         <Button
-          variant="secondary"
+          variant="ghost"
+          size="sm"
           onClick={onRefresh}
           disabled={refreshing}
-          icon={<RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#d5d5dc]' : ''}`} />}
+          icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
         >
           <span>{refreshing ? t('common.loading') : t('common.refresh')}</span>
         </Button>
@@ -86,3 +94,4 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     </div>
   );
 };
+

@@ -48,6 +48,10 @@ public class DockerServiceTests
             Task.FromResult<DockerImageInspectInfo?>(null);
         public virtual Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) =>
             Task.FromResult(true);
+        public virtual Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(true, "Renamed"));
+        public virtual Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerContainerCreateResponse?>(new DockerContainerCreateResponse { Id = "new_created_container_id" });
     }
 
     [Fact]
@@ -304,6 +308,10 @@ public class DockerServiceTests
             Task.FromResult(new DockerActionResult(false, "Update container failed", 500));
         public Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default) => Task.FromResult<DockerImageInspectInfo?>(null);
         public Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(false, "Rename failed", 500));
+        public Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult<DockerContainerCreateResponse?>(null);
     }
 
     [Fact]
@@ -670,6 +678,99 @@ public class DockerServiceTests
                          jsonBody;
 
         Assert.Contains("Content-Length: 27\r\n", request);
+    }
+
+    [Fact]
+    public async Task RecreateContainerAsync_SuccessfulRecreate_WorksAndCleansUp()
+    {
+        var fake = new RecreateTestDockerHttpClient(shouldFailCreate: false);
+        var dockerService = new DockerService(fake, NullLogger<DockerService>.Instance);
+
+        var result = await dockerService.RecreateContainerAsync("c_test", pullLatest: true);
+        Assert.True(result.Success);
+        Assert.True(fake.WasPulled);
+        Assert.True(fake.WasRenamed);
+        Assert.True(fake.WasCreated);
+        Assert.True(fake.WasStarted);
+        Assert.True(fake.OldContainerDeleted);
+    }
+
+    [Fact]
+    public async Task RecreateContainerAsync_CreateFails_RollsBackOldContainer()
+    {
+        var fake = new RecreateTestDockerHttpClient(shouldFailCreate: true);
+        var dockerService = new DockerService(fake, NullLogger<DockerService>.Instance);
+
+        var result = await dockerService.RecreateContainerAsync("c_test", pullLatest: true);
+        Assert.False(result.Success);
+        Assert.Contains("Eski konteyner geri yüklendi", result.Message);
+        Assert.True(fake.RollbackRenamed);
+    }
+}
+
+public class RecreateTestDockerHttpClient : DockerServiceTests.FakeDockerHttpClient
+{
+    private readonly bool _shouldFailCreate;
+    public bool WasPulled { get; private set; }
+    public bool WasRenamed { get; private set; }
+    public bool WasCreated { get; private set; }
+    public bool WasStarted { get; private set; }
+    public bool OldContainerDeleted { get; private set; }
+    public bool RollbackRenamed { get; private set; }
+
+    public RecreateTestDockerHttpClient(bool shouldFailCreate)
+    {
+        _shouldFailCreate = shouldFailCreate;
+    }
+
+    public override Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<DockerContainerInspectInfo?>(new DockerContainerInspectInfo
+        {
+            Id = containerId,
+            Name = "/test_app",
+            Image = "nginx:alpine",
+            Config = new DockerContainerConfig { Image = "nginx:alpine" },
+            State = new DockerContainerState { Running = true }
+        });
+    }
+
+    public override Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default)
+    {
+        WasPulled = true;
+        return Task.FromResult(true);
+    }
+
+    public override Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default)
+    {
+        if (newName.Contains("_old_"))
+        {
+            WasRenamed = true;
+        }
+        else
+        {
+            RollbackRenamed = true;
+        }
+        return Task.FromResult(new DockerActionResult(true, "Renamed"));
+    }
+
+    public override Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default)
+    {
+        if (_shouldFailCreate) return Task.FromResult<DockerContainerCreateResponse?>(null);
+        WasCreated = true;
+        return Task.FromResult<DockerContainerCreateResponse?>(new DockerContainerCreateResponse { Id = "new_c_123" });
+    }
+
+    public override Task<DockerActionResult> StartContainerAsync(string containerId, CancellationToken cancellationToken = default)
+    {
+        WasStarted = true;
+        return Task.FromResult(new DockerActionResult(true, "Started"));
+    }
+
+    public override Task<DockerActionResult> DeleteContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken cancellationToken = default)
+    {
+        OldContainerDeleted = true;
+        return Task.FromResult(new DockerActionResult(true, "Deleted"));
     }
 }
 

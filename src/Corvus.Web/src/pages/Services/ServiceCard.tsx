@@ -1,7 +1,8 @@
 import React from 'react';
 import { Server, ArrowUp, ArrowDown, ExternalLink, Trash2, Pencil } from 'lucide-react';
 import type { Service } from '../../types';
-import { Pill } from '../../components/ui/Pill';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { StatusDot } from '../../components/ui/StatusDot';
 import { TagChip } from '../../components/ui/TagChip';
 import { SslBadge } from '../../components/ui/SslBadge';
 import { HistoryBars } from '../../components/ui/HistoryBars';
@@ -14,6 +15,7 @@ interface ServiceCardProps {
   totalServices: number;
   isDragging: boolean;
   reordering: boolean;
+  isAdmin?: boolean;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onDragEnd: (e: React.DragEvent) => void;
   onMove: (currentIndex: number, direction: 'up' | 'down') => void;
@@ -28,6 +30,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   totalServices,
   isDragging,
   reordering,
+  isAdmin = true,
   onDragStart,
   onDragEnd,
   onMove,
@@ -39,6 +42,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
   const statusType: 'ok' | 'warn' | 'err' =
     service.status === 'healthy' ? 'ok' : service.status === 'degraded' ? 'warn' : 'err';
+  const dotStatus = statusType === 'ok' ? 'up' : statusType === 'warn' ? 'warn' : 'down';
 
   const statusLabel =
     service.status === 'healthy'
@@ -55,26 +59,29 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       onDragStart={(e) => onDragStart(e, service.id)}
       onDragEnd={onDragEnd}
       className={`
-        surface rounded-[22px] p-4 sm:p-5 flex flex-col justify-between gap-3.5 transition-all duration-200 select-none group cursor-grab active:cursor-grabbing hover:bg-white/[0.10]
-        ${isDragging ? 'opacity-30 scale-95 border-white/30 shadow-inner' : ''}
+        bg-[var(--bg-card)] border border-[var(--border-hairline)] rounded-[var(--radius-sm)] p-4 flex flex-col justify-between gap-3.5 transition-all select-none group cursor-grab active:cursor-grabbing hover:border-[var(--cloud-400)]
+        ${isDragging ? 'opacity-30 scale-95 border-[var(--cloud-400)]' : ''}
       `}
     >
       <div className="space-y-3">
-        {/* Üst Kısım: İkon + İsim & URL + Durum Hapı */}
+        {/* Üst Kısım: İkon + İsim & URL + Durum Rozeti */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-[13px] border border-white/10 bg-white/[0.07] flex items-center justify-center text-[#eceef6] shrink-0 font-bold text-sm">
+            <div className="w-9 h-9 rounded-[var(--radius-sm)] border border-[var(--border-hairline)] bg-[var(--bg-subtle)] flex items-center justify-center text-[var(--cloud-200)] shrink-0 font-bold text-sm">
               {service.icon ? (
                 <span>{service.icon}</span>
               ) : (
-                <Server className="w-5 h-5 text-[#9ba0b5]" />
+                <Server className="w-4 h-4 text-[var(--text-muted)]" />
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="text-[15px] font-semibold text-[#eceef6] truncate leading-snug">
-                {service.name}
-              </h3>
-              <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[11px] text-[#9ba0b5] truncate">
+              <div className="flex items-center gap-2">
+                <StatusDot status={dotStatus} />
+                <h3 className="text-[14px] font-semibold text-[var(--cloud-100)] truncate leading-snug">
+                  {service.name}
+                </h3>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[11px] text-[var(--text-muted)] truncate">
                 <span className="uppercase">{service.source}</span>
                 {service.url && (
                   <>
@@ -83,7 +90,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                   </>
                 )}
                 {service.checkType === 'tcp' && (
-                  <span className="text-[#818cf8]">
+                  <span className="text-[var(--cloud-300)]">
                     · TCP {service.port ? `:${service.port}` : ''}
                   </span>
                 )}
@@ -91,7 +98,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             </div>
           </div>
 
-          <Pill status={statusType} label={statusLabel} />
+          <StatusBadge status={dotStatus}>
+            {statusLabel}
+          </StatusBadge>
         </div>
 
         {service.description && (
@@ -143,47 +152,49 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
 
         {/* Sağ: Sıralama & Düzenle & Sil */}
-        <div className="flex items-center gap-1.5">
-          {/* Sıralama */}
-          <div className="flex items-center gap-1 mr-1">
+        {isAdmin && (
+          <div className="flex items-center gap-1.5">
+            {/* Sıralama */}
+            <div className="flex items-center gap-1 mr-1">
+              <button
+                type="button"
+                onClick={() => onMove(globalIndex, 'up')}
+                disabled={globalIndex === 0 || reordering}
+                className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                title="Yukarı Taşı"
+              >
+                <ArrowUp className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onMove(globalIndex, 'down')}
+                disabled={globalIndex === totalServices - 1 || reordering}
+                className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                title="Aşağı Taşı"
+              >
+                <ArrowDown className="w-3 h-3" />
+              </button>
+            </div>
+
             <button
               type="button"
-              onClick={() => onMove(globalIndex, 'up')}
-              disabled={globalIndex === 0 || reordering}
-              className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-              title="Yukarı Taşı"
+              onClick={() => onEdit(service)}
+              className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.10] transition-colors cursor-pointer"
+              title={t('common.edit')}
             >
-              <ArrowUp className="w-3 h-3" />
+              <Pencil className="w-3.5 h-3.5" />
             </button>
+
             <button
               type="button"
-              onClick={() => onMove(globalIndex, 'down')}
-              disabled={globalIndex === totalServices - 1 || reordering}
-              className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-              title="Aşağı Taşı"
+              onClick={() => onDelete(service.id, service.name)}
+              className="p-2 rounded-full text-[#9ba0b5] hover:text-[#f87171] hover:bg-rose-500/10 transition-colors cursor-pointer"
+              title={t('common.delete')}
             >
-              <ArrowDown className="w-3 h-3" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => onEdit(service)}
-            className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.10] transition-colors cursor-pointer"
-            title={t('common.edit')}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onDelete(service.id, service.name)}
-            className="p-2 rounded-full text-[#9ba0b5] hover:text-[#f87171] hover:bg-rose-500/10 transition-colors cursor-pointer"
-            title={t('common.delete')}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );

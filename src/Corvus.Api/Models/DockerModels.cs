@@ -602,6 +602,15 @@ public class ComposeFileDto
     [JsonPropertyName("content")]
     public string Content { get; set; } = string.Empty;
 
+    [JsonPropertyName("envContent")]
+    public string? EnvContent { get; set; }
+
+    [JsonPropertyName("envFilePath")]
+    public string? EnvFilePath { get; set; }
+
+    [JsonPropertyName("envExists")]
+    public bool EnvExists { get; set; }
+
     [JsonPropertyName("lastModified")]
     public DateTime? LastModified { get; set; }
 
@@ -617,8 +626,71 @@ public class SaveComposeFileRequest
     [JsonPropertyName("content")]
     public string Content { get; set; } = string.Empty;
 
+    [JsonPropertyName("envContent")]
+    public string? EnvContent { get; set; }
+
     [JsonPropertyName("restartStack")]
     public bool RestartStack { get; set; } = false;
+}
+
+public class ComposeDeployResult
+{
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+
+    [JsonPropertyName("output")]
+    public string Output { get; set; } = string.Empty;
+
+    [JsonPropertyName("exitCode")]
+    public int ExitCode { get; set; }
+
+    [JsonPropertyName("error")]
+    public string? Error { get; set; }
+}
+
+public class DockerContainerCreateRequest
+{
+    [JsonPropertyName("Image")]
+    public string? Image { get; set; }
+
+    [JsonPropertyName("Cmd")]
+    public List<string>? Cmd { get; set; }
+
+    [JsonPropertyName("Entrypoint")]
+    public List<string>? Entrypoint { get; set; }
+
+    [JsonPropertyName("WorkingDir")]
+    public string? WorkingDir { get; set; }
+
+    [JsonPropertyName("User")]
+    public string? User { get; set; }
+
+    [JsonPropertyName("Env")]
+    public List<string>? Env { get; set; }
+
+    [JsonPropertyName("Labels")]
+    public Dictionary<string, string>? Labels { get; set; }
+
+    [JsonPropertyName("HostConfig")]
+    public DockerHostConfig? HostConfig { get; set; }
+
+    [JsonPropertyName("NetworkingConfig")]
+    public DockerNetworkingConfigRequest? NetworkingConfig { get; set; }
+}
+
+public class DockerNetworkingConfigRequest
+{
+    [JsonPropertyName("EndpointsConfig")]
+    public Dictionary<string, DockerEndpointSettings>? EndpointsConfig { get; set; }
+}
+
+public class DockerContainerCreateResponse
+{
+    [JsonPropertyName("Id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("Warnings")]
+    public List<string>? Warnings { get; set; }
 }
 
 public class DeployWebhookRequest

@@ -465,6 +465,17 @@ public static class ContainersEndpoints
                 : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden oluşturulamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
-        }).RequireAdmin();
+        });
+
+        app.MapPost("/api/v1/containers/{id}/recreate", async (string id, ContainerImageRecreateRequest? request, IDockerService docker, CancellationToken ct) =>
+        {
+            bool pullLatest = request?.PullLatest ?? true;
+            var result = await docker.RecreateContainerAsync(id, pullLatest, ct);
+            return result.Success
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container yeniden oluşturuldu."))
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden oluşturulamadı."), 
+                               CorvusJsonSerializerContext.Default.GenericApiResponse, 
+                               statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
+        }).AddEndpointFilter<CorvusAuthFilter>();
     }
 }

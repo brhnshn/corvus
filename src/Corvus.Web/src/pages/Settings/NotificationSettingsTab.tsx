@@ -43,35 +43,31 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
   ];
 
   return (
-    <div className="p-4 sm:p-6 rounded-2xl surface border border-white/10 space-y-6">
-      <div className="border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-white">
-          <Bell className="w-4 h-4 text-white/70" />
+    <div className="card space-y-6">
+      <div className="border-b border-[var(--border-hairline)] pb-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+          <Bell className="w-4 h-4 text-[var(--text-secondary)]" />
           <h2>{t('settings.notificationsTitle')}</h2>
         </div>
-        <p className="text-xs text-white/50 mt-1">
+        <p className="text-xs text-[var(--text-secondary)] mt-1">
           {t('settings.notificationsDesc')}
         </p>
       </div>
 
       {/* Kanal Sekmeleri */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-white/[0.03] p-1.5 rounded-2xl border border-white/10">
+      <div className="tabs overflow-x-auto no-scrollbar">
         {channels.map((ch) => (
           <button
             key={ch.id}
             type="button"
             onClick={() => setActiveChannel(ch.id)}
-            className={`py-2 px-3 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              activeChannel === ch.id
-                ? 'bg-white text-black font-semibold shadow-xs'
-                : 'text-white/60 hover:text-white'
-            }`}
+            className={`tab ${activeChannel === ch.id ? 'active' : ''}`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${ch.enabled ? (activeChannel === ch.id ? 'bg-black' : 'bg-emerald-400') : 'bg-white/20'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${ch.enabled ? 'bg-[var(--status-up)]' : 'bg-[var(--text-muted)]'}`} />
             <span>{ch.name}</span>
             {ch.enabled && (
               <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono hidden sm:inline ${
-                activeChannel === ch.id ? 'bg-black/15 text-black' : 'bg-emerald-500/15 text-emerald-400'
+                activeChannel === ch.id ? 'bg-black/15 text-current' : 'bg-[var(--status-up-bg)] text-[var(--status-up)]'
               }`}>
                 {t('settings.activeCheckbox')}
               </span>
@@ -82,10 +78,10 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
 
       {/* Test Sonuç Bildirimi */}
       {testResult && (
-        <div className={`p-3.5 rounded-2xl border text-xs flex items-center gap-2.5 ${
+        <div className={`p-3.5 rounded-[var(--radius-md)] border text-xs flex items-center gap-2.5 ${
           testResult.success 
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-            : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+            ? 'bg-[var(--status-up-bg)] border-[var(--status-up)]/30 text-[var(--status-up)]' 
+            : 'bg-[var(--status-down-bg)] border-[var(--status-down)]/30 text-[var(--status-down)]'
         }`}>
           {testResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
           <span>[{testResult.channel.toUpperCase()}] {testResult.message}</span>
@@ -93,7 +89,7 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
       )}
 
       {/* Seçili Kanalın Ayar Paneli */}
-      <div className="p-5 rounded-2xl surface border border-white/10 space-y-4">
+      <div className="card bg-[var(--bg-subtle)] space-y-4">
         {activeChannel === 'discord' && (
           <DiscordChannelPanel
             settings={settings}

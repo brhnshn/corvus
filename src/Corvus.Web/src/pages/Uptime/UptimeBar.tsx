@@ -1,5 +1,7 @@
 import React from 'react';
 import type { UptimeCheckItem } from '../../api/client';
+import { Card } from '../../components/ui/Card';
+import { UptimeStrip, type UptimeSegment } from '../../components/ui/UptimeStrip';
 
 interface UptimeBarProps {
   checks: UptimeCheckItem[];
@@ -7,7 +9,7 @@ interface UptimeBarProps {
 }
 
 interface BucketData {
-  status: 'up' | 'down' | 'degraded' | 'empty';
+  status: 'up' | 'down' | 'warn' | 'muted';
   count: number;
   upCount: number;
   avgResponseMs: number;
@@ -17,21 +19,13 @@ interface BucketData {
 export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) => {
   if (checks.length === 0) {
     return (
-      <div className="surface rounded-[22px] p-4 sm:p-5 space-y-2">
-        <div className="flex gap-1 py-1">
-          {Array.from({ length: maxBlocks }).map((_, i) => (
-            <div
-              key={i}
-              className="flex-1 h-8 rounded-[3px] bg-white/[0.06] transition-colors"
-              title="Veri yok"
-            />
-          ))}
-        </div>
-        <div className="flex items-center justify-between text-[11px] text-[#9ba0b5] font-mono px-0.5">
+      <Card className="space-y-2">
+        <UptimeStrip count={maxBlocks} />
+        <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono px-0.5">
           <span>Veri toplanıyor...</span>
           <span>Şimdi</span>
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -45,14 +39,14 @@ export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) 
     const totalMs = chunk.reduce((acc, c) => acc + (c.responseTimeMs || 0), 0);
     const avgMs = chunk.length > 0 ? Math.round(totalMs / chunk.length) : 0;
 
-    let status: BucketData['status'] = 'empty';
+    let status: BucketData['status'] = 'muted';
     if (chunk.length > 0) {
       if (upCount === chunk.length) {
         status = 'up';
       } else if (upCount === 0) {
         status = 'down';
       } else {
-        status = 'degraded';
+        status = 'warn';
       }
     }
 
@@ -72,7 +66,7 @@ export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) 
   // Eksik blokları baştan tamamla (total maxBlocks olsun)
   while (buckets.length < maxBlocks) {
     buckets.unshift({
-      status: 'empty',
+      status: 'muted',
       count: 0,
       upCount: 0,
       avgResponseMs: 0,
@@ -83,30 +77,27 @@ export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) 
   const firstDate = new Date(checks[0].checkedAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
   const lastDate = new Date(checks[checks.length - 1].checkedAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
 
-  return (
-    <div className="surface rounded-[22px] p-4 sm:p-5 space-y-2.5">
-      <div className="flex items-center gap-1 py-1">
-        {buckets.map((b, idx) => {
-          let bgClass = 'bg-white/[0.06]';
-          if (b.status === 'up') bgClass = 'bg-[#34d399] hover:brightness-110';
-          else if (b.status === 'down') bgClass = 'bg-[#f87171] hover:brightness-110';
-          else if (b.status === 'degraded') bgClass = 'bg-[#fbbf24] hover:brightness-110';
+  const segments: UptimeSegment[] = buckets.map((b) => ({
+    status: b.status,
+    tooltip: b.label,
+    latency: b.avgResponseMs,
+  }));
 
-          return (
-            <div
-              key={idx}
-              className={`flex-1 h-8 rounded-[3px] transition-all cursor-pointer ${bgClass}`}
-              title={b.label}
-            />
-          );
-        })}
+  return (
+    <Card className="space-y-2.5">
+      <div className="flex items-center justify-between text-xs text-[var(--cloud-100)] font-semibold mb-1">
+        <span>Erişilebilirlik ve Yanıt Süresi Geçmişi</span>
+        <span className="font-mono text-[11px] text-[var(--text-muted)]">Son 45 Kontrol</span>
       </div>
 
-      <div className="flex items-center justify-between text-[11px] text-[#9ba0b5] font-mono px-0.5">
+      <UptimeStrip segments={segments} count={maxBlocks} height={24} />
+
+      <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono px-0.5 pt-1">
         <span>{firstDate}</span>
-        <span className="text-white/40">Geçmiş Zaman Çizgisi</span>
+        <span className="text-[var(--text-muted)] opacity-60">Kronolojik Telemetri</span>
         <span>{lastDate} (Şimdi)</span>
       </div>
-    </div>
+    </Card>
   );
 };
+

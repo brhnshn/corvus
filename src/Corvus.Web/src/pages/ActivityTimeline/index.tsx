@@ -3,6 +3,7 @@ import { History, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api, type ActivityLogEntry } from '../../api/client';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { ActivityTimelineItem } from './ActivityTimelineItem';
 import { ActivityTimelineFilter } from './ActivityTimelineFilter';
 
@@ -49,77 +50,86 @@ export const ActivityTimelinePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 animate-rv">
-      <PageHeader
-        title="Olay ve Denetim Günlüğü (Audit Log)"
-        subtitle="Konteyner yaşam döngüsü, otomatik kurtarma, alarmlar ve sistem eylemlerinin kronolojik geçmişi"
-        actions={
-          <Button
-            variant="secondary"
-            onClick={() => fetchLogs(true)}
-            disabled={refreshing}
-            icon={<RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />}
-          >
-            <span>Yenile</span>
-          </Button>
-        }
-      />
+    <PageStage className="space-y-4">
+      <MotionItem staggerIndex={0}>
+        <PageHeader
+          title="Olay ve Denetim Günlüğü (Audit Log)"
+          subtitle="Konteyner yaşam döngüsü, otomatik kurtarma, alarmlar ve sistem eylemlerinin kronolojik geçmişi"
+          actions={
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => fetchLogs(true)}
+              disabled={refreshing}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
+            >
+              <span>Yenile</span>
+            </Button>
+          }
+        />
+      </MotionItem>
 
-      <ActivityTimelineFilter
-        category={category}
-        onCategoryChange={handleCategoryChange}
-        search={search}
-        onSearchChange={handleSearchChange}
-      />
+      <MotionItem staggerIndex={1}>
+        <ActivityTimelineFilter
+          category={category}
+          onCategoryChange={handleCategoryChange}
+          search={search}
+          onSearchChange={handleSearchChange}
+        />
+      </MotionItem>
 
       {loading ? (
-        <div className="py-20 text-center text-xs text-[#9ba0b5]">
-          <RefreshCw className="w-6 h-6 animate-spin text-indigo-400 mx-auto mb-2" />
+        <div className="py-20 text-center text-xs text-[var(--text-muted)]">
+          <RefreshCw className="w-6 h-6 animate-spin text-[var(--cloud-200)] mx-auto mb-2" />
           <span>Olay geçmişi yükleniyor...</span>
         </div>
       ) : logs.length === 0 ? (
-        <div className="py-16 text-center border border-dashed border-white/10 rounded-2xl p-6">
-          <History className="w-8 h-8 text-[#9ba0b5] mx-auto mb-2 opacity-50" />
-          <p className="text-xs font-semibold text-[#eceef6]">Henüz kayıtlı olay bulunmuyor</p>
-          <p className="text-[11px] text-[#9ba0b5] mt-1 max-w-sm mx-auto">
+        <div className="py-16 text-center border border-dashed border-[var(--border-hairline)] rounded-[var(--radius-sm)] p-6">
+          <History className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2 opacity-50" />
+          <p className="text-xs font-semibold text-[var(--cloud-100)]">Henüz kayıtlı olay bulunmuyor</p>
+          <p className="text-[11px] text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
             Sistemde gerçekleşen konteyner işlemleri, eşik alarmları ve kullanıcı aksiyonları burada listelenecektir.
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {logs.map((entry) => (
-            <ActivityTimelineItem key={entry.id} entry={entry} />
-          ))}
+        <MotionItem staggerIndex={2}>
+          <div className="space-y-2">
+            {logs.map((entry) => (
+              <ActivityTimelineItem key={entry.id} entry={entry} />
+            ))}
 
-          {/* Sayfalama */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-white/10 text-xs text-[#9ba0b5]">
-              <span>Toplam {totalCount} olay</span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  icon={<ChevronLeft className="w-3.5 h-3.5" />}
-                >
-                  Önceki
-                </Button>
-                <span className="font-mono px-2">
-                  {page} / {totalPages}
-                </span>
-                <Button
-                  variant="secondary"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  icon={<ChevronRight className="w-3.5 h-3.5" />}
-                >
-                  Sonraki
-                </Button>
+            {/* Sayfalama */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 border-t border-[var(--border-hairline)] text-xs text-[var(--text-secondary)]">
+                <span className="font-mono text-[11px]">Toplam {totalCount} olay</span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    icon={<ChevronLeft className="w-3.5 h-3.5" />}
+                  >
+                    Önceki
+                  </Button>
+                  <span className="font-mono px-2 tabular-nums">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    icon={<ChevronRight className="w-3.5 h-3.5" />}
+                  >
+                    Sonraki
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </MotionItem>
       )}
-    </div>
+    </PageStage>
   );
 };

@@ -30,4 +30,6 @@ public interface IDockerHttpClient
     Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default);
     Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default);
     Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default);
+    Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default);
 }

@@ -420,4 +420,62 @@ public class DockerContainerClient
             return null;
         }
     }
+
+    public async Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string url = $"/containers/{Uri.EscapeDataString(containerId)}/rename?name={Uri.EscapeDataString(newName)}";
+            using var response = await _transport.HttpClient.PostAsync(url, null, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return new DockerActionResult(true, "Container yeniden adlandırıldı.");
+            }
+
+            string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container yeniden adlandırılamadı.");
+            _logger.LogWarning("Docker rename hatası ({StatusCode}): {ContainerId} -> {NewName} - {Error}",
+                response.StatusCode,
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(newName),
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
+            return new DockerActionResult(false, error, (int)response.StatusCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Container yeniden adlandırılamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
+            return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
+        }
+    }
+
+    public async Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            string url = string.IsNullOrWhiteSpace(name)
+                ? "/containers/create"
+                : $"/containers/create?name={Uri.EscapeDataString(name)}";
+
+            string jsonBody = JsonSerializer.Serialize(request, CorvusJsonSerializerContext.Default.DockerContainerCreateRequest);
+            using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+            using var response = await _transport.HttpClient.PostAsync(url, content, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Konteyner oluşturulamadı.");
+                _logger.LogWarning("Docker create container hatası ({StatusCode}): {Name} - {Error}",
+                    response.StatusCode,
+                    Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(name ?? ""),
+                    Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(error));
+                return null;
+            }
+
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, CorvusJsonSerializerContext.Default.DockerContainerCreateResponse, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Container oluşturulamadı: {Name}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(name ?? ""));
+            return null;
+        }
+    }
 }

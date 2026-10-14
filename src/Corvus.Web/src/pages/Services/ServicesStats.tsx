@@ -1,6 +1,7 @@
 import React from 'react';
-import { Server, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
-import { StatTile } from '../../components/ui/StatTile';
+import { KpiRow } from '../../components/ui/KpiRow';
+import { KpiCard } from '../../components/ui/KpiCard';
+import { StatusDot } from '../../components/ui/StatusDot';
 import type { Service } from '../../types';
 
 export interface ServicesStatsProps {
@@ -20,48 +21,42 @@ export const ServicesStats: React.FC<ServicesStatsProps> = ({
   const down = services.filter((s) => s.status === 'down').length;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 mb-3.5 animate-rv">
-      <StatTile
+    <KpiRow className="mb-4">
+      <KpiCard
         label="Toplam Servis"
         value={total}
-        unit="tanımlı"
-        icon={<Server className="w-4 h-4" />}
+        subtext={`${healthy} aktif, ${down} kesinti`}
         onClick={() => onFilterStatus?.(null)}
-        className={selectedStatus === null ? 'border-white/30' : ''}
+        className={selectedStatus === null ? 'border-[var(--cloud-400)]' : ''}
       />
 
-      <StatTile
-        label="Sağlıklı"
+      <KpiCard
+        label="Çevrimiçi (Up)"
+        meta={<StatusDot status="up" />}
         value={healthy}
-        unit="çalışıyor"
-        icon={<CheckCircle2 className="w-4 h-4 text-[#34d399]" />}
-        progress={total > 0 ? (healthy / total) * 100 : 100}
-        variant="ok"
+        subtext="HTTP & TCP port aktif"
         onClick={() => onFilterStatus?.('healthy')}
-        className={selectedStatus === 'healthy' ? 'border-[#34d399]/50' : ''}
+        className={selectedStatus === 'healthy' ? 'border-[var(--status-up)]' : ''}
       />
 
-      <StatTile
-        label="Yavaş"
+      <KpiCard
+        label="Performans Düşüşü"
+        meta={<StatusDot status="warn" />}
         value={degraded}
-        unit="gecikmeli"
-        icon={<AlertTriangle className="w-4 h-4 text-[#fbbf24]" />}
-        progress={total > 0 ? (degraded / total) * 100 : 0}
-        variant="warn"
+        subtext="Yüksek yanıt süresi"
         onClick={() => onFilterStatus?.('degraded')}
-        className={selectedStatus === 'degraded' ? 'border-[#fbbf24]/50' : ''}
+        className={selectedStatus === 'degraded' ? 'border-[var(--status-warn)]' : ''}
       />
 
-      <StatTile
-        label="Erişilemiyor"
+      <KpiCard
+        label="Erişilemiyor (Down)"
+        meta={<StatusDot status="down" />}
         value={down}
-        unit="kesinti"
-        icon={<AlertCircle className="w-4 h-4 text-[#f87171]" />}
-        progress={total > 0 ? (down / total) * 100 : 0}
-        variant="err"
+        subtext="Acil müdahale bekliyor"
         onClick={() => onFilterStatus?.('down')}
-        className={selectedStatus === 'down' ? 'border-[#f87171]/50' : ''}
+        className={selectedStatus === 'down' ? 'border-[var(--status-down)]' : ''}
       />
-    </div>
+    </KpiRow>
   );
 };
+

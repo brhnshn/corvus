@@ -33,6 +33,7 @@ export const CommandPaletteResults: React.FC<CommandPaletteResultsProps> = ({
   });
 
   const categoryTitles: Record<string, string> = {
+    commands: t('commandPalette.commands') || 'Hızlı Komutlar',
     pages: t('nav.dashboard') ? 'Sayfalar' : 'Pages',
     actions: t('common.actions') ? 'Aksiyonlar' : 'Actions',
     containers: t('nav.containers') ? 'Konteynerler' : 'Containers',

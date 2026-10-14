@@ -1,45 +1,58 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { QuietBanner } from '../../components/ui/QuietBanner';
+import { Button } from '../../components/ui/Button';
 
 export interface SystemBannerProps {
   status: 'ok' | 'warn' | 'err';
   message: string;
   subtext?: string;
   lastCheckText?: string;
+  onNavigate?: (page: 'services' | 'containers' | 'metrics' | 'uptime' | 'settings') => void;
 }
 
 export const SystemBanner: React.FC<SystemBannerProps> = ({
   status,
   message,
   subtext,
-  lastCheckText = 'son kontrol az önce',
+  lastCheckText,
+  onNavigate,
 }) => {
-  const bannerStyles = {
-    ok: 'bg-[#34d399]/10 border-[#34d399]/30 text-[#34d399]',
-    warn: 'bg-[#fbbf24]/10 border-[#fbbf24]/35 text-[#fbbf24]',
-    err: 'bg-[#f87171]/10 border-[#f87171]/35 text-[#f87171]',
-  }[status];
-
-  const Icon = status === 'ok' ? CheckCircle2 : status === 'warn' ? AlertTriangle : AlertCircle;
+  const isHealthy = status === 'ok';
 
   return (
-    <div
-      className={`
-        surface flex items-center gap-3 px-4 py-3 rounded-[18px] border text-sm font-semibold transition-all duration-300 animate-rv
-        ${bannerStyles}
-      `}
-      style={{ animationDelay: '80ms' }}
-    >
-      <Icon className="w-5 h-5 shrink-0" />
-      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-        <span className="text-[#eceef6]">{message}</span>
-        {subtext && <span className="text-xs opacity-75 font-normal">({subtext})</span>}
-      </div>
-      {lastCheckText && (
-        <small className="ml-auto font-mono text-[11px] text-[#9ba0b5] whitespace-nowrap shrink-0">
-          {lastCheckText}
-        </small>
-      )}
-    </div>
+    <QuietBanner
+      summary={
+        <span>
+          <strong className="text-[var(--cloud-100)] font-semibold">{message}</strong>
+          {subtext && <span className="ml-1 text-[var(--text-secondary)]">· {subtext}</span>}
+          {lastCheckText && (
+            <span className="ml-2 font-mono text-[11px] text-[var(--text-muted)]">
+              ({lastCheckText})
+            </span>
+          )}
+        </span>
+      }
+      actions={
+        onNavigate && (
+          <>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => onNavigate(isHealthy ? 'metrics' : 'services')}
+            >
+              {isHealthy ? 'Sistem Metrikleri →' : 'Servisleri İncele →'}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onNavigate('containers')}
+            >
+              Konteynerler
+            </Button>
+          </>
+        )
+      }
+    />
   );
 };
+

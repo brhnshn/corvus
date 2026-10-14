@@ -100,6 +100,12 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     public Task<bool> ResizeExecAsync(string execId, int width, int height, CancellationToken cancellationToken = default) =>
         _execClient.ResizeExecAsync(execId, width, height, cancellationToken);
 
+    public Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default) =>
+        _containerClient.RenameContainerAsync(containerId, newName, cancellationToken);
+
+    public Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default) =>
+        _containerClient.CreateContainerAsync(name, request, cancellationToken);
+
     public void Dispose()
     {
         _transport.Dispose();

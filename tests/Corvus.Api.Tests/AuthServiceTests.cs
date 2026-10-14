@@ -38,6 +38,14 @@ public class AuthServiceTests
         public Task<List<User>> GetAllAsync() =>
             Task.FromResult(_users.ToList());
 
+        public Task<bool> UpdateRoleAsync(string id, string newRole)
+        {
+            var u = _users.FirstOrDefault(x => x.Id == id);
+            if (u == null) return Task.FromResult(false);
+            u.Role = newRole;
+            return Task.FromResult(true);
+        }
+
         public Task<bool> DeleteAsync(string id)
         {
             var u = _users.FirstOrDefault(x => x.Id == id);

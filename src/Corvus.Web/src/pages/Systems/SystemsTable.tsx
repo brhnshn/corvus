@@ -50,27 +50,27 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
   const renderSortArrow = (columnKey: string) => {
     if (sortBy === columnKey) {
       return sortDirection === 'desc' ? (
-        <ArrowDown className="w-3.5 h-3.5 text-[#7c7cff] stroke-[2.5]" />
+        <ArrowDown className="w-3.5 h-3.5 text-[var(--cloud-200)] stroke-[2.5]" />
       ) : (
-        <ArrowUp className="w-3.5 h-3.5 text-[#7c7cff] stroke-[2.5]" />
+        <ArrowUp className="w-3.5 h-3.5 text-[var(--cloud-200)] stroke-[2.5]" />
       );
     }
     return <ArrowUpDown className="w-3 h-3 opacity-40 group-hover:opacity-80 transition-opacity" />;
   };
 
-  const renderDash = () => <span className="text-[#8b90a7] font-mono text-[13px]">–</span>;
+  const renderDash = () => <span className="text-[var(--text-muted)] font-mono text-[13px]">–</span>;
 
   return (
-    <div className="border border-[#242637] rounded-xl bg-[#0d0e17] overflow-hidden shadow-2xl">
-      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[#3a3d57] scrollbar-track-[#0d0e17]">
+    <div className="border border-[var(--border-hairline)] rounded-[var(--radius-md)] bg-[var(--bg-canvas)] overflow-hidden shadow-2xl">
+      <div className="overflow-x-auto no-scrollbar">
         <table className="w-full border-collapse min-w-[1400px] text-left">
           <thead>
-            <tr className="bg-[#0f101b] border-b border-[#242637] select-none text-[#8b90a7] font-semibold text-sm">
+            <tr className="bg-[var(--bg-shell)] border-b border-[var(--border-hairline)] select-none text-[var(--text-secondary)] font-semibold text-xs">
               {/* 1. Sistem */}
               {visibleColumns.system && (
                 <th
                   onClick={() => onSortByChange('name')}
-                  className="py-4 px-5 cursor-pointer hover:text-[#eceef5] transition-colors group whitespace-nowrap"
+                  className="py-3 px-4 cursor-pointer hover:text-[var(--text-primary)] transition-colors group whitespace-nowrap"
                 >
                   <div className="inline-flex items-center gap-2">
                     <Server className="w-4 h-4 stroke-[1.8] shrink-0" />
@@ -213,7 +213,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[#242637]">
+          <tbody className="divide-y divide-[var(--border-hairline)]">
             {systems.map((system) => {
               const theme = getSystemStatusTheme(system.status);
               const isPending = system.status === 'pending';
@@ -232,19 +232,19 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                 <tr
                   key={system.id}
                   onClick={() => onSelectSystem(system.id)}
-                  className="hover:bg-[#141626] transition-colors cursor-pointer group"
+                  className="hover:bg-[var(--bg-hover)] transition-colors cursor-pointer group"
                 >
                   {/* 1. Sistem Adı, Durum & Host Etiketi */}
                   {visibleColumns.system && (
-                    <td className="py-5 px-5 font-semibold text-[15px] whitespace-nowrap">
+                    <td className="py-4 px-4 font-semibold text-sm whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
-                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${theme.dotColor}`} />
-                        <span className="text-[#eceef5] group-hover:text-white transition-colors">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${theme.dotColor}`} />
+                        <span className="text-[var(--text-primary)] group-hover:text-[var(--cloud-100)] transition-colors">
                           {system.name}
                         </span>
 
                         {system.id === 'local-host' && (
-                          <span className="font-mono text-[11px] font-medium text-[#7c7cff] bg-[#1a1b30] border border-[#2a2c4d] rounded-md px-2 py-0.5">
+                          <span className="font-mono text-[10px] font-semibold text-[var(--cloud-200)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] rounded px-1.5 py-0.5">
                             {t('systems.table.host')}
                           </span>
                         )}
@@ -252,7 +252,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                         {system.tags.map((tTag, idx) => (
                           <span
                             key={idx}
-                            className="font-mono text-[11px] font-normal text-[#8b90a7] bg-[#1b1d2c] rounded-md px-2 py-0.5"
+                            className="font-mono text-[10px] font-normal text-[var(--text-secondary)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] rounded px-1.5 py-0.5"
                           >
                             {tTag}
                           </span>
@@ -263,26 +263,26 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 2. İşlemci (CPU) */}
                   {visibleColumns.cpu && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {isPending ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[var(--status-warn-bg)] border border-[var(--status-warn)]/30 text-[var(--status-warn)]">
                           {t('systems.table.pendingAgent')}
                         </span>
                       ) : isPaused ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-white/10 border border-white/15 text-[#8b90a7]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-muted)]">
                           {t('systems.table.paused')}
                         </span>
                       ) : (
-                        <div className="flex items-center gap-2.5 font-mono text-[13px]">
-                          <b className="min-w-[44px] font-semibold text-[#eceef5]">
+                        <div className="flex items-center gap-2.5 font-mono text-xs tabular-nums">
+                          <b className="min-w-[40px] font-semibold text-[var(--text-primary)]">
                             %{cpuVal.toFixed(1)}
                           </b>
-                          <span className="w-20 h-2 bg-[#1f2133] rounded overflow-hidden">
+                          <span className="w-20 h-1.5 bg-[var(--bg-subtle)] border border-[var(--border-hairline)] rounded overflow-hidden">
                             <i
                               className="block h-full rounded transition-all duration-300"
                               style={{
                                 width: `${Math.max(cpuVal, 2)}%`,
-                                background: cpuVal > 85 ? '#f87171' : cpuVal > 65 ? '#f0b429' : '#2fd08f',
+                                background: cpuVal > 85 ? 'var(--status-down)' : cpuVal > 65 ? 'var(--status-warn)' : 'var(--status-up)',
                               }}
                             />
                           </span>
@@ -293,24 +293,24 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 3. Bellek (RAM) */}
                   {visibleColumns.ram && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {isPending || isPaused ? (
                         renderDash()
                       ) : (
-                        <div className="flex items-center gap-2.5 font-mono text-[13px]">
-                          <b className="min-w-[44px] font-semibold text-[#eceef5]">
+                        <div className="flex items-center gap-2.5 font-mono text-xs tabular-nums">
+                          <b className="min-w-[40px] font-semibold text-[var(--text-primary)]">
                             %{ramPercent}
                           </b>
-                          <span className="w-20 h-2 bg-[#1f2133] rounded overflow-hidden">
+                          <span className="w-20 h-1.5 bg-[var(--bg-subtle)] border border-[var(--border-hairline)] rounded overflow-hidden">
                             <i
                               className="block h-full rounded transition-all duration-300"
                               style={{
                                 width: `${Math.max(ramPercent, 2)}%`,
-                                background: ramPercent > 85 ? '#f87171' : ramPercent > 65 ? '#f0b429' : '#1fb6ff',
+                                background: ramPercent > 85 ? 'var(--status-down)' : ramPercent > 65 ? 'var(--status-warn)' : 'var(--cloud-300)',
                               }}
                             />
                           </span>
-                          <em className="not-italic text-[#8b90a7] text-xs">
+                          <em className="not-italic text-[var(--text-muted)] text-[11px]">
                             {formatBytes(ramUsed, 0)}
                           </em>
                         </div>
@@ -320,24 +320,24 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 4. Depolama alanı (Disk) */}
                   {visibleColumns.disk && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {isPending || isPaused ? (
                         renderDash()
                       ) : (
-                        <div className="flex items-center gap-2.5 font-mono text-[13px]">
-                          <b className="min-w-[44px] font-semibold text-[#eceef5]">
+                        <div className="flex items-center gap-2.5 font-mono text-xs tabular-nums">
+                          <b className="min-w-[40px] font-semibold text-[var(--text-primary)]">
                             %{diskPercent}
                           </b>
-                          <span className="w-20 h-2 bg-[#1f2133] rounded overflow-hidden">
+                          <span className="w-20 h-1.5 bg-[var(--bg-subtle)] border border-[var(--border-hairline)] rounded overflow-hidden">
                             <i
                               className="block h-full rounded transition-all duration-300"
                               style={{
                                 width: `${Math.max(diskPercent, 2)}%`,
-                                background: diskPercent > 85 ? '#f87171' : diskPercent > 70 ? '#f0b429' : '#1fb6ff',
+                                background: diskPercent > 85 ? 'var(--status-down)' : diskPercent > 70 ? 'var(--status-warn)' : 'var(--cloud-400)',
                               }}
                             />
                           </span>
-                          <em className="not-italic text-[#8b90a7] text-xs">
+                          <em className="not-italic text-[var(--text-muted)] text-[11px]">
                             {formatBytes(diskUsed, 0)}
                           </em>
                         </div>
@@ -347,17 +347,17 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 5. GPU (Opsiyonel) */}
                   {visibleColumns.gpu && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {renderDash()}
                     </td>
                   )}
 
                   {/* 6. Yük Ortalaması */}
                   {visibleColumns.load && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {!isPending && !isPaused && system.loadAvg1m != null ? (
-                        <span className="font-mono text-[13px] text-[#eceef5]">
-                          <span className="text-[#2fd08f] mr-1.5">●</span>
+                        <span className="font-mono text-xs tabular-nums text-[var(--text-primary)]">
+                          <span className="text-[var(--status-up)] mr-1.5">●</span>
                           {system.loadAvg1m.toFixed(2)} {system.loadAvg5m != null ? system.loadAvg5m.toFixed(2) : '0.00'} {system.loadAvg15m != null ? system.loadAvg15m.toFixed(2) : '0.00'}
                         </span>
                       ) : (
@@ -368,9 +368,9 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 7. Ağ Hızı */}
                   {visibleColumns.net && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {!isPending && !isPaused && system.netRxBytesSec != null ? (
-                        <span className="font-mono text-[13px] text-[#eceef5]">
+                        <span className="font-mono text-xs tabular-nums text-[var(--text-primary)]">
                           {formatBytes(system.netRxBytesSec)}/s
                         </span>
                       ) : (
@@ -381,33 +381,33 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 8. Sıcaklık (Opsiyonel) */}
                   {visibleColumns.temp && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {renderDash()}
                     </td>
                   )}
 
                   {/* 9. Pil (Opsiyonel) */}
                   {visibleColumns.bat && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {renderDash()}
                     </td>
                   )}
 
                   {/* 10. Wi-Fi (Opsiyonel) */}
                   {visibleColumns.wifi && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {renderDash()}
                     </td>
                   )}
 
                   {/* 11. Hizmetler / Konteyner */}
                   {visibleColumns.svc && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {isPending || isPaused ? (
                         renderDash()
                       ) : (
-                        <span className="inline-flex gap-1.5 items-center border border-[#242637] rounded-lg px-3 py-1 text-[13px] font-medium bg-[#161827] text-[#eceef5]">
-                          <Boxes className="w-3.5 h-3.5 text-[#8b90a7]" />
+                        <span className="inline-flex gap-1.5 items-center border border-[var(--border-hairline)] rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-mono font-medium bg-[var(--bg-subtle)] text-[var(--text-primary)]">
+                          <Boxes className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                           <span>{system.activeContainerCount} {t('systems.table.active')}</span>
                         </span>
                       )}
@@ -416,14 +416,14 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
 
                   {/* 12. Güncellemeler (Opsiyonel) */}
                   {visibleColumns.upd && (
-                    <td className="py-5 px-5 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap">
                       {renderDash()}
                     </td>
                   )}
 
                   {/* 13. Aksiyon Menüsü & Detay Oku */}
-                  <td className="py-5 px-5 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-2 text-[#8b90a7]">
+                  <td className="py-4 px-4 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-2 text-[var(--text-secondary)]">
                       {onEditSystem && onTogglePauseSystem && onDeleteSystem && (
                         <SystemActionMenu
                           system={system}
@@ -432,7 +432,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                           onDelete={onDeleteSystem}
                         />
                       )}
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 group-hover:text-white transition-transform" />
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:text-[var(--cloud-100)] transition-transform" />
                     </div>
                   </td>
                 </tr>
