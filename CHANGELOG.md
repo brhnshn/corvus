@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.7] - 2026-10-15 — ObsidianUI Standardization for System Management Modals
+
+### Fixed
+- **Purge Legacy Styling and Standardize System Modals**:
+  - `AddSystemSheet.tsx`: Refactored to ObsidianUI `Modal` and tactile `Button` components, removing legacy `#1b1d2a` / `#eceef6` hardcoded color palettes. Setup steps, status badges, and code blocks now strictly use standard tokens (`var(--bg-card)`, `input w-full`, etc.).
+  - `EditSystemModal.tsx`: Replaced bespoke popup wrapper with standard `Modal`, removing custom inline styles.
+  - `DeleteSystemModal.tsx`: Refactored with standard `Modal` and danger-variant `Button` with built-in loading spinners.
+  - Replaced hardcoded text in all system dialogs with type-safe i18n keys synchronized across `en.ts` and `tr.ts`.
+
+---
+
 ## [1.6.6] - 2026-10-14 — CodeQL Security Hardening & Command Injection Protection
 
 ### Fixed

@@ -3,6 +3,17 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.7] - 2026-10-15 — Sistem Yönetim Modallarının ObsidianUI Standardizasyonu
+
+### Düzeltilenler (Fixed)
+- **Sistem Modallarında Eski Tasarım ve Hardcoded Renklerin Kaldırılması**:
+  - `AddSystemSheet.tsx`: Standart dışı eski kart yapısı ve hardcoded `#1b1d2a` / `#eceef6` renkleri kaldırılarak ortak `Modal` ve `Button` bileşenlerine geçirildi. Kurulum adımları, durum rozetleri ve terminal komut bloğu ObsidianUI token'larıyla (`var(--bg-card)`, `input w-full` vb.) tam uyumlu hale getirildi.
+  - `EditSystemModal.tsx`: Eski popup şablonu ve el yapımı butonlar kaldırılarak ObsidianUI `Modal` mimarisine dönüştürüldü.
+  - `DeleteSystemModal.tsx`: Standart `Modal` ve `Button` bileşenlerine (`variant="danger"`, `isLoading`) geçirilerek arayüz bütünlüğü sağlandı.
+  - Modallar içerisindeki hardcoded Türkçe metinler temizlendi; hem `tr.ts` hem de `en.ts` dosyalarına yeni i18n çeviri anahtarları eklenerek çift dilli tam senkronizasyon sağlandı.
+
+---
+
 ## [1.6.6] - 2026-10-14 — CodeQL Güvenlik Sıkılaştırması ve Komut Enjeksiyonu Koruması
 
 ### Düzeltilenler (Fixed)

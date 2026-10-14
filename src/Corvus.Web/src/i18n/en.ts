@@ -939,7 +939,8 @@ export const en = {
       desc: 'Are you sure you want to delete "{name}"? This action cannot be undone and all telemetry records will be wiped.',
       confirm: 'Yes, Delete',
       cancel: 'Cancel',
-      deleting: 'Deleting...'
+      deleting: 'Deleting...',
+      errorGeneric: 'Failed to delete system.'
     },
     editModal: {
       title: 'Edit System',
@@ -947,7 +948,8 @@ export const en = {
       tagsLabel: 'Tags (comma-separated)',
       save: 'Save',
       cancel: 'Cancel',
-      saving: 'Saving...'
+      saving: 'Saving...',
+      errorGeneric: 'Failed to update system.'
     },
     detail: {
       backToFleet: 'Back to Fleet',
@@ -1065,7 +1067,13 @@ export const en = {
       connectedSuccess: 'Connection Established!',
       connectedDetails: 'Agent connected successfully and initial telemetry received.',
       goToCockpit: 'Open System Cockpit',
-      finish: 'Done'
+      finish: 'Done',
+      creating: 'Creating...',
+      submitStep1: 'Continue (Generate Command) →',
+      systemCreated: 'System Registered: {name}',
+      copy: 'Copy',
+      copied: 'Copied!',
+      errorGeneric: 'Failed to create system record.'
     },
     cockpit: {
       tabs: {

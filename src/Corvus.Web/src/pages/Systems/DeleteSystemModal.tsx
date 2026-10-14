@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Trash2, X, AlertTriangle } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import { api } from '../../api';
 import type { SystemSummaryDto } from '../../types';
 import { useI18n } from '../../i18n';
@@ -22,7 +23,7 @@ export const DeleteSystemModal: React.FC<DeleteSystemModalProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen || !system) return null;
+  if (!system) return null;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -32,51 +33,34 @@ export const DeleteSystemModal: React.FC<DeleteSystemModalProps> = ({
       onDeleted();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Sistem silinemedi.');
+      setError(err instanceof Error ? err.message : t('systems.deleteModal.errorGeneric'));
     } finally {
       setIsDeleting(false);
     }
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-modal-backdrop"
-      onClick={onClose}
-    >
-      <div 
-        className="w-full max-w-md rounded-3xl bg-[#1b1d2a] border border-white/10 shadow-2xl p-6 space-y-5 animate-modal-card"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
-              <Trash2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-[#eceef6]">
-                {t('systems.deleteModal.title')}
-              </h3>
-              <p className="text-xs text-[#9ba0b5]">
-                {system.name}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#9ba0b5] hover:text-[#eceef6] transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('systems.deleteModal.title')}
+      subtitle={system.name}
+      icon={
+        <div className="p-2 rounded-[var(--radius-md)] bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <Trash2 className="w-4 h-4" />
         </div>
-
+      }
+      maxWidth="max-w-md"
+    >
+      <div className="space-y-4 pt-1">
         {error && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 flex items-center gap-2">
+          <div className="p-3 rounded-[var(--radius-md)] bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <p className="text-xs text-[#9ba0b5] leading-relaxed">
+        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
           {t('systems.deleteModal.desc', { name: system.name })}
         </p>
 
@@ -85,19 +69,20 @@ export const DeleteSystemModal: React.FC<DeleteSystemModalProps> = ({
             variant="secondary"
             onClick={onClose}
             disabled={isDeleting}
+            type="button"
           >
             {t('systems.deleteModal.cancel')}
           </Button>
-          <button
-            type="button"
+          <Button
+            variant="danger"
             onClick={handleDelete}
-            disabled={isDeleting}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white transition-all cursor-pointer disabled:opacity-50"
+            isLoading={isDeleting}
+            type="button"
           >
             {isDeleting ? t('systems.deleteModal.deleting') : t('systems.deleteModal.confirm')}
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

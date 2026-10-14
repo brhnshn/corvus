@@ -941,7 +941,8 @@ export const tr: TranslationDictionary = {
       desc: '"{name}" sistemini silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm telemetri kayıtları silinir.',
       confirm: 'Evet, Sil',
       cancel: 'İptal',
-      deleting: 'Siliniyor...'
+      deleting: 'Siliniyor...',
+      errorGeneric: 'Sistem silinemedi.'
     },
     editModal: {
       title: 'Sistemi Düzenle',
@@ -949,7 +950,8 @@ export const tr: TranslationDictionary = {
       tagsLabel: 'Etiketler (virgülle ayırın)',
       save: 'Kaydet',
       cancel: 'İptal',
-      saving: 'Kaydediliyor...'
+      saving: 'Kaydediliyor...',
+      errorGeneric: 'Sistem güncellenemedi.'
     },
     detail: {
       backToFleet: 'Filoya Dön',
@@ -1067,7 +1069,13 @@ export const tr: TranslationDictionary = {
       connectedSuccess: 'Bağlantı Başarılı!',
       connectedDetails: 'Ajan sisteme bağlandı ve ilk telemetri alındı.',
       goToCockpit: 'Sistem Kokpitine Git',
-      finish: 'Tamamla'
+      finish: 'Tamamla',
+      creating: 'Oluşturuluyor...',
+      submitStep1: 'Devam Et (Komutu Üret) →',
+      systemCreated: 'Sistem Kaydı Açıldı: {name}',
+      copy: 'Kopyala',
+      copied: 'Kopyalandı!',
+      errorGeneric: 'Sistem kaydı oluşturulurken hata meydana geldi.'
     },
     cockpit: {
       tabs: {
