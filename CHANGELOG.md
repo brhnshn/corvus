@@ -13,7 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Profile Navigation & Layout Integration**:
   - Restored standard AppLayout sidebar and mobile bottom navigation on the Profile page, eliminating the user navigation trap and adding a breadcrumb back-link to Dashboard.
 - **Repository Version & Release Link in Sidebar**:
-  - Upgraded the sidebar version indicator to an interactive GitHub repository link displaying the current version badge (`v1.6.2 · Güncel`) alongside the official GitHub SVG icon.
+  - Upgraded the sidebar version indicator to an interactive GitHub repository link displaying the current version badge alongside the official GitHub SVG icon.
+- **Automated Semantic Tagging & Release Pipeline**:
+  - Automated CI/CD version synchronization in `.github/workflows/ci.yml`: pushes to `main` automatically check if the version defined in `CHANGELOG.md` has a Git tag. If not, GitHub Actions creates and pushes the semantic Git tag (`vX.Y.Z`), extracts release notes, publishes the GitHub Release, and builds both versioned Hub and Agent Docker images.
+  - Eliminated hardcoded version strings across frontend components; Vite dynamically injects `__APP_VERSION__` extracted from `CHANGELOG.md` or build arguments, while `UpdateCheckerService` resolves development versions directly from changelog files.
 
 ### Fixed
 - **Settings Card Flush Padding & Alignment**:

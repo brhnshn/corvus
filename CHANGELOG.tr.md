@@ -13,7 +13,10 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Profil Sayfası Navigasyon ve Düzen Entegrasyonu**:
   - Profil sayfasında kenar çubuğunun (Sidebar) kaybolması ve geri dönüş yolunun kapanması sorunu giderildi; tam iskelet entegrasyonu ve Dashboard'a dönüş kırıntı bağlantısı (breadcrumb) eklendi.
 - **Kenar Çubuğunda GitHub Sürüm Bağlantısı**:
-  - Kenar çubuğu altındaki statik sürüm metni, resmi GitHub SVG ikonuyla birlikte güncel sürümü (`v1.6.2 · Güncel`) depoya yönlendiren etkileşimli bir bağlantıya dönüştürüldü.
+  - Kenar çubuğu altındaki statik sürüm metni, resmi GitHub SVG ikonuyla birlikte güncel sürüm rozetini depoya yönlendiren etkileşimli bir bağlantıya dönüştürüldü.
+- **Otomatik Semantik Etiketleme ve Sürüm Dağıtım Hattı**:
+  - `.github/workflows/ci.yml` iş akışına otomatik sürüm senkronizasyonu bağlandı: `main` dalına gönderilen commit'lerde `CHANGELOG.md` başlığındaki sürüm için henüz bir Git etiketi (`vX.Y.Z`) bulunmuyorsa; sistem etiketi otomatik oluşturup push eder, sürüm notlarını ayıklayarak GitHub Release yayınlar ve hem Hub hem Agent için sürümlü Docker imajlarını derler.
+  - Arayüzdeki sabit sürüm yazıları tamamen kaldırılarak Vite derleme aşamasında `__APP_VERSION__` üzerinden dinamik sürüme bağlandı; yerel geliştirme için `UpdateCheckerService` servisinden otomatik okuma desteği sağlandı.
 
 ### Düzeltilenler (Fixed)
 - **Ayarlar Sayfası Kart Dolguları (Padding) ve Sınır Hizalaması**:

@@ -86,13 +86,66 @@ jobs:
           with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
               text = f.read()
           m = re.search(r'##\s*\[(\d+\.\d+\.\d+)\]', text)
-          print(m.group(1) if m else '1.5.30')
+          print(m.group(1) if m else '1.6.3')
           ")
           SHORT_SHA=$(git rev-parse --short HEAD)
+          TAG_NAME="v${VERSION}"
+
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1 || git ls-remote --tags origin "refs/tags/$TAG_NAME" | grep -q "$TAG_NAME"; then
+            echo "is_new_tag=false" >> $GITHUB_OUTPUT
+            echo "docker_tags=ghcr.io/brhnshn/corvus:latest,ghcr.io/brhnshn/corvus:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "agent_docker_tags=ghcr.io/brhnshn/corvus-agent:latest,ghcr.io/brhnshn/corvus-agent:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          else
+            echo "is_new_tag=true" >> $GITHUB_OUTPUT
+            echo "docker_tags=ghcr.io/brhnshn/corvus:latest,ghcr.io/brhnshn/corvus:${VERSION},ghcr.io/brhnshn/corvus:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "agent_docker_tags=ghcr.io/brhnshn/corvus-agent:latest,ghcr.io/brhnshn/corvus-agent:${VERSION},ghcr.io/brhnshn/corvus-agent:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "docker_tags=ghcr.io/brhnshn/corvus:latest,ghcr.io/brhnshn/corvus:sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Create and Push Git Tag
+        if: steps.build_meta.outputs.is_new_tag == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.build_meta.outputs.tag }}" -m "Release ${{ steps.build_meta.outputs.tag }}"
+          git push origin "${{ steps.build_meta.outputs.tag }}"
+
+      - name: Extract Release Notes from CHANGELOG.md
+        if: steps.build_meta.outputs.is_new_tag == 'true'
+        run: |
+          python3 -c "
+          import re
+
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              text = f.read()
+
+          pattern = r'##\s*\[(.*?)\][^\n]*\n(.*?)(?=\n---\s*\n|\n##\s*\[|\Z)'
+          match = re.search(pattern, text, re.DOTALL)
+          notes = match.group(2).strip() if match else ''
+
+          if not notes:
+              notes = 'Routine bug fixes and maintenance improvements.'
+
+          notes += '\n\n---\n**Full Changelog**: https://github.com/brhnshn/corvus/blob/main/CHANGELOG.md'
+
+          with open('RELEASE_BODY.md', 'w', encoding='utf-8') as out:
+              out.write(notes)
+          "
+
+      - name: Create GitHub Release
+        if: steps.build_meta.outputs.is_new_tag == 'true'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.build_meta.outputs.tag }}
+          name: Corvus ${{ steps.build_meta.outputs.tag }}
+          body_path: RELEASE_BODY.md
+          draft: false
+          prerelease: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -104,13 +157,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Docker Image (Corvus Hub)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: ${{ steps.build_meta.outputs.docker_tags }}
+          build-args: |
+            APP_VERSION=${{ steps.build_meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Docker Image (Corvus Agent)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.agent
+          push: true
+          tags: ${{ steps.build_meta.outputs.agent_docker_tags }}
           build-args: |
             APP_VERSION=${{ steps.build_meta.outputs.version }}
           cache-from: type=gha

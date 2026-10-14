@@ -43,6 +43,32 @@ public class UpdateCheckerService : IUpdateCheckerService
             return $"{asmVersion.Major}.{asmVersion.Minor}.{Math.Max(0, asmVersion.Build)}";
         }
 
+        try
+        {
+            var dir = AppContext.BaseDirectory;
+            for (int i = 0; i < 5; i++)
+            {
+                var candidate = Path.Combine(dir, "CHANGELOG.md");
+                if (File.Exists(candidate))
+                {
+                    var text = File.ReadAllText(candidate);
+                    var match = System.Text.RegularExpressions.Regex.Match(text, @"##\s*\[(\d+\.\d+\.\d+)\]");
+                    if (match.Success)
+                    {
+                        return match.Groups[1].Value;
+                    }
+                    break;
+                }
+                var parent = Directory.GetParent(dir);
+                if (parent == null) break;
+                dir = parent.FullName;
+            }
+        }
+        catch
+        {
+            // Ignore in restricted environments
+        }
+
         return "1.0.0";
     }
 

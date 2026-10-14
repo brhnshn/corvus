@@ -1,6 +1,8 @@
 # Stage 1: Build Frontend (React + Vite + Tailwind CSS)
 FROM node:22-alpine AS web-build
 WORKDIR /src/Corvus.Web
+ARG APP_VERSION=1.0.0
+ENV VITE_APP_VERSION=${APP_VERSION}
 COPY src/Corvus.Web/package*.json ./
 RUN npm ci
 COPY src/Corvus.Web/ ./

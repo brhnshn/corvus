@@ -3,8 +3,36 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+import fs from 'node:fs';
+import path from 'node:path';
+
+function getAppVersion(): string {
+  if (process.env.VITE_APP_VERSION) return process.env.VITE_APP_VERSION;
+  if (process.env.APP_VERSION) return process.env.APP_VERSION;
+
+  try {
+    const changelogPath = path.resolve(import.meta.dirname, '../../CHANGELOG.md');
+    if (fs.existsSync(changelogPath)) {
+      const content = fs.readFileSync(changelogPath, 'utf-8');
+      const match = content.match(/##\s*\[(\d+\.\d+\.\d+)\]/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+  } catch {
+    // fallback if file not readable
+  }
+
+  return '1.0.0';
+}
+
+const appVersion = getAppVersion();
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     tailwindcss()
