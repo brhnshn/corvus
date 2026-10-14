@@ -37,15 +37,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
   // Canlı SSE Telemetri Akışı (100ms Sync)
   const { latestMetric: streamMetric, isConnected: isLiveStream } = useSystemMetricsStream();
 
-  const loadData = useCallback(async (isManualRefresh = false) => {
-    if (isManualRefresh && isMountedRef.current) setRefreshing(true);
+  const loadData = useCallback(async () => {
     try {
       const [sumData, srvData, pmData, cntData, statsData] = await Promise.allSettled([
         api.getDashboardSummary(),
@@ -71,7 +69,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     } finally {
       if (isMountedRef.current) {
         setLoading(false);
-        if (isManualRefresh) setRefreshing(false);
       }
     }
   }, []);
@@ -109,7 +106,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     const handleSystemChange = () => {
       invalidateCache();
       if (isMountedRef.current) {
-        loadData(true);
+        loadData();
       }
     };
 
@@ -175,13 +172,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <DashboardHeader
           subtitle={
             isOverallHealthy
-              ? 'Sistem telemetrisi ve anlık operasyonel durum'
-              : `${totalIssues} servis veya konteyner dikkat gerektiriyor`
+              ? (t('dashboard.allOperationalDesc') || 'Sistem telemetrisi ve anlık operasyonel durum')
+              : `${totalIssues} ${t('dashboard.attentionIssues') || 'servis veya konteyner dikkat gerektiriyor'}`
           }
-          memoryUsageMb={28}
           isLiveStream={isLiveStream}
-          onRefresh={() => loadData(true)}
-          refreshing={refreshing}
           onNavigate={onNavigate}
         />
       </MotionItem>
@@ -202,7 +196,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           status={bannerStatus}
           message={bannerMessage}
           subtext={bannerSubtext}
-          lastCheckText="son kontrol az önce"
           onNavigate={onNavigate}
         />
       </MotionItem>

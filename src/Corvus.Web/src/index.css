@@ -318,7 +318,7 @@ body {
   font-size: 10.5px;
   font-weight: 500;
   color: var(--text-muted);
-  padding: 4px 8px 6px;
+  padding: 6px 10px 4px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -326,6 +326,7 @@ body {
 /* Gliding Hover Pill & Sliding Active Pill */
 .nav-hover-pill {
   position: absolute;
+  top: 0;
   left: 8px;
   right: 8px;
   height: 33px;
@@ -341,16 +342,23 @@ body {
 
 .nav-active-pill {
   position: absolute;
+  top: 0;
   left: 8px;
   right: 8px;
   height: 33px;
-  background: var(--cloud-200);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-sm);
   pointer-events: none;
   z-index: 1;
   transition: transform var(--dur-base) var(--ease-spring),
               height var(--dur-base) var(--ease-spring),
               opacity var(--dur-fast) ease;
+}
+
+[data-theme="light"] .nav-active-pill {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 .nav-btn {
@@ -380,7 +388,7 @@ body {
   transform: scale(0.985);
 }
 .nav-btn.active {
-  color: var(--bg-canvas);
+  color: var(--text-primary);
   font-weight: 600;
 }
 

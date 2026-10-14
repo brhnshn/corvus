@@ -25,7 +25,12 @@ export const tr: TranslationDictionary = {
     themeLight: 'Açık',
     themeDark: 'Koyu',
     themeToggle: 'Temayı Değiştir',
-    user: 'Kullanıcı'
+    user: 'Kullanıcı',
+    refreshed: 'Sistem verileri güncellendi',
+    open: 'Aç',
+    days: 'Gün',
+    usage: 'Kullanım:',
+    retry: 'Tekrar Dene'
   },
   nav: {
     dashboard: 'Genel Bakış',
@@ -122,6 +127,12 @@ export const tr: TranslationDictionary = {
     statusHealthy: 'Çalışıyor',
     statusDown: 'Kapalı',
     statusDegraded: 'Uyarı',
+    allOperationalDesc: 'Sistem telemetrisi ve anlık operasyonel durum',
+    attentionIssues: 'servis veya konteyner inceleme gerektiriyor',
+    liveStreamSync: 'Canlı Telemetri · 100ms Senkron',
+    pollingMode: 'Periyodik Sorgulama',
+    systemMetrics: 'Sistem Metrikleri →',
+    viewServices: 'Servisleri İncele →'
   },
   containers: {
     title: 'Docker Konteynerleri',
@@ -318,11 +329,20 @@ export const tr: TranslationDictionary = {
     logsTitle: 'Konteyner Logları',
     cpuUsage: 'CPU Kullanımı',
     memoryUsage: 'Bellek (RAM)',
-    networkIO: 'Ağ Giriş / Çıkış'
+    networkIO: 'Ağ Giriş / Çıkış',
+    backToContainers: 'Konteynerlere Dön',
+    stateRunning: 'Çalışıyor',
+    statePaused: 'Duraklatıldı',
+    stateStopped: 'Durduruldu',
+    actionUnpause: 'Devam Ettir'
   },
   services: {
     title: 'Servisler',
     subtitle: 'Tanımlı servislerin erişilebilirlik ve sağlık durumu',
+    statusHealthy: 'Çalışıyor',
+    statusDegraded: 'Yavaş',
+    statusDown: 'Erişilemiyor',
+    statusUnknown: 'Bilinmiyor',
     searchPlaceholder: 'Servis ara...',
     addService: 'Servis Ekle',
     modalTitle: 'Yeni Servis Ekle',
@@ -451,7 +471,11 @@ export const tr: TranslationDictionary = {
     systemHealth: 'Sistem Durumu',
     optimal: 'Normal',
     warning: 'Yüksek Yük',
-    critical: 'Kritik Seviye'
+    critical: 'Kritik Seviye',
+    statusHealthy: 'Sağlıklı',
+    statusDegraded: 'Performans Düşüşü',
+    statusDown: 'Kapalı',
+    statusUnknown: 'Bilinmiyor'
   },
   uptime: {
     title: 'Uptime & Sağlık Takibi',
@@ -509,7 +533,24 @@ export const tr: TranslationDictionary = {
     deletePushConfirm: '"{name}" push monitörünü silmek istediğinizden emin misiniz?',
     signalReceiving: 'Sinyal Alınıyor',
     signalTimeout: 'Zaman Aşımı (DOWN)',
-    signalWaiting: 'Bekleniyor'
+    signalWaiting: 'Bekleniyor',
+    newPushModalSubtitle: 'Cron görevlerinden veya harici betiklerden periyodik ping bekleyin',
+    disableTitle: 'Uptime Takibini Devre Dışı Bırak',
+    disableDesc: 'sağlık kontrolleri durdurulacaktır. Konteyner silinmez, yalnızca keşfedilen servisler havuzuna taşınır.',
+    disableConfirmBtn: 'Takibi Durdur',
+    disableError: 'Uptime takibi devre dışı bırakılamadı.',
+    enableTitle: 'Uptime Takibini Başlat',
+    enableError: 'Uptime takibi başlatılamadı.',
+    targetHost: 'Hedef Sunucu / IP',
+    pingHost: 'Sunucu / IP',
+    intervalSeconds: 'Kontrol Aralığı (sn)',
+    timeoutSeconds: 'Zaman Aşımı (sn)',
+    maxRetries: 'Maks. Yeniden Deneme',
+    retryInterval: 'Tekrar Deneme Aralığı (sn)',
+    httpMethod: 'HTTP Metodu',
+    acceptedCodes: 'Kabul Edilen Durum Kodları',
+    ignoreTls: 'Kendinden İmzalı SSL/TLS Hatalarını Yoksay',
+    enableConfirmBtn: 'Takibi Başlat'
   },
   settings: {
     title: 'Ayarlar',
@@ -526,6 +567,8 @@ export const tr: TranslationDictionary = {
     languageSectionTitle: 'Dil Seçimi / Language',
     languageSectionDesc: 'Panel arayüzü ve sistem dilini belirleyin',
     userRegistration: 'Kullanıcı Kayıtları',
+    registrationOpen: 'Kayıtlar Açık',
+    registrationClosed: 'Kayıtlar Kapalı',
     regOpenBtn: 'Kayıtlar Açık (Tıkla ve Kapat)',
     regClosedBtn: 'Kayıtlar Kapalı (Tıkla ve Aç)',
     regDesc: 'Yeni kullanıcıların panel üzerinden kayıt olup olamayacağını belirler. İlk kurulumdan sonra yetkisiz kişilerin kayıt olmasını önlemek için bu seçeneği kapalı tutmanız önerilir.',
@@ -533,6 +576,7 @@ export const tr: TranslationDictionary = {
     statusPageDesc: 'Giriş yapmamış ziyaretçilerin /status adresi üzerinden servislerin canlı durumunu ve geçmişini görmesini sağlar.',
     statusPageOpenBtn: 'Durum Sayfası Açık (Kapat)',
     statusPageClosedBtn: 'Durum Sayfası Kapalı (Aç)',
+    retentionPeriod: 'Veri Saklama Süresi',
     retentionTitle: 'Veri Saklama Süresi',
     retentionDays: 'Metrik ve Erişilebilirlik Geçmişi',
     retentionDesc: 'Bu süreden eski sistem metrikleri ve uptime kontrolleri her 24 saatte bir otomatik temizlenir.',
@@ -550,6 +594,11 @@ export const tr: TranslationDictionary = {
     retentionUnlimitedWarning: 'Dikkat: Sınırsız saklama modu tüm metrik ve erişilebilirlik loglarını süresiz tutar. Bu durum SQLite veritabanının yılda 1-3 GB büyümesine ve yedek indirme sürelerinin uzamasına neden olabilir.',
     dbSize: 'Veritabanı Boyutu',
     dbSizeLoading: 'DB boyutu hesaplanıyor...',
+    currentDbSize: 'Mevcut Veritabanı Boyutu:',
+    deployWebhookTitle: 'Inbound Deploy Webhook (CI/CD)',
+    deployWebhookDesc: 'GitHub Actions veya CI/CD boru hatlarından otomatik konteyner dağıtımını tetikleyin',
+    generateNewToken: 'Yeni Belirteç Üret',
+    webhookTokenLabel: 'Gizli Webhook Belirteci (Token)',
     notificationsTitle: 'Bildirim Kanalları',
     notificationsDesc: 'Servisleriniz çöktüğünde veya kurtarıldığında seçtiğiniz kanallara anında zengin bildirimler gönderilir.',
     channelTabDiscord: 'Discord',
@@ -730,6 +779,7 @@ export const tr: TranslationDictionary = {
   incidents: {
     title: 'Olay & Duyuru Yönetimi',
     subtitle: 'Servis kesintilerini, duyuruları ve planlı bakımları yönetin',
+    modalSubtitle: 'Hizmet kesintisi, bakım penceresi veya genel duyuru yayınlayın',
     newIncident: 'Yeni Olay / Duyuru',
     editIncident: 'Olayı Düzenle',
     activeTab: 'Aktif & Duyurular',
@@ -768,6 +818,7 @@ export const tr: TranslationDictionary = {
   },
   userManagement: {
     title: 'Kullanıcı Profili ve Yönetimi',
+    subtitle: 'Sistem kullanıcılarını ve erişim rollerini yönetin',
     profileTab: 'Profil & Güvenlik',
     usersTab: 'Kullanıcılar & Roller',
     openProfile: 'Kullanıcı Profili ve Ayarları',
@@ -804,7 +855,8 @@ export const tr: TranslationDictionary = {
     userDeleted: 'Kullanıcı başarıyla silindi.',
     creatingUser: 'Kullanıcı oluşturuluyor...',
     deletingUser: 'Siliniyor...',
-    noUsers: 'Kayıtlı kullanıcı bulunamadı.'
+    noUsers: 'Kayıtlı kullanıcı bulunamadı.',
+    you: 'Sen'
   },
   systems: {
     title: 'Sistemler',
@@ -1024,6 +1076,40 @@ export const tr: TranslationDictionary = {
       webTerminal: 'Web Terminali',
       terminalClose: 'Terminali Kapat'
     }
+  },
+  alerts: {
+    sectionTitle: 'Metrik Eşik Alarmları',
+    sectionDesc: 'CPU, Bellek ve Disk kullanım eşikleri aşıldığında aktif bildirim kanallarına proaktif uyarılar gönderin.',
+    addRule: 'Kural Ekle',
+    addRuleTitle: 'Yeni Eşik Alarmı Ekle',
+    addRuleSubtitle: 'Metrik sınırları aşıldığında bildirim tetikleyin',
+    ruleName: 'Kural Adı',
+    metricType: 'Metrik Tipi',
+    condition: 'Koşul',
+    threshold: 'Eşik Değeri',
+    durationSeconds: 'İhlal Süresi (Saniye)',
+    durationHint: 'Eşik bu kadar süre aşılırsa alarm verilir.',
+    cooldownMinutes: 'Susturma (Dakika)',
+    cooldownHint: 'Tekrarlayan bildirimler arasındaki minimum süre',
+    createRule: 'Kural Oluştur',
+    saveFailed: 'Kural kaydedilemedi.',
+    ruleCreated: 'Alarm kuralı başarıyla oluşturuldu.',
+    createFailed: 'Kural oluşturulurken hata meydana geldi.',
+    updateFailed: 'Kural güncellenemedi.',
+    deleteConfirm: 'Bu alarm kuralını silmek istediğinize emin misiniz?',
+    ruleDeleted: 'Alarm kuralı silindi.',
+    deleteFailed: 'Kural silinirken hata oluştu.',
+    noRules: 'Henüz tanımlı alarm kuralı yok',
+    noRulesDesc: 'Sistem metriklerinizi 7/24 izlemek ve kritik darboğazlarda erken uyarı almak için yeni bir kural ekleyin.',
+    firing: 'ALARMDA',
+    normal: 'Normal',
+    disabled: 'Devre Dışı',
+    conditionLabel: 'Koşul',
+    durationLabel: 'İhlal Süresi',
+    cooldownLabel: 'Susturma',
+    disableRule: 'Devre Dışı Bırak',
+    enableRule: 'Aktif Et',
+    deleteRule: 'Kuralı Sil'
   },
   commandPalette: {
     commands: 'Hızlı Komutlar',

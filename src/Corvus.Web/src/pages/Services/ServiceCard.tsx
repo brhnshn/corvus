@@ -5,7 +5,6 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { StatusDot } from '../../components/ui/StatusDot';
 import { TagChip } from '../../components/ui/TagChip';
 import { SslBadge } from '../../components/ui/SslBadge';
-import { HistoryBars } from '../../components/ui/HistoryBars';
 import { formatServiceUrl } from '../../utils/url';
 import { useI18n } from '../../i18n';
 
@@ -46,12 +45,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
   const statusLabel =
     service.status === 'healthy'
-      ? 'Çalışıyor'
+      ? (t('services.statusHealthy') || 'Çalışıyor')
       : service.status === 'degraded'
-      ? 'Yavaş'
+      ? (t('services.statusDegraded') || 'Yavaş')
       : service.status === 'down'
-      ? 'Erişilemiyor'
-      : 'Bilinmiyor';
+      ? (t('services.statusDown') || 'Erişilemiyor')
+      : (t('services.statusUnknown') || 'Bilinmiyor');
 
   return (
     <div
@@ -59,8 +58,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       onDragStart={(e) => onDragStart(e, service.id)}
       onDragEnd={onDragEnd}
       className={`
-        bg-[var(--bg-card)] border border-[var(--border-hairline)] rounded-[var(--radius-sm)] p-4 flex flex-col justify-between gap-3.5 transition-all select-none group cursor-grab active:cursor-grabbing hover:border-[var(--cloud-400)]
-        ${isDragging ? 'opacity-30 scale-95 border-[var(--cloud-400)]' : ''}
+        card p-4 flex flex-col justify-between gap-3.5 transition-all select-none group cursor-grab active:cursor-grabbing hover:border-[var(--border-strong)]
+        ${isDragging ? 'opacity-30 scale-95 border-[var(--border-strong)]' : ''}
       `}
     >
       <div className="space-y-3">
@@ -77,7 +76,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <StatusDot status={dotStatus} />
-                <h3 className="text-[14px] font-semibold text-[var(--cloud-100)] truncate leading-snug">
+                <h3 className="text-[14px] font-semibold text-[var(--text-primary)] truncate leading-snug">
                   {service.name}
                 </h3>
               </div>
@@ -90,7 +89,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                   </>
                 )}
                 {service.checkType === 'tcp' && (
-                  <span className="text-[var(--cloud-300)]">
+                  <span className="text-[var(--text-secondary)]">
                     · TCP {service.port ? `:${service.port}` : ''}
                   </span>
                 )}
@@ -104,7 +103,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
 
         {service.description && (
-          <p className="text-xs text-[#9ba0b5] line-clamp-2 leading-relaxed">
+          <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
             {service.description}
           </p>
         )}
@@ -123,17 +122,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             <SslBadge daysRemaining={service.sslExpiryDays} />
           )}
         </div>
-
-        {/* 22 Çubukluk Sağlık & Tepki Süresi Geçmişi */}
-        <HistoryBars
-          count={22}
-          history={Array(22).fill(statusType)}
-          latestLatencyMs={service.status === 'healthy' ? 42 : service.status === 'degraded' ? 480 : 0}
-        />
       </div>
 
-      {/* Alt Aksiyon Çubuğu (Midnight v2 ActionBar) */}
-      <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-1">
+      {/* Alt Aksiyon Çubuğu */}
+      <div className="flex items-center justify-between border-t border-[var(--border-hairline)] pt-3 mt-1">
         {/* Sol: Hızlı Aç Butonu */}
         <div>
           {service.url ? (
@@ -141,10 +133,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
               href={formatServiceUrl(service.url)}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 px-3 rounded-full border border-white/10 bg-white/[0.08] text-xs font-semibold text-[#eceef6] hover:bg-white/[0.14] inline-flex items-center gap-1.5 transition-colors"
+              className="btn btn-sm btn-ghost inline-flex items-center gap-1.5"
             >
-              <span>Aç</span>
-              <ExternalLink className="w-3 h-3 text-[#9ba0b5]" />
+              <span>{t('common.open') || 'Aç'}</span>
+              <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
             </a>
           ) : (
             <div />
@@ -153,15 +145,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
         {/* Sağ: Sıralama & Düzenle & Sil */}
         {isAdmin && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {/* Sıralama */}
-            <div className="flex items-center gap-1 mr-1">
+            <div className="flex items-center gap-0.5 mr-1">
               <button
                 type="button"
                 onClick={() => onMove(globalIndex, 'up')}
                 disabled={globalIndex === 0 || reordering}
-                className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Yukarı Taşı"
+                className="btn btn-sm btn-ghost p-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                title={t('services.moveUp') || 'Yukarı Taşı'}
               >
                 <ArrowUp className="w-3 h-3" />
               </button>
@@ -169,8 +161,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 type="button"
                 onClick={() => onMove(globalIndex, 'down')}
                 disabled={globalIndex === totalServices - 1 || reordering}
-                className="p-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Aşağı Taşı"
+                className="btn btn-sm btn-ghost p-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                title={t('services.moveDown') || 'Aşağı Taşı'}
               >
                 <ArrowDown className="w-3 h-3" />
               </button>
@@ -179,7 +171,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             <button
               type="button"
               onClick={() => onEdit(service)}
-              className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.10] transition-colors cursor-pointer"
+              className="btn btn-sm btn-ghost p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               title={t('common.edit')}
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -188,7 +180,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             <button
               type="button"
               onClick={() => onDelete(service.id, service.name)}
-              className="p-2 rounded-full text-[#9ba0b5] hover:text-[#f87171] hover:bg-rose-500/10 transition-colors cursor-pointer"
+              className="btn btn-sm btn-ghost p-1.5 text-[var(--text-muted)] hover:text-[var(--status-down)]"
               title={t('common.delete')}
             >
               <Trash2 className="w-3.5 h-3.5" />

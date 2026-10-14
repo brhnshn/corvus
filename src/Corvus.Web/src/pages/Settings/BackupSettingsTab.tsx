@@ -27,7 +27,7 @@ export const BackupSettingsTab: React.FC<BackupSettingsTabProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className="card space-y-6">
+    <div className="card p-5 sm:p-7 space-y-6">
       <div className="border-b border-[var(--border-hairline)] pb-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
           <Database className="w-4 h-4 text-[var(--text-secondary)]" />
@@ -36,7 +36,7 @@ export const BackupSettingsTab: React.FC<BackupSettingsTabProps> = ({
       </div>
 
       {/* 1. Dahili Corvus Yedeği */}
-      <div className="card bg-[var(--bg-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="card p-4 sm:p-5 bg-[var(--bg-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
             <FileCheck className="w-4 h-4 text-[var(--status-up)]" />
@@ -59,7 +59,7 @@ export const BackupSettingsTab: React.FC<BackupSettingsTabProps> = ({
       </div>
 
       {/* 2. Harici Script Bildirimi (Opsiyonel) */}
-      <div className="card bg-[var(--bg-subtle)] space-y-3">
+      <div className="card p-4 sm:p-5 bg-[var(--bg-subtle)] space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
             <Radio className="w-4 h-4 text-[var(--text-secondary)]" />

@@ -157,7 +157,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   };
 
   return (
-    <div className="card space-y-6">
+    <div className="card p-5 sm:p-7 space-y-6">
       {/* Üst Bilgi ve Aksiyon Başlığı */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--border-hairline)]">
         <div className="flex items-center gap-3">

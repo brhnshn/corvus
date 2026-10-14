@@ -40,8 +40,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
   }, []);
 
-  // 'systems' and 'profile' pages render in full-width standalone layout
-  const isNavStandalone = currentPage === 'systems' || currentPage === 'profile';
+  // 'systems' page renders in full-width standalone layout
+  const isNavStandalone = currentPage === 'systems';
 
   return (
     <ToastProvider>
@@ -70,7 +70,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           />
 
           <main className="page-body">
-            <div className={`w-full mx-auto pb-24 lg:pb-12 ${isNavStandalone ? 'max-w-[1500px]' : 'max-w-[1240px]'}`}>
+            <div className={`w-full mx-auto pb-24 lg:pb-12 ${isNavStandalone ? 'max-w-[1500px]' : currentPage === 'settings' ? 'max-w-5xl' : 'max-w-[1240px]'}`}>
               {children}
             </div>
           </main>

@@ -3,6 +3,35 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.3] - 2026-10-14 — UI/UX Modernizasyonu, Obsidian Modal Standardizasyonu ve Düzen İyileştirmeleri
+
+### Eklenenler (Added)
+- **Obsidian Standart Modal Mimarisi**:
+  - Proje genelindeki 10 eski modal pencere (`AddServiceModal`, `EditServiceModal`, `ContainerDetailModal`, `ContainerTagsModal`, `SystemPruneModal`, `AddUserModal`, `AddAlertRuleModal`, `AddSnitchModal`, `DisableUptimeDialog`, `EnableUptimeModal`, `AddIncidentModal`, `RegistrationPromptModal`), merkezi ve erişilebilir `<Modal>` bileşenine dönüştürüldü; arka plan bulanıklığı (backdrop blur), ESC tuşu dinleyicisi ve tutarlı odak kapanı sağlandı.
+- **Etkileşimli Eylem Bildirimleri**:
+  - Gösterge paneli ve sistem verileri manuel yenilendiğinde sağ alt köşeden bilgilendirici Toast bildirimi (`toast.success`) tetiklendi.
+- **Profil Sayfası Navigasyon ve Düzen Entegrasyonu**:
+  - Profil sayfasında kenar çubuğunun (Sidebar) kaybolması ve geri dönüş yolunun kapanması sorunu giderildi; tam iskelet entegrasyonu ve Dashboard'a dönüş kırıntı bağlantısı (breadcrumb) eklendi.
+- **Kenar Çubuğunda GitHub Sürüm Bağlantısı**:
+  - Kenar çubuğu altındaki statik sürüm metni, resmi GitHub SVG ikonuyla birlikte güncel sürümü (`v1.6.2 · Güncel`) depoya yönlendiren etkileşimli bir bağlantıya dönüştürüldü.
+
+### Düzeltilenler (Fixed)
+- **Ayarlar Sayfası Kart Dolguları (Padding) ve Sınır Hizalaması**:
+  - Ayarlar sekmelerinde (`GeneralSettingsTab`, `BackupSettingsTab`, `NotificationSettingsTab`, `UsersTab`, `AlertRulesTab`) içeriklerin kenarlara sıfır yapışması hatası standart `p-5 sm:p-7` dolgu ve `max-w-5xl` genişlik sınırıyla düzeltildi.
+- **Kenar Çubuğu Tipografisi, Aktif Buton Kontrastı ve Logo**:
+  - Kenar çubuğu üst başlığındaki geçici harf yerine orijinal şeffaf marka logosu (`/logo_transparent.png`) yeniden bağlandı.
+  - Navigasyon aktif pill butonunun dikey kayması (`top: 0`), sınır kontrastı (`rgba(255, 255, 255, 0.08)`) ve metin parlaklığı düzeltildi.
+- **Uluslararasılaştırma (i18n) ve Sabit Metinlerin Temizlenmesi**:
+  - `en.ts` ve `tr.ts` sözlükleri; alarmlar, olaylar, ayarlar, konteynerler ve servisler modüllerinde tam tip güvenliğiyle eksiksiz senkronize edildi.
+
+### Kaldırılanlar (Removed)
+- **Sahte/Dummy Metrik ve Grafiklerin Temizlenmesi**:
+  - Gerçek veri disiplinine uygun olarak; servis kartlarındaki uydurma 22 çubukluk geçmiş (`Array(22).fill`), rastgele 42ms/480ms gecikme verileri ve gösterge panelindeki sabit `28 MB` bellek etiketi kaldırıldı.
+- **Yinelenen ve Gereksiz Arayüz Butonları**:
+  - Gösterge Paneli ve Konteyner Detay başlıklarındaki çift yenileme ve işlevsiz tab butonları temizlendi.
+- **Atıl/Yetim Kodların Temizlenmesi**:
+  - `src/Corvus.Web/src/pages/Systems/` altında referansı kalmamış 5 ölü dosya (`SystemRow.tsx`, `SystemsFilterBar.tsx`, `SystemsKpis.tsx`, `SystemsNavbar.tsx`, `SystemDetailModal.tsx`) projeden tamamen silindi.
+
 ## [1.6.2] - 2026-10-14 — Güvenlik Sıkılaştırması, Sıfır-Tahsisli Native AOT ve Hafif SVG Grafikler
 
 ### Düzeltilenler (Fixed)

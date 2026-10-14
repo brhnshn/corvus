@@ -70,10 +70,10 @@ export const ProfileUsersTab: React.FC<ProfileUsersTabProps> = ({ currentUsernam
       {/* Üst Eylem Çubuğu */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h4 className="text-sm font-semibold text-[#eceef6]">
+          <h4 className="text-sm font-semibold text-[var(--text-primary)]">
             {t('userManagement.usersList') || 'Kullanıcı Listesi'}
           </h4>
-          <p className="text-xs text-[#9ba0b5] mt-0.5">
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
             {t('userManagement.usersListSubtitle') || 'Sisteme erişebilen aktif hesaplar'}
           </p>
         </div>
@@ -100,32 +100,32 @@ export const ProfileUsersTab: React.FC<ProfileUsersTabProps> = ({ currentUsernam
       </div>
 
       {error && (
-        <div className="p-3.5 rounded-[14px] bg-[#f87171]/15 border border-[#f87171]/30 text-[#f87171] text-xs flex items-center gap-2">
+        <div className="p-3 rounded-[var(--radius-sm)] bg-[var(--status-down-bg)] border border-[var(--status-down)]/30 text-[var(--status-down)] text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-3.5 rounded-[14px] bg-[#34d399]/15 border border-[#34d399]/30 text-[#34d399] text-xs flex items-center gap-2">
+        <div className="p-3 rounded-[var(--radius-sm)] bg-[var(--status-up-bg)] border border-[var(--status-up)]/30 text-[var(--status-up)] text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
-      {/* Kullanıcı Listesi */}
-      <div className="surface rounded-[22px] overflow-hidden border border-white/10">
+      {/* Kullanıcı Listesi Kartı */}
+      <div className="card overflow-hidden">
         {loading && users.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#9ba0b5] flex items-center justify-center gap-2 font-mono">
-            <RefreshCw className="w-4 h-4 animate-spin text-[#d5d5dc]" />
+          <div className="p-8 text-center text-xs text-[var(--text-secondary)] flex items-center justify-center gap-2 font-mono">
+            <RefreshCw className="w-4 h-4 animate-spin text-[var(--text-primary)]" />
             <span>{t('common.loading') || 'Yükleniyor...'}</span>
           </div>
         ) : users.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#9ba0b5]">
-            Kayıtlı ek kullanıcı bulunmuyor.
+          <div className="p-8 text-center text-xs text-[var(--text-muted)]">
+            {t('userManagement.noUsers') || 'Kayıtlı ek kullanıcı bulunmuyor.'}
           </div>
         ) : (
-          <div className="divide-y divide-white/10">
+          <div className="divide-y divide-[var(--border-hairline)]">
             {users.map((u) => {
               const isCurrent = u.username.toLowerCase() === currentUsername.toLowerCase();
               const isAdmin = u.role.toLowerCase() === 'admin';
@@ -133,35 +133,29 @@ export const ProfileUsersTab: React.FC<ProfileUsersTabProps> = ({ currentUsernam
               return (
                 <div
                   key={u.id}
-                  className="p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:bg-white/[0.04] transition-colors"
+                  className="p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:bg-[var(--bg-hover)] transition-colors"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-[12px] bg-white/[0.07] border border-white/10 text-[#eceef6] flex items-center justify-center shrink-0">
-                      <UserIcon className="w-4 h-4 text-[#d5d5dc]" />
+                    <div className="w-9 h-9 rounded-[var(--radius-sm)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-primary)] flex items-center justify-center shrink-0">
+                      <UserIcon className="w-4 h-4 text-[var(--text-secondary)]" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[#eceef6] truncate">{u.username}</span>
+                        <span className="text-sm font-semibold text-[var(--text-primary)] truncate">{u.username}</span>
                         {isCurrent && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-[6px] bg-white/10 text-[#eceef6] font-mono font-medium">
-                            sen
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)] font-mono font-medium">
+                            {t('userManagement.you') || 'sen'}
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-[#9ba0b5] font-mono mt-0.5">
+                      <div className="text-[11px] text-[var(--text-muted)] font-mono mt-0.5">
                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                    <span
-                      className={`inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2.5 py-1 rounded-[10px] border ${
-                        isAdmin
-                          ? 'bg-[#34d399]/15 border-[#34d399]/30 text-[#34d399]'
-                          : 'bg-white/[0.06] border-white/10 text-[#9ba0b5]'
-                      }`}
-                    >
+                    <span className={isAdmin ? 'badge badge-up' : 'badge'}>
                       <Shield className="w-3 h-3" />
                       <span>{isAdmin ? (t('userManagement.roleAdmin') || 'Yönetici') : (t('userManagement.roleViewer') || 'İzleyici')}</span>
                     </span>
@@ -172,7 +166,7 @@ export const ProfileUsersTab: React.FC<ProfileUsersTabProps> = ({ currentUsernam
                         onClick={() => handleDeleteUser(u)}
                         disabled={deletingUserId === u.id}
                         title={t('userManagement.deleteUser') || 'Kullanıcıyı Sil'}
-                        className="p-2 text-[#9ba0b5] hover:text-[#f87171] hover:bg-[#f87171]/15 rounded-[10px] transition-colors cursor-pointer border border-transparent hover:border-[#f87171]/25 disabled:opacity-40"
+                        className="btn btn-sm btn-ghost text-[var(--text-muted)] hover:text-[var(--status-down)] disabled:opacity-40"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

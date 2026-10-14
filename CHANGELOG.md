@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-10-14 — UI/UX Modernization, Obsidian Modal Standardization & Layout Refinements
+
+### Added
+- **Obsidian Modal Standardization**:
+  - Migrated 10 legacy modal dialogs across the application (`AddServiceModal`, `EditServiceModal`, `ContainerDetailModal`, `ContainerTagsModal`, `SystemPruneModal`, `AddUserModal`, `AddAlertRuleModal`, `AddSnitchModal`, `DisableUptimeDialog`, `EnableUptimeModal`, `AddIncidentModal`, `RegistrationPromptModal`) to the centralized, accessible `<Modal>` component with backdrop blur, keyboard navigation, and consistent focus traps.
+- **Interactive Action Feedback**:
+  - Added instant bottom-right Toast notification on manual telemetry and dashboard refresh (`toast.success`).
+- **Profile Navigation & Layout Integration**:
+  - Restored standard AppLayout sidebar and mobile bottom navigation on the Profile page, eliminating the user navigation trap and adding a breadcrumb back-link to Dashboard.
+- **Repository Version & Release Link in Sidebar**:
+  - Upgraded the sidebar version indicator to an interactive GitHub repository link displaying the current version badge (`v1.6.2 · Güncel`) alongside the official GitHub SVG icon.
+
+### Fixed
+- **Settings Card Flush Padding & Alignment**:
+  - Resolved border-flush layout clipping across Settings tabs (`GeneralSettingsTab`, `BackupSettingsTab`, `NotificationSettingsTab`, `UsersTab`, `AlertRulesTab`) by applying standard `p-5 sm:p-7` card padding and clean max-width containment (`max-w-5xl`).
+- **Sidebar Typography, Active Pill Contrast & Logo**:
+  - Restored high-fidelity transparent brand logo (`/logo_transparent.png`) in the sidebar header.
+  - Fixed active pill vertical alignment (`top: 0`) and subtle border contrast (`rgba(255, 255, 255, 0.08)`) with primary text color rendering.
+- **Internationalization (i18n) & Hardcoded Text Elimination**:
+  - Fully synchronized `en.ts` and `tr.ts` dictionary schemas with type-safe `TranslationDictionary` coverage across alerts, incidents, settings, containers, and services.
+
+### Removed
+- **Eliminated Fake/Dummy Telemetry Metrics**:
+  - Removed static hardcoded `memoryUsageMb={28}` badge, artificial 22-bar mock latency chart (`Array(22).fill`), and dummy 42ms/480ms ping metrics from service cards and dashboard headers in strict adherence to true data integrity.
+- **Redundant & Duplicate UI Buttons**:
+  - Cleaned up duplicate refresh and status buttons across Dashboard and Container Detail headers.
+- **Purged Orphaned Legacy Code**:
+  - Deleted 5 unreferenced dead files in `src/Corvus.Web/src/pages/Systems/` (`SystemRow.tsx`, `SystemsFilterBar.tsx`, `SystemsKpis.tsx`, `SystemsNavbar.tsx`, `SystemDetailModal.tsx`).
+
 ## [1.6.2] - 2026-10-14 — Security Hardening, Zero-Alloc Native AOT & Lightweight SVG Charts
 
 ### Fixed

@@ -43,7 +43,7 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
   ];
 
   return (
-    <div className="card space-y-6">
+    <div className="card p-5 sm:p-7 space-y-6">
       <div className="border-b border-[var(--border-hairline)] pb-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
           <Bell className="w-4 h-4 text-[var(--text-secondary)]" />
@@ -89,7 +89,7 @@ export const NotificationSettingsTab: React.FC<NotificationSettingsTabProps> = (
       )}
 
       {/* Seçili Kanalın Ayar Paneli */}
-      <div className="card bg-[var(--bg-subtle)] space-y-4">
+      <div className="card p-4 sm:p-5 bg-[var(--bg-subtle)] space-y-4">
         {activeChannel === 'discord' && (
           <DiscordChannelPanel
             settings={settings}

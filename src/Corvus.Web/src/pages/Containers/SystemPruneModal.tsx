@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  X, 
   Trash2, 
   Layers, 
   Boxes, 
@@ -9,7 +8,6 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   Loader2, 
-  RefreshCw,
   Sparkles
 } from 'lucide-react';
 import { api, type DockerSystemDfResponse, type DockerSelectivePruneResult } from '../../api/client';
@@ -19,13 +17,16 @@ import { PruneContainersTable } from './prune/PruneContainersTable';
 import { PruneImagesTable } from './prune/PruneImagesTable';
 import { PruneVolumesTable } from './prune/PruneVolumesTable';
 import { PruneBuildCacheCard } from './prune/PruneBuildCacheCard';
+import { Modal } from '../../components/ui/Modal';
 
 interface SystemPruneModalProps {
+  isOpen?: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
+  isOpen = true,
   onClose,
   onSuccess
 }) => {
@@ -213,47 +214,15 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 select-none">
-      <div className="flex flex-col sheet-glass border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] rounded-[28px] w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Üst Başlık */}
-        <div className="flex items-center justify-between px-6 py-5 bg-white/[0.02] border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-[#d5d5dc]">
-              <Trash2 className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-[#eceef6]">
-                {t('containers.pruneTitle') || 'Güvenli Sistem Analizi & Temizliği'}
-              </h2>
-              <p className="text-xs text-[#9ba0b5]">
-                {t('containers.pruneSubtitle') || 'Disk kullanımını inceleyin ve silinecek öğeleri seçerek güvenle temizleyin'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {!result && (
-              <button
-                type="button"
-                onClick={loadDiskUsage}
-                disabled={isLoadingDf || isExecuting}
-                title="Yeniden Tara"
-                className="p-2 rounded-xl border border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <RefreshCw className={`w-4 h-4 ${isLoadingDf ? 'animate-spin text-[#d5d5dc]' : ''}`} />
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              disabled={isExecuting}
-              className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Gövde */}
-        <div className="p-6 overflow-y-auto space-y-5">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('containers.pruneTitle') || 'Güvenli Sistem Analizi & Temizliği'}
+      subtitle={t('containers.pruneSubtitle') || 'Disk kullanımını inceleyin ve silinecek öğeleri seçerek güvenle temizleyin'}
+      icon={<Trash2 className="w-5 h-5 text-[var(--status-down)]" />}
+      maxWidth="max-w-2xl"
+    >
+      <div className="max-h-[75vh] overflow-y-auto space-y-5 pr-1">
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -526,7 +495,6 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, Radio, CheckCircle2, AlertCircle, RefreshCw, Zap } from 'lucide-react';
-import { enableUptime, testConnection } from '../../../api/uptime';
-import type { Service, TestConnectionResponse } from '../../../types';
+import React, { useState } from 'react';
+import { Zap, AlertCircle, RefreshCw } from 'lucide-react';
+import { enableUptime } from '../../../api/uptime';
+import type { Service } from '../../../types';
 import { useI18n } from '../../../i18n';
+import { Modal } from '../../../components/ui/Modal';
+import { Button } from '../../../components/ui/Button';
 
 interface EnableUptimeModalProps {
   isOpen: boolean;
@@ -18,243 +20,271 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
   onSuccess
 }) => {
   const { t } = useI18n();
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
-  const [port, setPort] = useState<number | undefined>(undefined);
-  const [checkType, setCheckType] = useState<'http' | 'tcp' | 'ping'>('http');
-  const [isPublic, setIsPublic] = useState(false);
-  const [checkInterval, setCheckInterval] = useState(60);
-  const [ignoreTls, setIgnoreTls] = useState(true);
 
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<TestConnectionResponse | null>(null);
+  const [name, setName] = useState(service?.name || '');
+  const [url, setUrl] = useState(service?.url || '');
+  const [checkType, setCheckType] = useState<'http' | 'tcp' | 'ping'>(
+    service?.checkType && ['http', 'tcp', 'ping'].includes(service.checkType)
+      ? (service.checkType as 'http' | 'tcp' | 'ping')
+      : 'http'
+  );
+  const [port, setPort] = useState<number | ''>(service?.port || (service?.url ? extractPort(service.url) : ''));
+  const [interval, setInterval] = useState<number>(60);
+  const [timeout, setTimeoutVal] = useState<number>(5);
+  const [maxRetries, setMaxRetries] = useState<number>(1);
+  const [retryInterval, setRetryInterval] = useState<number>(30);
+  const [acceptedStatusCodes, setAcceptedStatusCodes] = useState<string>('200-299');
+  const [httpMethod, setHttpMethod] = useState<'GET' | 'HEAD' | 'POST'>('GET');
+  const [ignoreTls, setIgnoreTls] = useState<boolean>(false);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (service) {
-      setName(service.name || '');
+      setName(service.name);
       setUrl(service.url || '');
-      setPort(service.port || undefined);
-      setCheckType(service.checkType === 'tcp' ? 'tcp' : (service.checkType === 'ping' ? 'ping' : 'http'));
-      setIsPublic(service.isPublic || false);
-      setCheckInterval(service.checkInterval || 60);
-      setIgnoreTls(service.ignoreTls ?? true);
-      setTestResult(null);
-      setError(null);
+      setCheckType(
+        service.checkType && ['http', 'tcp', 'ping'].includes(service.checkType)
+          ? (service.checkType as 'http' | 'tcp' | 'ping')
+          : 'http'
+      );
+      setPort(service.port || (service.url ? extractPort(service.url) : ''));
     }
   }, [service]);
 
-  if (!isOpen || !service) return null;
-
-  const handleTestConnection = async () => {
-    setTesting(true);
-    setTestResult(null);
-    setError(null);
+  function extractPort(urlStr: string): number | '' {
     try {
-      const res = await testConnection({
-        checkType,
-        url: url || undefined,
-        port: port || undefined,
-        timeoutSeconds: 5,
-        ignoreTls
-      });
-      setTestResult(res);
-    } catch (err: unknown) {
-      setTestResult({
-        success: false,
-        responseTimeMs: 0,
-        message: err instanceof Error ? err.message : 'Bağlantı testi başarısız oldu.'
-      });
-    } finally {
-      setTesting(false);
+      const parsed = new URL(urlStr);
+      return parsed.port ? parseInt(parsed.port, 10) : '';
+    } catch {
+      return '';
     }
-  };
+  }
+
+  if (!isOpen || !service) return null;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
+
+    const payload: Partial<Service> = {
+      name,
+      url: checkType !== 'ping' ? url : undefined,
+      checkType,
+      port: checkType === 'tcp' && typeof port === 'number' ? port : undefined,
+      checkInterval: interval,
+      timeoutSeconds: timeout,
+      maxRetries,
+      retryInterval,
+      acceptedStatusCodes: checkType === 'http' ? acceptedStatusCodes : undefined,
+      httpMethod: checkType === 'http' ? httpMethod : undefined,
+      ignoreTls: checkType === 'http' ? ignoreTls : undefined
+    };
+
     try {
-      await enableUptime(service.id, { name, url: url || undefined, port: port || undefined, checkType, isPublic, checkInterval, ignoreTls });
+      await enableUptime(service.id, payload);
       await onSuccess();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'İzleme aktif edilirken bir hata oluştu.');
+      setError(err instanceof Error ? err.message : (t('uptime.enableError') || 'İzleme aktif edilirken bir hata oluştu.'));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs select-none overflow-y-auto">
-      <div className="w-full max-w-lg rounded-[28px] sheet-glass border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] overflow-hidden flex flex-col my-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-white/[0.06] border border-white/10 text-[#eceef6]">
-              <Zap className="w-5 h-5 text-[#d5d5dc]" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-[#eceef6]">Uptime Takibine Al</h3>
-              <p className="text-xs text-[#9ba0b5]">{service.name}</p>
-            </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('uptime.enableTitle') || 'Uptime Takibine Al'}
+      subtitle={service.name}
+      icon={<Zap className="w-5 h-5 text-[var(--status-up)]" />}
+      maxWidth="max-w-lg"
+    >
+      <form onSubmit={handleSave} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+        {error && (
+          <div className="p-3 rounded-[var(--radius-sm)] bg-[var(--status-down-bg)] border border-[var(--status-down)]/30 text-[var(--status-down)] text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors cursor-pointer">
-            <X className="w-4 h-4" />
-          </button>
+        )}
+
+        <div>
+          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('services.formName')}</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="input w-full"
+          />
         </div>
 
-        <form onSubmit={handleSave} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
-          {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Servis Adı</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
-            />
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('services.formCheckType')}</label>
+            <select
+              value={checkType}
+              onChange={(e) => setCheckType(e.target.value as 'http' | 'tcp' | 'ping')}
+              className="input w-full cursor-pointer"
+            >
+              <option value="http">HTTP / HTTPS</option>
+              <option value="tcp">TCP Port</option>
+              <option value="ping">ICMP Ping</option>
+            </select>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          {checkType !== 'ping' ? (
             <div>
-              <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Denetim Türü</label>
-              <select
-                value={checkType}
-                onChange={(e) => setCheckType(e.target.value as 'http' | 'tcp' | 'ping')}
-                className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
-              >
-                <option value="http" className="bg-[#1b1d2a] text-[#eceef6]">HTTP / HTTPS</option>
-                <option value="tcp" className="bg-[#1b1d2a] text-[#eceef6]">TCP Port</option>
-                <option value="ping" className="bg-[#1b1d2a] text-[#eceef6]">ICMP Ping</option>
-              </select>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                {checkType === 'http' ? (t('uptime.targetUrl') || 'Hedef URL') : (t('uptime.targetHost') || 'Hedef Host / IP')}
+              </label>
+              <input
+                type={checkType === 'http' ? 'url' : 'text'}
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder={checkType === 'http' ? 'https://example.com/health' : '192.168.1.10'}
+                required
+                className="input w-full"
+              />
             </div>
-            {checkType !== 'ping' ? (
-              <div>
-                <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Port (Opsiyonel)</label>
-                <input
-                  type="number"
-                  value={port ?? ''}
-                  onChange={(e) => setPort(e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                  placeholder="Örn: 8080"
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">Protokol</label>
-                <div className="w-full px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-xs font-mono flex items-center h-[38px]">
-                  ICMP Echo Request
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">
-              {checkType === 'http' ? 'Hedef URL' : checkType === 'ping' ? 'Hedef Host / IP' : 'Hedef Host'}
-            </label>
-            <div className="flex gap-2">
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.pingHost') || 'Host / IP'}</label>
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder={
-                  checkType === 'http'
-                    ? 'http://192.168.1.50:8080'
-                    : checkType === 'ping'
-                    ? '1.1.1.1 veya router.local'
-                    : '192.168.1.50'
-                }
-                className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6] text-sm focus:outline-none focus:border-white/20 transition-colors"
+                placeholder="1.1.1.1 veya example.com"
+                required
+                className="input w-full"
               />
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                disabled={testing}
-                className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[#eceef6] text-xs font-medium flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                {testing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-[#d5d5dc]" />}
-                <span>Sına</span>
-              </button>
-            </div>
-          </div>
-
-          {testResult && (
-            <div className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-              testResult.success ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-            }`}>
-              <div className="flex items-center gap-2">
-                {testResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-                <span>{testResult.message}</span>
-              </div>
-              <span className="font-mono text-[11px] font-semibold">{testResult.responseTimeMs} ms</span>
             </div>
           )}
+        </div>
 
+        {checkType === 'tcp' && (
           <div>
-            <label className="block text-xs font-semibold text-[#9ba0b5] mb-1.5">
-              Kontrol Aralığı (Saniye): {checkInterval}s
-            </label>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('services.formPort')}</label>
             <input
-              type="range"
-              min="10"
-              max="300"
-              step="10"
-              value={checkInterval}
-              onChange={(e) => setCheckInterval(parseInt(e.target.value, 10))}
-              className="w-full accent-white cursor-pointer"
+              type="number"
+              value={port}
+              onChange={(e) => setPort(e.target.value ? parseInt(e.target.value, 10) : '')}
+              placeholder="80, 443, 5432 vb."
+              required
+              className="input w-full"
             />
           </div>
+        )}
 
-          <div className="pt-2 border-t border-white/10 space-y-2">
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="rounded border-white/20 bg-white/5 text-white focus:ring-0"
-              />
-              <span className="text-xs text-[#eceef6]">Genel Durum Sayfasında (Status Page) Göster</span>
-            </label>
-
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ignoreTls}
-                onChange={(e) => setIgnoreTls(e.target.checked)}
-                className="rounded border-white/20 bg-white/5 text-white focus:ring-0"
-              />
-              <span className="text-xs text-[#9ba0b5]">Kendinden İmzalı SSL/TLS Hatalarını Yoksay</span>
-            </label>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.intervalSeconds') || 'Denetim Aralığı (sn)'}</label>
+            <input
+              type="number"
+              min={10}
+              value={interval}
+              onChange={(e) => setInterval(parseInt(e.target.value, 10) || 60)}
+              required
+              className="input w-full"
+            />
           </div>
-
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-white/10">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2 rounded-xl bg-white text-black text-xs font-semibold hover:bg-[#eceef6] shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              <span>İzlemeye Al</span>
-            </button>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.timeoutSeconds') || 'Zaman Aşımı (sn)'}</label>
+            <input
+              type="number"
+              min={1}
+              value={timeout}
+              onChange={(e) => setTimeoutVal(parseInt(e.target.value, 10) || 5)}
+              required
+              className="input w-full"
+            />
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.maxRetries') || 'Yeniden Deneme'}</label>
+            <input
+              type="number"
+              min={0}
+              value={maxRetries}
+              onChange={(e) => setMaxRetries(parseInt(e.target.value, 10) || 0)}
+              required
+              className="input w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.retryInterval') || 'Deneme Aralığı (sn)'}</label>
+            <input
+              type="number"
+              min={5}
+              value={retryInterval}
+              onChange={(e) => setRetryInterval(parseInt(e.target.value, 10) || 10)}
+              required
+              className="input w-full"
+            />
+          </div>
+        </div>
+
+        {checkType === 'http' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.httpMethod') || 'HTTP Metodu'}</label>
+              <select
+                value={httpMethod}
+                onChange={(e) => setHttpMethod(e.target.value as 'GET' | 'HEAD' | 'POST')}
+                className="input w-full cursor-pointer"
+              >
+                <option value="GET">GET</option>
+                <option value="HEAD">HEAD</option>
+                <option value="POST">POST</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.acceptedCodes') || 'Geçerli Durum Kodları'}</label>
+              <input
+                type="text"
+                value={acceptedStatusCodes}
+                onChange={(e) => setAcceptedStatusCodes(e.target.value)}
+                placeholder="200-299, 301, 302"
+                className="input w-full"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ignoreTls}
+              onChange={(e) => setIgnoreTls(e.target.checked)}
+              className="accent-[var(--cloud-200)] rounded"
+            />
+            <span className="text-xs text-[var(--text-secondary)]">{t('uptime.ignoreTls') || 'Kendinden İmzalı SSL/TLS Hatalarını Yoksay'}</span>
+          </label>
+        </div>
+
+        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[var(--border-hairline)]">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={saving}
+            icon={saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : undefined}
+          >
+            {t('uptime.enableConfirmBtn') || 'İzlemeye Al'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 };

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle } from 'lucide-react';
+import { Save, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { api, type Service } from '../../api/client';
 import { AdvancedCheckOptions } from './AdvancedCheckOptions';
 import { TagInput } from '../../components/common/TagInput';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
 
 interface EditServiceModalProps {
   isOpen: boolean;
@@ -127,31 +129,19 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto animate-modal-backdrop">
-      <div className="sheet-glass border border-white/10 rounded-[28px] p-5 sm:p-6 w-full max-w-lg max-h-[92vh] overflow-y-auto space-y-4 shadow-2xl my-auto animate-modal-card">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <div>
-            <h3 className="font-semibold text-white text-base">
-              {t('services.editModalTitle')}
-            </h3>
-            <p className="text-xs text-white/50 mt-0.5">
-              {service.source === 'docker' ? `${service.name} (Docker Konteyneri)` : service.name}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white p-1 rounded-lg cursor-pointer transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('services.editModalTitle')}
+      subtitle={service.source === 'docker' ? `${service.name} (Docker Konteyneri)` : service.name}
+      maxWidth="max-w-lg"
+    >
+      {errorMsg && (
+        <div className="p-3.5 rounded-[var(--radius-sm)] bg-[var(--status-down-bg)] border border-[var(--status-down)]/30 text-[var(--status-down)] text-xs flex items-center gap-2.5 mb-4">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMsg}</span>
         </div>
-
-        {errorMsg && (
-          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
+      )}
 
         <form onSubmit={handleSave} className="space-y-3.5 text-sm">
           {/* Servis Adı */}
@@ -436,25 +426,24 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           </div>
 
           {/* Butonlar */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
-            <button
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border-hairline)]">
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-white/10 text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
             >
               {t('common.cancel')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shadow-md"
+              icon={<Save className="w-3.5 h-3.5" />}
             >
-              <Save className="w-3.5 h-3.5" />
-              <span>{saving ? t('common.saving') : t('common.save')}</span>
-            </button>
+              {saving ? t('common.saving') : t('common.save')}
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };

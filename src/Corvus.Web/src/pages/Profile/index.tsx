@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { KeyRound, Users } from 'lucide-react';
+import { KeyRound, Users, ArrowLeft } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { ProfileSecurityTab } from './ProfileSecurityTab';
 import { ProfileUsersTab } from './ProfileUsersTab';
+import type { PageId } from '../../components/Sidebar';
 
 interface ProfilePageProps {
   username?: string | null;
   role?: string | null;
+  onNavigate?: (page: PageId) => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   username = '',
-  role = 'viewer'
+  role = 'viewer',
+  onNavigate
 }) => {
   const { t } = useI18n();
   const isAdmin = role === 'admin';
@@ -23,20 +26,34 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   ];
 
   return (
-    <div className="space-y-4 animate-rv">
-      {/* Header & Sekmeler */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+    <div className="space-y-5 animate-rv max-w-4xl">
+      {/* Geri Dönüş / Breadcrumb */}
+      {onNavigate && (
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6]">
+          <button
+            type="button"
+            onClick={() => onNavigate('dashboard')}
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer py-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>{t('nav.dashboard') || 'Kontrol Paneli'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Header & Sekmeler */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-hairline)]">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             {t('userManagement.title') || 'Profil & Kullanıcı Yönetimi'}
           </h1>
-          <p className="text-[13px] text-[#9ba0b5] mt-0.5">
-            Kullanıcı profilinizi, güvenlik ayarlarınızı ve ekip rollerini yönetin
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            {t('userManagement.subtitle') || 'Kullanıcı profilinizi, güvenlik ayarlarınızı ve ekip rollerini yönetin'}
           </p>
         </div>
 
-        {/* Sekmeler */}
-        <div className="glass rounded-[19px] p-[3px] flex gap-0.5 self-start sm:self-auto no-scrollbar">
+        {/* Obsidian Standart Sekmeler */}
+        <div className="tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -45,13 +62,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-[16px] text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#d5d5dc] text-[#1b1d2a] shadow-xs'
-                    : 'text-[#9ba0b5] hover:text-[#eceef6]'
-                }`}
+                className={`tab ${isActive ? 'active' : ''}`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#1b1d2a]' : 'text-[#9ba0b5]'}`} />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
               </button>
             );

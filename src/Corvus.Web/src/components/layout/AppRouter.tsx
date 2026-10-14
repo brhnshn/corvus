@@ -19,7 +19,7 @@ interface AppRouterProps {
   UptimePage: React.ComponentType<{}>;
   ActivityTimelinePage: React.ComponentType<{}>;
   SettingsPage: React.ComponentType<{ isAdmin?: boolean; username?: string | null; role?: string | null }>;
-  ProfilePage: React.ComponentType<{ username?: string; role?: string }>;
+  ProfilePage: React.ComponentType<{ username?: string; role?: string; onNavigate?: (page: PageId) => void }>;
 }
 
 export const AppRouter: React.FC<AppRouterProps> = ({
@@ -76,7 +76,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
     case 'settings':
       return <SettingsPage isAdmin={isAdmin} username={username} role={role} />;
     case 'profile':
-      return <ProfilePage username={username ?? undefined} role={role ?? undefined} />;
+      return <ProfilePage username={username ?? undefined} role={role ?? undefined} onNavigate={onNavigate} />;
     default:
       return <DashboardPage onNavigate={onNavigate} />;
   }

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '../../../i18n';
-import { X, Layers, Key, Network, HardDrive, Cpu, Loader2, AlertCircle } from 'lucide-react';
+import { Layers, Key, Network, HardDrive, Cpu, Loader2, AlertCircle } from 'lucide-react';
 import { containersApi } from '../../../api/containers';
 import { ContainerOverviewTab } from './ContainerOverviewTab';
 import { ContainerEnvTab } from './ContainerEnvTab';
 import { ContainerNetworkingTab } from './ContainerNetworkingTab';
 import { ContainerStorageTab } from './ContainerStorageTab';
 import { ContainerResourcesTab } from './ContainerResourcesTab';
+import { Modal } from '../../../components/ui/Modal';
+import { Button } from '../../../components/ui/Button';
 import type { DockerContainerInspectInfo, DockerContainer, ContainerStats } from '../../../types';
 
 interface ContainerDetailModalProps {
@@ -60,7 +62,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   useEffect(() => {
     if (isOpen && containerId) {
       loadInspectData();
-      setActiveTab(initialTab || 'overview');
+      setActiveTab(initialTab);
     } else {
       setInspectData(null);
       setError(null);
@@ -69,8 +71,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
 
   if (!isOpen || !containerId) return null;
 
-  const fallbackName = containerSummary?.Names?.[0]?.replace(/^\//, '') || containerId.substring(0, 12);
-  const containerName = inspectData?.name?.replace(/^\//, '') || fallbackName;
+  const containerName = containerSummary?.Names?.[0]?.replace(/^\//, '') || inspectData?.name?.replace(/^\//, '') || containerId.substring(0, 12);
 
   const handleAction = async (actionFn: () => Promise<any>) => {
     setActionLoading(true);
@@ -91,67 +92,45 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   const mountsCount = inspectData?.mounts?.length ?? 0;
   const portsCount = Object.keys(inspectData?.networkSettings?.ports || inspectData?.hostConfig?.portBindings || {}).length;
 
+  const modalTitle = (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="font-semibold text-sm text-[var(--text-primary)] truncate">{containerName}</span>
+      <span className="mono text-xs text-[var(--text-muted)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] px-2 py-0.5 rounded-[var(--radius-sm)]">
+        {containerId.substring(0, 12)}
+      </span>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 select-none overflow-y-auto">
-      <div className="w-full max-w-4xl sheet-glass border border-white/10 rounded-[28px] shadow-[0_25px_60px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,255,255,.15)] flex flex-col max-h-[90vh] overflow-hidden my-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-white/[0.02]">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-[#d5d5dc] shrink-0">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base font-bold text-[#eceef6] truncate">
-                  {containerName}
-                </h3>
-                <span className="font-mono text-xs text-[#9ba0b5] bg-white/[0.06] border border-white/10 px-2 py-0.5 rounded-lg">
-                  {containerId.substring(0, 12)}
-                </span>
-              </div>
-              <p className="text-xs text-[#9ba0b5] truncate mt-0.5">
-                {t('containers.detailModalTitle')}
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 rounded-full transition-colors shrink-0 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={modalTitle}
+      subtitle={t('containers.detailModalTitle') || 'Konteyner Konfigürasyonu & İnceleme'}
+      icon={<Layers className="w-5 h-5 text-[var(--text-primary)]" />}
+      maxWidth="max-w-4xl"
+    >
+      <div className="flex flex-col max-h-[75vh]">
         {/* Tab Navigation */}
-        <div className="flex border-b border-white/10 bg-white/[0.01] px-5 sm:px-6 overflow-x-auto no-scrollbar gap-1 pt-2">
+        <div className="tabs border-b border-[var(--border-hairline)] pb-2 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 cursor-pointer ${
-              activeTab === 'overview'
-                ? 'border-[#d5d5dc] text-[#eceef6] bg-white/[0.05] rounded-t-xl'
-                : 'border-transparent text-[#9ba0b5] hover:text-[#eceef6]'
-            }`}
+            className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>{t('containers.tabOverview')}</span>
+            <span>{t('containers.tabOverview') || 'Genel Bakış'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('env')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 cursor-pointer ${
-              activeTab === 'env'
-                ? 'border-[#d5d5dc] text-[#eceef6] bg-white/[0.05] rounded-t-xl'
-                : 'border-transparent text-[#9ba0b5] hover:text-[#eceef6]'
-            }`}
+            className={`tab ${activeTab === 'env' ? 'active' : ''}`}
           >
             <Key className="w-3.5 h-3.5" />
-            <span>{t('containers.tabEnv')}</span>
+            <span>{t('containers.tabEnv') || 'Ortam Değişkenleri'}</span>
             {envCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08] text-[#9ba0b5]">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                 {envCount}
               </span>
             )}
@@ -160,16 +139,12 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('networking')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 cursor-pointer ${
-              activeTab === 'networking'
-                ? 'border-[#d5d5dc] text-[#eceef6] bg-white/[0.05] rounded-t-xl'
-                : 'border-transparent text-[#9ba0b5] hover:text-[#eceef6]'
-            }`}
+            className={`tab ${activeTab === 'networking' ? 'active' : ''}`}
           >
             <Network className="w-3.5 h-3.5" />
-            <span>{t('containers.tabNetworking')}</span>
+            <span>{t('containers.tabNetworking') || 'Ağ & Portlar'}</span>
             {portsCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08] text-[#9ba0b5]">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                 {portsCount}
               </span>
             )}
@@ -178,16 +153,12 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('storage')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 cursor-pointer ${
-              activeTab === 'storage'
-                ? 'border-[#d5d5dc] text-[#eceef6] bg-white/[0.05] rounded-t-xl'
-                : 'border-transparent text-[#9ba0b5] hover:text-[#eceef6]'
-            }`}
+            className={`tab ${activeTab === 'storage' ? 'active' : ''}`}
           >
             <HardDrive className="w-3.5 h-3.5" />
-            <span>{t('containers.tabStorage')}</span>
+            <span>{t('containers.tabStorage') || 'Depolama'}</span>
             {mountsCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/[0.08] text-[#9ba0b5]">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                 {mountsCount}
               </span>
             )}
@@ -196,35 +167,32 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('resources')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all shrink-0 cursor-pointer ${
-              activeTab === 'resources'
-                ? 'border-[#d5d5dc] text-[#eceef6] bg-white/[0.05] rounded-t-xl'
-                : 'border-transparent text-[#9ba0b5] hover:text-[#eceef6]'
-            }`}
+            className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
           >
             <Cpu className="w-3.5 h-3.5" />
-            <span>{t('containers.tabResources')}</span>
+            <span>{t('containers.tabResources') || 'Kaynak Limitleri'}</span>
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1">
+        <div className="py-4 overflow-y-auto flex-1">
           {loading ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3 text-[#9ba0b5]">
-              <Loader2 className="w-7 h-7 text-[#d5d5dc] animate-spin" />
-              <span className="text-xs">Konteyner detayları alınıyor…</span>
+            <div className="py-16 flex flex-col items-center justify-center gap-3 text-[var(--text-secondary)]">
+              <Loader2 className="w-7 h-7 text-[var(--text-primary)] animate-spin" />
+              <span className="text-xs">{t('common.loading') || 'Yükleniyor…'}</span>
             </div>
           ) : error ? (
-            <div className="py-12 flex flex-col items-center justify-center gap-3 text-rose-400 text-center">
+            <div className="py-12 flex flex-col items-center justify-center gap-3 text-[var(--status-down)] text-center">
               <AlertCircle className="w-8 h-8" />
               <p className="text-xs">{error}</p>
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={loadInspectData}
-                className="mt-2 px-4 py-1.5 text-xs font-semibold text-white bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 rounded-xl transition-colors cursor-pointer"
+                className="mt-2"
               >
-                Tekrar Dene
-              </button>
+                {t('common.retry') || 'Tekrar Dene'}
+              </Button>
             </div>
           ) : inspectData ? (
             <>
@@ -279,6 +247,6 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
           ) : null}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

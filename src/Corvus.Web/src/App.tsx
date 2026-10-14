@@ -388,7 +388,10 @@ export const App: React.FC = () => {
       role={authStatus?.role}
       onLogout={authStatus?.authEnabled ? handleLogout : undefined}
       onOpenCommandPalette={openCmd}
-      onRefresh={() => invalidateCache()}
+      onRefresh={() => {
+        invalidateCache();
+        toast.success(t('common.refreshed') || 'Sistem verileri güncellendi');
+      }}
     >
       <ChunkErrorBoundary>
         <Suspense fallback={<PageLoader />}>

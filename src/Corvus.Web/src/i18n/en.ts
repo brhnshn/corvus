@@ -23,7 +23,12 @@ export const en = {
     themeLight: 'Light',
     themeDark: 'Dark',
     themeToggle: 'Toggle Theme',
-    user: 'User'
+    user: 'User',
+    refreshed: 'System data updated',
+    open: 'Open',
+    days: 'Days',
+    usage: 'Usage:',
+    retry: 'Retry'
   },
   nav: {
     dashboard: 'Dashboard',
@@ -120,6 +125,12 @@ export const en = {
     statusHealthy: 'Healthy',
     statusDown: 'Down',
     statusDegraded: 'Degraded',
+    allOperationalDesc: 'System telemetry and live operational status',
+    attentionIssues: 'services or containers require attention',
+    liveStreamSync: 'Live Telemetry · 100ms Sync',
+    pollingMode: 'Periodic Polling',
+    systemMetrics: 'System Metrics →',
+    viewServices: 'Inspect Services →'
   },
   containers: {
     title: 'Docker Containers',
@@ -316,11 +327,20 @@ export const en = {
     logsTitle: 'Container Logs',
     cpuUsage: 'CPU Usage',
     memoryUsage: 'Memory (RAM)',
-    networkIO: 'Network I/O'
+    networkIO: 'Network I/O',
+    backToContainers: 'Back to Containers',
+    stateRunning: 'Running',
+    statePaused: 'Paused',
+    stateStopped: 'Stopped',
+    actionUnpause: 'Unpause'
   },
   services: {
     title: 'Services',
     subtitle: 'Configured services reachability and health status',
+    statusHealthy: 'Healthy',
+    statusDegraded: 'Degraded',
+    statusDown: 'Down',
+    statusUnknown: 'Unknown',
     searchPlaceholder: 'Search services...',
     addService: 'Add Service',
     modalTitle: 'Add New Service',
@@ -449,7 +469,11 @@ export const en = {
     systemHealth: 'System Health',
     optimal: 'Optimal',
     warning: 'High Load',
-    critical: 'Critical Level'
+    critical: 'Critical Level',
+    statusHealthy: 'Healthy',
+    statusDegraded: 'Degraded',
+    statusDown: 'Down',
+    statusUnknown: 'Unknown'
   },
   uptime: {
     title: 'Uptime & Health Monitoring',
@@ -507,7 +531,24 @@ export const en = {
     deletePushConfirm: 'Are you sure you want to delete push monitor "{name}"?',
     signalReceiving: 'Heartbeat OK',
     signalTimeout: 'Timeout (DOWN)',
-    signalWaiting: 'Waiting for signal'
+    signalWaiting: 'Waiting for signal',
+    newPushModalSubtitle: 'Wait for periodic pings from cron jobs or external scripts',
+    disableTitle: 'Disable Uptime Monitoring',
+    disableDesc: 'health checks will be stopped. Container will not be removed, only moved to the discovered services pool.',
+    disableConfirmBtn: 'Stop Monitoring',
+    disableError: 'Failed to disable uptime monitoring.',
+    enableTitle: 'Enable Uptime Monitoring',
+    enableError: 'Failed to enable uptime monitoring.',
+    targetHost: 'Target Host / IP',
+    pingHost: 'Host / IP',
+    intervalSeconds: 'Check Interval (sec)',
+    timeoutSeconds: 'Timeout (sec)',
+    maxRetries: 'Max Retries',
+    retryInterval: 'Retry Interval (sec)',
+    httpMethod: 'HTTP Method',
+    acceptedCodes: 'Accepted Status Codes',
+    ignoreTls: 'Ignore Self-Signed SSL/TLS Errors',
+    enableConfirmBtn: 'Start Monitoring'
   },
   settings: {
     title: 'Settings',
@@ -524,6 +565,8 @@ export const en = {
     languageSectionTitle: 'Language / Dil',
     languageSectionDesc: 'Select the user interface and system language',
     userRegistration: 'User Registration',
+    registrationOpen: 'Registration Open',
+    registrationClosed: 'Registration Closed',
     regOpenBtn: 'Registration Open (Click to Close)',
     regClosedBtn: 'Registration Closed (Click to Open)',
     regDesc: 'Determines whether new users can register on the panel. Keeping this disabled after initial setup is strongly recommended to prevent unauthorized access.',
@@ -531,6 +574,7 @@ export const en = {
     statusPageDesc: 'Allows unauthenticated visitors to view live service status and uptime history at /status.',
     statusPageOpenBtn: 'Status Page Enabled (Click to Disable)',
     statusPageClosedBtn: 'Status Page Disabled (Click to Enable)',
+    retentionPeriod: 'Data Retention Period',
     retentionTitle: 'Data Retention Period',
     retentionDays: 'Metrics & Uptime History',
     retentionDesc: 'Historical metrics and uptime checks older than this period are purged automatically every 24 hours.',
@@ -548,6 +592,11 @@ export const en = {
     retentionUnlimitedWarning: 'Caution: Unlimited retention will keep all metrics and uptime logs indefinitely. This can cause the SQLite database to grow by 1-3 GB/year and slow down backup downloads.',
     dbSize: 'Database Size',
     dbSizeLoading: 'Checking DB size...',
+    currentDbSize: 'Current Database Size:',
+    deployWebhookTitle: 'Inbound Deploy Webhook (CI/CD)',
+    deployWebhookDesc: 'Trigger automated container deployments and service updates via HTTP webhook',
+    generateNewToken: 'Generate New Token',
+    webhookTokenLabel: 'Webhook Security Token',
     notificationsTitle: 'Notification Channels',
     notificationsDesc: 'Instant alerts are dispatched to selected channels whenever a service goes down or recovers.',
     channelTabDiscord: 'Discord',
@@ -728,6 +777,7 @@ export const en = {
   incidents: {
     title: 'Incidents & Maintenance',
     subtitle: 'Manage service disruptions, announcements, and scheduled maintenance',
+    modalSubtitle: 'Service disruption, maintenance window, or public notice',
     newIncident: 'New Incident / Announcement',
     editIncident: 'Edit Incident',
     activeTab: 'Active & Announcements',
@@ -766,6 +816,7 @@ export const en = {
   },
   userManagement: {
     title: 'User Profile & Management',
+    subtitle: 'Manage system users and access roles',
     profileTab: 'Profile & Security',
     usersTab: 'Users & Roles',
     openProfile: 'User Profile and Settings',
@@ -802,7 +853,8 @@ export const en = {
     userDeleted: 'User deleted successfully.',
     creatingUser: 'Creating user...',
     deletingUser: 'Deleting...',
-    noUsers: 'No users found.'
+    noUsers: 'No users found.',
+    you: 'You'
   },
   systems: {
     title: 'Systems',
@@ -1022,6 +1074,40 @@ export const en = {
       webTerminal: 'Web Terminal',
       terminalClose: 'Close Terminal'
     }
+  },
+  alerts: {
+    sectionTitle: 'Alert & Metric Rules',
+    sectionDesc: 'Define automated alert thresholds for CPU, RAM, Disk, and container health.',
+    addRule: 'Add Alert Rule',
+    addRuleTitle: 'Create New Alert Rule',
+    addRuleSubtitle: 'Configure metric conditions and thresholds to trigger notifications',
+    ruleName: 'Rule Name',
+    metricType: 'Metric Type',
+    condition: 'Condition',
+    threshold: 'Threshold Value',
+    durationSeconds: 'Duration (Seconds)',
+    durationHint: 'Consecutive duration the condition must hold before firing',
+    cooldownMinutes: 'Cooldown (Minutes)',
+    cooldownHint: 'Minimum time between repeated alert notifications',
+    createRule: 'Create Rule',
+    saveFailed: 'Failed to save rule',
+    ruleCreated: 'Alert rule created successfully',
+    createFailed: 'Failed to create alert rule',
+    updateFailed: 'Failed to update alert rule',
+    deleteConfirm: 'Are you sure you want to delete this alert rule?',
+    ruleDeleted: 'Alert rule deleted',
+    deleteFailed: 'Failed to delete alert rule',
+    noRules: 'No alert rules configured yet.',
+    noRulesDesc: 'Add an alert rule to get notified when system metrics exceed thresholds.',
+    firing: 'Firing',
+    normal: 'Normal',
+    disabled: 'Disabled',
+    conditionLabel: 'Condition',
+    durationLabel: 'Duration',
+    cooldownLabel: 'Cooldown',
+    disableRule: 'Disable Rule',
+    enableRule: 'Enable Rule',
+    deleteRule: 'Delete Rule'
   },
   commandPalette: {
     commands: 'Quick Commands',

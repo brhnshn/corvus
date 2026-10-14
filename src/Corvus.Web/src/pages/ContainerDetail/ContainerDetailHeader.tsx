@@ -1,17 +1,8 @@
 import React from 'react';
-import { 
-  ArrowLeft, 
-  Play, 
-  Square, 
-  RotateCw, 
-  Pause, 
-  Terminal as TerminalIcon, 
-  FileText, 
-  Loader2,
-  Sparkles
-} from 'lucide-react';
-import type { DockerContainer } from '../../types';
+import { ArrowLeft, Play, Pause, Square, RotateCw, Loader2, Sparkles } from 'lucide-react';
 import { useI18n } from '../../i18n';
+
+import type { DockerContainer } from '../../types';
 import type { ContainerDetailTab } from './types';
 
 interface ContainerDetailHeaderProps {
@@ -30,119 +21,88 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
   container,
   containerId,
   onBack,
-  actionInProgress,
   onAction,
-  activeTab,
-  onSelectTab,
-  isAdmin = true,
-  onOpenUpdateModal
+  actionInProgress,
+  isAdmin = false,
+  onOpenUpdateModal,
 }) => {
   const { t } = useI18n();
 
   const name = container?.Names?.[0]?.replace(/^\//, '') || containerId.slice(0, 12);
-  const image = container?.Image || 'Bilinmiyor';
-  const state = container?.State?.toLowerCase() || 'unknown';
+  const image = container?.Image || '';
   const status = container?.Status || '';
-  const isRunning = state === 'running';
-  const isPaused = state === 'paused';
+  const state = container?.State || '';
+
+  const isRunning = state?.toLowerCase() === 'running';
+  const isPaused = state?.toLowerCase() === 'paused';
 
   return (
     <div className="space-y-4">
-      {/* Geri Navigasyon Butonu */}
-      <div className="flex items-center justify-between">
+      {/* Üst Gezinme / Geri Dön */}
+      <div>
         <button
-          onClick={onBack}
           type="button"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer group py-1"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer py-1"
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span>{t('containers.backToList') || 'Tüm Konteynerler'}</span>
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{t('containers.backToContainers') || 'Konteynerlere Dön'}</span>
         </button>
       </div>
 
       {/* Ana Başlık ve Aksiyon Barı */}
-      <div className="surface rounded-[24px] p-5 sm:p-6 border border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 animate-rv shadow-xl">
+      <div className="card p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 animate-rv">
         {/* Sol Taraf: İsim, Durum, İmaj & ID */}
         <div className="space-y-2 min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
             <span
-              className={`w-3.5 h-3.5 rounded-full shrink-0 ${
-                isRunning ? 'bg-[#34d399] animate-dot-pulse' : isPaused ? 'bg-[#fbbf24]' : 'bg-[#f87171]'
+              className={`w-3 h-3 rounded-full shrink-0 ${
+                isRunning ? 'bg-[var(--status-up)]' : isPaused ? 'bg-[var(--status-warn)]' : 'bg-[var(--status-down)]'
               }`}
             />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6] truncate">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] truncate">
               {name}
             </h1>
             <span
-              className={`text-xs px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider ${
+              className={`text-xs px-2.5 py-0.5 rounded-[var(--radius-sm)] font-semibold uppercase tracking-wider ${
                 isRunning
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  ? 'bg-[var(--status-up-bg)] text-[var(--status-up)] border border-[var(--status-up)]/30'
                   : isPaused
-                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                  : 'bg-red-500/15 text-red-400 border border-red-500/30'
+                  ? 'bg-[var(--status-warn-bg)] text-[var(--status-warn)] border border-[var(--status-warn)]/30'
+                  : 'bg-[var(--status-down-bg)] text-[var(--status-down)] border border-[var(--status-down)]/30'
               }`}
             >
               {isRunning
-                ? 'Çalışıyor'
+                ? (t('containers.stateRunning') || 'Çalışıyor')
                 : isPaused
-                ? 'Duraklatıldı'
-                : 'Durdu'}
+                ? (t('containers.statePaused') || 'Duraklatıldı')
+                : (t('containers.stateStopped') || 'Durdu')}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#9ba0b5] font-mono">
-            <span className="truncate max-w-[320px] text-white/70" title={image}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--text-secondary)] font-mono">
+            <span className="truncate max-w-[320px] text-[var(--text-primary)]" title={image}>
               {image}
             </span>
-            <span className="text-white/20">•</span>
+            <span className="text-[var(--text-muted)]">•</span>
             <span>ID: {containerId.slice(0, 12)}</span>
             {status && (
               <>
-                <span className="text-white/20">•</span>
-                <span className="text-white/60">{status}</span>
+                <span className="text-[var(--text-muted)]">•</span>
+                <span className="text-[var(--text-secondary)]">{status}</span>
               </>
             )}
           </div>
         </div>
 
-        {/* Sağ Taraf: Yaşam Döngüsü Butonları ve Hızlı Sekme Kısayolları */}
+        {/* Sağ Taraf: Yaşam Döngüsü Butonları */}
         <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto shrink-0">
-          {isRunning && (
-            <>
-              <button
-                type="button"
-                onClick={() => onSelectTab('logs')}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'logs'
-                    ? 'bg-white text-black shadow-sm'
-                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>{t('containers.tabLogs') || 'Canlı Loglar'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onSelectTab('terminal')}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'terminal'
-                    ? 'bg-white text-black shadow-sm'
-                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10'
-                }`}
-              >
-                <TerminalIcon className="w-3.5 h-3.5" />
-                <span>{t('containers.tabTerminal') || 'Web Terminali'}</span>
-              </button>
-            </>
-          )}
-
           {onOpenUpdateModal && (
             <button
               type="button"
               onClick={onOpenUpdateModal}
               title={t('containers.checkUpdate') || 'İmaj Güncellemesini Denetle'}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer shadow-sm active:scale-95"
+              className="btn btn-sm btn-ghost inline-flex items-center gap-1.5 text-[var(--status-up)]"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t('containers.checkUpdate') || 'İmajı Denetle'}</span>
@@ -150,7 +110,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
           )}
 
           {isAdmin && (
-            <div className="flex items-center gap-1.5 pl-1 border-l border-white/10 ml-1">
+            <div className="flex items-center gap-1.5 pl-1 border-l border-[var(--border-hairline)] ml-1">
               {isRunning && (
                 <>
                   <button
@@ -158,10 +118,10 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                     disabled={!!actionInProgress}
                     onClick={() => onAction('restart')}
                     title={t('containers.actionRestart') || 'Yeniden Başlat'}
-                    className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
+                    className="btn btn-sm btn-ghost p-2 disabled:opacity-50"
                   >
                     {actionInProgress === 'restart' ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[var(--cloud-200)]" />
                     ) : (
                       <RotateCw className="w-4 h-4" />
                     )}
@@ -172,10 +132,10 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                     disabled={!!actionInProgress}
                     onClick={() => onAction('pause')}
                     title={t('containers.actionPause') || 'Duraklat'}
-                    className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 transition-colors cursor-pointer disabled:opacity-50"
+                    className="btn btn-sm btn-ghost p-2 text-[var(--status-warn)] disabled:opacity-50"
                   >
                     {actionInProgress === 'pause' ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Pause className="w-4 h-4" />
                     )}
@@ -186,10 +146,10 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                     disabled={!!actionInProgress}
                     onClick={() => onAction('stop')}
                     title={t('containers.actionStop') || 'Durdur'}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                    className="btn btn-sm inline-flex items-center gap-1.5 text-[var(--status-down)] hover:bg-[var(--status-down-bg)] disabled:opacity-50"
                   >
                     {actionInProgress === 'stop' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Square className="w-3.5 h-3.5" />
                     )}
@@ -203,14 +163,14 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                   type="button"
                   disabled={!!actionInProgress}
                   onClick={() => onAction('unpause')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 text-black text-xs font-semibold hover:bg-amber-400 transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
+                  className="btn btn-sm inline-flex items-center gap-1.5 text-[var(--status-warn)] hover:bg-[var(--status-warn-bg)] disabled:opacity-50"
                 >
                   {actionInProgress === 'unpause' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Play className="w-3.5 h-3.5" />
                   )}
-                  <span>Devam Ettir</span>
+                  <span>{t('containers.actionUnpause') || 'Devam Ettir'}</span>
                 </button>
               )}
 
@@ -219,14 +179,14 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                   type="button"
                   disabled={!!actionInProgress}
                   onClick={() => onAction('start')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 text-black text-xs font-semibold hover:bg-emerald-400 transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
+                  className="btn btn-sm inline-flex items-center gap-1.5 text-[var(--status-up)] hover:bg-[var(--status-up-bg)] disabled:opacity-50"
                 >
                   {actionInProgress === 'start' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Play className="w-3.5 h-3.5" />
                   )}
-                  <span>Başlat</span>
+                  <span>{t('containers.actionStart') || 'Başlat'}</span>
                 </button>
               )}
             </div>

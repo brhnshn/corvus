@@ -1,6 +1,7 @@
 import React from 'react';
 import { QuietBanner } from '../../components/ui/QuietBanner';
 import { Button } from '../../components/ui/Button';
+import { useI18n } from '../../i18n';
 
 export interface SystemBannerProps {
   status: 'ok' | 'warn' | 'err';
@@ -17,6 +18,7 @@ export const SystemBanner: React.FC<SystemBannerProps> = ({
   lastCheckText,
   onNavigate,
 }) => {
+  const { t } = useI18n();
   const isHealthy = status === 'ok';
 
   return (
@@ -34,25 +36,24 @@ export const SystemBanner: React.FC<SystemBannerProps> = ({
       }
       actions={
         onNavigate && (
-          <>
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
               variant="default"
               onClick={() => onNavigate(isHealthy ? 'metrics' : 'services')}
             >
-              {isHealthy ? 'Sistem Metrikleri →' : 'Servisleri İncele →'}
+              {isHealthy ? (t('dashboard.systemMetrics') || 'Sistem Metrikleri →') : (t('dashboard.viewServices') || 'Servisleri İncele →')}
             </Button>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onNavigate('containers')}
             >
-              Konteynerler
+              {t('nav.containers') || 'Konteynerler'}
             </Button>
-          </>
+          </div>
         )
       }
     />
   );
 };
-
