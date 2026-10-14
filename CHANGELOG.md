@@ -70,6 +70,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **Repository Hygiene & Local Mockups .gitignore**:
+  - Excluded `Yeni Tasarımlar/` directory containing local UX mockups and design prototypes from git tracking via `.gitignore` and untracked it from the git index cache to keep remote repository clean while preserving local files.
 - Fixed command palette fuzzy scoring ranking exact prefix matches and commands at the top.
 - Fixed non-Linux fallback behavior for journalctl log queries.
 - **ObsidianUI Design System & Motion Engine Infrastructure (Phases 1-4)**:

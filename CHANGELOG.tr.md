@@ -69,6 +69,8 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **Depo Temizliği ve Yerel Tasarım Taslakları .gitignore**:
+  - Yerel UX prototipleri ve tasarım taslaklarını içeren `Yeni Tasarımlar/` klasörü `.gitignore` dosyasına eklendi ve git önbelleğinden (cache) kaldırılarak yerel dosyalar korunurken uzak depoya gitmesi engellendi.
 - Komut paletinde prefix ve komut eşleşmelerinin en üst sırada listelenmesi sağlandı.
 - Linux harici sistemlerde journalctl log sorgularının çökme yaşanmadan açıklayıcı mesaj dönmesi sağlandı.
 - **ObsidianUI Tasarım Sistemi ve Motion Design Altyapısı (Faz 1–4)**:
