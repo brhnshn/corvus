@@ -787,6 +787,45 @@ public class DatabaseMigrationAndRepositoryTests : IDisposable
         Assert.Contains("Backend", fetchedService.Tags);
     }
 
+    [Fact]
+    public async Task ServicesRepository_SystemId_Isolation_WorksCorrectly()
+    {
+        var repo = new ServicesRepository(_dbFactory);
+
+        // 1. Create a service on host
+        var hostService = await repo.CreateManualAsync(new CreateServiceRequest(
+            Name: "Host Service",
+            Description: "Running on host",
+            Url: "http://host.local",
+            Icon: "server",
+            Category: "Infra"
+        ), systemId: "local-host");
+
+        // 2. Create a service on remote edge node
+        var edgeService = await repo.CreateManualAsync(new CreateServiceRequest(
+            Name: "Edge WSL Service",
+            Description: "Running on WSL node",
+            Url: "http://wsl.local",
+            Icon: "terminal",
+            Category: "Edge"
+        ), systemId: "node-wsl-deneme");
+
+        // Query by remote node
+        var edgeList = await repo.GetAllAsync("node-wsl-deneme");
+        Assert.Contains(edgeList, s => s.Id == edgeService.Id);
+        Assert.DoesNotContain(edgeList, s => s.Id == hostService.Id);
+
+        // Query by host
+        var hostList = await repo.GetAllAsync("local-host");
+        Assert.Contains(hostList, s => s.Id == hostService.Id);
+        Assert.DoesNotContain(hostList, s => s.Id == edgeService.Id);
+
+        // Query all fleet
+        var allList = await repo.GetAllAsync("all");
+        Assert.Contains(allList, s => s.Id == hostService.Id);
+        Assert.Contains(allList, s => s.Id == edgeService.Id);
+    }
+
     public void Dispose()
     {
         try

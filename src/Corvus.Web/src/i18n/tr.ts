@@ -62,7 +62,8 @@ export const tr: TranslationDictionary = {
     fleet: 'Tüm Sunucular',
     activeNode: 'Aktif Düğüm',
     nodeScope: 'Düğüm Kapsamı',
-    allSystems: 'Tüm Sistemler'
+    allSystems: 'Tüm Sistemler',
+    management: 'Yönetim'
   },
   status: {
     healthy: 'Çalışıyor',
@@ -576,6 +577,28 @@ export const tr: TranslationDictionary = {
     acceptedCodes: 'Kabul Edilen Durum Kodları',
     ignoreTls: 'Kendinden İmzalı SSL/TLS Hatalarını Yoksay',
     enableConfirmBtn: 'Takibi Başlat'
+  },
+  activity: {
+    title: 'Olay ve Denetim Günlüğü',
+    subtitle: 'Konteyner yaşam döngüsü, otomatik kurtarma, alarmlar ve sistem eylemlerinin kronolojik geçmişi',
+    thisNode: 'Bu Düğüm',
+    allFleet: 'Tüm Filo',
+    loading: 'Olay geçmişi yükleniyor...',
+    emptyTitle: 'Henüz kayıtlı olay bulunmuyor',
+    emptyDesc: 'Sistemde gerçekleşen konteyner işlemleri, eşik alarmları ve kullanıcı aksiyonları burada listelenecektir.',
+    totalEvents: 'Toplam {count} olay',
+    previous: 'Önceki',
+    next: 'Sonraki',
+    refresh: 'Yenile',
+    searchPlaceholder: 'Olay veya kaynak ara...',
+    categories: {
+      all: 'Tüm Olaylar',
+      container: 'Konteyner',
+      service: 'Servis',
+      alert: 'Alarmlar',
+      security: 'Güvenlik & Giriş',
+      system: 'Sistem'
+    }
   },
   settings: {
     title: 'Ayarlar',

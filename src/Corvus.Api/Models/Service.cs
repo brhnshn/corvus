@@ -5,6 +5,7 @@ public class Service
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Source { get; set; } = "manual"; // 'docker' | 'manual'
     public string? ContainerId { get; set; }
+    public string SystemId { get; set; } = "local-host";
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Url { get; set; }

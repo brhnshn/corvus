@@ -119,7 +119,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'metrics', label: t('nav.metrics') || 'Sistem Metrikleri', icon: Activity },
     { id: 'uptime', label: t('nav.uptime') || 'Uptime', icon: Clock },
     { id: 'activity', label: t('nav.activity') || 'Olay Geçmişi', icon: History },
-    { id: 'settings', label: t('nav.settings') || 'Ayarlar', icon: Settings },
   ] as const;
 
   return (
@@ -261,6 +260,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           );
         })}
+
+        {/* Management / Global Section */}
+        <div className="nav-section-title mt-2.5">{t('nav.management') || 'Yönetim'}</div>
+        <button
+          type="button"
+          data-nav="settings"
+          onClick={() => onSelectPage('settings')}
+          onMouseEnter={handleMouseEnterButton}
+          className={`nav-btn ${currentPage === 'settings' ? 'active' : ''}`}
+        >
+          <span className="nav-btn-left">
+            <Settings className="w-4 h-4 text-[var(--text-secondary)]" />
+            <span>{t('nav.settings') || 'Ayarlar'}</span>
+          </span>
+        </button>
       </nav>
 
       {/* Footer: Live Status & Version */}

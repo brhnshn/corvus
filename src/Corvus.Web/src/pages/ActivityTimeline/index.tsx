@@ -6,8 +6,10 @@ import { Button } from '../../components/ui/Button';
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { ActivityTimelineItem } from './ActivityTimelineItem';
 import { ActivityTimelineFilter } from './ActivityTimelineFilter';
+import { useI18n } from '../../i18n';
 
 export const ActivityTimelinePage: React.FC = () => {
+  const { t } = useI18n();
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -16,9 +18,13 @@ export const ActivityTimelinePage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [scope, setScope] = useState<'node' | 'all'>('node');
 
   const [activeSystemName, setActiveSystemName] = useState(() => {
     return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
+  });
+  const [activeSystemId, setActiveSystemId] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
   });
 
   const fetchLogs = useCallback(async (isRefresh = false) => {
@@ -26,7 +32,8 @@ export const ActivityTimelinePage: React.FC = () => {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const res = await api.getActivityLogs(page, 50, category, search);
+      const targetSystemId = scope === 'all' ? 'all' : (activeSystemId || 'local-host');
+      const res = await api.getActivityLogs(page, 50, category, search, targetSystemId);
       setLogs(res.items);
       setTotalPages(res.totalPages || 1);
       setTotalCount(res.totalCount);
@@ -36,7 +43,7 @@ export const ActivityTimelinePage: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [page, category, search]);
+  }, [page, category, search, scope, activeSystemId]);
 
   useEffect(() => {
     fetchLogs();
@@ -45,7 +52,9 @@ export const ActivityTimelinePage: React.FC = () => {
   useEffect(() => {
     const handleSystemChange = (e: Event) => {
       const customEvent = e as CustomEvent;
+      const sId = customEvent.detail?.systemId || localStorage.getItem('corvus_active_system_id') || 'local-host';
       const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
+      setActiveSystemId(sId);
       setActiveSystemName(sName);
       fetchLogs(true);
     };
@@ -53,7 +62,6 @@ export const ActivityTimelinePage: React.FC = () => {
     return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
   }, [fetchLogs]);
 
-  // Kategori veya arama değişince 1. sayfaya dön
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
     setPage(1);
@@ -64,18 +72,23 @@ export const ActivityTimelinePage: React.FC = () => {
     setPage(1);
   };
 
+  const handleScopeChange = (newScope: 'node' | 'all') => {
+    setScope(newScope);
+    setPage(1);
+  };
+
   return (
     <PageStage className="space-y-4">
       <MotionItem staggerIndex={0}>
         <PageHeader
-          title="Olay ve Denetim Günlüğü (Audit Log)"
+          title={t('activity.title') || 'Olay ve Denetim Günlüğü'}
           badge={
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
-              {activeSystemName}
+              {scope === 'all' ? (t('activity.allFleet') || 'Tüm Filo') : activeSystemName}
             </span>
           }
-          subtitle="Konteyner yaşam döngüsü, otomatik kurtarma, alarmlar ve sistem eylemlerinin kronolojik geçmişi"
+          subtitle={t('activity.subtitle') || 'Konteyner yaşam döngüsü, otomatik kurtarma, alarmlar ve sistem eylemlerinin kronolojik geçmişi'}
           actions={
             <Button
               variant="default"
@@ -84,7 +97,7 @@ export const ActivityTimelinePage: React.FC = () => {
               disabled={refreshing}
               icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
             >
-              <span>Yenile</span>
+              <span>{t('activity.refresh') || 'Yenile'}</span>
             </Button>
           }
         />
@@ -96,20 +109,23 @@ export const ActivityTimelinePage: React.FC = () => {
           onCategoryChange={handleCategoryChange}
           search={search}
           onSearchChange={handleSearchChange}
+          scope={scope}
+          onScopeChange={handleScopeChange}
+          activeSystemName={activeSystemName}
         />
       </MotionItem>
 
       {loading ? (
         <div className="py-20 text-center text-xs text-[var(--text-muted)]">
           <RefreshCw className="w-6 h-6 animate-spin text-[var(--cloud-200)] mx-auto mb-2" />
-          <span>Olay geçmişi yükleniyor...</span>
+          <span>{t('activity.loading') || 'Olay geçmişi yükleniyor...'}</span>
         </div>
       ) : logs.length === 0 ? (
         <div className="py-16 text-center border border-dashed border-[var(--border-hairline)] rounded-[var(--radius-sm)] p-6">
           <History className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2 opacity-50" />
-          <p className="text-xs font-semibold text-[var(--cloud-100)]">Henüz kayıtlı olay bulunmuyor</p>
+          <p className="text-xs font-semibold text-[var(--cloud-100)]">{t('activity.emptyTitle') || 'Henüz kayıtlı olay bulunmuyor'}</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
-            Sistemde gerçekleşen konteyner işlemleri, eşik alarmları ve kullanıcı aksiyonları burada listelenecektir.
+            {t('activity.emptyDesc') || 'Sistemde gerçekleşen konteyner işlemleri, eşik alarmları ve kullanıcı aksiyonları burada listelenecektir.'}
           </p>
         </div>
       ) : (
@@ -119,10 +135,12 @@ export const ActivityTimelinePage: React.FC = () => {
               <ActivityTimelineItem key={entry.id} entry={entry} />
             ))}
 
-            {/* Sayfalama */}
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t border-[var(--border-hairline)] text-xs text-[var(--text-secondary)]">
-                <span className="font-mono text-[11px]">Toplam {totalCount} olay</span>
+                <span className="font-mono text-[11px]">
+                  {(t('activity.totalEvents') || 'Toplam {count} olay').replace('{count}', String(totalCount))}
+                </span>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="default"
@@ -131,7 +149,7 @@ export const ActivityTimelinePage: React.FC = () => {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     icon={<ChevronLeft className="w-3.5 h-3.5" />}
                   >
-                    Önceki
+                    {t('activity.previous') || 'Önceki'}
                   </Button>
                   <span className="font-mono px-2 tabular-nums">
                     {page} / {totalPages}
@@ -143,7 +161,7 @@ export const ActivityTimelinePage: React.FC = () => {
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     icon={<ChevronRight className="w-3.5 h-3.5" />}
                   >
-                    Sonraki
+                    {t('activity.next') || 'Sonraki'}
                   </Button>
                 </div>
               </div>

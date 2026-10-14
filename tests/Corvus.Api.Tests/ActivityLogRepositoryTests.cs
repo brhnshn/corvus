@@ -118,4 +118,43 @@ public class ActivityLogRepositoryTests
         Assert.Equal(1, remaining.TotalCount);
         Assert.Equal("system.heartbeat", remaining.Items[0].ActionType);
     }
+
+    [Fact]
+    public async Task GetPagedAsync_WithSystemId_FiltersCorrectly()
+    {
+        using var scope = new TempDbScope();
+        var repo = new ActivityLogRepository(scope.DbFactory);
+
+        await repo.InsertAsync(new ActivityLogEntry
+        {
+            ActionType = "host.action",
+            Category = "system",
+            TargetResource = "host",
+            SystemId = "local-host",
+            CreatedAt = DateTime.UtcNow.AddMinutes(-2)
+        });
+
+        await repo.InsertAsync(new ActivityLogEntry
+        {
+            ActionType = "edge.action",
+            Category = "system",
+            TargetResource = "deneme",
+            SystemId = "node-wsl-deneme",
+            CreatedAt = DateTime.UtcNow.AddMinutes(-1)
+        });
+
+        // 1. Filter by specific node: node-wsl-deneme
+        var edgeLogs = await repo.GetPagedAsync(systemId: "node-wsl-deneme");
+        Assert.Equal(1, edgeLogs.TotalCount);
+        Assert.Equal("edge.action", edgeLogs.Items[0].ActionType);
+
+        // 2. Filter by host: local-host
+        var hostLogs = await repo.GetPagedAsync(systemId: "local-host");
+        Assert.Equal(1, hostLogs.TotalCount);
+        Assert.Equal("host.action", hostLogs.Items[0].ActionType);
+
+        // 3. Filter by all fleet: all
+        var allLogs = await repo.GetPagedAsync(systemId: "all");
+        Assert.Equal(2, allLogs.TotalCount);
+    }
 }

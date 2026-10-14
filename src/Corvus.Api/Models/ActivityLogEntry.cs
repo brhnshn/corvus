@@ -9,6 +9,7 @@ public class ActivityLogEntry
     public string TargetResource { get; set; } = string.Empty;
     public string? DetailsJson { get; set; }
     public string? IpAddress { get; set; }
+    public string SystemId { get; set; } = "local-host";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -19,6 +20,7 @@ public class ActivityLogFilterQuery
     public string? Category { get; set; }
     public string? ActionType { get; set; }
     public string? Search { get; set; }
+    public string? SystemId { get; set; }
 }
 
 public class ActivityLogPagedResult

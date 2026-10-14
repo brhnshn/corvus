@@ -5,9 +5,9 @@ namespace Corvus.Api.Data;
 
 public interface IServicesRepository
 {
-    Task<List<Service>> GetAllAsync();
+    Task<List<Service>> GetAllAsync(string? systemId = null);
     Task<Service?> GetByIdAsync(string id);
-    Task<Service> CreateManualAsync(CreateServiceRequest request);
+    Task<Service> CreateManualAsync(CreateServiceRequest request, string? systemId = null);
     Task<Service?> UpdateAsync(string id, UpdateServiceRequest request);
     Task<bool> DeleteAsync(string id);
     Task UpsertDockerServiceAsync(Service service);
@@ -30,55 +30,57 @@ public class ServicesRepository : IServicesRepository
         _db = db;
     }
 
-    public record ServiceDbRow(
-        string id,
-        string source,
-        string? container_id,
-        string name,
-        string? description,
-        string? url,
-        string? icon,
-        string? category,
-        string? health_check_url,
-        string status,
-        string created_at,
-        string updated_at,
-        string? check_type,
-        int? port,
-        int? ssl_expiry_days,
-        string? ssl_issuer,
-        int? is_public,
-        int? is_uptime_enabled,
-        int? display_order,
-        int? check_interval,
-        int? max_retries,
-        int? retry_interval,
-        int? timeout_seconds,
-        int? ignore_tls,
-        string? accepted_status_codes,
-        string? http_method,
-        string? expected_body,
-        string? tags,
-        string? OverrideName,
-        string? OverrideDescription,
-        string? OverrideUrl,
-        string? OverrideIcon,
-        string? OverrideCategory,
-        string? OverrideHealthCheckUrl,
-        string? OverrideCheckType,
-        int? OverridePort,
-        int? OverrideIsPublic,
-        int? OverrideIsUptimeEnabled,
-        int? OverrideCheckInterval,
-        int? OverrideMaxRetries,
-        int? OverrideRetryInterval,
-        int? OverrideTimeoutSeconds,
-        int? OverrideIgnoreTls,
-        string? OverrideAcceptedStatusCodes,
-        string? OverrideHttpMethod,
-        string? OverrideExpectedBody,
-        string? OverrideTags
-    );
+    public class ServiceDbRow
+    {
+        public string id { get; set; } = string.Empty;
+        public string source { get; set; } = string.Empty;
+        public string? container_id { get; set; }
+        public string? system_id { get; set; }
+        public string name { get; set; } = string.Empty;
+        public string? description { get; set; }
+        public string? url { get; set; }
+        public string? icon { get; set; }
+        public string? category { get; set; }
+        public string? health_check_url { get; set; }
+        public string status { get; set; } = string.Empty;
+        public string created_at { get; set; } = string.Empty;
+        public string updated_at { get; set; } = string.Empty;
+        public string? check_type { get; set; }
+        public int? port { get; set; }
+        public int? ssl_expiry_days { get; set; }
+        public string? ssl_issuer { get; set; }
+        public int? is_public { get; set; }
+        public int? is_uptime_enabled { get; set; }
+        public int? display_order { get; set; }
+        public int? check_interval { get; set; }
+        public int? max_retries { get; set; }
+        public int? retry_interval { get; set; }
+        public int? timeout_seconds { get; set; }
+        public int? ignore_tls { get; set; }
+        public string? accepted_status_codes { get; set; }
+        public string? http_method { get; set; }
+        public string? expected_body { get; set; }
+        public string? tags { get; set; }
+        public string? OverrideName { get; set; }
+        public string? OverrideDescription { get; set; }
+        public string? OverrideUrl { get; set; }
+        public string? OverrideIcon { get; set; }
+        public string? OverrideCategory { get; set; }
+        public string? OverrideHealthCheckUrl { get; set; }
+        public string? OverrideCheckType { get; set; }
+        public int? OverridePort { get; set; }
+        public int? OverrideIsPublic { get; set; }
+        public int? OverrideIsUptimeEnabled { get; set; }
+        public int? OverrideCheckInterval { get; set; }
+        public int? OverrideMaxRetries { get; set; }
+        public int? OverrideRetryInterval { get; set; }
+        public int? OverrideTimeoutSeconds { get; set; }
+        public int? OverrideIgnoreTls { get; set; }
+        public string? OverrideAcceptedStatusCodes { get; set; }
+        public string? OverrideHttpMethod { get; set; }
+        public string? OverrideExpectedBody { get; set; }
+        public string? OverrideTags { get; set; }
+    }
 
     public static List<string> ParseTags(string? raw)
     {
@@ -123,6 +125,7 @@ public class ServicesRepository : IServicesRepository
         Id = r.id,
         Source = r.source,
         ContainerId = r.container_id,
+        SystemId = r.system_id ?? "local-host",
         Name = r.OverrideName ?? r.name,
         Description = r.OverrideDescription ?? r.description,
         Url = r.OverrideUrl ?? r.url,
@@ -151,7 +154,7 @@ public class ServicesRepository : IServicesRepository
     };
 
     private const string BaseSelectSql = @"
-        SELECT s.id, s.source, s.container_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
+        SELECT s.id, s.source, s.container_id, s.system_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
                s.check_type, s.port, s.ssl_expiry_days, s.ssl_issuer, s.is_public, s.is_uptime_enabled, s.display_order,
                s.check_interval, s.max_retries, s.retry_interval, s.timeout_seconds, s.ignore_tls, s.accepted_status_codes, s.http_method, s.expected_body,
                s.tags,
@@ -177,12 +180,21 @@ public class ServicesRepository : IServicesRepository
         FROM services s
         LEFT JOIN service_overrides o ON (s.id = o.service_id OR (s.container_id IS NOT NULL AND s.container_id = o.container_id))";
 
-    public async Task<List<Service>> GetAllAsync()
+    public async Task<List<Service>> GetAllAsync(string? systemId = null)
     {
         using var conn = _db.CreateConnection();
-        var sql = $"{BaseSelectSql} ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
+        string whereClause = "";
+        object? param = null;
 
-        var rows = await conn.QueryAsync<ServiceDbRow>(sql);
+        if (!string.IsNullOrWhiteSpace(systemId) && systemId.ToLowerInvariant() != "all")
+        {
+            whereClause = " WHERE (s.system_id = @systemId OR (@systemId = 'local-host' AND (s.system_id IS NULL OR s.system_id = '' OR s.system_id = 'local-host')))";
+            param = new { systemId = systemId.Trim() };
+        }
+
+        var sql = $"{BaseSelectSql}{whereClause} ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
+
+        var rows = await conn.QueryAsync<ServiceDbRow>(sql, param);
         return rows.Select(MapRowToService).ToList();
     }
 
@@ -207,15 +219,20 @@ public class ServicesRepository : IServicesRepository
         return r == null ? null : MapRowToService(r);
     }
 
-    public async Task<Service> CreateManualAsync(CreateServiceRequest request)
+    public async Task<Service> CreateManualAsync(CreateServiceRequest request, string? systemId = null)
     {
         using var conn = _db.CreateConnection();
         var tags = request.Tags ?? new List<string>();
+        var effectiveSystemId = !string.IsNullOrWhiteSpace(request.SystemId)
+            ? request.SystemId.Trim()
+            : (!string.IsNullOrWhiteSpace(systemId) ? systemId.Trim() : "local-host");
+
         var service = new Service
         {
             Id = Guid.NewGuid().ToString(),
             Source = "manual",
             ContainerId = null,
+            SystemId = effectiveSystemId,
             Name = request.Name,
             Description = request.Description,
             Url = request.Url,
@@ -241,13 +258,14 @@ public class ServicesRepository : IServicesRepository
         };
 
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body, tags)
-            VALUES (@Id, @Source, @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @ExpectedBody, @Tags)";
+            INSERT INTO services (id, source, container_id, system_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body, tags)
+            VALUES (@Id, @Source, @ContainerId, @SystemId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @ExpectedBody, @Tags)";
 
         await conn.ExecuteAsync(sql, new {
             service.Id,
             service.Source,
             service.ContainerId,
+            service.SystemId,
             service.Name,
             service.Description,
             service.Url,
@@ -430,10 +448,11 @@ public class ServicesRepository : IServicesRepository
     {
         using var conn = _db.CreateConnection();
         var sql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, tags)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @Tags)
+            INSERT INTO services (id, source, container_id, system_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, tags)
+            VALUES (@Id, 'docker', @ContainerId, @SystemId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @Tags)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
+                system_id = COALESCE(excluded.system_id, services.system_id, 'local-host'),
                 status = CASE 
                     WHEN COALESCE(services.is_uptime_enabled, 0) = 0 THEN excluded.status
                     WHEN excluded.status = 'down' THEN 'down'
@@ -456,6 +475,7 @@ public class ServicesRepository : IServicesRepository
         await conn.ExecuteAsync(sql, new {
             service.Id,
             service.ContainerId,
+            SystemId = string.IsNullOrWhiteSpace(service.SystemId) ? "local-host" : service.SystemId,
             service.Name,
             service.Description,
             service.Url,

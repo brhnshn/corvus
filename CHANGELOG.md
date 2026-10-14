@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.8] - 2026-10-15 — Fleet-Wide Services, Uptime & Activity Log Node Isolation & Sidebar Hierarchy Refactor
+
+### Fixed
+- **Sidebar Hierarchy Separation (Management & Global Scope)**:
+  - `Sidebar.tsx`: Extracted `Settings` out of the node-scoped navigation list into a dedicated `Management (Yönetim)` section at the bottom of the sidebar. Prevents confusion between node-level resources (Containers, Services, Metrics, Uptime, Activity) and global system-wide administration (Users, Notifications, Database Backups, Global Settings).
+- **Services Node Isolation & System Scope**:
+  - `018_services_and_activity_system_scope_sqlite.sql` & `018_services_and_activity_system_scope_postgres.sql`: Added `system_id` column with index to `services` and `activity_logs` tables (defaulting to `'local-host'`).
+  - `ServicesRepository.cs`: Updated `ServiceDbRow` to class mapping with parameterless constructor for seamless Dapper type coercion, mapped `SystemId`, and added `systemId` filtering in `GetAllAsync`.
+  - `ServicesEndpoints.cs`: Partitioned `GET /api/services` and `POST /api/services` using `X-System-Id` header and query parameter, isolating services between Host and edge nodes.
+- **Uptime Monitoring Node Scope Synchronization**:
+  - `Uptime/index.tsx`: Bound `corvus_active_system_changed` event listener to re-fetch and re-sync services when switching nodes. Added contextual node status badge in the Uptime page header.
+- **Activity & Audit Log Scope Filtering (Active Node vs All Fleet)**:
+  - `ActivityLogEndpoints.cs` & `ActivityLogRepository.cs`: Added `systemId` filtering support across audit records.
+  - `ActivityTimeline/index.tsx` & `ActivityTimelineFilter.tsx`: Added an interactive scope switch (`[ Active Node | All Fleet ]`) allowing operators to inspect either node-specific actions or fleet-wide activity.
+  - Synchronized type-safe i18n keys for Activity Timeline in both `en.ts` and `tr.ts`.
+- **Test Coverage**:
+  - Added node isolation tests `ServicesRepository_SystemId_Isolation_WorksCorrectly` and `GetPagedAsync_WithSystemId_FiltersCorrectly` (294/294 tests passing).
+
+---
+
 ## [1.6.7] - 2026-10-15 — ObsidianUI Standardization for System Management Modals & Node Scope Isolation
 
 ### Fixed

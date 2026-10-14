@@ -7,7 +7,7 @@ public interface IActivityLogRepository
 {
     Task InsertAsync(ActivityLogEntry entry);
     Task InsertBatchAsync(IEnumerable<ActivityLogEntry> entries);
-    Task<ActivityLogPagedResult> GetPagedAsync(int page = 1, int limit = 50, string? category = null, string? search = null);
+    Task<ActivityLogPagedResult> GetPagedAsync(int page = 1, int limit = 50, string? category = null, string? search = null, string? systemId = null);
     Task CleanupOldLogsAsync(int retentionDays = 90);
 }
 
@@ -28,7 +28,8 @@ public class ActivityLogRepository : IActivityLogRepository
         string target_resource,
         string? details_json,
         string? ip_address,
-        string created_at);
+        string created_at,
+        string? system_id);
 
     private static ActivityLogEntry MapToModel(ActivityLogDbRow r) => new()
     {
@@ -39,6 +40,7 @@ public class ActivityLogRepository : IActivityLogRepository
         TargetResource = r.target_resource,
         DetailsJson = r.details_json,
         IpAddress = r.ip_address,
+        SystemId = r.system_id ?? "local-host",
         CreatedAt = DateTime.TryParse(r.created_at, out var dt) ? dt : DateTime.UtcNow
     };
 
@@ -46,8 +48,8 @@ public class ActivityLogRepository : IActivityLogRepository
     {
         using var conn = _db.CreateConnection();
         const string sql = @"
-            INSERT INTO activity_logs (id, actor_username, action_type, category, target_resource, details_json, ip_address, created_at)
-            VALUES (@Id, @ActorUsername, @ActionType, @Category, @TargetResource, @DetailsJson, @IpAddress, @CreatedAt);";
+            INSERT INTO activity_logs (id, actor_username, action_type, category, target_resource, details_json, ip_address, system_id, created_at)
+            VALUES (@Id, @ActorUsername, @ActionType, @Category, @TargetResource, @DetailsJson, @IpAddress, @SystemId, @CreatedAt);";
 
         await conn.ExecuteAsync(sql, new
         {
@@ -58,6 +60,7 @@ public class ActivityLogRepository : IActivityLogRepository
             entry.TargetResource,
             entry.DetailsJson,
             entry.IpAddress,
+            SystemId = string.IsNullOrWhiteSpace(entry.SystemId) ? "local-host" : entry.SystemId,
             CreatedAt = entry.CreatedAt.ToString("o")
         });
     }
@@ -66,8 +69,8 @@ public class ActivityLogRepository : IActivityLogRepository
     {
         using var conn = _db.CreateConnection();
         const string sql = @"
-            INSERT INTO activity_logs (id, actor_username, action_type, category, target_resource, details_json, ip_address, created_at)
-            VALUES (@Id, @ActorUsername, @ActionType, @Category, @TargetResource, @DetailsJson, @IpAddress, @CreatedAt);";
+            INSERT INTO activity_logs (id, actor_username, action_type, category, target_resource, details_json, ip_address, system_id, created_at)
+            VALUES (@Id, @ActorUsername, @ActionType, @Category, @TargetResource, @DetailsJson, @IpAddress, @SystemId, @CreatedAt);";
 
         var paramsList = entries.Select(e => new
         {
@@ -78,13 +81,14 @@ public class ActivityLogRepository : IActivityLogRepository
             e.TargetResource,
             e.DetailsJson,
             e.IpAddress,
+            SystemId = string.IsNullOrWhiteSpace(e.SystemId) ? "local-host" : e.SystemId,
             CreatedAt = e.CreatedAt.ToString("o")
         });
 
         await conn.ExecuteAsync(sql, paramsList);
     }
 
-    public async Task<ActivityLogPagedResult> GetPagedAsync(int page = 1, int limit = 50, string? category = null, string? search = null)
+    public async Task<ActivityLogPagedResult> GetPagedAsync(int page = 1, int limit = 50, string? category = null, string? search = null, string? systemId = null)
     {
         if (page < 1) page = 1;
         if (limit < 1) limit = 10;
@@ -102,6 +106,12 @@ public class ActivityLogRepository : IActivityLogRepository
             parameters.Add("Category", category.Trim().ToLowerInvariant());
         }
 
+        if (!string.IsNullOrWhiteSpace(systemId) && systemId.ToLowerInvariant() != "all")
+        {
+            whereClauses.Add("(system_id = @SystemId OR (@SystemId = 'local-host' AND (system_id IS NULL OR system_id = '' OR system_id = 'local-host')))");
+            parameters.Add("SystemId", systemId.Trim());
+        }
+
         if (!string.IsNullOrWhiteSpace(search))
         {
             whereClauses.Add("(target_resource LIKE @Search OR actor_username LIKE @Search OR action_type LIKE @Search)");
@@ -114,7 +124,7 @@ public class ActivityLogRepository : IActivityLogRepository
         int totalCount = await conn.ExecuteScalarAsync<int>(countSql, parameters);
 
         string querySql = $@"
-            SELECT id, actor_username, action_type, category, target_resource, details_json, ip_address, created_at 
+            SELECT id, actor_username, action_type, category, target_resource, details_json, ip_address, system_id, created_at 
             FROM activity_logs 
             {whereSql} 
             ORDER BY created_at DESC 

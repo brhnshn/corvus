@@ -20,6 +20,10 @@ export const UptimePage: React.FC = () => {
   const [snitches, setSnitches] = useState<PushMonitor[]>([]);
   const [loadingSnitches, setLoadingSnitches] = useState(false);
 
+  const [activeSystemName, setActiveSystemName] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
+  });
+
   const isMountedRef = React.useRef(true);
 
   const fetchServices = React.useCallback(async () => {
@@ -93,14 +97,25 @@ export const UptimePage: React.FC = () => {
       }
     };
 
+    const handleSystemChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
+      setActiveSystemName(sName);
+      if (isMountedRef.current && activeTab === 'uptime') {
+        fetchServices();
+      }
+    };
+
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('corvus_event', handleCorvusEvent);
+    window.addEventListener('corvus_active_system_changed', handleSystemChange);
 
     return () => {
       isMountedRef.current = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('corvus_event', handleCorvusEvent);
+      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
     };
   }, [activeTab, fetchServices, fetchSnitches]);
 
@@ -115,9 +130,15 @@ export const UptimePage: React.FC = () => {
       {/* Header and Tab Selector */}
       <MotionItem staggerIndex={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            {t('uptime.title') || 'Gelişmiş Uptime & SSL Takibi'}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+              {t('uptime.title') || 'Gelişmiş Uptime & SSL Takibi'}
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
+              {activeSystemName}
+            </span>
+          </div>
           <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">
             {t('uptime.subtitle') || 'Yüksek hassasiyetli erişilebilirlik ve güvenlik sertifikası izleme'}
           </p>

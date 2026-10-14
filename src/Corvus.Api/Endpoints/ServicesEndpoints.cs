@@ -11,9 +11,15 @@ public static class ServicesEndpoints
         var group = app.MapGroup("/api/services")
             .AddEndpointFilter<CorvusAuthFilter>();
 
-        group.MapGet("/", async (IServicesRepository repo) =>
+        group.MapGet("/", async (HttpContext httpContext, string? systemId, IServicesRepository repo) =>
         {
-            var services = await repo.GetAllAsync();
+            var effectiveSystemId = systemId;
+            if (string.IsNullOrWhiteSpace(effectiveSystemId) && httpContext.Request.Headers.TryGetValue("X-System-Id", out var headerVal))
+            {
+                effectiveSystemId = headerVal.ToString();
+            }
+
+            var services = await repo.GetAllAsync(effectiveSystemId);
             return Results.Ok(services);
         });
 
@@ -23,7 +29,7 @@ public static class ServicesEndpoints
             return service != null ? Results.Ok(service) : Results.NotFound();
         });
 
-        group.MapPost("/", async (CreateServiceRequest request, IServicesRepository repo) =>
+        group.MapPost("/", async (CreateServiceRequest request, HttpContext httpContext, IServicesRepository repo) =>
         {
             if (string.IsNullOrWhiteSpace(request.Name))
             {
@@ -35,7 +41,13 @@ public static class ServicesEndpoints
                 return Results.BadRequest(new GenericApiResponse(false, "Uptime sağlık takibi aktif olmayan servisler durum sayfasına eklenemez."));
             }
 
-            var created = await repo.CreateManualAsync(request);
+            var effectiveSystemId = request.SystemId;
+            if (string.IsNullOrWhiteSpace(effectiveSystemId) && httpContext.Request.Headers.TryGetValue("X-System-Id", out var headerVal))
+            {
+                effectiveSystemId = headerVal.ToString();
+            }
+
+            var created = await repo.CreateManualAsync(request, effectiveSystemId);
             return Results.Created($"/api/services/{created.Id}", created);
         }).RequireAdmin();
 

@@ -19,7 +19,7 @@ public record CreateServiceRequest(
     string? Url,
     string? Icon,
     string? Category,
-    string? HealthCheckUrl,
+    string? HealthCheckUrl = null,
     string? CheckType = "http",
     int? Port = null,
     bool? IsPublic = false,
@@ -32,7 +32,8 @@ public record CreateServiceRequest(
     string? AcceptedStatusCodes = "200-299",
     string? HttpMethod = "GET",
     string? ExpectedBody = null,
-    List<string>? Tags = null
+    List<string>? Tags = null,
+    string? SystemId = null
 );
 
 public record UpdateServiceRequest(

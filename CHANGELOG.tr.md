@@ -3,6 +3,26 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.8] - 2026-10-15 — Servisler, Uptime ve Olay Geçmişinde Düğüm İzolasyonu ve Kenar Çubuğu Hiyerarşisi Ayrımı
+
+### Düzeltilenler (Fixed)
+- **Sol Menü (Sidebar) Yönetim ve Düğüm Hiyerarşisi Ayrımı**:
+  - `Sidebar.tsx`: `Ayarlar` seçeneği düğüm kapsamı alt menüsünden çıkarılarak kenar çubuğunun altında bağımsız `Yönetim` bölümü altına taşındı. Böylece sunucu bazlı kaynaklar (Konteynerler, Servisler, Metrikler, Uptime, Olay Geçmişi) ile tüm sistemi ilgilendiren genel ayarlar (Kullanıcılar, Bildirimler, Veritabanı Yedeği, Genel Yapılandırma) arasındaki mimari ayrım netleştirildi.
+- **Servisler Sayfası Düğüm İzolasyonu**:
+  - `018_services_and_activity_system_scope_sqlite.sql` ve `018_services_and_activity_system_scope_postgres.sql`: `services` ve `activity_logs` tablolarına `system_id` kolonu (varsayılan `'local-host'`) ve indeksleri eklendi.
+  - `ServicesRepository.cs`: Dapper tip dönüşümünü (`long` -> `int?`) sıfır hatayla gerçekleştirebilmek için `ServiceDbRow` sınıf mimarisine geçirildi, `system_id` eşlemesi yapıldı ve `GetAllAsync` fonksiyonu sistem bazlı filtrelemeye bağlandı.
+  - `ServicesEndpoints.cs`: `GET /api/services` ve `POST /api/services` uç noktaları `X-System-Id` HTTP başlığı ile filtrelenerek Host ile uç ajanlar (örn. `Deneme`) arasındaki servis karışıklığı giderildi; yeni eklenen servisler otomatik olarak o an seçili aktif düğümle ilişkilendirildi.
+- **Uptime ve SSL Takibi Düğüm Senkronizasyonu**:
+  - `Uptime/index.tsx`: `corvus_active_system_changed` dinleyicisi eklenerek düğüm değiştirildiğinde servis listesinin anında seçili düğüme göre yenilenmesi sağlandı; sayfa başlığına aktif sunucu rozeti eklendi.
+- **Olay Geçmişi (Activity Timeline) Kapsam Filtresi**:
+  - `ActivityLogEndpoints.cs` ve `ActivityLogRepository.cs`: Olay kayıtları için `systemId` filtreleme altyapısı kuruldu.
+  - `ActivityTimeline/index.tsx` ve `ActivityTimelineFilter.tsx`: `[ Aktif Düğüm | Tüm Filo ]` geçiş anahtarı eklenerek operatörlerin hem yalnızca seçili sunucudaki olayları hem de tüm filo genelindeki olayları filtreleyebilmesi sağlandı.
+  - `tr.ts` ve `en.ts` dosyalarına Olay Geçmişi için tip güvenli yeni i18n çevirileri eklendi.
+- **Birim Test Kapsamı**:
+  - `ServicesRepository_SystemId_Isolation_WorksCorrectly` ve `GetPagedAsync_WithSystemId_FiltersCorrectly` testleri yazılarak sistem bazlı izolasyon doğrulandı (294/294 test başarılı).
+
+---
+
 ## [1.6.7] - 2026-10-15 — Sistem Yönetim Modalları ObsidianUI Standardizasyonu ve Düğüm Kapsamı (Node Scope) İzolasyonu
 
 ### Düzeltilenler (Fixed)

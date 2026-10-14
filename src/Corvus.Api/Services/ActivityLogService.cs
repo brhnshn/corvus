@@ -6,7 +6,7 @@ namespace Corvus.Api.Services;
 
 public interface IActivityLogService
 {
-    void Log(string actor, string actionType, string category, string targetResource, string? detailsJson = null, string? ipAddress = null);
+    void Log(string actor, string actionType, string category, string targetResource, string? detailsJson = null, string? ipAddress = null, string? systemId = null);
     Task FlushAsync();
 }
 
@@ -31,7 +31,7 @@ public class ActivityLogService : IActivityLogService, IDisposable
         _processingTask = Task.Run(ProcessQueueAsync);
     }
 
-    public void Log(string actor, string actionType, string category, string targetResource, string? detailsJson = null, string? ipAddress = null)
+    public void Log(string actor, string actionType, string category, string targetResource, string? detailsJson = null, string? ipAddress = null, string? systemId = null)
     {
         var entry = new ActivityLogEntry
         {
@@ -42,6 +42,7 @@ public class ActivityLogService : IActivityLogService, IDisposable
             TargetResource = targetResource.Trim(),
             DetailsJson = detailsJson,
             IpAddress = ipAddress,
+            SystemId = string.IsNullOrWhiteSpace(systemId) ? "local-host" : systemId.Trim(),
             CreatedAt = DateTime.UtcNow
         };
 

@@ -60,7 +60,8 @@ export const en = {
     fleet: 'Fleet Overview',
     activeNode: 'Active Node',
     nodeScope: 'Node Scope',
-    allSystems: 'All Systems'
+    allSystems: 'All Systems',
+    management: 'Management'
   },
   status: {
     healthy: 'Operational',
@@ -574,6 +575,28 @@ export const en = {
     acceptedCodes: 'Accepted Status Codes',
     ignoreTls: 'Ignore Self-Signed SSL/TLS Errors',
     enableConfirmBtn: 'Start Monitoring'
+  },
+  activity: {
+    title: 'Activity & Audit Log',
+    subtitle: 'Chronological history of container lifecycles, auto-healing, alerts, and system actions',
+    thisNode: 'This Node',
+    allFleet: 'All Fleet',
+    loading: 'Loading activity logs...',
+    emptyTitle: 'No activity recorded yet',
+    emptyDesc: 'Container events, threshold alerts, and user actions will be listed here.',
+    totalEvents: 'Total {count} events',
+    previous: 'Previous',
+    next: 'Next',
+    refresh: 'Refresh',
+    searchPlaceholder: 'Search events or targets...',
+    categories: {
+      all: 'All Events',
+      container: 'Containers',
+      service: 'Services',
+      alert: 'Alerts',
+      security: 'Security & Auth',
+      system: 'System'
+    }
   },
   settings: {
     title: 'Settings',

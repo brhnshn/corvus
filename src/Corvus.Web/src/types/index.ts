@@ -2,6 +2,7 @@ export interface Service {
   id: string;
   source: 'docker' | 'manual';
   containerId?: string;
+  systemId?: string;
   name: string;
   description?: string;
   url?: string;
@@ -464,6 +465,7 @@ export interface ActivityLogEntry {
   targetResource: string;
   detailsJson?: string | null;
   ipAddress?: string | null;
+  systemId?: string | null;
   createdAt: string;
 }
 

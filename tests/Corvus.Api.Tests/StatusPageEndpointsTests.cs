@@ -13,9 +13,9 @@ public class StatusPageEndpointsTests
         public List<Service> PublicServices { get; set; } = new();
 
         public Task<List<Service>> GetPublicServicesAsync() => Task.FromResult(PublicServices);
-        public Task<List<Service>> GetAllAsync() => Task.FromResult(new List<Service>());
+        public Task<List<Service>> GetAllAsync(string? systemId = null) => Task.FromResult(new List<Service>());
         public Task<Service?> GetByIdAsync(string id) => Task.FromResult<Service?>(null);
-        public Task<Service> CreateManualAsync(CreateServiceRequest request) => throw new NotImplementedException();
+        public Task<Service> CreateManualAsync(CreateServiceRequest request, string? systemId = null) => throw new NotImplementedException();
         public Task<Service?> UpdateAsync(string id, UpdateServiceRequest request) => throw new NotImplementedException();
         public Task<bool> DeleteAsync(string id) => Task.FromResult(true);
         public Task UpsertDockerServiceAsync(Service service) => Task.CompletedTask;
