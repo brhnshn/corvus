@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] - 2026-10-14 — Automated Semantic Versioning & UI Clutter Elimination
+
+### Added
+- **Automated Semantic Tagging & Release Pipeline**:
+  - Restored automated semantic version bump action in `.github/workflows/ci.yml`. Any commit pushed to `main` with `fix:` or `feat:` automatically bumps the patch version, creates the git tag (e.g. `v1.6.4`), extracts changelog release notes, publishes the GitHub Release, and builds versioned Docker images for both Corvus Hub and Agent.
+  - Eliminated hardcoded version strings across frontend components; Vite dynamically injects `__APP_VERSION__` extracted from `CHANGELOG.md` or build arguments, while `UpdateCheckerService` resolves development versions directly from changelog files.
+
+### Removed
+- **Redundant Telemetry Sync Badge in Overview Header**:
+  - Removed the unnecessary "Canlı Telemetri · 100ms Senkron" / "Live Telemetry · 100ms Sync" badge from `DashboardHeader.tsx`, streamlining the page header and eliminating arbitrary millisecond sync claims in accordance with true data integrity rules.
+
 ## [1.6.3] - 2026-10-14 — UI/UX Modernization, Obsidian Modal Standardization & Layout Refinements
 
 ### Added
@@ -14,9 +25,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Restored standard AppLayout sidebar and mobile bottom navigation on the Profile page, eliminating the user navigation trap and adding a breadcrumb back-link to Dashboard.
 - **Repository Version & Release Link in Sidebar**:
   - Upgraded the sidebar version indicator to an interactive GitHub repository link displaying the current version badge alongside the official GitHub SVG icon.
-- **Automated Semantic Tagging & Release Pipeline**:
-  - Automated CI/CD version synchronization in `.github/workflows/ci.yml`: pushes to `main` automatically check if the version defined in `CHANGELOG.md` has a Git tag. If not, GitHub Actions creates and pushes the semantic Git tag (`vX.Y.Z`), extracts release notes, publishes the GitHub Release, and builds both versioned Hub and Agent Docker images.
-  - Eliminated hardcoded version strings across frontend components; Vite dynamically injects `__APP_VERSION__` extracted from `CHANGELOG.md` or build arguments, while `UpdateCheckerService` resolves development versions directly from changelog files.
 
 ### Fixed
 - **Settings Card Flush Padding & Alignment**:

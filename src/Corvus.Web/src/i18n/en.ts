@@ -465,7 +465,7 @@ export const en = {
     maxUsage: 'Max: %{value}',
     avgUsage: 'Avg: %{value}',
     liveStream: 'Live Metric Stream (15s)',
-    liveSync: 'Live (100ms Sync)',
+    liveSync: 'Live Stream',
     systemHealth: 'System Health',
     optimal: 'Optimal',
     warning: 'High Load',

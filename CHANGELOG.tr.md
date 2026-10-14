@@ -3,6 +3,17 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.4] - 2026-10-14 — Otomatik Semantik Sürümleme ve Arayüz Sadeleştirmeleri
+
+### Eklenenler (Added)
+- **Otomatik Semantik Etiketleme ve Sürüm Dağıtım Hattı**:
+  - `.github/workflows/ci.yml` CI/CD hattına otomatik sürüm artırma entegre edildi. `main` dalına gönderilen `fix:` veya `feat:` commit'lerinde sistem semantik sürümü otomatik olarak artırır (örn. `v1.6.3` -> `v1.6.4`), Git etiketini oluşturur, sürüm notlarını ayıklayarak GitHub Release yayınlar ve hem Hub hem de Agent için sürümlü Docker imajlarını derler.
+  - Arayüzdeki sabit sürüm yazıları tamamen kaldırılarak Vite derleme aşamasında `__APP_VERSION__` üzerinden dinamik sürüme bağlandı; yerel geliştirme için `UpdateCheckerService` servisinden otomatik okuma desteği sağlandı.
+
+### Kaldırılanlar (Removed)
+- **Genel Bakış Başlığındaki Gereksiz Telemetri Rozeti**:
+  - `DashboardHeader.tsx` bileşeninden göz yoran ve lüzumsuz olan "Canlı Telemetri · 100ms Senkron" rozeti kaldırıldı; genel bakış başlığı ferahlatılarak gerçek veri disiplini standartlarına uygun hale getirildi.
+
 ## [1.6.3] - 2026-10-14 — UI/UX Modernizasyonu, Obsidian Modal Standardizasyonu ve Düzen İyileştirmeleri
 
 ### Eklenenler (Added)
@@ -14,9 +25,6 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - Profil sayfasında kenar çubuğunun (Sidebar) kaybolması ve geri dönüş yolunun kapanması sorunu giderildi; tam iskelet entegrasyonu ve Dashboard'a dönüş kırıntı bağlantısı (breadcrumb) eklendi.
 - **Kenar Çubuğunda GitHub Sürüm Bağlantısı**:
   - Kenar çubuğu altındaki statik sürüm metni, resmi GitHub SVG ikonuyla birlikte güncel sürüm rozetini depoya yönlendiren etkileşimli bir bağlantıya dönüştürüldü.
-- **Otomatik Semantik Etiketleme ve Sürüm Dağıtım Hattı**:
-  - `.github/workflows/ci.yml` iş akışına otomatik sürüm senkronizasyonu bağlandı: `main` dalına gönderilen commit'lerde `CHANGELOG.md` başlığındaki sürüm için henüz bir Git etiketi (`vX.Y.Z`) bulunmuyorsa; sistem etiketi otomatik oluşturup push eder, sürüm notlarını ayıklayarak GitHub Release yayınlar ve hem Hub hem Agent için sürümlü Docker imajlarını derler.
-  - Arayüzdeki sabit sürüm yazıları tamamen kaldırılarak Vite derleme aşamasında `__APP_VERSION__` üzerinden dinamik sürüme bağlandı; yerel geliştirme için `UpdateCheckerService` servisinden otomatik okuma desteği sağlandı.
 
 ### Düzeltilenler (Fixed)
 - **Ayarlar Sayfası Kart Dolguları (Padding) ve Sınır Hizalaması**:

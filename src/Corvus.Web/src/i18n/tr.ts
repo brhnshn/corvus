@@ -467,7 +467,7 @@ export const tr: TranslationDictionary = {
     maxUsage: 'Max: %{value}',
     avgUsage: 'Ort: %{value}',
     liveStream: 'Canlı Metrik Akışı (15s)',
-    liveSync: 'Canlı (100ms Sync)',
+    liveSync: 'Canlı Akış',
     systemHealth: 'Sistem Durumu',
     optimal: 'Normal',
     warning: 'Yüksek Yük',

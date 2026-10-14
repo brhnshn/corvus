@@ -40,8 +40,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [error, setError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
-  // Canlı SSE Telemetri Akışı (100ms Sync)
-  const { latestMetric: streamMetric, isConnected: isLiveStream } = useSystemMetricsStream();
+  // Canlı SSE Telemetri Akışı
+  const { latestMetric: streamMetric } = useSystemMetricsStream();
 
   const loadData = useCallback(async () => {
     try {
@@ -175,7 +175,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               ? (t('dashboard.allOperationalDesc') || 'Sistem telemetrisi ve anlık operasyonel durum')
               : `${totalIssues} ${t('dashboard.attentionIssues') || 'servis veya konteyner dikkat gerektiriyor'}`
           }
-          isLiveStream={isLiveStream}
           onNavigate={onNavigate}
         />
       </MotionItem>
