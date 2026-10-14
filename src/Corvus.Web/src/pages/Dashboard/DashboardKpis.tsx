@@ -40,7 +40,9 @@ export const DashboardKpis: React.FC<DashboardKpisProps> = ({
 
   const diskUsedGb = typeof metrics?.diskUsedGb === 'number' ? metrics.diskUsedGb : null;
   const diskTotalGb = typeof metrics?.diskTotalGb === 'number' && metrics.diskTotalGb > 0 ? metrics.diskTotalGb : null;
-  const diskFreeGb = diskUsedGb !== null && diskTotalGb !== null ? Math.max(0, diskTotalGb - diskUsedGb) : null;
+  const diskFreeGb = diskUsedGb !== null && diskTotalGb !== null 
+    ? parseFloat(Math.max(0, diskTotalGb - diskUsedGb).toFixed(1)) 
+    : null;
   const diskPercent = diskUsedGb !== null && diskTotalGb !== null ? Math.round((diskUsedGb / diskTotalGb) * 100) : null;
 
   return (

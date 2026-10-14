@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { api, type DockerContainer, type ContainerStats } from '../../api/client';
+import { api, invalidateCache, type DockerContainer, type ContainerStats } from '../../api/client';
 import { useToast } from '../../components/ui/Toast';
 import { extractContainerTags } from './ContainerRow';
 
@@ -85,14 +85,23 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
       }
     };
 
+    const handleSystemChange = () => {
+      invalidateCache();
+      if (isMountedRef.current) {
+        loadContainers(true);
+      }
+    };
+
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('corvus_event', handleCorvusEvent);
+    window.addEventListener('corvus_active_system_changed', handleSystemChange);
 
     return () => {
       isMountedRef.current = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('corvus_event', handleCorvusEvent);
+      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
     };
   }, [loadContainers]);
 

@@ -6,7 +6,9 @@ using System.Text;
 using System.Text.Json;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
+using Corvus.Api.Models.Systems;
 using Corvus.Api.Services;
+using Corvus.Api.Services.Systems;
 
 namespace Corvus.Api.Endpoints;
 
@@ -17,10 +19,33 @@ public static class ContainersEndpoints
         var group = app.MapGroup("/api/containers")
             .AddEndpointFilter<CorvusAuthFilter>();
 
-        group.MapGet("/", async (IDockerService docker) =>
+        group.MapGet("/", async (
+            HttpContext httpContext,
+            IDockerService docker,
+            ITelemetryRingBuffer ringBuffer,
+            ISystemRepository systemRepo) =>
         {
-            var containers = await docker.GetContainersAsync();
-            return Results.Ok(containers);
+            string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(requestedSystemId))
+            {
+                requestedSystemId = httpContext.Request.Query["systemId"].FirstOrDefault();
+            }
+            string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
+
+            if (systemId == "local-host")
+            {
+                var containers = await docker.GetContainersAsync();
+                return Results.Ok(containers);
+            }
+            else
+            {
+                var containers = ringBuffer.GetCachedContainers(systemId);
+                if (containers.Count == 0)
+                {
+                    containers = await systemRepo.GetCachedContainersAsync(systemId);
+                }
+                return Results.Ok(containers);
+            }
         });
 
         group.MapPut("/{id}/tags", async (
@@ -62,8 +87,29 @@ public static class ContainersEndpoints
                 CorvusJsonSerializerContext.Default.GenericApiResponse);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/restart", async (string id, IDockerService docker, IActivityLogService? activityLogger, HttpContext httpContext) =>
+        group.MapPost("/{id}/restart", async (
+            string id, 
+            IDockerService docker, 
+            ISystemTunnelManager tunnelManager,
+            IActivityLogService? activityLogger, 
+            HttpContext httpContext) =>
         {
+            string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault()
+                ?? httpContext.Request.Query["systemId"].FirstOrDefault();
+            string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
+
+            if (systemId != "local-host")
+            {
+                var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "restart", ContainerId: id));
+                if (rpcResp.Success)
+                {
+                    var username = httpContext.User.Identity?.Name ?? "admin";
+                    activityLogger?.Log(username, "container_restart", "container", id, rpcResp.Message);
+                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container yeniden başlatıldı."));
+                }
+                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container yeniden başlatılamadı."));
+            }
+
             var result = await docker.RestartContainerAsync(id);
             if (result.Success)
             {
@@ -77,8 +123,29 @@ public static class ContainersEndpoints
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/start", async (string id, IDockerService docker, IActivityLogService? activityLogger, HttpContext httpContext) =>
+        group.MapPost("/{id}/start", async (
+            string id, 
+            IDockerService docker, 
+            ISystemTunnelManager tunnelManager,
+            IActivityLogService? activityLogger, 
+            HttpContext httpContext) =>
         {
+            string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault()
+                ?? httpContext.Request.Query["systemId"].FirstOrDefault();
+            string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
+
+            if (systemId != "local-host")
+            {
+                var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "start", ContainerId: id));
+                if (rpcResp.Success)
+                {
+                    var username = httpContext.User.Identity?.Name ?? "admin";
+                    activityLogger?.Log(username, "container_start", "container", id, rpcResp.Message);
+                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container başlatıldı."));
+                }
+                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container başlatılamadı."));
+            }
+
             var result = await docker.StartContainerAsync(id);
             if (result.Success)
             {
@@ -92,8 +159,29 @@ public static class ContainersEndpoints
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/stop", async (string id, IDockerService docker, IActivityLogService? activityLogger, HttpContext httpContext) =>
+        group.MapPost("/{id}/stop", async (
+            string id, 
+            IDockerService docker, 
+            ISystemTunnelManager tunnelManager,
+            IActivityLogService? activityLogger, 
+            HttpContext httpContext) =>
         {
+            string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault()
+                ?? httpContext.Request.Query["systemId"].FirstOrDefault();
+            string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
+
+            if (systemId != "local-host")
+            {
+                var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "stop", ContainerId: id));
+                if (rpcResp.Success)
+                {
+                    var username = httpContext.User.Identity?.Name ?? "admin";
+                    activityLogger?.Log(username, "container_stop", "container", id, rpcResp.Message);
+                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container durduruldu."));
+                }
+                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container durdurulamadı."));
+            }
+
             var result = await docker.StopContainerAsync(id);
             if (result.Success)
             {
@@ -107,8 +195,24 @@ public static class ContainersEndpoints
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/pause", async (string id, IDockerService docker) =>
+        group.MapPost("/{id}/pause", async (
+            string id, 
+            IDockerService docker,
+            ISystemTunnelManager tunnelManager,
+            HttpContext httpContext) =>
         {
+            string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault()
+                ?? httpContext.Request.Query["systemId"].FirstOrDefault();
+            string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
+
+            if (systemId != "local-host")
+            {
+                var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "pause", ContainerId: id));
+                return rpcResp.Success
+                    ? Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container duraklatıldı."))
+                    : Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container duraklatılamadı."));
+            }
+
             var result = await docker.PauseContainerAsync(id);
             return result.Success 
                 ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container duraklatıldı.")) 
@@ -117,8 +221,24 @@ public static class ContainersEndpoints
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
 
-        group.MapPost("/{id}/unpause", async (string id, IDockerService docker) =>
+        group.MapPost("/{id}/unpause", async (
+            string id, 
+            IDockerService docker,
+            ISystemTunnelManager tunnelManager,
+            HttpContext httpContext) =>
         {
+            string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault()
+                ?? httpContext.Request.Query["systemId"].FirstOrDefault();
+            string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
+
+            if (systemId != "local-host")
+            {
+                var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "unpause", ContainerId: id));
+                return rpcResp.Success
+                    ? Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container devam ettirildi."))
+                    : Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container devam ettirilemedi."));
+            }
+
             var result = await docker.UnpauseContainerAsync(id);
             return result.Success 
                 ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container devam ettirildi.")) 
@@ -147,8 +267,23 @@ public static class ContainersEndpoints
             return Results.Json(result, CorvusJsonSerializerContext.Default.DockerSelectivePruneResult);
         }).RequireAdmin();
 
-        group.MapGet("/stats-summary", async (IDockerService docker, CancellationToken ct) =>
+        group.MapGet("/stats-summary", async (
+            HttpContext httpContext,
+            IDockerService docker,
+            CancellationToken ct) =>
         {
+            string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(requestedSystemId))
+            {
+                requestedSystemId = httpContext.Request.Query["systemId"].FirstOrDefault();
+            }
+            string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
+
+            if (systemId != "local-host")
+            {
+                return Results.Ok(new Dictionary<string, ContainerStatsDto>());
+            }
+
             var summary = await docker.GetActiveContainersStatsSummaryAsync(ct);
             return Results.Ok(summary);
         });

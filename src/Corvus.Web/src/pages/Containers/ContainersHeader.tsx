@@ -9,6 +9,7 @@ export interface ContainersHeaderProps {
   onRefreshClick: () => void;
   refreshing?: boolean;
   isAdmin?: boolean;
+  systemName?: string;
 }
 
 export const ContainersHeader: React.FC<ContainersHeaderProps> = ({
@@ -16,6 +17,7 @@ export const ContainersHeader: React.FC<ContainersHeaderProps> = ({
   onRefreshClick,
   refreshing = false,
   isAdmin = true,
+  systemName,
 }) => {
   const { t } = useI18n();
 
@@ -23,6 +25,11 @@ export const ContainersHeader: React.FC<ContainersHeaderProps> = ({
     <PageHeader
       title={t('containers.title')}
       subtitle={t('containers.subtitle')}
+      badge={systemName ? (
+        <span className="text-xs px-2.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-subtle)] border border-[var(--border-subtle)] text-[var(--cloud-200)] font-mono">
+          {systemName}
+        </span>
+      ) : undefined}
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (

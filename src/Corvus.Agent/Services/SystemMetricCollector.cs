@@ -127,15 +127,39 @@ public class SystemMetricCollector : ISystemMetricCollector
     {
         try
         {
+            if (Directory.Exists("/host"))
+            {
+                try
+                {
+                    var hostDrive = new DriveInfo("/host");
+                    if (hostDrive.IsReady && hostDrive.TotalSize > 0)
+                    {
+                        long total = hostDrive.TotalSize;
+                        long free = hostDrive.AvailableFreeSpace;
+                        return (Math.Max(0, total - free), total);
+                    }
+                }
+                catch { }
+            }
+
             var drives = DriveInfo.GetDrives();
+            DriveInfo? bestDrive = null;
             foreach (var d in drives)
             {
                 if (d.IsReady && d.TotalSize > 0)
                 {
-                    long total = d.TotalSize;
-                    long free = d.AvailableFreeSpace;
-                    return (Math.Max(0, total - free), total);
+                    if (bestDrive == null || d.TotalSize > bestDrive.TotalSize)
+                    {
+                        bestDrive = d;
+                    }
                 }
+            }
+
+            if (bestDrive != null)
+            {
+                long total = bestDrive.TotalSize;
+                long free = bestDrive.AvailableFreeSpace;
+                return (Math.Max(0, total - free), total);
             }
         }
         catch { }

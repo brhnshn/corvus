@@ -3,9 +3,18 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.6.7] - 2026-10-15 — Sistem Yönetim Modallarının ObsidianUI Standardizasyonu
+## [1.6.7] - 2026-10-15 — Sistem Yönetim Modalları ObsidianUI Standardizasyonu ve Düğüm Kapsamı (Node Scope) İzolasyonu
 
 ### Düzeltilenler (Fixed)
+- **Düğüm Kapsamı (Node Scope) İzolasyonu ve Çoklu Sunucu Ayrımı**:
+  - `DashboardEndpoints.cs`: `/api/dashboard/summary` uç noktası `X-System-Id` HTTP başlığına duyarlı hale getirildi. Aktif sistem uç bir ajan (örn. `Deneme`) olduğunda, Host sunucusunun yerel verileri yerine `ITelemetryRingBuffer` üzerinden o ajanın canlı CPU, RAM ve Disk telemetrisi ile `GetCachedContainers` listesi sunuldu.
+  - Önbellek İzolasyonu: Tek küresel `_cachedSummary` yerine `ConcurrentDictionary<string, ...>` tabanlı thread-safe sistem bazlı önbellek mimarisine geçilerek farklı sunucuların birbirlerinin verilerini ezmesi engellendi.
+  - `ContainersEndpoints.cs`: `GET /api/containers` ve `GET /stats-summary` uç noktaları `X-System-Id` filtresine bağlandı; Deneme seçildiğinde Host'un 17 konteyneri yerine uç ajanın gerçek yerel konteynerleri listelendi. Konteyner aksiyonları (`restart`, `start`, `stop`, `pause`, `unpause`) uç ajanlar için `ISystemTunnelManager` WebSocket RPC kanalı üzerinden çalıştırıldı.
+  - Frontend Senkronizasyonu: `Dashboard` ve `Containers` sayfalarında `corvus_active_system_changed` dinleyicileri bağlanarak düğüm değiştirildiğinde verilerin anında güncellenmesi ve sayfa başlıklarında aktif düğüm rozetinin gösterilmesi sağlandı.
+- **Disk Float Precision Yuvarlama Hatası**:
+  - `DashboardKpis.tsx`: Disk boş alanı hesaplanırken ortaya çıkan IEEE 754 float hassasiyet hatası (`939.6999999999999 GB Boş`) `parseFloat(...toFixed(1))` ile temiz `939.7 GB` gösterimine dönüştürüldü.
+- **Ajan Disk Algılama İyileştirmesi**:
+  - `SystemMetricCollector.cs`: Ajan konteyner ortamında çalışırken `/host` mount'unu önceliklendirerek veya en büyük kapasiteli root sürücüyü seçerek doğru disk boyutunu raporlaması sağlandı.
 - **Sistem Modallarında Eski Tasarım ve Hardcoded Renklerin Kaldırılması**:
   - `AddSystemSheet.tsx`: Standart dışı eski kart yapısı ve hardcoded `#1b1d2a` / `#eceef6` renkleri kaldırılarak ortak `Modal` ve `Button` bileşenlerine geçirildi. Kurulum adımları, durum rozetleri ve terminal komut bloğu ObsidianUI token'larıyla (`var(--bg-card)`, `input w-full` vb.) tam uyumlu hale getirildi.
   - `EditSystemModal.tsx`: Eski popup şablonu ve el yapımı butonlar kaldırılarak ObsidianUI `Modal` mimarisine dönüştürüldü.

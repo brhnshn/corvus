@@ -38,6 +38,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeSystemName, setActiveSystemName] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
+  });
   const isMountedRef = useRef(true);
 
   // Canlı SSE Telemetri Akışı
@@ -122,7 +125,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       }
     };
 
-    const handleSystemChange = () => {
+    const handleSystemChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.systemName) {
+        setActiveSystemName(customEvent.detail.systemName);
+      } else {
+        const savedName = localStorage.getItem('corvus_active_system_name') || 'Host';
+        setActiveSystemName(savedName);
+      }
       invalidateCache();
       if (isMountedRef.current) {
         loadData();
@@ -195,6 +205,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               ? (t('dashboard.allOperationalDesc') || 'Sistem telemetrisi ve anlık operasyonel durum')
               : `${totalIssues} ${t('dashboard.attentionIssues') || 'servis veya konteyner dikkat gerektiriyor'}`
           }
+          systemName={activeSystemName}
           onNavigate={onNavigate}
         />
       </MotionItem>

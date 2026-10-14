@@ -3,9 +3,18 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.7] - 2026-10-15 — ObsidianUI Standardization for System Management Modals
+## [1.6.7] - 2026-10-15 — ObsidianUI Standardization for System Management Modals & Node Scope Isolation
 
 ### Fixed
+- **Node Scope Isolation & Multi-Node Partitioning**:
+  - `DashboardEndpoints.cs`: Enhanced `/api/dashboard/summary` to respect the `X-System-Id` request header. When inspecting an edge node (e.g. `Deneme`), metrics and container counts are pulled from `ITelemetryRingBuffer` instead of falling back to the local host Docker daemon.
+  - Per-System Concurrency-Safe Caching: Migrated from a single static cache entry to a thread-safe `ConcurrentDictionary<string, ...>` cache keyed by `systemId`, preventing telemetry pollution between host and edge nodes.
+  - `ContainersEndpoints.cs`: Partitioned `GET /api/containers` and `/stats-summary` with `X-System-Id` filtering. Containers page now cleanly displays edge node containers for remote hosts. Container lifecycle operations (`restart`, `start`, `stop`, `pause`, `unpause`) are routed through `ISystemTunnelManager` via WebSocket JSON-RPC.
+  - Frontend Synchronous Reactivity: Hooked `corvus_active_system_changed` event listeners in `Dashboard` and `Containers` pages, automatically reloading scoped data on node switch and rendering contextual node badges in headers.
+- **Disk Free Space Float Precision**:
+  - `DashboardKpis.tsx`: Fixed IEEE 754 float precision glitch (`939.6999999999999 GB Free`) using `parseFloat(...toFixed(1))` to output clean `939.7 GB`.
+- **Agent Host Disk Detection**:
+  - `SystemMetricCollector.cs`: Improved disk detection logic to prioritize `/host` mount points and largest physical drives when running inside containerized environments.
 - **Purge Legacy Styling and Standardize System Modals**:
   - `AddSystemSheet.tsx`: Refactored to ObsidianUI `Modal` and tactile `Button` components, removing legacy `#1b1d2a` / `#eceef6` hardcoded color palettes. Setup steps, status badges, and code blocks now strictly use standard tokens (`var(--bg-card)`, `input w-full`, etc.).
   - `EditSystemModal.tsx`: Replaced bespoke popup wrapper with standard `Modal`, removing custom inline styles.
