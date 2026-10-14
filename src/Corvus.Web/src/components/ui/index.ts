@@ -1,4 +1,23 @@
+// ObsidianUI Core Components
 export * from './Button';
+export * from './Card';
+export * from './KpiCard';
+export * from './KpiRow';
+export * from './QuietBanner';
+export * from './AlertStrip';
+export * from './SegmentedTabs';
+export * from './StatusBadge';
+export * from './StatusDot';
+export * from './ExpandableTable';
+export * from './FloatingBulkBar';
+export * from './UptimeStrip';
+export * from './Modal';
+export * from './Toast';
+export * from './MotionStage';
+export * from './AnimatedNumber';
+export * from './AnimatedBar';
+
+// Legacy / Specialized Components (Preserved for compatibility)
 export * from './Pill';
 export * from './ProgressBar';
 export * from './StatTile';
@@ -8,8 +27,6 @@ export * from './FilterChip';
 export * from './TagChip';
 export * from './Segment';
 export * from './Sheet';
-export * from './Toast';
 export * from './EmptyState';
 export * from './SslBadge';
 export * from './HistoryBars';
-export * from './Modal';

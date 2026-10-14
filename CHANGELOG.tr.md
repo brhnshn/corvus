@@ -36,6 +36,12 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 
 ### Düzeltilenler (Fixed)
+- **ObsidianUI Tasarım Sistemi ve Motion Design Altyapısı (Faz 1–4)**:
+  - `index.css` içine ObsidianUI tasarım jetonları entegre edildi: Grimsi Bulut Beyazı (`--cloud-100`..`--cloud-500`), Mat Obsidyen yüzeyler (`--bg-canvas`..`--bg-active`), 1px keskin saç teli kenarlıklar (`--border-hairline`) ve sıfır gradyan / sıfır parlama disiplini.
+  - `src/lib/motion.ts` hareket motoru kuruldu: Yay (Spring) fiziği, kademeli (stagger) jetonları, çalışma zamanı hareket hızı çarpanı (1x Hız, 0.35x Slow-Mo, Anında) ve Koyu/Açık tema yöneticisi.
+  - Yeniden kullanılabilir hareket bileşenleri geliştirildi: `MotionStage.tsx` (`<PageStage>`, `<MotionItem staggerIndex={n}>`), `AnimatedNumber.tsx` (`useAnimatedNumber` ve cubic-out RAF interpolasyonu) ve `AnimatedBar.tsx` (4px yay dolgulu ilerleme çubuğu).
+  - `src/components/ui/` altında modüler bileşen kütüphanesi inşa edildi: `Card.tsx`, `KpiCard.tsx`, `KpiRow.tsx`, `QuietBanner.tsx`, `AlertStrip.tsx`, `SegmentedTabs.tsx`, `Button.tsx` (dokunsal scale 0.96 ve durum morfolojili spinner), `StatusBadge.tsx`, `StatusDot.tsx`, `ExpandableTable.tsx` (akordiyon çekmece satırlar), `FloatingBulkBar.tsx`, `UptimeStrip.tsx` ve 2.8s eriyen ilerleme çubuklu + geri alma (undo) destekli `Toast.tsx`.
+  - Uygulama kabuğu yenilendi: `Sidebar.tsx` (184px–320px sürüklenebilir boyutlandırıcı, kayan hover/aktif hapları, sistem değiştirici) ve `Header.tsx` (bağlam göstergesi, motion hız sekmeleri, tema değiştirici, yenileme).
 - **Sistemler Tablosu Aksiyon Menüsü Kırpılma ve Portal Konumlandırma Düzeltmesi**:
   - `SystemActionMenu.tsx` bileşeni React Portal (`createPortal(..., document.body)`) ve `fixed z-[9999]` katmanına taşındı; böylece tablonun `overflow-x-auto` yatay kaydırma kutusu ve kart çerçeveleri tarafından menünün kesilmesi/altta kalıp görünmemesi sorunu kökten çözüldü.
   - Dinamik ekran yüksekliği algılama eklendi: Butonun altında yeterli alan kalmadığında (tablonun alt satırları veya ekranın altı) menü otomatik olarak **yukarı doğru** (`openUp`) açılır.

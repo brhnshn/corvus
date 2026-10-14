@@ -36,6 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 ### Fixed
+- **ObsidianUI Design System & Motion Engine Infrastructure (Phases 1-4)**:
+  - Implemented ObsidianUI design tokens in `index.css`: Greyish Cloud White (`--cloud-100`..`--cloud-500`), matte obsidian surfaces (`--bg-canvas`..`--bg-active`), 1px hairline borders (`--border-hairline`), and zero-gradient / zero-glow principles.
+  - Built motion design system in `src/lib/motion.ts`: Spring physics, stagger tokens, runtime motion scale controller (1x, 0.35x Slow-Mo, Instant), and Dark/Light theme mode manager.
+  - Created reusable motion primitives: `MotionStage.tsx` (`<PageStage>`, `<MotionItem staggerIndex={n}>`), `AnimatedNumber.tsx` (`useAnimatedNumber` with cubic-out RAF interpolation), and `AnimatedBar.tsx` (4px spring-filled progress bar).
+  - Built modular core UI component library under `src/components/ui/`: `Card.tsx`, `KpiCard.tsx`, `KpiRow.tsx`, `QuietBanner.tsx`, `AlertStrip.tsx`, `SegmentedTabs.tsx`, `Button.tsx` (tactile scale 0.96 & inline spinner morph), `StatusBadge.tsx`, `StatusDot.tsx`, `ExpandableTable.tsx` (accordion drawer rows), `FloatingBulkBar.tsx`, `UptimeStrip.tsx`, and upgraded Sonner-style `Toast.tsx` with 2.8s melting progress bar and undo support.
+  - Overhauled application shell with `Sidebar.tsx` (draggable 184px-320px resizer, gliding hover pill & sliding active pill, system switcher) and `Header.tsx` (page context, motion speed tabs, theme toggle, refresh).
 - **System Action Dropdown Menu Clipping & Portal Positioning**:
   - Re-architected `SystemActionMenu.tsx` to render via React Portal (`createPortal(..., document.body)`), completely eliminating clipping caused by table `overflow-x-auto` and card container borders.
   - Implemented dynamic boundary detection calculating available screen height below the trigger button: automatically flips menu to open upwards when near the bottom of the table or viewport.

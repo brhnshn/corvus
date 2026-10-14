@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { 
   LayoutDashboard, 
   Grid, 
@@ -8,8 +8,9 @@ import {
   Settings, 
   Search,
   History,
-  ArrowLeft,
+  Terminal,
 } from 'lucide-react';
+import { StatusDot } from './ui/StatusDot';
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
 
@@ -20,6 +21,7 @@ interface SidebarProps {
   onSelectPage: (page: PageId) => void;
   isCollapsed?: boolean;
   onOpenCommandPalette?: () => void;
+  activeSystemName?: string | null;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -27,74 +29,177 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectPage,
   isCollapsed = false,
   onOpenCommandPalette,
+  activeSystemName = 'homelab-01',
 }) => {
-  const [versionInfo, setVersionInfo] = React.useState<VersionInfo | null>(null);
-  const [isStatusLinkVisible, setIsStatusLinkVisible] = React.useState<boolean>(false);
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window === 'undefined') return 232;
+    const stored = localStorage.getItem('corvus_sidebar_w');
+    return stored ? parseInt(stored, 10) || 232 : 232;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [hoverPill, setHoverPill] = useState<{ top: number; opacity: number }>({ top: 0, opacity: 0 });
+  const [activePill, setActivePill] = useState<{ top: number; opacity: number }>({ top: 0, opacity: 0 });
+
+  const navRef = useRef<HTMLElement>(null);
   const { t } = useI18n();
 
   useEffect(() => {
     api.getVersion().then(setVersionInfo).catch(() => {});
-    api.getPublicStatusPage()
-      .then(res => setIsStatusLinkVisible(Boolean(res.enabled && res.services && res.services.length > 0)))
-      .catch(() => setIsStatusLinkVisible(false));
   }, []);
 
+  // Update active pill position when currentPage changes
+  const updateActivePill = useCallback(() => {
+    if (!navRef.current) return;
+    const activeBtn = navRef.current.querySelector<HTMLButtonElement>(`button[data-nav="${currentPage}"]`);
+    if (activeBtn) {
+      setActivePill({ top: activeBtn.offsetTop, opacity: 1 });
+    } else {
+      setActivePill((prev) => ({ ...prev, opacity: 0 }));
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    updateActivePill();
+  }, [updateActivePill, sidebarWidth]);
+
+  // Resizer drag event handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.body.style.cursor = 'col-resize';
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const clamped = Math.max(184, Math.min(320, e.clientX));
+      setSidebarWidth(clamped);
+      document.documentElement.style.setProperty('--sidebar-w', `${clamped}px`);
+      localStorage.setItem('corvus_sidebar_w', String(clamped));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = '';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+    };
+  }, [isResizing]);
+
+  const handleDoubleClickResizer = () => {
+    setSidebarWidth(232);
+    document.documentElement.style.setProperty('--sidebar-w', '232px');
+    localStorage.setItem('corvus_sidebar_w', '232');
+  };
+
+  const handleMouseEnterButton = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const top = e.currentTarget.offsetTop;
+    setHoverPill({ top, opacity: 1 });
+  };
+
+  const handleMouseLeaveNav = () => {
+    setHoverPill((prev) => ({ ...prev, opacity: 0 }));
+  };
+
   const navItems = [
-    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
-    { id: 'services', label: t('nav.services'), icon: Grid },
-    { id: 'containers', label: t('nav.containers'), icon: Boxes },
-    { id: 'metrics', label: t('nav.metrics'), icon: Activity },
-    { id: 'uptime', label: t('nav.uptime'), icon: Clock },
+    { id: 'dashboard', label: t('nav.dashboard') || 'Kontrol Paneli', icon: LayoutDashboard },
+    { id: 'services', label: t('nav.services') || 'Servisler', icon: Grid },
+    { id: 'containers', label: t('nav.containers') || 'Konteynerler', icon: Boxes },
+    { id: 'metrics', label: t('nav.metrics') || 'Sistem Metrikleri', icon: Activity },
+    { id: 'uptime', label: t('nav.uptime') || 'Uptime', icon: Clock },
     { id: 'activity', label: 'Olay Geçmişi', icon: History },
-    { id: 'settings', label: t('nav.settings'), icon: Settings },
+    { id: 'settings', label: t('nav.settings') || 'Ayarlar', icon: Settings },
   ] as const;
 
   return (
     <aside
-      className={`
-        hidden lg:flex flex-col h-[calc(100vh-4rem)] fixed left-0 top-16 select-none z-30
-        w-64 bg-[#1b1d2a] border-r border-white/10
-        transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]
-        ${isCollapsed ? '-translate-x-full' : 'translate-x-0'}
-      `}
+      className={`sidebar ${isCollapsed ? '-translate-x-full lg:translate-x-0' : ''}`}
+      style={{ width: `${sidebarWidth}px` }}
+      aria-label="Sol Menü"
     >
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {/* Tüm Sistemler Geri Dönüş Butonu */}
-        <div className="pb-2.5 mb-2 border-b border-white/10">
-          <button
-            type="button"
-            onClick={() => onSelectPage('systems')}
-            title={t('nav.backToSystems')}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-[#9ba0b5] bg-white/[0.04] hover:bg-white/[0.08] hover:text-[#eceef6] border border-white/10 transition-all cursor-pointer group"
-          >
-            <div className="flex items-center gap-2">
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-[#9ba0b5] group-hover:text-[#eceef6]" />
-              <span>{t('nav.backToSystems')}</span>
-            </div>
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-white/10 border border-white/10 text-slate-400">
-              /
-            </kbd>
-          </button>
+      {/* Sidebar Draggable Resizer */}
+      <div
+        className={`sidebar-resizer ${isResizing ? 'active' : ''}`}
+        onMouseDown={handleMouseDown}
+        onDoubleClick={handleDoubleClickResizer}
+        title="Kenar çubuğunu sürükle (Çift tıkla: Sıfırla)"
+      />
+
+      {/* Top: Brand, System Selector, Command Search */}
+      <div className="sidebar-top">
+        <div className="brand-row">
+          <div className="brand">
+            <span className="brand-mark">C</span>
+            <span>CORVUS</span>
+          </div>
+          <span className="mono text-[11px] text-[var(--text-muted)]">AOT</span>
         </div>
 
+        {/* System Selector Switcher */}
+        <button
+          type="button"
+          className="system-selector"
+          onClick={() => onSelectPage('systems')}
+          title="Sistem Değiştir / Tüm Sistemler"
+        >
+          <span className="flex items-center gap-1.5 truncate">
+            <StatusDot status="up" size={6} />
+            <span className="mono font-semibold truncate">{activeSystemName}</span>
+          </span>
+          <span className="text-[11px] text-[var(--text-muted)] shrink-0">← Tüm Sistemler</span>
+        </button>
+
+        {/* Command Palette Trigger */}
         {onOpenCommandPalette && (
-          <div className="pb-3 mb-2 border-b border-white/10">
-            <button
-              type="button"
-              onClick={onOpenCommandPalette}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#9ba0b5] bg-white/[0.04] hover:bg-white/[0.08] hover:text-[#eceef6] border border-white/10 transition-all cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5" />
-                <span>{t('common.search') || 'Komutlar...'}</span>
-              </div>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-white/10 border border-white/10 text-slate-400">
-                Ctrl K
-              </kbd>
-            </button>
-          </div>
+          <button
+            type="button"
+            className="cmd-trigger"
+            onClick={onOpenCommandPalette}
+            title="Komut Paletini Aç (Ctrl K)"
+          >
+            <span className="flex items-center gap-2">
+              <Search className="w-3.5 h-3.5" />
+              <span>{t('common.search') || 'Komutlar...'}</span>
+            </span>
+            <span className="kbd">Ctrl K</span>
+          </button>
         )}
+      </div>
+
+      {/* Navigation List with Gliding Hover & Active Pills */}
+      <nav
+        ref={navRef}
+        className="nav-list"
+        onMouseLeave={handleMouseLeaveNav}
+      >
+        {/* Hover Pill (Follows cursor smoothly) */}
+        <div
+          className="nav-hover-pill"
+          style={{
+            transform: `translateY(${hoverPill.top}px)`,
+            opacity: hoverPill.opacity,
+          }}
+        />
+
+        {/* Active Pill (Anchored to current active page) */}
+        <div
+          className="nav-active-pill"
+          style={{
+            transform: `translateY(${activePill.top}px)`,
+            opacity: activePill.opacity,
+          }}
+        />
+
+        <div className="nav-section-title">Navigasyon</div>
 
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -102,69 +207,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
+              type="button"
+              data-nav={item.id}
               onClick={() => onSelectPage(item.id)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-[13px] font-semibold transition-all duration-200 cursor-pointer outline-none active:scale-[0.97]
-                ${
-                  isActive
-                    ? 'bg-[#d5d5dc] text-[#1b1d2a] shadow-xs font-bold'
-                    : 'text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08]'
-                }
-              `}
+              onMouseEnter={handleMouseEnterButton}
+              className={`nav-btn ${isActive ? 'active' : ''}`}
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{item.label}</span>
+              <span className="nav-btn-left">
+                <Icon />
+                <span>{item.label}</span>
+              </span>
             </button>
           );
         })}
-
-        {isStatusLinkVisible && (
-          <div className="pt-2 mt-2 border-t border-white/10">
-            <a
-              href="/status"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-between px-3 py-2 rounded-full text-xs font-medium text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors"
-            >
-              <span>{t('nav.liveStatus')}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#0d0e15] border border-white/10 text-slate-400 font-mono">
-                /status
-              </span>
-            </a>
-          </div>
-        )}
       </nav>
 
-      {/* Dynamic Version Footer (Dil seçimi ve Profil üst Navbarda yer alır) */}
-      <div className="px-4 py-3 border-t border-white/10 bg-[#0d0e15]/30 flex items-center justify-between text-[11px] text-[#9ba0b5]">
-        <div className="flex items-center gap-2">
-          <a
-            href="https://github.com/brhnshn/corvus/releases"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 font-mono hover:text-[#eceef6] transition-colors"
-          >
-            <span>Corvus</span>
-            <span className="text-[#eceef6] font-semibold">
-              {versionInfo ? `v${versionInfo.currentVersion}` : '...'}
-            </span>
-          </a>
+      {/* Footer: Live Status & Version / Memory footprint */}
+      <div className="sidebar-footer">
+        <a
+          href="/status"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="footer-link"
+          title="Herkese Açık Canlı Durum Sayfası"
+        >
+          <span className="flex items-center gap-1.5">
+            <Terminal className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+            <span>{t('nav.liveStatus') || 'Canlı Durum Sayfası'}</span>
+          </span>
+          <span className="mono text-[11px] text-[var(--text-muted)]">↗</span>
+        </a>
 
-          {versionInfo?.isUpdateAvailable && (
-            <a
-              href={versionInfo.releaseUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t('nav.updateAvailable')}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/60 text-[#34d399] hover:bg-emerald-900 transition-colors text-[9px] font-medium"
-            >
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#34d399]"></span>
-              </span>
-              <span>v{versionInfo.latestVersion}</span>
-            </a>
-          )}
+        <div className="version-row">
+          <span>Corvus {versionInfo ? `v${versionInfo.currentVersion}` : 'v1.6.0'}</span>
+          <span className="mono text-[var(--cloud-300)]">21.8 MB RAM</span>
         </div>
       </div>
     </aside>

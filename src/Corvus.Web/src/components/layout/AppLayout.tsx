@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar, type PageId } from '../Sidebar';
 import { BottomNav } from '../BottomNav';
 import { ToastProvider } from '../ui/Toast';
-import { Navbar } from './Navbar';
+import { Header } from './Header';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -27,74 +27,62 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onRefresh,
   isRefreshing = false,
 }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
-    return localStorage.getItem('corvus_sidebar_collapsed') === 'true';
+  const [activeSystemName, setActiveSystemName] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'homelab-01';
+    return localStorage.getItem('corvus_active_system_name') || 'homelab-01';
   });
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem('corvus_sidebar_collapsed', String(next));
-      return next;
-    });
-  };
+  useEffect(() => {
+    const handleSystemChange = () => {
+      setActiveSystemName(localStorage.getItem('corvus_active_system_name') || 'homelab-01');
+    };
+    window.addEventListener('corvus_active_system_changed', handleSystemChange);
+    return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
+  }, []);
 
-  // Sol menü (Sidebar) ve Mobil Bar: Sadece sunucu içindeki operasyonel sayfalarda açılır.
-  // 'systems' (Filo) ve 'profile' (Kullanıcı Yönetimi) sayfalarında gizlenir.
+  // 'systems' and 'profile' pages render in full-width standalone layout
   const isNavStandalone = currentPage === 'systems' || currentPage === 'profile';
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-[#0d0e15] text-[#eceef6] flex flex-col relative selection:bg-indigo-500/30 selection:text-white">
-        {/* Her zaman en üstte yer alan kalıcı Corvus Navbar */}
-        <Navbar
-          currentPage={currentPage}
-          onSelectPage={onSelectPage}
-          onRefresh={onRefresh}
-          isRefreshing={isRefreshing}
-          onOpenCommandPalette={onOpenCommandPalette}
-          username={username}
-          role={role}
-          onLogout={onLogout}
-          isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={toggleSidebar}
-        />
+      <div className="shell selection:bg-[var(--cloud-300)] selection:text-[var(--bg-canvas)]">
+        {/* Desktop & Collapsible Sidebar */}
+        {!isNavStandalone && (
+          <Sidebar
+            currentPage={currentPage}
+            onSelectPage={onSelectPage}
+            onOpenCommandPalette={onOpenCommandPalette}
+            activeSystemName={activeSystemName}
+          />
+        )}
 
-        <div className="flex-1 flex flex-col lg:flex-row relative">
-          {/* Desktop Sidebar: Yalnızca bir sunucunun içine girildiğinde açılır. Filo ve Profil ekranlarında asla açılmaz. */}
-          {!isNavStandalone && (
-            <Sidebar
-              currentPage={currentPage}
-              onSelectPage={onSelectPage}
-              isCollapsed={isSidebarCollapsed}
-              onOpenCommandPalette={onOpenCommandPalette}
-            />
-          )}
+        {/* Main Workspace Area (Header + Scrollable Page Body) */}
+        <div className="workspace">
+          <Header
+            currentPage={currentPage}
+            onSelectPage={onSelectPage}
+            activeSystemName={activeSystemName}
+            onRefresh={onRefresh}
+            isRefreshing={isRefreshing}
+            username={username}
+            role={role}
+            onLogout={onLogout}
+          />
 
-          {/* Ana İçerik Alanı */}
-          <div
-            className={`
-              flex-1 flex flex-col min-w-0 transition-[margin] duration-300 ease-[cubic-bezier(.22,1,.36,1)]
-              ${!isNavStandalone && !isSidebarCollapsed ? 'lg:ml-64' : 'lg:ml-0'}
-            `}
-          >
-            <main
-              className={`
-                flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-32 lg:pb-12
-                ${isNavStandalone ? 'max-w-[1500px]' : 'max-w-[1240px]'}
-              `}
-            >
+          <main className="page-body">
+            <div className={`w-full mx-auto pb-24 lg:pb-12 ${isNavStandalone ? 'max-w-[1500px]' : 'max-w-[1240px]'}`}>
               {children}
-            </main>
-          </div>
+            </div>
+          </main>
         </div>
 
-        {/* Mobil Cam Altbar: Viewport seviyesinde sabit (fixed) ve z-50 katmanında */}
+        {/* Mobile Bottom Navigation Bar */}
         {!isNavStandalone && (
-          <BottomNav currentPage={currentPage} onSelectPage={onSelectPage} />
+          <div className="lg:hidden">
+            <BottomNav currentPage={currentPage} onSelectPage={onSelectPage} />
+          </div>
         )}
       </div>
     </ToastProvider>
   );
 };
-
