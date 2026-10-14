@@ -47,6 +47,13 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [reordering, setReordering] = useState(false);
 
+  const [activeSystemName, setActiveSystemName] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
+  });
+  const [activeSystemId, setActiveSystemId] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
+  });
+
   const isMountedRef = useRef(true);
 
   const loadServices = useCallback(async (isManual = false) => {
@@ -87,14 +94,27 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
       }
     };
 
+    const handleSystemChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const sId = customEvent.detail?.systemId || localStorage.getItem('corvus_active_system_id') || 'local-host';
+      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
+      setActiveSystemId(sId);
+      setActiveSystemName(sName);
+      if (isMountedRef.current) {
+        loadServices(true);
+      }
+    };
+
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('corvus_event', handleCorvusEvent);
+    window.addEventListener('corvus_active_system_changed', handleSystemChange);
 
     return () => {
       isMountedRef.current = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('corvus_event', handleCorvusEvent);
+      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
     };
   }, [loadServices]);
 
@@ -218,13 +238,14 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
       </MotionItem>
 
       {viewMode === 'systemd' ? (
-        <SystemdUnitsTab isAdmin={effectiveIsAdmin} />
+        <SystemdUnitsTab isAdmin={effectiveIsAdmin} selectedSystemId={activeSystemId} />
       ) : (
         <>
           {/* 1. Başlık & Arama & Hızlı Aksiyonlar */}
           <MotionItem staggerIndex={1}>
             <ServicesHeader
               isAdmin={effectiveIsAdmin}
+              systemName={activeSystemName}
               search={search}
               onSearchChange={setSearch}
               onAddClick={() => setShowAddModal(true)}

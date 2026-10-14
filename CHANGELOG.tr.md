@@ -11,6 +11,16 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - Önbellek İzolasyonu: Tek küresel `_cachedSummary` yerine `ConcurrentDictionary<string, ...>` tabanlı thread-safe sistem bazlı önbellek mimarisine geçilerek farklı sunucuların birbirlerinin verilerini ezmesi engellendi.
   - `ContainersEndpoints.cs`: `GET /api/containers` ve `GET /stats-summary` uç noktaları `X-System-Id` filtresine bağlandı; Deneme seçildiğinde Host'un 17 konteyneri yerine uç ajanın gerçek yerel konteynerleri listelendi. Konteyner aksiyonları (`restart`, `start`, `stop`, `pause`, `unpause`) uç ajanlar için `ISystemTunnelManager` WebSocket RPC kanalı üzerinden çalıştırıldı.
   - Frontend Senkronizasyonu: `Dashboard` ve `Containers` sayfalarında `corvus_active_system_changed` dinleyicileri bağlanarak düğüm değiştirildiğinde verilerin anında güncellenmesi ve sayfa başlıklarında aktif düğüm rozetinin gösterilmesi sağlandı.
+- **Konteyner Sayfası Donma ve Hata Çözümü (Remote Şema Eşleme)**:
+  - `ContainersEndpoints.cs`: Uç sunucularda (örn. `Deneme`) konteyner sayfasına girildiğinde oluşan `TypeError: undefined.replace / undefined.toLowerCase / undefined.slice` UI donma ve hata fırtınası çözüldü; `SystemContainerCacheEntity` verisi eksiksiz `DockerContainerInfo` modeline dönüştürülerek (`Id`, `Names`, `Image`, `State`, `Status`, `Ports`, `Labels`, `Tags`) tam şema uyumu sağlandı.
+  - Uç Sunucu Konteyner İstatistikleri: `GET /api/containers/stats-summary` ve `GET /{id}/stats` uç noktaları uzak sistemler için canlı telemetri önbelleğinden beslenerek her konteynerin CPU ve RAM kullanımı arayüzde gösterildi.
+  - JSON-RPC Uzak Konteyner Logları: `GET /api/containers/{id}/logs` uç noktası `ISystemTunnelManager` WebSocket RPC üzerinden uzak sunucudaki konteynerin gerçek loglarını çekecek şekilde bağlandı.
+  - Frontend Çökme Dayanıklılığı (Null-Safety): `useContainersPageState.ts`, `ContainerRow.tsx`, `ContainersStats.tsx` ve `Containers/index.tsx` bileşenleri isim, durum, imaj ve etiket erişimlerinde güvenceye alındı.
+- **Tüm Sayfalarda (Fleet-Wide) Düğüm Kapsamı Senkronizasyonu**:
+  - `MetricsEndpoints.cs`: `/api/metrics/system`, `/api/metrics/latest` ve canlı SSE `/api/metrics/stream` uç noktaları `X-System-Id` ve `systemId` filtrelerine bağlanarak aktif seçili sunucunun canlı ve geçmiş telemetrisi sunuldu.
+  - `SystemMetrics/index.tsx`: Sayfa başlığına aktif sunucu rozeti (`[Deneme]` / `[Host]`) eklendi; `corvus_active_system_changed` dinleyicisi ile SSE bağlantısı ve grafikler aktif sunucuya bağlandı.
+  - `Services`: `ServicesHeader` başlığına aktif sunucu rozeti eklendi; `SystemdUnitsTab` sekmesi aktif sunucu kimliğine (`selectedSystemId`) bağlandı.
+  - `ActivityTimeline`: Olay geçmişi sayfasına aktif düğüm rozeti eklendi ve düğüm değişiminde otomatik yenileme sağlandı.
 - **Disk Float Precision Yuvarlama Hatası**:
   - `DashboardKpis.tsx`: Disk boş alanı hesaplanırken ortaya çıkan IEEE 754 float hassasiyet hatası (`939.6999999999999 GB Boş`) `parseFloat(...toFixed(1))` ile temiz `939.7 GB` gösterimine dönüştürüldü.
 - **Ajan Disk Algılama İyileştirmesi**:

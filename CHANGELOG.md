@@ -11,6 +11,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Per-System Concurrency-Safe Caching: Migrated from a single static cache entry to a thread-safe `ConcurrentDictionary<string, ...>` cache keyed by `systemId`, preventing telemetry pollution between host and edge nodes.
   - `ContainersEndpoints.cs`: Partitioned `GET /api/containers` and `/stats-summary` with `X-System-Id` filtering. Containers page now cleanly displays edge node containers for remote hosts. Container lifecycle operations (`restart`, `start`, `stop`, `pause`, `unpause`) are routed through `ISystemTunnelManager` via WebSocket JSON-RPC.
   - Frontend Synchronous Reactivity: Hooked `corvus_active_system_changed` event listeners in `Dashboard` and `Containers` pages, automatically reloading scoped data on node switch and rendering contextual node badges in headers.
+- **Containers Screen Crash Fix & Remote Schema Mapping**:
+  - `ContainersEndpoints.cs`: Resolved UI freeze and render exceptions on edge nodes (`TypeError: undefined.replace / undefined.toLowerCase / undefined.slice`) by strictly mapping `SystemContainerCacheEntity` to full `DockerContainerInfo` schema (`Id`, `Names`, `Image`, `State`, `Status`, `Ports`, `Labels`, `Tags`).
+  - Edge Node Container Stats: Populated `GET /api/containers/stats-summary` and `GET /{id}/stats` for remote systems directly from live edge cache, showing real-time CPU% and RAM usage for remote containers.
+  - Remote Container Logs via JSON-RPC: Wired `GET /api/containers/{id}/logs` to request remote logs through `ISystemTunnelManager` WebSocket RPC.
+  - Bulletproof Frontend Null-Safety: Reinforced `useContainersPageState.ts`, `ContainerRow.tsx`, `ContainersStats.tsx`, and `Containers/index.tsx` with defensive property checks across name, id, state, image, and labels.
+- **Fleet-Wide Multi-Node Scope Propagation Across All Views**:
+  - `MetricsEndpoints.cs`: Partitioned `/api/metrics/system`, `/api/metrics/latest`, and live SSE `/api/metrics/stream` with `X-System-Id` and `systemId` query parameters, streaming real-time downsampled metrics for any active edge node.
+  - `SystemMetrics/index.tsx`: Bound `corvus_active_system_changed` listener, added contextual system scope badge, and routed SSE connection to the active system.
+  - `Services`: Scoped `ServicesHeader` with active node badge and propagated `selectedSystemId` into `SystemdUnitsTab`.
+  - `ActivityTimeline`: Bound active node badge and dynamic reload on system change.
 - **Disk Free Space Float Precision**:
   - `DashboardKpis.tsx`: Fixed IEEE 754 float precision glitch (`939.6999999999999 GB Free`) using `parseFloat(...toFixed(1))` to output clean `939.7 GB`.
 - **Agent Host Disk Detection**:

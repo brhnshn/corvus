@@ -16,8 +16,15 @@ export const SystemMetricsPage: React.FC = () => {
   const [range, setRange] = useState('24h');
   const [loading, setLoading] = useState(true);
 
-  // Canlı SSE Telemetri Akışı (100ms Sync)
-  const { latestMetric: streamMetric, isConnected: isLiveStream } = useSystemMetricsStream();
+  const [activeSystemName, setActiveSystemName] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
+  });
+  const [activeSystemId, setActiveSystemId] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
+  });
+
+  // Canlı SSE Telemetri Akışı (100ms Sync - scoped to active system)
+  const { latestMetric: streamMetric, isConnected: isLiveStream } = useSystemMetricsStream(activeSystemId);
 
   const isMountedRef = React.useRef(true);
 
@@ -47,10 +54,23 @@ export const SystemMetricsPage: React.FC = () => {
     };
     document.addEventListener('visibilitychange', onVisible);
 
+    const handleSystemChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const sId = customEvent.detail?.systemId || localStorage.getItem('corvus_active_system_id') || 'local-host';
+      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
+      setActiveSystemId(sId);
+      setActiveSystemName(sName);
+      if (isMountedRef.current) {
+        loadData();
+      }
+    };
+    window.addEventListener('corvus_active_system_changed', handleSystemChange);
+
     return () => {
       isMountedRef.current = false;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
     };
   }, [loadData, isLiveStream]);
 
@@ -93,9 +113,13 @@ export const SystemMetricsPage: React.FC = () => {
       <MotionItem staggerIndex={0}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--cloud-100)]">
-                {t('metrics.title') || 'Sistem Metrikleri'}
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--cloud-100)] flex items-center gap-2">
+                <span>{t('metrics.title') || 'Sistem Metrikleri'}</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
+                  {activeSystemName}
+                </span>
               </h1>
               <span className="badge flex items-center gap-1.5 px-2 py-0.5 text-xs">
                 <StatusDot status={isLiveStream ? "up" : "warn"} />

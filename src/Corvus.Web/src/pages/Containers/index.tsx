@@ -113,12 +113,12 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
     handleDrop,
   } = useEntityGrouping<DockerContainer>({
     items: filteredContainers,
-    getId: (c) => c.Id,
-    getName: (c) => c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
+    getId: (c) => c?.Id || Math.random().toString(),
+    getName: (c) => (c?.Names?.[0] || c?.Id || 'unknown').replace(/^\//, ''),
     getCategory: (c) => {
-      const composeProject = c.Labels?.['com.docker.compose.project'];
-      const rawName = c.Names?.[0] || c.Id.slice(0, 12);
-      const cleanName = rawName.replace(/^\//, '');
+      const composeProject = c?.Labels?.['com.docker.compose.project'];
+      const rawName = c?.Names?.[0] || c?.Id || 'unknown';
+      const cleanName = (rawName || '').replace(/^\//, '');
       return deriveSmartGroup(cleanName, composeProject);
     },
     storageKey: 'corvus_container_groups',

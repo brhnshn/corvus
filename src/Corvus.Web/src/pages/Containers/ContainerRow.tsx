@@ -56,12 +56,12 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   hasUpdate = false,
 }) => {
   const { t } = useI18n();
-  const rawName = container.Names?.[0] || container.Id.slice(0, 12);
-  const cleanName = rawName.replace(/^\//, '');
-  const shortId = container.Id.slice(0, 12);
+  const rawName = container.Names?.[0] || container.Id || 'unknown';
+  const cleanName = (rawName || '').replace(/^\//, '');
+  const shortId = (container.Id || 'unknown').slice(0, 12);
   const composeProject = container.Labels?.['com.docker.compose.project'];
 
-  const state = container.State.toLowerCase();
+  const state = (container.State || 'unknown').toLowerCase();
   const isRunning = state === 'running';
   const isPaused = state === 'paused';
 
@@ -70,7 +70,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
 
   const containerTags = container.tags && container.tags.length > 0
     ? container.tags
-    : extractContainerTags(container.Labels);
+    : extractContainerTags(container.Labels || {});
 
   const cpuPercent = stats ? Math.round(stats.cpuPercent) : 0;
   const ramBytes = stats?.memoryUsageBytes ?? 0;

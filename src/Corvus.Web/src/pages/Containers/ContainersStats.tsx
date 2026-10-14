@@ -15,10 +15,11 @@ export const ContainersStats: React.FC<ContainersStatsProps> = ({
   selectedState,
   onFilterState,
 }) => {
-  const total = containers.length;
-  const running = containers.filter((c) => c.State.toLowerCase() === 'running').length;
-  const paused = containers.filter((c) => c.State.toLowerCase() === 'paused').length;
-  const stopped = containers.filter((c) => ['exited', 'dead', 'created'].includes(c.State.toLowerCase())).length;
+  const list = Array.isArray(containers) ? containers : [];
+  const total = list.length;
+  const running = list.filter((c) => (c?.State || '').toLowerCase() === 'running').length;
+  const paused = list.filter((c) => (c?.State || '').toLowerCase() === 'paused').length;
+  const stopped = list.filter((c) => ['exited', 'dead', 'created'].includes((c?.State || '').toLowerCase())).length;
 
   return (
     <KpiRow className="mb-4">

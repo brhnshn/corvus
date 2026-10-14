@@ -12,6 +12,7 @@ export interface ServicesHeaderProps {
   onRefreshClick: () => void;
   refreshing?: boolean;
   isAdmin?: boolean;
+  systemName?: string;
 }
 
 export const ServicesHeader: React.FC<ServicesHeaderProps> = ({
@@ -21,12 +22,21 @@ export const ServicesHeader: React.FC<ServicesHeaderProps> = ({
   onRefreshClick,
   refreshing = false,
   isAdmin = true,
+  systemName,
 }) => {
   const { t } = useI18n();
 
   return (
     <PageHeader
       title={t('services.title')}
+      badge={
+        systemName ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
+            {systemName}
+          </span>
+        ) : undefined
+      }
       subtitle={t('services.subtitle')}
       actions={
         <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">

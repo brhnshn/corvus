@@ -48,9 +48,10 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     try {
       const data = await api.getContainers();
       if (!isMountedRef.current) return;
-      setContainers(data);
+      const list = Array.isArray(data) ? data : [];
+      setContainers(list);
 
-      const runningContainers = data.filter((c) => c.State.toLowerCase() === 'running');
+      const runningContainers = list.filter((c) => (c?.State || '').toLowerCase() === 'running');
       fetchStatsBackground(runningContainers);
     } catch (err) {
       if (isMountedRef.current) {
@@ -162,10 +163,13 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
   };
 
   const tagsWithCounts = useMemo(() => {
+    if (!Array.isArray(containers)) return [];
     const counts: Record<string, number> = {};
     for (const c of containers) {
-      const tags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels);
+      if (!c) continue;
+      const tags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels || {});
       for (const t of tags) {
+        if (!t) continue;
         counts[t] = (counts[t] || 0) + 1;
       }
     }
@@ -175,25 +179,27 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
   }, [containers]);
 
   const filteredContainers = useMemo(() => {
+    if (!Array.isArray(containers)) return [];
     return containers.filter((c) => {
-      const rawName = c.Names?.[0] || c.Id;
-      const cleanName = rawName.replace(/^\//, '').toLowerCase();
-      const image = c.Image.toLowerCase();
-      const q = search.toLowerCase();
+      if (!c) return false;
+      const rawName = c.Names?.[0] || c.Id || 'unknown';
+      const cleanName = (rawName || '').replace(/^\//, '').toLowerCase();
+      const image = (c.Image || '').toLowerCase();
+      const q = (search || '').toLowerCase().trim();
 
       const hasPort = c.Ports?.some(
         (p) =>
-          String(p.PrivatePort).includes(q) ||
-          (p.PublicPort && String(p.PublicPort).includes(q))
-      );
+          (p?.PrivatePort != null && String(p.PrivatePort).includes(q)) ||
+          (p?.PublicPort != null && String(p.PublicPort).includes(q))
+      ) ?? false;
 
       const matchesSearch = !q || cleanName.includes(q) || image.includes(q) || hasPort;
 
-      const tags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels);
+      const tags = c.tags && c.tags.length > 0 ? c.tags : extractContainerTags(c.Labels || {});
       const matchesTag =
-        !selectedTag || tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase());
+        !selectedTag || tags.some((t) => (t || '').toLowerCase() === selectedTag.toLowerCase());
 
-      const state = c.State.toLowerCase();
+      const state = (c.State || 'unknown').toLowerCase();
       const matchesState =
         !selectedState ||
         (selectedState === 'running' && state === 'running') ||

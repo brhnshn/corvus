@@ -17,6 +17,10 @@ export const ActivityTimelinePage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  const [activeSystemName, setActiveSystemName] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
+  });
+
   const fetchLogs = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
@@ -38,6 +42,17 @@ export const ActivityTimelinePage: React.FC = () => {
     fetchLogs();
   }, [fetchLogs]);
 
+  useEffect(() => {
+    const handleSystemChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
+      setActiveSystemName(sName);
+      fetchLogs(true);
+    };
+    window.addEventListener('corvus_active_system_changed', handleSystemChange);
+    return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
+  }, [fetchLogs]);
+
   // Kategori veya arama değişince 1. sayfaya dön
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
@@ -54,6 +69,12 @@ export const ActivityTimelinePage: React.FC = () => {
       <MotionItem staggerIndex={0}>
         <PageHeader
           title="Olay ve Denetim Günlüğü (Audit Log)"
+          badge={
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
+              {activeSystemName}
+            </span>
+          }
           subtitle="Konteyner yaşam döngüsü, otomatik kurtarma, alarmlar ve sistem eylemlerinin kronolojik geçmişi"
           actions={
             <Button
