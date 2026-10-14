@@ -9,6 +9,8 @@ import {
   Search,
   History,
   Terminal,
+  Server,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { StatusDot } from './ui/StatusDot';
 import { api, type VersionInfo } from '../api/client';
@@ -29,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectPage,
   isCollapsed = false,
   onOpenCommandPalette,
-  activeSystemName = 'homelab-01',
+  activeSystemName = 'Host',
 }) => {
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -134,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         title="Kenar çubuğunu sürükle (Çift tıkla: Sıfırla)"
       />
 
-      {/* Top: Brand, System Selector, Command Search */}
+      {/* Top: Brand & Command Search */}
       <div className="sidebar-top">
         <div className="brand-row">
           <div className="brand">
@@ -150,20 +152,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <span className="mono text-[11px] text-[var(--text-muted)]">AOT</span>
         </div>
-
-        {/* System Selector Switcher */}
-        <button
-          type="button"
-          className="system-selector"
-          onClick={() => onSelectPage('systems')}
-          title={t('nav.switchSystem') || 'Sistem Değiştir / Tüm Sistemler'}
-        >
-          <span className="flex items-center gap-1.5 truncate">
-            <StatusDot status="up" size={6} />
-            <span className="mono font-semibold truncate">{activeSystemName}</span>
-          </span>
-          <span className="text-[11px] text-[var(--text-muted)] shrink-0">← {t('nav.backToSystems') || 'Tüm Sistemler'}</span>
-        </button>
 
         {/* Command Palette Trigger */}
         {onOpenCommandPalette && (
@@ -206,8 +194,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         />
 
-        <div className="nav-section-title">{t('nav.navigation') || 'Navigasyon'}</div>
+        {/* Fleet Section */}
+        <div className="nav-section-title">{t('nav.allSystems') || 'Tüm Sistemler'}</div>
+        <button
+          type="button"
+          data-nav="systems"
+          onClick={() => onSelectPage('systems')}
+          onMouseEnter={handleMouseEnterButton}
+          className={`nav-btn ${currentPage === 'systems' ? 'active' : ''}`}
+        >
+          <span className="nav-btn-left">
+            <Server className="w-4 h-4" />
+            <span>{t('nav.fleet') || 'Tüm Sunucular'}</span>
+          </span>
+        </button>
 
+        {/* Node Scope Section Header */}
+        <div className="nav-section-title mt-2.5 flex items-center justify-between">
+          <span>{t('nav.nodeScope') || 'Düğüm Kapsamı'}</span>
+          <button
+            type="button"
+            onClick={() => onSelectPage('systems')}
+            className="text-[10px] text-[var(--cloud-300)] hover:text-[var(--cloud-100)] flex items-center gap-1 normal-case tracking-normal transition-colors cursor-pointer"
+            title={t('nav.switchSystem')}
+          >
+            <ArrowLeftRight className="w-2.5 h-2.5" />
+            <span>{t('common.actions') || 'Değiştir'}</span>
+          </button>
+        </div>
+
+        {/* Active Node Card */}
+        <div className="px-1 mb-1">
+          <button
+            type="button"
+            onClick={() => onSelectPage('dashboard')}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-[var(--radius-sm)] bg-[var(--bg-subtle)] border border-[var(--border-hairline)] hover:border-[var(--border-strong)] transition-all cursor-pointer text-left group"
+            title={`${activeSystemName} (${t('nav.dashboard')})`}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <StatusDot status="up" size={6} />
+              <span className="font-mono text-xs font-semibold truncate text-[var(--cloud-100)]">{activeSystemName}</span>
+            </span>
+            <span className="font-mono text-[9.5px] uppercase tracking-wider text-[var(--text-muted)] bg-[var(--bg-card)] border border-[var(--border-hairline)] px-1.5 py-0.5 rounded">
+              Node
+            </span>
+          </button>
+        </div>
+
+        {/* Node Child Items */}
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -218,10 +252,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               data-nav={item.id}
               onClick={() => onSelectPage(item.id)}
               onMouseEnter={handleMouseEnterButton}
-              className={`nav-btn ${isActive ? 'active' : ''}`}
+              className={`nav-btn pl-4 ${isActive ? 'active' : ''}`}
             >
               <span className="nav-btn-left">
-                <Icon />
+                <Icon className="w-4 h-4 text-[var(--text-secondary)]" />
                 <span>{item.label}</span>
               </span>
             </button>

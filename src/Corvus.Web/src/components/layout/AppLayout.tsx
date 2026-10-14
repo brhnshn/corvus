@@ -28,33 +28,28 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   isRefreshing = false,
 }) => {
   const [activeSystemName, setActiveSystemName] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'homelab-01';
-    return localStorage.getItem('corvus_active_system_name') || 'homelab-01';
+    if (typeof window === 'undefined') return 'Host';
+    return localStorage.getItem('corvus_active_system_name') || 'Host';
   });
 
   useEffect(() => {
     const handleSystemChange = () => {
-      setActiveSystemName(localStorage.getItem('corvus_active_system_name') || 'homelab-01');
+      setActiveSystemName(localStorage.getItem('corvus_active_system_name') || 'Host');
     };
     window.addEventListener('corvus_active_system_changed', handleSystemChange);
     return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
   }, []);
 
-  // 'systems' page renders in full-width standalone layout
-  const isNavStandalone = currentPage === 'systems';
-
   return (
     <ToastProvider>
       <div className="shell selection:bg-[var(--cloud-300)] selection:text-[var(--bg-canvas)]">
-        {/* Desktop & Collapsible Sidebar */}
-        {!isNavStandalone && (
-          <Sidebar
-            currentPage={currentPage}
-            onSelectPage={onSelectPage}
-            onOpenCommandPalette={onOpenCommandPalette}
-            activeSystemName={activeSystemName}
-          />
-        )}
+        {/* Desktop & Collapsible Sidebar - Permanently Visible */}
+        <Sidebar
+          currentPage={currentPage}
+          onSelectPage={onSelectPage}
+          onOpenCommandPalette={onOpenCommandPalette}
+          activeSystemName={activeSystemName}
+        />
 
         {/* Main Workspace Area (Header + Scrollable Page Body) */}
         <div className="workspace">
@@ -70,18 +65,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           />
 
           <main className="page-body">
-            <div className={`w-full mx-auto pb-24 lg:pb-12 ${isNavStandalone ? 'max-w-[1500px]' : currentPage === 'settings' ? 'max-w-5xl' : 'max-w-[1240px]'}`}>
+            <div className={`w-full mx-auto pb-24 lg:pb-12 ${currentPage === 'systems' ? 'max-w-[1440px]' : currentPage === 'settings' ? 'max-w-5xl' : 'max-w-[1240px]'}`}>
               {children}
             </div>
           </main>
         </div>
 
         {/* Mobile Bottom Navigation Bar */}
-        {!isNavStandalone && (
-          <div className="lg:hidden">
-            <BottomNav currentPage={currentPage} onSelectPage={onSelectPage} />
-          </div>
-        )}
+        <div className="lg:hidden">
+          <BottomNav currentPage={currentPage} onSelectPage={onSelectPage} />
+        </div>
       </div>
     </ToastProvider>
   );

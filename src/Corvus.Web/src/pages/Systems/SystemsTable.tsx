@@ -358,7 +358,7 @@ export const SystemsTable: React.FC<SystemsTableProps> = ({
                       {!isPending && !isPaused && system.loadAvg1m != null ? (
                         <span className="font-mono text-xs tabular-nums text-[var(--text-primary)]">
                           <span className="text-[var(--status-up)] mr-1.5">●</span>
-                          {system.loadAvg1m.toFixed(2)} {system.loadAvg5m != null ? system.loadAvg5m.toFixed(2) : '0.00'} {system.loadAvg15m != null ? system.loadAvg15m.toFixed(2) : '0.00'}
+                          {system.loadAvg1m.toFixed(2)} {system.loadAvg5m != null ? system.loadAvg5m.toFixed(2) : '-'} {system.loadAvg15m != null ? system.loadAvg15m.toFixed(2) : '-'}
                         </span>
                       ) : (
                         renderDash()

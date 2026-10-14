@@ -26,11 +26,11 @@ public static class AlertRulesEndpoints
         });
 
         // Yeni kural oluştur (Admin zorunlu)
-        group.MapPost("/", [RequireAdmin] async (CreateAlertRuleRequest req, IAlertRuleRepository repo) =>
+        group.MapPost("/", async (CreateAlertRuleRequest req, IAlertRuleRepository repo) =>
         {
             if (string.IsNullOrWhiteSpace(req.Name))
             {
-                return Results.BadRequest(new { error = "Kural adı boş olamaz." });
+                return Results.BadRequest(new GenericApiResponse(false, "Kural adı boş olamaz."));
             }
 
             var rule = new AlertRule
@@ -52,20 +52,20 @@ public static class AlertRulesEndpoints
 
             await repo.CreateRuleAsync(rule);
             return Results.Created($"/api/alerts/rules/{rule.Id}", rule);
-        });
+        }).RequireAdmin();
 
         // Kural güncelle (Admin zorunlu)
-        group.MapPut("/{id}", [RequireAdmin] async (string id, UpdateAlertRuleRequest req, IAlertRuleRepository repo) =>
+        group.MapPut("/{id}", async (string id, UpdateAlertRuleRequest req, IAlertRuleRepository repo) =>
         {
             var existing = await repo.GetRuleByIdAsync(id);
             if (existing == null)
             {
-                return Results.NotFound(new { error = "Kural bulunamadı." });
+                return Results.NotFound(new GenericApiResponse(false, "Kural bulunamadı."));
             }
 
             if (string.IsNullOrWhiteSpace(req.Name))
             {
-                return Results.BadRequest(new { error = "Kural adı boş olamaz." });
+                return Results.BadRequest(new GenericApiResponse(false, "Kural adı boş olamaz."));
             }
 
             existing.Name = req.Name.Trim();
@@ -81,19 +81,19 @@ public static class AlertRulesEndpoints
 
             await repo.UpdateRuleAsync(existing);
             return Results.Ok(existing);
-        });
+        }).RequireAdmin();
 
         // Kural sil (Admin zorunlu)
-        group.MapDelete("/{id}", [RequireAdmin] async (string id, IAlertRuleRepository repo) =>
+        group.MapDelete("/{id}", async (string id, IAlertRuleRepository repo) =>
         {
             var existing = await repo.GetRuleByIdAsync(id);
             if (existing == null)
             {
-                return Results.NotFound(new { error = "Kural bulunamadı." });
+                return Results.NotFound(new GenericApiResponse(false, "Kural bulunamadı."));
             }
 
             await repo.DeleteRuleAsync(id);
-            return Results.Ok(new { success = true });
-        });
+            return Results.Ok(new GenericApiResponse(true, "Kural başarıyla silindi."));
+        }).RequireAdmin();
     }
 }

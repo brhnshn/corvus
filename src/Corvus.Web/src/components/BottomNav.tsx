@@ -5,8 +5,8 @@ import {
   Boxes,
   Activity,
   Clock,
+  Server,
   Settings,
-  User,
   History,
   type LucideIcon,
 } from 'lucide-react';
@@ -32,6 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
   const { t } = useI18n();
 
   const items: NavItem[] = [
+    { id: 'systems', label: t('nav.systems'), full: t('nav.fleet'), icon: Server },
     { id: 'dashboard', label: t('nav.dashboard'), full: t('nav.dashboard'), icon: LayoutDashboard },
     { id: 'services', label: t('nav.services'), full: t('nav.services'), icon: Grid },
     { id: 'containers', label: t('nav.containers'), full: t('nav.containers'), icon: Boxes },
@@ -39,7 +40,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
     { id: 'uptime', label: t('nav.uptime'), full: t('nav.uptime'), icon: Clock },
     { id: 'activity', label: t('nav.activityShort'), full: t('nav.activity'), icon: History },
     { id: 'settings', label: t('nav.settings'), full: t('nav.settings'), icon: Settings },
-    { id: 'profile', label: t('nav.profileShort'), full: t('nav.profile'), icon: User },
   ];
 
   const totalFr = items.length - 1 + ACTIVE_FR;

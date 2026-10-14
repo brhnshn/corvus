@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.5] - 2026-10-14 — Persistent Collapsible Node Tree, Progressive Dashboard Loading, CSP & Real Data Discipline
+
+### Added
+- **Contextual Collapsible Node Tree & Persistent Corvus Shell**:
+  - Eliminated `isNavStandalone` layout condition in `AppLayout.tsx`. The Corvus brand logo, shell frame, and left sidebar now permanently persist across all application views including the full Systems fleet view.
+  - Redesigned `Sidebar.tsx` to feature a dual-tier navigation model:
+    - Dedicated "Fleet Overview" (`Server` Lucide SVG) at the top level for instant fleet switching.
+    - Contextual active node scope section displaying live node status, active system name, quick switcher, and child navigation (Dashboard, Services, Containers, Metrics, Uptime, Activity, Settings).
+  - Integrated full Systems navigation into mobile `BottomNav.tsx` with dedicated Lucide `Server` icon.
+  - Ensured zero emojis across all navigation elements, strictly adopting Lucide React SVG icons and Obsidian UI typography.
+
+### Fixed
+- **Content Security Policy (CSP) Google Fonts Directive**:
+  - Updated CSP headers in `src/Corvus.Api/Program.cs` to explicitly permit `https://fonts.googleapis.com` under `style-src` and `https://fonts.gstatic.com` under `font-src` and `connect-src`, resolving stylesheet blockages on application launch.
+- **Alert Rules HTTP 500 & Native AOT Serialization Failure**:
+  - Materialized query rows in `AlertRuleRepository.GetAllRulesAsync()` and `GetEnabledRulesAsync()` with `.ToList()` returning `Task<List<AlertRule>>` instead of unregistered compiler LINQ iterator types.
+  - Registered `IEnumerable<AlertRule>` and `AlertRule[]` in `CorvusJsonSerializerContext` to safeguard source-generated Native AOT compilation.
+  - Replaced ad-hoc anonymous response objects in `AlertRulesEndpoints.cs` with standard `GenericApiResponse` and chained `.RequireAdmin()` route extensions.
+- **Strict Real Data Discipline & Null-Safety Guardrails**:
+  - In `DashboardKpis.tsx`, eliminated dummy default values (calculating with 0% or fake GB when metrics are absent). When metrics are pending or unavailable, displays clean `-` indicators.
+  - In `TopResourcesCard.tsx`, fixed falsy check on `item.cpuPercent` and `item.ramPercent` so `0.0%` is accurately displayed as `0.0%` rather than being converted to `-`.
+  - In `RecentEventsCard.tsx`, replaced synthetic mock container events with real telemetry activity logs from `activityLogsApi.getActivityLogs()`.
+  - In `SystemsTable.tsx`, corrected `loadAvg5m` and `loadAvg15m` null fallbacks to display `-` instead of deceptive `'0.00'`.
+  - In `SystemsColumnsMenu.tsx`, pruned unsupported phantom columns (GPU, Wi-Fi, Battery, Temperature, Updates) that have no backend telemetry points.
+  - In `Systems/index.tsx`, synchronized `corvus_active_system_name` in localStorage on server selection, eliminating hardcoded `'homelab-01'` fallback.
+
+### Performance
+- **Dashboard Progressive Loading & Render Decoupling**:
+  - Decoupled the heavy, single-shot `/api/containers/stats-summary` Docker polling from the primary `DashboardPage` load stream. Critical overview KPIs, status banner, services, and container lists render immediately (~100ms) without waiting for kernel-level CPU/RAM delta evaluations.
+  - Added 1500ms debounce protection to SSE `corvus_event` listener on the dashboard to eliminate cascading refetch storms.
+- **Backend Summary Query Parallelization & In-Memory Role Cache**:
+  - Converted the sequential query waterfall in `DashboardEndpoints.cs` to parallel execution using `Task.WhenAll`, reducing dashboard summary latency.
+  - Extended dashboard summary cache duration from 2.5s to 15s.
+  - Introduced an in-memory 30-second TTL `RoleCache` in `AuthService.cs`, eliminating redundant SQLite database lookups for user roles on every authenticated HTTP request.
+
+### Internationalization
+- Synchronized typed translation dictionaries across `tr.ts` and `en.ts` for all newly introduced fleet, node scope, and dashboard resource metric keys.
+
 ## [1.6.4] - 2026-10-14 — Automated Semantic Versioning & UI Clutter Elimination
 
 ### Added

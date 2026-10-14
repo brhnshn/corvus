@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { TableWrap } from '../../components/ui/ExpandableTable';
 import { formatBytes } from '../../utils/format';
+import { useI18n } from '../../i18n';
 import type { DockerContainer, ContainerStats } from '../../types';
 
 export interface TopResourcesCardProps {
@@ -15,13 +16,15 @@ export const TopResourcesCard: React.FC<TopResourcesCardProps> = ({
   statsMap = {},
   onNavigate,
 }) => {
+  const { t } = useI18n();
+
   // Konteynerleri RAM kullanımına göre sırala
   const containerListWithStats = containers.map((c) => {
     const cleanName = (c.Names?.[0] || c.Id).replace(/^\//, '');
     const stat = statsMap[c.Id];
-    const ramBytes = stat?.memoryUsageBytes ?? 0;
-    const ramPercent = stat?.memoryPercent ?? 0;
-    const cpuPercent = stat?.cpuPercent ?? 0;
+    const ramBytes = typeof stat?.memoryUsageBytes === 'number' ? stat.memoryUsageBytes : 0;
+    const ramPercent = typeof stat?.memoryPercent === 'number' ? stat.memoryPercent : null;
+    const cpuPercent = typeof stat?.cpuPercent === 'number' ? stat.cpuPercent : null;
     return {
       id: c.Id,
       name: cleanName,
@@ -46,27 +49,27 @@ export const TopResourcesCard: React.FC<TopResourcesCardProps> = ({
               onClick={() => onNavigate('containers')}
               className="text-xs text-[var(--text-muted)] hover:text-[var(--cloud-100)] transition-colors cursor-pointer"
             >
-              Tümünü Gör →
+              {t('dashboard.viewAll')}
             </button>
           )
         }
       >
-        <CardTitle>En Çok Kaynak Tüketen Konteynerler</CardTitle>
+        <CardTitle>{t('dashboard.topResourceContainers')}</CardTitle>
       </CardHeader>
       <CardContent className="!p-0">
         {topContainers.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--text-muted)]">
-            Henüz kaynak istatistiği toplanmadı
+            {t('dashboard.noResourceStats')}
           </div>
         ) : (
           <TableWrap>
             <table className="table">
               <thead>
                 <tr>
-                  <th>Konteyner</th>
-                  <th>CPU</th>
-                  <th>Bellek</th>
-                  <th style={{ textAlign: 'right' }}>Bellek Oranı</th>
+                  <th>{t('dashboard.topContainer')}</th>
+                  <th>{t('dashboard.topCpu')}</th>
+                  <th>{t('dashboard.topRam')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('dashboard.topRamRatio')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -80,13 +83,13 @@ export const TopResourcesCard: React.FC<TopResourcesCardProps> = ({
                       {item.name}
                     </td>
                     <td className="font-mono text-xs tabular-nums text-[var(--text-secondary)]">
-                      {item.cpuPercent ? `%${item.cpuPercent.toFixed(1)}` : '-'}
+                      {typeof item.cpuPercent === 'number' ? `%${item.cpuPercent.toFixed(1)}` : '-'}
                     </td>
                     <td className="font-mono text-xs tabular-nums text-[var(--cloud-200)]">
                       {item.ramBytes > 0 ? formatBytes(item.ramBytes) : '-'}
                     </td>
                     <td style={{ textAlign: 'right' }} className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
-                      {item.ramPercent ? `%${item.ramPercent.toFixed(1)}` : '-'}
+                      {typeof item.ramPercent === 'number' ? `%${item.ramPercent.toFixed(1)}` : '-'}
                     </td>
                   </tr>
                 ))}

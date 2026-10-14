@@ -3,6 +3,43 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.5] - 2026-10-14 — Kalıcı Bağlamsal Düğüm Ağacı, Kademeli Genel Bakış Yüklemesi, CSP ve Gerçek Veri Disiplini
+
+### Eklenenler (Added)
+- **Bağlamsal Düğüm Ağacı ve Kalıcı Corvus Kabuğu**:
+  - `AppLayout.tsx` içerisindeki `isNavStandalone` şartı kaldırılarak Corvus logosu, kabuk düzeni ve sol kenar çubuğunun Sistemler (Tüm Sunucular) sayfası dahil tüm sayfalarda kalıcı olarak ekranda kalması sağlandı.
+  - `Sidebar.tsx` bileşeni çift katmanlı bağlamsal ağaç mimarisine geçirildi:
+    - En üstte tüm sunuculara anında geçiş sağlayan bağımsız "Tüm Sunucular" (`Server` Lucide SVG ikonu) bağlantısı.
+    - Altında aktif sunucunun adını, çevrimiçi durumunu ve hızlı değiştirici butonunu gösteren "Düğüm Kapsamı" kartı ile o sunucuya ait alt gezinme dalları (Genel Bakış, Servisler, Konteynerler, Metrikler, Uptime, Olaylar, Ayarlar).
+  - Mobil alt menüye (`BottomNav.tsx`) `Server` SVG ikonu ile "Sistemler" gezinme öğesi eklendi.
+  - Arayüzde kesinlikle emoji kullanılmadı; yalnızca Lucide React SVG ikonları ve Obsidian UI tipografisi benimsendi.
+
+### Düzeltilenler (Fixed)
+- **Content Security Policy (CSP) Google Fonts İzinleri**:
+  - `src/Corvus.Api/Program.cs` içerisindeki CSP güvenlik başlığına `style-src` altında `https://fonts.googleapis.com` ve `font-src`/`connect-src` altında `https://fonts.gstatic.com` izinleri eklenerek ilk açılışta font stil dosyalarının engellenmesi hatası çözüldü.
+- **Alarm Kuralları HTTP 500 ve Native AOT Serileştirme Hatası**:
+  - `AlertRuleRepository.GetAllRulesAsync()` ve `GetEnabledRulesAsync()` metotlarında sorgu satırları `.ToList()` ile somutlaştırılarak kayıtsız LINQ iterator tipi yerine `Task<List<AlertRule>>` dönmesi sağlandı.
+  - `CorvusJsonSerializerContext` kaynak üreticisine `IEnumerable<AlertRule>` ve `AlertRule[]` öznitelikleri eklenerek Native AOT derleme zırhlandı.
+  - `AlertRulesEndpoints.cs` içerisindeki anonim nesneler standart `GenericApiResponse` modeline geçirildi ve yetkilendirmeler `.RequireAdmin()` zincirine bağlandı.
+- **Gerçek Veri Disiplini ve Null-Safety Koruma Önlemleri**:
+  - `DashboardKpis.tsx` içerisinde metrikler henüz toplanmamış veya boşken uydurma 0% veya sahte GB hesaplaması yapılması engellendi; veri beklenirken temiz tire (`-`) gösterimi sağlandı.
+  - `TopResourcesCard.tsx` içerisinde `0.0%` CPU/RAM değerlerinin falsy sayılarak tireye dönüşmesi hatası `typeof === 'number'` kontrolüyle düzeltildi.
+  - `RecentEventsCard.tsx` içerisindeki uydurma sentetik konteyner olayları kaldırılarak `activityLogsApi.getActivityLogs()` üzerinden gerçek telemetri olaylarına bağlandı.
+  - `SystemsTable.tsx` tablosundaki `loadAvg5m` ve `loadAvg15m` değerleri boş olduğunda uydurma `'0.00'` basılması engellenerek `-` gösterildi.
+  - `SystemsColumnsMenu.tsx` içerisinden telemetrisi bulunmayan hayalet sütunlar (GPU, Wi-Fi, Pil, Sıcaklık, Güncellemeler) temizlenerek yalnızca gerçek verisi olan sütunlar sunuldu.
+  - `Systems/index.tsx` içerisinde sunucu seçildiğinde localStorage'daki aktif sunucu adının (`corvus_active_system_name`) senkronize olarak güncellenmesi sağlandı; statik `'homelab-01'` bağımlılığı ortadan kaldırıldı.
+
+### Performans (Performance)
+- **Genel Bakış Kademeli Yükleme (Progressive Loading) ve Render Ayrıştırması**:
+  - `DashboardPage` ana yükleme akışından ağır Docker konteyner istatistikleri sorgusu (`/api/containers/stats-summary`) ayrıştırıldı. Ana KPI şeridi, operasyonel durum paneli, servisler ve konteyner listesi 100ms içinde anında ekrana basılacak şekilde kademelendirildi.
+  - Genel Bakış sayfasındaki SSE `corvus_event` dinleyicisine 1500ms `debounce` eklenerek art arda gelen olaylarda mükerrer API bombardımanı engellendi.
+- **Backend Özet Sorgularının Paralelleştirilmesi ve Bellek İçi Rol Önbelleği**:
+  - `DashboardEndpoints.cs` içindeki 4 sorgu (servisler, docker, yedekler, metrikler) `Task.WhenAll` ile eşzamanlı çalıştırılarak özet yanıt süresi minimize edildi; önbellek süresi 2.5 saniyeden 15 saniyeye yükseltildi.
+  - `AuthService.cs` içerisine 30 saniye TTL'li bellek içi `RoleCache` eklenerek her kimlik doğrulamalı HTTP isteğinde SQLite `users` tablosuna mükerrer sorgu gitmesi önlendi.
+
+### Uluslararasılaştırma (i18n)
+- Eklenen tüm yeni navigasyon, düğüm kapsamı ve kaynak metrikleri metinleri hem `tr.ts` hem de `en.ts` sözlüklerine tip güvenli olarak işlendi.
+
 ## [1.6.4] - 2026-10-14 — Otomatik Semantik Sürümleme ve Arayüz Sadeleştirmeleri
 
 ### Eklenenler (Added)

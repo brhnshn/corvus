@@ -43,6 +43,9 @@ public class AuthService : IAuthService
     private record SessionItem(string Username, DateTime ExpiresAt);
     private static readonly ConcurrentDictionary<string, SessionItem> ActiveSessions = new();
 
+    private record RoleCacheItem(string Role, DateTime CachedAt);
+    private static readonly ConcurrentDictionary<string, RoleCacheItem> RoleCache = new(StringComparer.OrdinalIgnoreCase);
+
     private record FailedAttemptInfo(int Count, DateTime FirstAttemptAt, DateTime? LockoutUntil);
     private static readonly ConcurrentDictionary<string, FailedAttemptInfo> FailedAttempts = new();
 
@@ -307,8 +310,16 @@ public class AuthService : IAuthService
             return "admin";
         }
 
+        var now = DateTime.UtcNow;
+        if (RoleCache.TryGetValue(username, out var cached) && (now - cached.CachedAt).TotalSeconds < 30)
+        {
+            return cached.Role;
+        }
+
         var user = await _userRepo.GetByUsernameAsync(username);
-        return user?.Role ?? "admin";
+        var role = user?.Role ?? "admin";
+        RoleCache[username] = new RoleCacheItem(role, now);
+        return role;
     }
 
     public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string username, string currentPassword, string newPassword)
@@ -455,6 +466,8 @@ public class AuthService : IAuthService
             return (false, "Rol güncellenemedi.");
         }
 
+        RoleCache.TryRemove(user.Username, out _);
+
         return (true, null);
     }
 
@@ -500,6 +513,8 @@ public class AuthService : IAuthService
                 ActiveSessions.TryRemove(pair.Key, out _);
             }
         }
+
+        RoleCache.TryRemove(user.Username, out _);
 
         return (true, null);
     }

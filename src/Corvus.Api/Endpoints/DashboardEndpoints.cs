@@ -29,18 +29,26 @@ public static class DashboardEndpoints
                 }
             }
 
-            var services = await servicesRepo.GetAllAsync();
+            // Veritabanı ve Docker sorgularını paralel çalıştırarak gecikmeyi düşür
+            var servicesTask = servicesRepo.GetAllAsync();
+            var containersTask = docker.GetContainersAsync();
+            var backupTask = backupRepo.GetLatestAsync();
+            var metricsTask = metricsRepo.GetLatestAsync();
+
+            await Task.WhenAll(servicesTask, containersTask, backupTask, metricsTask);
+
+            var services = await servicesTask;
             int totalServices = services.Count;
             int healthy = services.Count(s => s.Status == "healthy");
             int degraded = services.Count(s => s.Status == "degraded");
             int down = services.Count(s => s.Status == "down");
 
-            var containers = await docker.GetContainersAsync();
+            var containers = await containersTask;
             int totalContainers = containers.Count;
             int runningContainers = containers.Count(c => c.State.Equals("running", StringComparison.OrdinalIgnoreCase));
 
-            var lastBackup = await backupRepo.GetLatestAsync();
-            var latestMetrics = await metricsRepo.GetLatestAsync();
+            var lastBackup = await backupTask;
+            var latestMetrics = await metricsTask;
 
             var summary = new DashboardSummaryDto(
                 totalServices,
@@ -55,7 +63,7 @@ public static class DashboardEndpoints
 
             lock (_summaryLock)
             {
-                _cachedSummary = (DateTime.UtcNow.AddSeconds(2.5), summary);
+                _cachedSummary = (DateTime.UtcNow.AddSeconds(15), summary);
             }
 
             return Results.Ok(summary);

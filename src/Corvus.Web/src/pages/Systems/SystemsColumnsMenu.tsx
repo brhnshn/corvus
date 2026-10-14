@@ -51,14 +51,9 @@ export const SystemsColumnsMenu: React.FC<SystemsColumnsMenuProps> = ({
     { key: 'cpu', label: t('systems.columns.cpu') },
     { key: 'ram', label: t('systems.columns.ram') },
     { key: 'disk', label: t('systems.columns.disk') },
-    { key: 'gpu', label: t('systems.columns.gpu') },
     { key: 'load', label: t('systems.columns.load') },
     { key: 'net', label: t('systems.columns.net') },
-    { key: 'temp', label: t('systems.columns.temp') },
-    { key: 'bat', label: t('systems.columns.bat') },
-    { key: 'wifi', label: t('systems.columns.wifi') },
     { key: 'svc', label: t('systems.columns.svc') },
-    { key: 'upd', label: t('systems.columns.upd') },
   ];
 
   return (

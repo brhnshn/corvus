@@ -28,7 +28,10 @@ export const en = {
     open: 'Open',
     days: 'Days',
     usage: 'Usage:',
-    retry: 'Retry'
+    retry: 'Retry',
+    viewAll: 'View All',
+    time: 'Time',
+    category: 'Category'
   },
   nav: {
     dashboard: 'Dashboard',
@@ -53,7 +56,11 @@ export const en = {
     openCommandPalette: 'Open Command Palette (Ctrl K)',
     publicStatusPage: 'Public Live Status Page',
     userProfile: 'User Profile',
-    switchSystem: 'Switch System / All Systems'
+    switchSystem: 'Switch System / All Systems',
+    fleet: 'Fleet Overview',
+    activeNode: 'Active Node',
+    nodeScope: 'Node Scope',
+    allSystems: 'All Systems'
   },
   status: {
     healthy: 'Operational',
@@ -130,7 +137,25 @@ export const en = {
     liveStreamSync: 'Live Telemetry · 100ms Sync',
     pollingMode: 'Periodic Polling',
     systemMetrics: 'System Metrics →',
-    viewServices: 'Inspect Services →'
+    viewServices: 'Inspect Services →',
+    cpuLoad: 'System CPU Load',
+    cpuInstant: 'Instant processor consumption',
+    cpuHigh: 'High',
+    cpuNormal: 'Normal',
+    ramConsumption: 'RAM Consumption',
+    ramUsedTotal: 'Used / Total memory',
+    diskRoot: 'Disk Status (Root)',
+    diskFreeSuffix: '{gb} GB Free',
+    topResourceContainers: 'Top Resource Consuming Containers',
+    noResourceStats: 'No resource statistics collected yet',
+    viewAll: 'View All →',
+    topContainer: 'Container',
+    topCpu: 'CPU',
+    topRam: 'Memory',
+    topRamRatio: 'Memory Ratio',
+    recentEvents: 'Recent Events',
+    noRecentEvents: 'No recorded system events',
+    eventDescription: 'Event Description'
   },
   containers: {
     title: 'Docker Containers',

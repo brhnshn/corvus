@@ -91,9 +91,12 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
   const [deletingSystem, setDeletingSystem] = useState<SystemSummaryDto | null>(null);
 
   const handleSelectSystem = (systemId: string) => {
+    const selected = systems.find((s) => s.id === systemId);
+    const systemName = selected ? selected.name : systemId === 'local-host' ? 'Host' : systemId;
     localStorage.setItem('corvus_active_system_id', systemId);
+    localStorage.setItem('corvus_active_system_name', systemName);
     invalidateCache();
-    window.dispatchEvent(new CustomEvent('corvus_active_system_changed', { detail: { systemId } }));
+    window.dispatchEvent(new CustomEvent('corvus_active_system_changed', { detail: { systemId, systemName } }));
     if (onNavigate) {
       onNavigate('dashboard');
     }

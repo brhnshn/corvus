@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { TableWrap } from '../../components/ui/ExpandableTable';
 import { StatusDot } from '../../components/ui/StatusDot';
-import type { Service, DockerContainer, BackupEvent } from '../../types';
+import { activityLogsApi } from '../../api/activityLogs';
+import { useI18n } from '../../i18n';
+import type { Service, DockerContainer, BackupEvent, ActivityLogEntry } from '../../types';
 
 export interface EventItem {
   id: string;
@@ -13,63 +15,65 @@ export interface EventItem {
 }
 
 export interface RecentEventsCardProps {
-  services: Service[];
-  containers: DockerContainer[];
+  services?: Service[];
+  containers?: DockerContainer[];
   lastBackup?: BackupEvent;
   liveEvents?: EventItem[];
   onNavigate?: (page: 'activity') => void;
 }
 
 export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
-  services,
-  containers,
-  lastBackup,
   liveEvents = [],
   onNavigate,
 }) => {
-  // Canlı verilerden son 24 saatlik durum olayları türet
-  const generatedEvents: EventItem[] = [];
+  const { t } = useI18n();
+  const [dbLogs, setDbLogs] = useState<ActivityLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Konteyner durumları
-  containers.slice(0, 3).forEach((c) => {
-    const cleanName = (c.Names?.[0] || c.Id).replace(/^\//, '');
-    const isRunning = c.State.toLowerCase() === 'running';
-    generatedEvents.push({
-      id: `cnt-${c.Id}`,
-      status: isRunning ? 'ok' : 'err',
-      title: `${cleanName} ${isRunning ? 'çalışıyor' : 'durdu'}`,
-      timeAgo: c.Status || 'az önce',
-      category: 'Konteyner',
-    });
+  useEffect(() => {
+    let active = true;
+    activityLogsApi
+      .getActivityLogs(1, 5)
+      .then((res) => {
+        if (active && res && Array.isArray(res.items)) {
+          setDbLogs(res.items);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Gerçek veri tabanı kayıtlarını EventItem formatına dönüştür
+  const formattedDbEvents: EventItem[] = dbLogs.map((log) => {
+    const isErr =
+      log.actionType.toLowerCase().includes('fail') ||
+      log.actionType.toLowerCase().includes('delete') ||
+      log.actionType.toLowerCase().includes('down');
+    const isWarn =
+      log.actionType.toLowerCase().includes('warn') ||
+      log.actionType.toLowerCase().includes('restart');
+
+    const d = new Date(log.createdAt);
+    const timeAgo = isNaN(d.getTime())
+      ? '-'
+      : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return {
+      id: log.id,
+      status: isErr ? 'err' : isWarn ? 'warn' : 'ok',
+      title: `${log.actorUsername || 'system'}: ${log.actionType} (${log.targetResource})`,
+      timeAgo,
+      category: log.category || 'Audit',
+    };
   });
 
-  // SSL süresi uyarısı
-  services
-    .filter((s) => typeof s.sslExpiryDays === 'number' && s.sslExpiryDays <= 30 && s.sslExpiryDays >= 0)
-    .slice(0, 2)
-    .forEach((s) => {
-      generatedEvents.push({
-        id: `ssl-${s.id}`,
-        status: s.sslExpiryDays! < 7 ? 'err' : 'warn',
-        title: `${s.name} SSL sertifikası yakında dolacak`,
-        timeAgo: `${s.sslExpiryDays} gün kaldı`,
-        category: 'Güvenlik',
-      });
-    });
-
-  // Yedekleme olayı
-  if (lastBackup) {
-    generatedEvents.push({
-      id: `backup-${lastBackup.id}`,
-      status: lastBackup.status === 'success' ? 'ok' : 'err',
-      title: `Sistem yedeklemesi ${lastBackup.status === 'success' ? 'başarılı' : 'başarısız'}`,
-      timeAgo: new Date(lastBackup.receivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      category: 'Yedek',
-    });
-  }
-
-  // Birleştirilmiş olay listesi
-  const allEvents = [...liveEvents, ...generatedEvents].slice(0, 5);
+  const allEvents = [...liveEvents, ...formattedDbEvents].slice(0, 5);
 
   return (
     <Card>
@@ -81,26 +85,30 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
               onClick={() => onNavigate('activity')}
               className="text-xs text-[var(--text-muted)] hover:text-[var(--cloud-100)] transition-colors cursor-pointer"
             >
-              Tüm Geçmiş →
+              {t('common.viewAll') || 'Tümünü Gör'} →
             </button>
           )
         }
       >
-        <CardTitle>Son Gerçekleşen Olaylar</CardTitle>
+        <CardTitle>{t('dashboard.recentEvents') || 'Son Gerçekleşen Olaylar'}</CardTitle>
       </CardHeader>
       <CardContent className="!p-0">
-        {allEvents.length === 0 ? (
+        {loading && allEvents.length === 0 ? (
+          <div className="text-center py-6 text-xs text-[var(--text-muted)] font-mono">
+            {t('common.loading') || 'Yükleniyor...'}
+          </div>
+        ) : allEvents.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--text-muted)]">
-            Kayıtlı sistem olayı bulunmuyor
+            {t('dashboard.noRecentEvents') || 'Kayıtlı sistem olayı bulunmuyor'}
           </div>
         ) : (
           <TableWrap>
             <table className="table">
               <thead>
                 <tr>
-                  <th style={{ width: 80 }}>Zaman</th>
-                  <th>Olay Tanımı</th>
-                  <th style={{ textAlign: 'right' }}>Kategori</th>
+                  <th style={{ width: 80 }}>{t('common.time') || 'Zaman'}</th>
+                  <th>{t('dashboard.eventDescription') || 'Olay Tanımı'}</th>
+                  <th style={{ textAlign: 'right' }}>{t('common.category') || 'Kategori'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,9 +124,9 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
                         {evt.timeAgo}
                       </td>
                       <td>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <StatusDot status={dotStatus} />
-                          <span className="text-xs text-[var(--cloud-100)] font-medium truncate max-w-[220px]">
+                          <span className="text-xs text-[var(--cloud-100)] font-medium truncate max-w-[260px]">
                             {evt.title}
                           </span>
                         </div>
@@ -139,4 +147,3 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
     </Card>
   );
 };
-

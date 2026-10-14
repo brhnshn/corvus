@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const currentTitle = pageTitleMap[currentPage] || 'Corvus';
-  const displayHost = activeSystemName || 'homelab-01';
+  const displayHost = activeSystemName || 'Host';
   const displayContext = activeSystemIp ? `${displayHost} (${activeSystemIp})` : displayHost;
 
   return (

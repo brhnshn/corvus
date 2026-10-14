@@ -325,6 +325,8 @@ public record NotificationResult(
 [JsonSerializable(typeof(DeployWebhookResult))]
 [JsonSerializable(typeof(AlertRule))]
 [JsonSerializable(typeof(List<AlertRule>))]
+[JsonSerializable(typeof(IEnumerable<AlertRule>))]
+[JsonSerializable(typeof(AlertRule[]))]
 [JsonSerializable(typeof(CreateAlertRuleRequest))]
 [JsonSerializable(typeof(UpdateAlertRuleRequest))]
 [JsonSerializable(typeof(ActivityLogEntry))]

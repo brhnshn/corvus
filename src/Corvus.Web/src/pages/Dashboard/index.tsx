@@ -43,14 +43,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   // Canlı SSE Telemetri Akışı
   const { latestMetric: streamMetric } = useSystemMetricsStream();
 
+  const loadStats = useCallback(async () => {
+    try {
+      const stats = await api.getContainersStatsSummary();
+      if (isMountedRef.current) {
+        setContainerStats(stats);
+      }
+    } catch {
+      // Arka plan konteyner kaynak istatistiği hatası ana sayfayı düşürmez
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     try {
-      const [sumData, srvData, pmData, cntData, statsData] = await Promise.allSettled([
+      // 1. Ana metrikleri ve listeleri paralel çek (hızlı render)
+      const [sumData, srvData, pmData, cntData] = await Promise.allSettled([
         api.getDashboardSummary(),
         api.getServices(),
         api.getPushMonitors(),
         api.getContainers(),
-        api.getContainersStatsSummary(),
       ]);
 
       if (!isMountedRef.current) return;
@@ -59,7 +70,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       if (srvData.status === 'fulfilled') setServices(srvData.value);
       if (pmData.status === 'fulfilled') setPushMonitors(pmData.value);
       if (cntData.status === 'fulfilled') setContainers(cntData.value);
-      if (statsData.status === 'fulfilled') setContainerStats(statsData.value);
 
       setError(null);
     } catch (err: unknown) {
@@ -71,7 +81,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         setLoading(false);
       }
     }
-  }, []);
+
+    // 2. CPU/RAM yoğun konteyner istatistiklerini ana render'ı bekletmeden paralel getir
+    loadStats();
+  }, [loadStats]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -86,6 +99,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       if (!document.hidden && isMountedRef.current) loadData();
     };
 
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const handleCorvusEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail) {
@@ -99,7 +113,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         setLiveEvents((prev) => [newEvent, ...prev].slice(0, 5));
       }
       if (isMountedRef.current && !document.hidden) {
-        loadData();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          if (isMountedRef.current && !document.hidden) {
+            loadData();
+          }
+        }, 1500);
       }
     };
 
@@ -117,6 +136,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     return () => {
       isMountedRef.current = false;
       clearInterval(interval);
+      if (debounceTimer) clearTimeout(debounceTimer);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('corvus_event', handleCorvusEvent);
       window.removeEventListener('corvus_active_system_changed', handleSystemChange);

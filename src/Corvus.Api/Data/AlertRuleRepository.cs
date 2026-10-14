@@ -5,9 +5,9 @@ namespace Corvus.Api.Data;
 
 public interface IAlertRuleRepository
 {
-    Task<IEnumerable<AlertRule>> GetAllRulesAsync();
+    Task<List<AlertRule>> GetAllRulesAsync();
     Task<AlertRule?> GetRuleByIdAsync(string id);
-    Task<IEnumerable<AlertRule>> GetEnabledRulesAsync();
+    Task<List<AlertRule>> GetEnabledRulesAsync();
     Task CreateRuleAsync(AlertRule rule);
     Task UpdateRuleAsync(AlertRule rule);
     Task UpdateRuleStateAsync(string id, bool isFiring, DateTime? violationStartAt, DateTime? lastTriggeredAt);
@@ -62,12 +62,12 @@ public class AlertRuleRepository : IAlertRuleRepository
         };
     }
 
-    public async Task<IEnumerable<AlertRule>> GetAllRulesAsync()
+    public async Task<List<AlertRule>> GetAllRulesAsync()
     {
         using var conn = _db.CreateConnection();
         const string sql = "SELECT id, name, target_type, target_id, metric, operator AS operator_str, threshold_value, duration_seconds, cooldown_minutes, is_enabled, is_firing, violation_start_at, last_triggered_at, created_at, updated_at FROM alert_rules ORDER BY created_at DESC;";
         var rows = await conn.QueryAsync<AlertRuleDbRow>(sql);
-        return rows.Select(MapToModel);
+        return rows.Select(MapToModel).ToList();
     }
 
     public async Task<AlertRule?> GetRuleByIdAsync(string id)
@@ -78,12 +78,12 @@ public class AlertRuleRepository : IAlertRuleRepository
         return row != null ? MapToModel(row) : null;
     }
 
-    public async Task<IEnumerable<AlertRule>> GetEnabledRulesAsync()
+    public async Task<List<AlertRule>> GetEnabledRulesAsync()
     {
         using var conn = _db.CreateConnection();
         const string sql = "SELECT id, name, target_type, target_id, metric, operator AS operator_str, threshold_value, duration_seconds, cooldown_minutes, is_enabled, is_firing, violation_start_at, last_triggered_at, created_at, updated_at FROM alert_rules WHERE is_enabled = 1;";
         var rows = await conn.QueryAsync<AlertRuleDbRow>(sql);
-        return rows.Select(MapToModel);
+        return rows.Select(MapToModel).ToList();
     }
 
     public async Task CreateRuleAsync(AlertRule rule)

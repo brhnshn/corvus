@@ -137,4 +137,30 @@ public class AlertRuleRepositoryTests
         Assert.Single(enabledRules);
         Assert.Equal("Aktif Kural", enabledRules[0].Name);
     }
+
+    [Fact]
+    public async Task AlertRuleRepository_GetAllRulesAsync_SerializesWithAotContext()
+    {
+        using var scope = new TempDbScope();
+        var repo = new AlertRuleRepository(scope.DbFactory);
+
+        await repo.CreateRuleAsync(new AlertRule
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "High CPU",
+            TargetType = "system",
+            Metric = "cpu",
+            Operator = "gt",
+            ThresholdValue = 85.0,
+            IsEnabled = true
+        });
+
+        var rules = await repo.GetAllRulesAsync();
+        Assert.Single(rules);
+
+        // Native AOT System.Text.Json Serialization Test
+        var json = System.Text.Json.JsonSerializer.Serialize(rules, typeof(List<AlertRule>), CorvusJsonSerializerContext.Default);
+        Assert.NotNull(json);
+        Assert.Contains("High CPU", json);
+    }
 }

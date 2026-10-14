@@ -30,7 +30,10 @@ export const tr: TranslationDictionary = {
     open: 'Aç',
     days: 'Gün',
     usage: 'Kullanım:',
-    retry: 'Tekrar Dene'
+    retry: 'Tekrar Dene',
+    viewAll: 'Tümünü Gör',
+    time: 'Zaman',
+    category: 'Kategori'
   },
   nav: {
     dashboard: 'Genel Bakış',
@@ -55,7 +58,11 @@ export const tr: TranslationDictionary = {
     openCommandPalette: 'Komut Paletini Aç (Ctrl K)',
     publicStatusPage: 'Herkese Açık Canlı Durum Sayfası',
     userProfile: 'Kullanıcı Profili',
-    switchSystem: 'Sistem Değiştir / Tüm Sistemler'
+    switchSystem: 'Sistem Değiştir / Tüm Sistemler',
+    fleet: 'Tüm Sunucular',
+    activeNode: 'Aktif Düğüm',
+    nodeScope: 'Düğüm Kapsamı',
+    allSystems: 'Tüm Sistemler'
   },
   status: {
     healthy: 'Çalışıyor',
@@ -132,7 +139,25 @@ export const tr: TranslationDictionary = {
     liveStreamSync: 'Canlı Telemetri · 100ms Senkron',
     pollingMode: 'Periyodik Sorgulama',
     systemMetrics: 'Sistem Metrikleri →',
-    viewServices: 'Servisleri İncele →'
+    viewServices: 'Servisleri İncele →',
+    cpuLoad: 'Sistem CPU Yükü',
+    cpuInstant: 'Anlık işlemci tüketimi',
+    cpuHigh: 'Yüksek',
+    cpuNormal: 'Normal',
+    ramConsumption: 'RAM Tüketimi',
+    ramUsedTotal: 'Kullanılan / Toplam bellek',
+    diskRoot: 'Disk Durumu (Root)',
+    diskFreeSuffix: '{gb} GB Boş',
+    topResourceContainers: 'En Çok Kaynak Tüketen Konteynerler',
+    noResourceStats: 'Henüz kaynak istatistiği toplanmadı',
+    viewAll: 'Tümünü Gör →',
+    topContainer: 'Konteyner',
+    topCpu: 'CPU',
+    topRam: 'Bellek',
+    topRamRatio: 'Bellek Oranı',
+    recentEvents: 'Son Gerçekleşen Olaylar',
+    noRecentEvents: 'Kayıtlı sistem olayı bulunmuyor',
+    eventDescription: 'Olay Tanımı'
   },
   containers: {
     title: 'Docker Konteynerleri',

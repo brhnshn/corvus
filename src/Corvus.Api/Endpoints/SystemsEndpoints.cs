@@ -89,7 +89,7 @@ public static class SystemsEndpoints
                     CurrentDiskUsedBytes: currentDiskUsed,
                     CurrentDiskTotalBytes: currentDiskTotal,
                     ActiveContainerCount: activeContainers,
-                    LastPingMs: tunnelManager.IsConnected(sys.Id) ? 12 : null,
+                    LastPingMs: null,
                     LoadAvg1m: load1,
                     LoadAvg5m: load5,
                     LoadAvg15m: load15,
