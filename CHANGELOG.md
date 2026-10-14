@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-10-14 — ObsidianUI Shell, Sidebar & Navbar Layout Fix
+
+### Fixed
+- **ObsidianUI Core Shell, Sidebar & Navbar Layout Fix**:
+  - Added missing ObsidianUI shell and navigation stylesheet classes into `src/Corvus.Web/src/index.css`: `.shell`, `.sidebar`, `.sidebar-resizer`, `.sidebar-top`, `.brand-row`, `.brand`, `.brand-mark`, `.system-selector`, `.cmd-trigger`, `.kbd`, `.nav-list`, `.nav-hover-pill`, `.nav-active-pill`, `.nav-btn`, `.nav-btn-left`, `.sidebar-footer`, `.footer-link`, `.version-row`, `.workspace`, `.header`, `.header-left`, `.page-title`, `.header-context`, `.header-actions`, and `.page-body`.
+  - Resolved visual layout degradation on production deployments where Navbar and Sidebar overlapped and unstyled menu buttons clustered.
+  - Added responsive layout breakpoint rules (`@media (max-width: 1023px)`) ensuring clean layout coexistence with the mobile bottom navigation bar.
+
 ## [1.6.0] - 2026-10-14 — Multi-Node Systems Cockpit, Edge Agent, RBAC, Visual Compose & Systemd Management
 
 ### Added

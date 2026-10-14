@@ -175,9 +175,342 @@ body {
   font-family: var(--font-sans);
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   transition: background-color var(--dur-base) var(--ease-out-quart), color var(--dur-base) var(--ease-out-quart);
+}
+
+/* ==========================================================================
+   ObsidianUI Core Shell & Workspace Layout
+   ========================================================================== */
+.shell {
+  display: flex;
+  height: 100dvh;
+  width: 100vw;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+
+/* --- 1. SIDEBAR WITH GLIDING HOVER & SLIDING ACTIVE PILL --- */
+.sidebar {
+  width: var(--sidebar-w, 232px);
+  min-width: 184px;
+  max-width: 320px;
+  background: var(--bg-shell);
+  border-right: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex-shrink: 0;
+  user-select: none;
+  height: 100%;
+  transition: background-color var(--dur-base) var(--ease-out-quart), transform var(--dur-base) var(--ease-out-quart);
+}
+
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 25;
+  transition: background-color var(--dur-fast) var(--ease-out-quart);
+}
+.sidebar-resizer:hover,
+.sidebar-resizer.active {
+  background: var(--cloud-300);
+}
+
+.sidebar-top {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 600;
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+}
+
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--cloud-200);
+  color: var(--bg-canvas);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.brand:hover .brand-mark {
+  transform: scale(1.06) rotate(-3deg);
+}
+
+.system-selector,
+.cmd-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 9px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out-quart),
+              transform var(--dur-fast) var(--ease-spring),
+              background-color var(--dur-fast);
+}
+.cmd-trigger {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+.system-selector:hover,
+.cmd-trigger:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+.system-selector:active,
+.cmd-trigger:active {
+  transform: scale(0.98);
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-muted);
+}
+
+/* Gliding Nav Container */
+.nav-list {
+  flex: 1;
+  padding: 10px 8px;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-section-title {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 4px 8px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Gliding Hover Pill & Sliding Active Pill */
+.nav-hover-pill {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 33px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  transition: transform var(--dur-base) var(--ease-spring),
+              height var(--dur-base) var(--ease-spring),
+              opacity var(--dur-fast) ease;
+}
+
+.nav-active-pill {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 33px;
+  background: var(--cloud-200);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 1;
+  transition: transform var(--dur-base) var(--ease-spring),
+              height var(--dur-base) var(--ease-spring),
+              opacity var(--dur-fast) ease;
+}
+
+.nav-btn {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 33px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--dur-fast) var(--ease-out-quart),
+              transform var(--dur-fast) var(--ease-spring);
+}
+.nav-btn:hover {
+  color: var(--text-primary);
+}
+.nav-btn:active {
+  transform: scale(0.985);
+}
+.nav-btn.active {
+  color: var(--bg-canvas);
+  font-weight: 600;
+}
+
+.nav-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.nav-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.8;
+  flex-shrink: 0;
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+.nav-btn:hover svg {
+  transform: translateX(1.5px);
+}
+
+.nav-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.sidebar-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.footer-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+.footer-link:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.version-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* --- 2. MAIN WORKSPACE & STICKY HEADER --- */
+.workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.header {
+  height: 50px;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-shell);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.page-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.header-context {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* --- 3. PAGE BODY SCROLLABLE WORKSPACE --- */
+.page-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1023px) {
+  .sidebar {
+    display: none;
+  }
+  .header {
+    padding: 0 14px;
+  }
+  .page-body {
+    padding: 14px;
+  }
 }
 
 /* Animations & Keyframes */

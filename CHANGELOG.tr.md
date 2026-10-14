@@ -3,6 +3,14 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.1] - 2026-10-14 — ObsidianUI İskelet, Kenar Çubuğu ve Üst Çubuk Yerleşim Düzeltmesi
+
+### Düzeltilenler (Fixed)
+- **ObsidianUI Ana İskelet, Kenar Çubuğu ve Üst Çubuk Yerleşim Düzeltmesi (Layout & CSS Fix)**:
+  - `src/Corvus.Web/src/index.css` içine eksik olan ObsidianUI iskelet ve navigasyon sınıfları eklendi: `.shell`, `.sidebar`, `.sidebar-resizer`, `.sidebar-top`, `.brand-row`, `.brand`, `.brand-mark`, `.system-selector`, `.cmd-trigger`, `.kbd`, `.nav-list`, `.nav-hover-pill`, `.nav-active-pill`, `.nav-btn`, `.nav-btn-left`, `.sidebar-footer`, `.footer-link`, `.version-row`, `.workspace`, `.header`, `.header-left`, `.page-title`, `.header-context`, `.header-actions`, `.page-body`.
+  - Canlı dağıtımda Navbar ve Sidebar bileşenlerinin çakışması, menü butonlarının iç içe geçmesi ve stil eksikliği tamamen giderildi.
+  - 1024px altındaki mobil cihazlar için ekran düzenini koruyan `@media (max-width: 1023px)` duyarlılık kuralları tamamlandı.
+
 ## [1.6.0] - 2026-10-14 — Çoklu Sistem Kokpiti, Uç Ajan, RBAC, Görsel Compose ve Systemd Yönetimi
 
 ### Eklenenler (Added)
