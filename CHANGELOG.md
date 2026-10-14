@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [1.6.0] - 2026-10-14 — Multi-Node Systems Cockpit, Edge Agent, RBAC, Visual Compose & Systemd Management
 
 ### Added
+- **Comprehensive Architecture & Specification Documentation Sync**:
+  - Fully updated and synchronized `docs/architecture.md`, `docs/architecture.tr.md`, `docs/specification.md`, `docs/specification.tr.md`, `README.md`, and `README.tr.md` in both English and Turkish for v1.6.0.
+  - Documented Multi-Node Edge Agent, 3-tier RBAC (`admin`, `operator`, `viewer`), Linux Systemd unit management, Visual Compose & .env Editor, unmanaged 128-byte struct ring buffer, and 320 automated tests (291 backend + 29 frontend).
 - **SSE Telemetry Streaming & 100ms Live Sync**:
   - Replaced browser HTTP polling with real-time Server-Sent Events (`GET /api/v1/systems/{id}/stream` and `/api/v1/metrics/stream`).
   - Added `useSystemMetricsStream` hook with exponential backoff and fallback capability.

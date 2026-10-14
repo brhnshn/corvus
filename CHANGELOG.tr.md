@@ -6,6 +6,9 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 ## [1.6.0] - 2026-10-14 — Çoklu Sistem Kokpiti, Uç Ajan, RBAC, Görsel Compose ve Systemd Yönetimi
 
 ### Eklenenler (Added)
+- **Kapsamlı Mimari ve Teknik Şartname Dokümantasyon Senkronizasyonu**:
+  - `docs/architecture.md`, `docs/architecture.tr.md`, `docs/specification.md`, `docs/specification.tr.md`, `README.md` ve `README.tr.md` dosyaları hem Türkçe hem İngilizce olarak Corvus v1.6.0 mimarisine tam senkronize edildi.
+  - Çok Düğümlü Uç Ajan (Edge Agent), 3 seviyeli RBAC (`admin`, `operator`, `viewer`), Linux Systemd servis yönetimi, Görsel Compose & .env editörü, yönetilmeyen 128 bayt struct halka tamponu ve 320 otomatik test (291 backend + 29 frontend) eksiksiz belgelendi.
 - **SSE Telemetri Akışı ve 100ms Canlı Senkronizasyon**:
   - Tarayıcı HTTP yoklama (polling) yükü kaldırılarak Server-Sent Events tabanlı gerçek zamanlı veri akışı sağlandı (`GET /api/v1/systems/{id}/stream` ve `/api/v1/metrics/stream`).
   - Üstel geri çekilme (exponential backoff) ve otomatik kurtarma mekanizmalı `useSystemMetricsStream` hook'u geliştirildi.

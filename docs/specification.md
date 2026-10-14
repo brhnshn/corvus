@@ -28,30 +28,42 @@ Corvus is an open-source, ultra-low resource consumption service launcher and un
 
 ## 2. Technology Stack
 
-### Backend
-- Language: **C#**
-- .NET Version: **.NET 9**
-- Web Framework: **ASP.NET Core Minimal API**
-- Compilation Mode: **Native AOT** (Zero Reflection)
-- Docker Communication: **Custom SocketsHttpHandler + System.Text.Json Source Generation** (direct communication with the Docker daemon over Unix domain sockets or Windows named pipes, `GET /api/containers/stats-summary` batch streaming)
-- Memory Architecture: **Zero-Dependency In-Memory Micro-Cache** (<150 KB heap; 2.5s-10s TTL for Docker socket, 5s TTL for Uptime 24h aggregations), **.NET 9 Non-Concurrent Workstation GC** (`DOTNET_gcConcurrent=0`), **Elastic Memory Conservation** (`DOTNET_GCConserveMemory=9`, `MALLOC_TRIM_THRESHOLD_=65536`), periodic native memory trimmer (`MemoryTrimmerBackgroundService`, flushes SQLite connection pools every 3 minutes, runs `PRAGMA wal_checkpoint(TRUNCATE);`, aggressive Gen 2 compaction, and triggers libc `malloc_trim(0)`), Container Discovery Fingerprinting (`ComputeFingerprint`), and container inspect cache (`_inspectCache`).
-- Memory Footprint Target: **<35 MB RAM** (idle runtime measurements: ~20–30 MB, ceiling strictly controlled under 40 MB under load)
+### Corvus Edge Agent (`src/Corvus.Agent`)
+- Language & Runtime: **C# / .NET 9 Native AOT** (Zero Reflection, single self-contained binary <15 MB)
+- Memory Footprint Target: **<10 MB RAM** (idle runtime: ~6-8 MB)
+- Architecture: **Outbound-Only TLS WebSocket Tunnel** (`/agent/connect`), zero inbound listening ports or firewall ingress required on monitored edge nodes
+- Telemetry Collection: Direct high-performance Linux `/proc` filesystem and `/sys` reader (`ProcFsCollector`, zero subshell overhead) for CPU, RAM, Disk partitions, and Network interface throughput
+- Docker Integration: Unix domain socket RPC (`/var/run/docker.sock`) streaming remote container states and executing container management commands (`start`, `stop`, `restart`, `logs`)
+- Linux Systemd Integration: Regex-guarded whitelist unit manager (`SystemdServiceClient`, `journalctl` log streamer)
+
+### Corvus Central Hub (Backend)
+- Language & Runtime: **C# / .NET 9 Native AOT** (Ahead-Of-Time compiled ELF/PE binary)
+- Web Framework: **ASP.NET Core Minimal API** with high-throughput route endpoints
+- Memory Architecture: **Zero-Dependency In-Memory Micro-Cache** (<150 KB heap; 2.5s-10s TTL for Docker socket, 5s TTL for Uptime 24h aggregations), **Unmanaged Struct Telemetry Ring Buffer** (128-byte `SystemTelemetryPoint`, 60-point rolling window in RAM, ~7.2 KB per node), **.NET 9 Non-Concurrent Workstation GC** (`DOTNET_gcConcurrent=0`), **Elastic Memory Conservation** (`DOTNET_GCConserveMemory=9`, `MALLOC_TRIM_THRESHOLD_=65536`), periodic native memory trimmer (`MemoryTrimmerBackgroundService`, flushes database connection pools every 3 minutes, runs `PRAGMA wal_checkpoint(TRUNCATE);`, aggressive Gen 2 compaction, and triggers libc `malloc_trim(0)`), Container Discovery Fingerprinting (`ComputeFingerprint`), and container inspect cache (`_inspectCache`).
+- Memory Footprint Target: **<35 MB RAM** (idle runtime: ~20–30 MB, ceiling strictly controlled under 40 MB under heavy multi-node load)
 
 ### Frontend
 - **TypeScript + React 19 + Vite**
-- Architecture: **Modular Clean Architecture**: strict type contracts in `types/`, domain-driven client modules in `api/` (`http.ts`, `services.ts`, `containers.ts`, etc.) with in-memory SWR caching
-- Security: Centralized `corvus_unauthorized` session invalidation handler
+- Architecture: **Modular Clean Architecture**: strict type contracts in `types/`, domain-driven client modules in `api/` (`http.ts`, `services.ts`, `containers.ts`, `systems.ts`, `activity.ts`, etc.) with in-memory SWR caching
+- Design System: **ObsidianUI** (Greyish Cloud White palette `#F5F6F8`, strict zero-gradient threshold-driven semantics, 180-220ms spring micro-animations, glass surfaces)
 - Styling: **Tailwind CSS v4** (Mobile Glass Bottom Navigation Bar, single-column unified settings shell, flexible responsive cards)
 - Charting: **Recharts**
 - Internationalization (i18n): **Native React 19 Context** with compile-time type safety (`DeepStringify`), zero external library overhead (~1.2 KB), primary English (`en`) and complete Turkish (`tr`) support, dynamic switcher
 - Code-Splitting: **React.lazy + Suspense** and Vite `manualChunks` with an initial bundle payload under 200 KB
-- Real-Time Communication: REST + **Server-Sent Events (SSE)** for live status broadcasts (`corvus_event` pub/sub channels)
+- Real-Time Communication: REST + **Server-Sent Events (SSE)** for live status broadcasts (`corvus_event` pub/sub channels) + **100ms Adaptive Systems SSE Stream** (`/api/systems/{id}/stream`)
 
-### Persistence Layer
-- **SQLite (Microsoft.Data.Sqlite) + Dapper (Dapper.AOT)**: WAL mode with `PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`, `PRAGMA cache_size = -64000;` and periodic `PRAGMA optimize;`
-- **DbUp**: Sequential SQL-first schema migrations (`001_init.sql` through `013_service_tags.sql`)
-- Composite indexes on `system_metrics(recorded_at)`, `system_metrics_hourly(recorded_at)`, and `uptime_checks(service_id, checked_at)`
-- **Backup & Retention Engine**: Point-in-time lock-free SQLite snapshot downloads (`VACUUM INTO`), live database disk usage telemetry (`GET /api/settings/db-stats`), dynamic background retention cleaner with Unlimited mode, automated `VACUUM;` freelist reclamation
+### Persistence & Storage Layer
+- **Dual Database Provider Support:**
+  - **SQLite (Default Embedded):** Microsoft.Data.Sqlite + Dapper.AOT in WAL mode (`PRAGMA busy_timeout = 5000;`, `PRAGMA synchronous = NORMAL;`, `PRAGMA temp_store = MEMORY;`, `PRAGMA cache_size = -64000;`, `PRAGMA optimize;`)
+  - **PostgreSQL (Multi-Node / Enterprise):** Npgsql + Dapper.AOT with connection pooling, native schemas, and index optimization
+- **DbUp**: Sequential SQL-first schema migrations (`001_init.sql` through `017_users_rbac_sqlite.sql` and PostgreSQL counterparts)
+- Composite indexes on `system_metrics(recorded_at)`, `system_metrics_hourly(recorded_at)`, `system_metrics_1m(system_id, recorded_at)`, and `uptime_checks(service_id, checked_at)`
+- **Backup & Retention Engine**: Point-in-time lock-free SQLite snapshot downloads (`VACUUM INTO`), live database disk usage telemetry (`GET /api/settings/db-stats`), two-tier retention cleaner (7d raw 1m / 30d 1h rollup / 365d daily SLA), automated `VACUUM;` freelist reclamation
+
+### Automated Test Suite
+- **320 Total Passing Tests:**
+  - **Backend (291 Tests):** xUnit + Moq + FluentAssertions integration and unit test suite across Minimal API endpoints, background services, repository layers, Docker clients, and RBAC security filters.
+  - **Frontend (29 Tests):** Vitest + React Testing Library unit and component tests validating state management, i18n formatting, fuzzy search, and component rendering.
 
 ---
 
@@ -183,9 +195,117 @@ Incoming push monitor heartbeat records.
 | size_bytes | INTEGER (nullable) | Reported backup archive size |
 | message | TEXT (nullable) | Execution log or notes |
 
+### `alert_rules`
+Threshold-based alerting rules for host and container resource limits (`014_alert_rules.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| id | TEXT (UUID) | Primary key |
+| name | TEXT | Rule name (e.g. 'Node CPU Overload') |
+| target_type | TEXT | `system` or `container` |
+| target_id | TEXT (nullable) | Target container ID (if `target_type = container`) |
+| metric | TEXT | `cpu`, `memory`, or `disk` |
+| operator | TEXT | `gt` (greater than) or `lt` (less than) |
+| threshold_value | REAL | Threshold percentage or value (e.g. 85.0) |
+| duration_seconds | INTEGER | Consecutive duration in violation required before firing (default: 60) |
+| cooldown_minutes | INTEGER | Minimum interval between repeat notifications (default: 30) |
+| is_enabled | INTEGER | `1`: Active rule, `0`: Disabled |
+| is_firing | INTEGER | `1`: Currently in violation and alert dispatched, `0`: Normal |
+| violation_start_at | TEXT (nullable) | ISO-8601 timestamp when violation threshold was first breached |
+| last_triggered_at | TEXT (nullable) | ISO-8601 timestamp of last notification dispatch |
+| created_at, updated_at | TEXT | Creation and modification timestamps |
+
+### `activity_logs`
+Structured audit trail for security, configuration, and container events (`015_activity_logs.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| id | TEXT (UUID) | Primary key |
+| actor_username | TEXT | Initiating username or `system` |
+| action_type | TEXT | `container_restart`, `compose_update`, `threshold_alert`, `user_login`, etc. |
+| category | TEXT | `container`, `service`, `security`, `alert`, `system` |
+| target_resource | TEXT | Affected resource name (e.g. `nginx-web`, `api.corvus.local`) |
+| details_json | TEXT (nullable) | Structured JSON metadata describing the action |
+| ip_address | TEXT (nullable) | Request client IP address |
+| created_at | TEXT | ISO-8601 event timestamp (Indexed DESC) |
+
+### `systems` (Fleet Nodes)
+Multi-node edge system registration and heartbeats (`016_systems_sqlite.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| id | TEXT (UUID) | Primary key (Node ID) |
+| name | TEXT | Human-readable system name (e.g. `vps-frankfurt-01`) |
+| hostname | TEXT (nullable) | Server hostname reported by the agent |
+| ip_address | TEXT (nullable) | Remote agent IP address |
+| os_info | TEXT (nullable) | OS distribution, kernel version, and architecture |
+| agent_version | TEXT (nullable) | Running Corvus Agent SemVer version |
+| tags_json | TEXT | JSON string array of node tags (e.g. `["prod", "edge"]`) |
+| status | TEXT | Node connection status: `online`, `degraded`, or `offline` |
+| created_at, updated_at | TEXT | Registration and metadata update timestamps |
+| last_seen_at | TEXT (nullable) | ISO-8601 timestamp of last received WebSocket heartbeat |
+
+### `system_tokens`
+Cryptographically secure node registration tokens for Edge Agent authentication (`016_systems_sqlite.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| id | TEXT (UUID) | Primary key |
+| system_id | TEXT | Foreign key referencing `systems.id` (ON DELETE CASCADE) |
+| token_hash | TEXT (UNIQUE) | SHA-256 hash of agent secret token |
+| token_prefix | TEXT | Safe prefix for UI identification (e.g. `crv_live_9f82`) |
+| created_at | TEXT | Creation timestamp |
+| expires_at | TEXT (nullable) | Optional expiration timestamp |
+| is_revoked | INTEGER | `1`: Revoked, `0`: Active |
+| revoked_at | TEXT (nullable) | Revocation timestamp |
+
+### `system_metrics_1m`
+1-minute rolled-up host telemetry for registered systems, retained for 7 days (`016_systems_sqlite.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| id | INTEGER | Primary key (Autoincrement) |
+| system_id | TEXT | Foreign key referencing `systems.id` (ON DELETE CASCADE) |
+| recorded_at | TEXT | ISO-8601 sample bucket timestamp |
+| cpu_percent | REAL | 1-minute average CPU utilization percentage |
+| cpu_cores | INTEGER | Available logical CPU core count |
+| ram_used_bytes, ram_total_bytes | INTEGER | RAM memory allocation and capacity in bytes |
+| disk_used_bytes, disk_total_bytes | INTEGER | Primary storage usage and capacity in bytes |
+| network_rx_bytes_sec, network_tx_bytes_sec | INTEGER | Network throughput rates in bytes/sec |
+| load_avg_1m, load_avg_5m, load_avg_15m | REAL (nullable) | Linux kernel CPU load averages |
+
+### `system_metrics_1h`
+1-hour aggregated downsampled metrics for registered systems, retained for 30 days (`016_systems_sqlite.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| id | INTEGER | Primary key (Autoincrement) |
+| system_id | TEXT | Foreign key referencing `systems.id` (ON DELETE CASCADE) |
+| recorded_at | TEXT | Hourly bucket timestamp (`YYYY-MM-DDTHH:00:00Z`) |
+| cpu_avg, cpu_max | REAL | Average and peak CPU usage across the hour |
+| ram_used_avg | INTEGER | Average RAM consumption in bytes |
+| disk_used_avg | INTEGER | Average storage utilization in bytes |
+| network_rx_total, network_tx_total | INTEGER | Total network traffic transferred in bytes |
+
+### `system_containers_cache`
+Live remote container inventory streamed by the Edge Agent (`016_systems_sqlite.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| system_id | TEXT | Foreign key referencing `systems.id` (Composite PK) |
+| container_id | TEXT | Remote container hash ID (Composite PK) |
+| name | TEXT | Container name |
+| image | TEXT (nullable) | Container image repository and tag |
+| state | TEXT | State string (`running`, `exited`, `paused`, etc.) |
+| status | TEXT (nullable) | Up status summary (e.g. `Up 4 hours`) |
+| cpu_percent | REAL | Instantaneous CPU percentage |
+| memory_bytes | INTEGER | Instantaneous memory usage in bytes |
+| ports_json | TEXT | JSON string array of port bindings |
+| updated_at | TEXT | Last cache synchronization timestamp |
+
 ### `users`, `user_sessions`, and `settings`
-- `users`: `id`, `username`, `password_hash` (PBKDF2), `role` (`admin` or `viewer`), `created_at`
-- `user_sessions`: `token` (PK), `username`, `expires_at`, `created_at` (Persistent SQLite session store surviving container redeployments and restarts)
+- `users`: `id`, `username`, `password_hash` (PBKDF2), `role` (`admin`, `operator`, `viewer`), `created_at` (`017_users_rbac_sqlite.sql`)
+- `user_sessions`: `token` (PK), `username`, `expires_at`, `created_at` (Persistent session store surviving container redeployments and restarts)
 - `settings`: `key`, `value`, `updated_at` (alert credentials, registration toggle, retention policies)
 
 ---
@@ -251,9 +371,34 @@ Incoming push monitor heartbeat records.
 | `POST /api/auth/register` | Public | Register initial admin or new user if registrations are open |
 | `POST /api/auth/logout` | Auth | Invalidate current session and remove persistent record |
 | `POST /api/auth/change-password` | Auth | Self-service password change for logged-in user |
-| `GET /api/users` | Admin | List all system users and assigned roles (`admin`, `viewer`) |
+| `GET /api/users` | Admin | List all system users and assigned roles (`admin`, `operator`, `viewer`) |
 | `POST /api/users` | Admin | Create a new user with specified role |
+| `PUT /api/users/{id}/role` | Admin | Update user access role (`admin`, `operator`, `viewer`) |
 | `DELETE /api/users/{id}` | Admin | Delete user and immediately revoke all active sessions |
+| `GET /api/systems` | Auth | List registered systems with status, CPU/RAM/Disk metrics, and last seen timestamps |
+| `POST /api/systems` | Admin | Register a new remote system and issue initial agent secret token |
+| `GET /api/systems/{id}` | Auth | Retrieve system telemetry, hardware specs, OS information, and container cache |
+| `PUT /api/systems/{id}` | Admin | Update system display name, tags, and operational configuration |
+| `DELETE /api/systems/{id}` | Admin | Unregister system, revoke agent token, and purge historical metrics |
+| `POST /api/systems/{id}/token` | Admin | Regenerate and re-issue cryptographically secure agent authentication token |
+| `GET /api/systems/{id}/metrics` | Auth | Retrieve time-series metrics (`?range=1h\|6h\|24h\|7d\|30d`) from 1m and 1h rollups |
+| `GET /api/systems/{id}/containers` | Auth | Retrieve cached remote Docker containers for edge system |
+| `GET /api/systems/{id}/stream` | Auth | **SSE:** 100ms adaptive high-frequency telemetry stream from in-memory ring buffer |
+| `GET /agent/connect` | Token Auth | **WSS Tunnel:** Bidirectional secure WebSocket tunnel for Corvus Edge Agent |
+| `GET /agent/scripts/install.sh` | Public | Dynamic one-line shell installation script for Linux hosts |
+| `GET /api/systemd/services` | Admin | List whitelist-filtered Linux systemd services with active/sub-state |
+| `POST /api/systemd/services/{name}/start` | Admin | Start specified systemd service unit |
+| `POST /api/systemd/services/{name}/stop` | Admin | Stop specified systemd service unit |
+| `POST /api/systemd/services/{name}/restart` | Admin | Restart specified systemd service unit |
+| `POST /api/systemd/services/{name}/enable` | Admin | Enable systemd service unit at boot |
+| `POST /api/systemd/services/{name}/disable` | Admin | Disable systemd service unit from boot |
+| `GET /api/systemd/services/{name}/logs` | Admin | Stream live `journalctl -u {name} -n 100` execution logs |
+| `GET /api/alerts/rules` | Auth | List configured metric threshold rules and current firing states |
+| `POST /api/alerts/rules` | Admin | Create a new metric threshold alert rule (CPU, RAM, Disk) |
+| `PUT /api/alerts/rules/{id}` | Admin | Update threshold value, duration, cooldown, or enabled state |
+| `DELETE /api/alerts/rules/{id}` | Admin | Delete a metric threshold rule |
+| `GET /api/activity` | Auth | Retrieve paginated audit trail events (`?page=1&limit=50&category=...`) |
+| `GET /api/activity/stats` | Auth | Summary statistics of audit log events grouped by category |
 
 ---
 
@@ -266,19 +411,24 @@ Incoming push monitor heartbeat records.
 | `SystemMetricsCollector` | 15 sec | Samples host CPU, RAM, disk, and network stats into `system_metrics` |
 | `UptimeCheckerService` | 5 sec (tick) / 60 sec | HTTP/TCP and ICMP ping checks, body payload assertions, proactive SSL early warnings (14d warning, 7d critical) with daily debounce memory, 3-state finite state machine (`healthy` -> `degraded` -> `down`), and Snitch checks |
 | `UpdateCheckerService` | 24 hours | Checks GitHub Releases API for updates and caches release notifications |
-| `MemoryTrimmerBackgroundService` | 3 min | Flushes SQLite connection pools, resets WAL logs with `PRAGMA wal_checkpoint(TRUNCATE);`, aggressive Gen 2 compaction, and libc `malloc_trim(0)` |
+| `MemoryTrimmerBackgroundService` | 3 min | Flushes database connection pools, resets WAL logs with `PRAGMA wal_checkpoint(TRUNCATE);`, aggressive Gen 2 compaction, and libc `malloc_trim(0)` |
 | `RetentionCleanupService` | Once daily | Performs hourly metric rollup aggregation (`system_metrics_hourly`), enforces dual-stage retention (7d raw / 365d hourly rollup), runs automatic `VACUUM;` to reclaim freelist storage back to host OS, and runs compacting Gen 2 GC sweeps |
+| `MetricsBatchFlusherBackgroundService` | 60 sec | Flushes in-memory unmanaged ring buffer telemetry into `system_metrics_1m` in atomic batched transactions |
+| `MetricsRetentionWorker` | Once daily | Enforces rolling retention on edge system metrics (7 days for `system_metrics_1m`, 30 days for `system_metrics_1h`) |
+| `SystemWatchdogService` | 30 sec | Evaluates node heartbeat health; transitions nodes exceeding 45s to `degraded` and exceeding 90s to `offline` |
+| `ThresholdEvaluatorService` | 20 sec | Evaluates configured metric threshold rules (`alert_rules`) against system telemetry with sliding-window anti-spam |
 | `FlappingDetector` | Continuous (in-memory) | Sliding-window state transition tracker. Detects flapping oscillations, suppresses intermediate alerts, and dispatches Amber warning and Green recovery alerts |
 
 ---
 
 ## 6. Authentication, RBAC, and Session Durability
 
-1. **Role-Based Access Control (RBAC):**
-   - `admin`: Full administrative control over services, containers, system configuration, backup downloads, and user provisioning.
-   - `viewer`: Read-only access to dashboards, metrics, and logs. Mutating actions are rejected with `403 Forbidden`.
-2. **Persistent SQLite Session Store:**
-   - Sessions are validated in-memory at sub-microsecond latency and persisted to the `user_sessions` SQLite table, ensuring user logins survive container upgrades and service restarts.
+1. **Granular 3-Tier Role-Based Access Control (RBAC):**
+   - `admin`: Full administrative control over services, remote systems, tokens, users, systemd units, Docker Compose stacks, container recreate, and system backups.
+   - `operator`: Operational management capabilities (start/stop/restart containers, recreate images, acknowledge alarms, run connection tests) without user provisioning or node token revocation privileges.
+   - `viewer`: Read-only access across all dashboards, telemetry charts, container logs, and system specs. Mutating endpoints reject viewer requests with `403 Forbidden`.
+2. **Persistent Session Store:**
+   - Sessions are validated in-memory at sub-microsecond latency and persisted to the `user_sessions` table, ensuring user logins survive container upgrades and service restarts.
 3. **Centralized 401 Session Interceptor:**
    - Global HTTP 401 responses emit a `corvus_unauthorized` window event, gracefully directing the user back to the authentication view without throwing unhandled promise rejections.
 4. **Zero-Trust SSO / Reverse Proxy Support:**
@@ -294,13 +444,17 @@ Incoming push monitor heartbeat records.
 |---|---|---|
 | **Dashboard** | `/` | Mobile-first 2-column KPI strip, full-width Disk bar, live system pulse hero, GitHub update checker badge, and active containers widget |
 | **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, expected body assertion, SSL expiration badge, **environment tags (`TagBadge`)**, **real-time tag filter bar (`TagFilterBar`)**, and reordering controls |
-| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, **Clickable Row Navigation (`ContainerRow`)**, **In-Row Quick Actions Toolbar (`ContainerQuickActions`)**, Start/Stop/Pause/Restart actions, **Bulk Stack Controls (`ComposeStackGroup`)**, **In-Browser YAML Editor (`ComposeConfigModal`)**, **OCI Image Update Sentinel (`ImageUpdateModal`)**, live log terminal, **Interactive Web Terminal**, **Dry-Run Disk Prune (`SystemPruneModal`)**, and **Container Tags & Filter Bar (`TagFilterBar`)** |
+| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, **Clickable Row Navigation (`ContainerRow`)**, **In-Row Quick Actions Toolbar (`ContainerQuickActions`)**, Start/Stop/Pause/Restart actions, **Bulk Stack Controls (`ComposeStackGroup`)**, **In-Browser YAML & .env Editor (`ComposeConfigModal`)**, **OCI Image Update Sentinel (`ImageUpdateModal`)**, live log terminal, **Interactive Web Terminal**, **Dry-Run Disk Prune (`SystemPruneModal`)**, and **Container Tags & Filter Bar (`TagFilterBar`)** |
 | **Container Detail** | `/containers/:id` | **Dedicated Full-Page Control Center:** Standalone URL-addressable, bookmarkable, deep-linked (`?tab=`) diagnostic dashboard with live telemetry cards (CPU, RAM, Rx/Tx), **Historical Area Telemetry Charts (`ContainerHistoricalCharts`)**, full-screen streaming logs, and xterm.js interactive terminal |
+| **Systems Cockpit** | `/systems` | **Multi-Node Fleet Control:** Overview of all edge hosts, node health pills, quick telemetry badges (CPU, RAM, Disk), search & tag filtering, and instant 1-click agent registration modal (`AddSystemModal`) |
+| **System Detail** | `/systems/:id` | **Full-Screen Node Diagnostics:** Deep-linked tabs (`?tab=overview\|metrics\|containers\|systemd\|settings`), 100ms adaptive SSE stream (`/api/systems/{id}/stream`), historical charts, remote container control, and Linux systemd unit manager |
+| **Activity Timeline** | `/activity` | **Chronological Audit Trail:** Filter by categories (`container`, `security`, `alert`, `system`), search by resource, and view structured JSON metadata payloads |
 | **Uptime** | `/uptime` | Service uptime monitors, ICMP Ping, proactive SSL alerts, Dead Man's Snitch monitors, historical check logs, and incident management |
 | **System Metrics** | `/metrics` | Time-series hardware utilization charts with **1h, 6h, 12h, 24h, 7d, 30d, 90d, and 1y** periods powered by hourly rollups |
-| **Settings** | `/settings` | Single-column (`max-w-4xl`) settings shell with general options, DB storage stats, backup snapshots, **SMTP Email**, **Slack Webhook**, and **Flapping Protection** |
-| **Profile** | `/profile` | Self-service password change, 2FA setup, and administrative user management with RBAC |
+| **Settings** | `/settings` | Single-column (`max-w-4xl`) settings shell with general options, DB storage stats, backup snapshots, **SMTP Email**, **Slack Webhook**, **Metric Threshold Alert Rules (`014_alert_rules.sql`)**, and **Flapping Protection** |
+| **Profile** | `/profile` | Self-service password change, 2FA setup, and administrative user management with 3-tier RBAC (`admin`, `operator`, `viewer`) |
 | **Public Status** | `/status` | Unauthenticated public uptime dashboard with incident notice banners and collapsible category accordions |
+| **Command Palette** | `Ctrl+K` / `Cmd+K` | **Actionable Keyboard Control:** Zero-dependency fuzzy search across pages, containers, node systems, and administrative quick actions |
 | **Mobile Glass BottomNav**| *Global* | 7-tab frosted glass bottom navigation bar with sliding indicator and safe-area support (`BottomNav.tsx`) |
 
 ---
@@ -308,54 +462,40 @@ Incoming push monitor heartbeat records.
 ## 8. Completed Roadmap Milestones
 
 - [x] Native AOT + custom SocketsHttpHandler direct socket client
-- [x] Dapper.AOT + Microsoft.Data.Sqlite + DbUp schema migrations (001-013)
+- [x] Dapper.AOT + Microsoft.Data.Sqlite + Npgsql PostgreSQL + DbUp schema migrations (001-017)
+- [x] Corvus Edge Agent (`src/Corvus.Agent`) in .NET 9 Native AOT (<10 MB RAM, outbound TLS/WSS tunnel, zero inbound ports)
+- [x] Multi-Node Systems Cockpit (`/systems`, `/systems/:id`) with 100ms adaptive SSE stream
+- [x] Zero-Alloc Unmanaged 128-byte `SystemTelemetryPoint` ring buffer (~7.2 KB RAM per node)
+- [x] Two-Tier Multi-Node Metrics Retention (`MetricsBatchFlusherBackgroundService`, `MetricsRetentionWorker`)
+- [x] System Watchdog Service (`SystemWatchdogService`) for agent heartbeat tracking and automatic state degradation
+- [x] 3-Tier Role-Based Access Control (`admin`, `operator`, `viewer`) and `CorvusAuthFilter` endpoint authorization
+- [x] Linux Systemd Service Management with regex-guarded validation and live `journalctl` log streaming
+- [x] Visual Compose YAML & `.env` Editor with TAB key indentation detection, streamed deployment, and automated `.bak` backups
+- [x] Metric Threshold Alerting Engine (`014_alert_rules.sql`, `ThresholdEvaluatorService`) with multi-channel dispatch
+- [x] Structured Event Audit Trail (`015_activity_logs.sql`, `/activity`)
+- [x] Universal Command Palette (`Ctrl+K`) with zero-dependency fuzzy search (`fuzzySearch.ts`)
+- [x] ObsidianUI Design System & Motion Physics Engine (Greyish Cloud White `#F5F6F8`, 180-220ms spring physics, glass surfaces)
 - [x] Docker socket multiplexed log demuxer and live log streaming
-- [x] Multi-channel alert engine (Discord, Telegram, Ntfy, Webhook) with system-language synchronization
-- [x] Live container resource stats (CPU, RAM, Net I/O)
+- [x] Multi-channel alert engine (Discord, Telegram, Ntfy, Webhook, SMTP Email, Slack) with system-language synchronization
+- [x] Live container resource stats (CPU, RAM, Net I/O) & Batch Stats Endpoint (`GET /api/containers/stats-summary`)
 - [x] Dedicated Full-Page Container Diagnostic & Telemetry Dashboard (`/containers/:id`)
 - [x] Historical Container Telemetry Charts (Recharts Area time-series CPU & RAM trend graphs)
 - [x] Docker Compose Stack Bulk Actions (Restart / Start / Stop Project)
 - [x] Container Crash-Loop & Unexpected Exit Alerting (ExitCode != 0, OOMKilled)
 - [x] OCI Registry Image Sentinel & Manifest Digest Watcher (Zero-bandwidth HEAD requests, 1-click safe recreate)
-- [x] Docker Compose YAML Inspector & Safe In-Place Browser Editor (Path traversal sanitization, automated `.bak` backups)
 - [x] Event-Driven Auto-Healing & Constant-Time Inbound Deploy Webhooks
-- [x] Case-Insensitive Container Inspect Normalization (`inspectHelpers.ts`)
-- [x] Fluid Row-Click Navigation & In-Row Quick Actions Toolbar (`ContainerQuickActions.tsx`)
-- [x] Automated CI/CD SemVer Version Detection & Git Tag / GitHub Release Publishing (`ci.yml`)
 - [x] Extended Uptime: TCP Port Ping, ICMP Ping, and proactive SSL certificate early warnings
 - [x] Dead Man's Snitch: Periodic push monitoring with auto-overdue alerting
 - [x] Unauthenticated Public Status Page (`/status` and `/api/status-page`)
 - [x] Server-Sent Events (SSE) real-time data stream (`/api/stream/events`)
-- [x] Docker Compose stack hierarchy grouping (`com.docker.compose.project`)
 - [x] Zero-Trust SSO / Reverse proxy authentication header support
-- [x] Role-Based Access Control (RBAC: `admin` vs `viewer`) and User Management
-- [x] Persistent SQLite Session Store (`user_sessions` and `ISessionRepository`)
-- [x] Modular Profile & Security Page (`/profile`)
+- [x] Persistent Session Store (`user_sessions` and `ISessionRepository`)
 - [x] Mobile Glass Bottom Navigation Bar (`BottomNav.tsx`)
-- [x] Settings Page Streamlining & Centralized 401 Session Interceptor
-- [x] Visual service drag & drop reordering (`display_order` and `/api/services/reorder`)
-- [x] Frontend code-splitting and vendor chunk optimization (<200 KB initial chunk)
-- [x] SQLite WAL mode, composite indexes, and high-concurrency PRAGMA tuning
 - [x] Full compile-time typed bilingual i18n system (English default, Turkish complete)
-- [x] Dual-mode backup management: One-click lock-free SQLite snapshot download (`GET /api/backup/download`) with SSE live Dashboard updates + external push integration
-- [x] Flexible data retention & disk telemetry, automated `VACUUM;` freelist cleanup
-- [x] In-Memory Micro-Cache (<150 KB) & .NET 9 Non-Concurrent Workstation GC + `DOTNET_GCConserveMemory=9`
+- [x] Dual-mode backup management: One-click lock-free snapshot download (`GET /api/backup/download`) + external push integration
 - [x] Scheduled Native & Managed Memory Trimming (`MemoryTrimmerBackgroundService`, Gen 2 compacting GC, `PRAGMA wal_checkpoint(TRUNCATE)` and libc `malloc_trim(0)`)
-- [x] Smart Container Discovery Fingerprinting (`ComputeFingerprint`) & inspect cache (`_inspectCache`)
-- [x] Batch Stats Endpoint (`GET /api/containers/stats-summary`) eliminating N+1 socket calls
-- [x] Advanced 3-state resilience engine (`healthy` -> `degraded` -> `down`) & Docker loopback bridge gateway resolution
-- [x] Mobile-first 2-column compact KPI strip & active containers widget
-- [x] GitHub Releases API dynamic SemVer version update checker (`GET /api/version`)
-- [x] Advanced Uptime monitoring parameters (custom interval, timeout, retries, ignore TLS, status codes) and opt-in status page
-- [x] Interactive 30-check latency status bars, collapsible category accordions, and real-time tooltips on Public Status
-- [x] System Incidents & Scheduled Maintenance management with public alert banners (`service_incidents`)
-- [x] Intelligent 24-hour retention (`is_transition`) and 365-day daily SLA rollup (`uptime_daily_stats`)
-- [x] "Hex Sentinel" professional corporate identity, SVG master assets, and web icon set (`docs/branding/`)
-- [x] SMTP Email & Slack notification channels with interactive recipient pills and status color coding
-- [x] Flapping suppression engine (`IFlappingDetector`, `FlappingDetector`) with multi-channel amber/green alerts
 - [x] Web Container Exec Terminal (`/api/containers/{id}/terminal`, `@xterm/xterm`, bidirectional stream fix, fallback shell chain)
 - [x] Two-Stage Dry-Run System Prune (`/api/containers/system-df`, `/api/containers/prune/selective`, volume protection)
-- [x] Container Detail Inspection & Live Zero-Downtime Resource Tuning (`/api/containers/{id}/inspect`, `/api/containers/{id}/update`)
-- [x] Time-series metrics downsampling (`system_metrics_hourly`, dual retention, 30d/90d/1y ranges)
 - [x] Environment Tags & Category Grouping (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`, container tag overrides)
-- [x] 223/223 passing xUnit test coverage
+- [x] 320/320 Passing Automated Tests (291 backend xUnit + 29 frontend Vitest)
+

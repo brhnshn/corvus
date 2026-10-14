@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Veritabanı" />
-  <img src="https://img.shields.io/badge/Testler-256_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-320_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -36,7 +36,7 @@
 > 🎮 **Kurulum Yapmadan Tarayıcıda Canlı Demoyu Deneyin:**  
 > **[https://demo.usecorvus.me](https://demo.usecorvus.me)** — Sıfır sunucu yüküyle çalışan tarayıcı içi simülasyon ortamında Docker yönetimini, etkileşimli terminali ve telemetri grafiklerini anında keşfedin.
 
-**ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time derleme) ve gömülü **SQLite WAL motoru** ile sıfırdan inşa edilen Corvus, tek bir bağımsız konteyner içinde ve kararlı biçimde **<30 MB RAM ayak iziyle** çalışır. Gerçek zamanlı Docker konteyner keşfi, tarayıcı içi etkileşimli web terminali (WebSocket), çoklu protokol uptime & SSL sertifika takibi, zaman serisi telemetri sıkıştırması ve kamuya açık şifresiz sistem durum sayfasını tek bir tüy kadar hafif ikili (binary) pakette toplar.
+**ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time derleme) ve gömülü **SQLite WAL motoru** (isteğe bağlı PostgreSQL desteğiyle) ile sıfırdan inşa edilen Corvus, tek bir bağımsız konteyner içinde ve kararlı biçimde **<30 MB RAM ayak iziyle** çalışır. Gerçek zamanlı Docker konteyner keşfi, çoklu sunucu uç ajan telemetrisi, tarayıcı içi etkileşimli web terminali (WebSocket), çoklu protokol uptime & SSL sertifika takibi, zaman serisi telemetri sıkıştırması ve kamuya açık şifresiz sistem durum sayfasını tek bir tüy kadar hafif ikili (binary) pakette toplar.
 
 ---
 
@@ -44,7 +44,7 @@
 
 Docker çalıştıran sunucunuzda Corvus'u tek bir komutla anında ayağa kaldırın:
 
-### Seçenek A: Tek Satırlık Docker Komutu
+### Seçenek A: Tek Satırlık Docker Komutu (Corvus Sunucu)
 ```bash
 docker run -d \
   --name corvus \
@@ -83,6 +83,20 @@ volumes:
 docker compose up -d
 ```
 
+### Seçenek C: Corvus Uç Ajan (Edge Agent - Uzak Düğümler İçin)
+Ek VPS ve uç sunucularınızı dışa açık port açmadan izlemek için ultra hafif (<10 MB RAM) ajanı başlatın:
+```bash
+docker run -d \
+  --name corvus-agent \
+  --restart unless-stopped \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v /proc:/host/proc:ro \
+  -v /sys:/host/sys:ro \
+  -e CORVUS_HUB_URL=wss://corvus.alanadiniz.com \
+  -e CORVUS_SYSTEM_TOKEN=crv_live_... \
+  ghcr.io/brhnshn/corvus-agent:latest
+```
+
 Tarayıcınızdan **`http://localhost:8090`** adresine (veya kamuya açık durum sayfası için **`http://localhost:8090/status`** adresine) gidin.
 
 ---
@@ -118,15 +132,23 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
 ## ✨ Temel Özellikler
 
 - **🌐 Çoklu Sistem Yönetimi Kokpiti ve Uç Ajanı (`/systems`):**
-  - **Sıfır Açık Port (Zero-Inbound) Mimarisi:** İzlenen uç sunucular Corvus Hub merkezine şifreli TLS WebSocket (`/api/v1/agent/tunnel`) üzerinden dışa doğru (outbound) bağlanır; uç sunucuda hiçbir port açmaya veya güvenlik duvarı kuralına gerek kalmaz.
+  - **Sıfır Açık Port (Zero-Inbound) Mimarisi:** İzlenen uç sunucular Corvus Hub merkezine şifreli TLS WebSocket (`/agent/connect`) üzerinden dışa doğru (outbound) bağlanır; uç sunucuda hiçbir port açmaya veya güvenlik duvarı kuralına gerek kalmaz.
   - **Ultra Hafif Uç Ajanı (`src/Corvus.Agent`):** <10 MB RAM harcayan, doğrudan Linux `/proc` dosya sisteminden CPU, RAM, Disk ve Ağ telemetrisi toplayan .NET 9 Native AOT ikili paketi.
-  - **Sıfır Tahsisli In-Memory Ring Buffer:** 128 baytlık unmanaged struct ile RAM'de 60 telemetri noktasını (3 dakika) tutar (50 sistemde yalnızca ~360 KB RAM) ve her 60 saniyede bir toplu olarak diske yazar.
+  - **Sıfır Tahsisli In-Memory Ring Buffer:** 128 baytlık unmanaged struct ile RAM'de 60 telemetri noktasını (3 dakika) tutar (sunucu başına ~7.2 KB RAM) ve her 60 saniyede bir toplu olarak diske yazar.
+  - **100ms Uyarlanabilir Sistemler SSE Akışı (`/api/systems/{id}/stream`):** Sıfır sorgu döngüsü (polling) ek yüküyle gösterge paneline anlık canlı telemetri akışı sağlar.
   - **Tünel Üzerinden Uzaktan Docker Orkestrasyonu:** Farklı VPS veya sunuculardaki konteynerleri (`start`, `stop`, `restart`, `logs`) doğrudan Corvus arayüzünden yönetin.
-  - **1 Tıkla Sunucu Kaydı:** Kriptografik güvenli token (`crv_node_live_...`) içeren tek satırlık Docker çalıştırma komutu üretimi.
+  - **1 Tıkla Sunucu Kaydı:** Kriptografik güvenli token (`crv_live_...`) içeren tek satırlık Docker çalıştırma komutu üretimi.
+- **⚙️ Linux Systemd Servis Yönetimi & Canlı Journalctl:**
+  - Beyaz liste korumalı, regex denetimli Linux systemd birim durum incelemesi (`/api/systemd/services`).
+  - Yaşam döngüsü kontrolü: Güvenli yönetici denetimleriyle başlatma, durdurma, yeniden başlatma, açılışa ekleme ve açılıştan kaldırma.
+  - `journalctl -u {service} -n 100` ile canlı yürütme loglarını tarayıcıya akıtma.
+- **📝 Görsel Docker Compose & .env Yığın Editörü:**
+  - Otomatik TAB tuşu girinti desteği, kaydedilmemiş değişiklik uyarısı ve kayıt öncesi otomatik `.bak` yedeği alan tarayıcı içi kod editörü.
+  - Anlık akıtılan deploy süreci ve olası hata anında otomatik geri alma (rollback) korumalı tek tıkla konteyner re-create.
 - **⌨️ Genel Komut Paleti (`Ctrl+K` / `Cmd+K`) & Mikro-Animasyonlar:**
   - **Sıfır Bağımlılıklı Bulanık Arama (`fuzzySearch.ts`):** Hafif harf dizisi eşleme algoritması ile tüm sayfalara, konteynerlere, hızlı eylemlere ve ayarlara anında erişim.
-  - **Tam Klavye Gezinmesi:** Ok tuşları (`↑`/`↓`/`Enter`) ve doğrudan kısayollar (`G D` Genel Bakış, `G C` Konteynerler, `G A` Olay Geçmişi, `R` Yenile).
-  - **Akıcı Mikro-Geçişler (`PageTransition.tsx`, `useAnimatedNumber.ts`, `Skeleton.tsx`):** `prefers-reduced-motion` uyumlu 150ms sayfa geçişleri, yumuşakça akan canlı metrik sayaçları ve modern shimmer iskelet göstergeleri.
+  - **Tam Klavye Gezinmesi:** Ok tuşları (`↑`/`↓`/`Enter`) ve doğrudan kısayollar (`G D` Genel Bakış, `G C` Konteynerler, `G S` Sistemler, `G A` Olay Geçmişi, `R` Yenile).
+  - **Akıcı Mikro-Geçişler (`PageTransition.tsx`, `useAnimatedNumber.ts`, `Skeleton.tsx`):** `prefers-reduced-motion` uyumlu 180-220ms yay fiziği geçişleri, yumuşakça akan canlı metrik sayaçları ve modern shimmer iskelet göstergeleri.
 - **📜 Olay Geçmişi & Denetim Zaman Çizelgesi (`/activity`):**
   - **Yapısal Olay Kayıt Motoru (`015_activity_logs.sql`):** Konteyner yaşam döngüsü değişimleri (başlatma, durdurma, yeniden başlatma), metrik eşik alarmları ve yönetici eylemleri için kalıcı kayıt.
   - **Kuyruk Tipi Asenkron Yazma Hattı (`ActivityLogService.cs`):** `System.Threading.Channels` ile ana istek akışına sıfır gecikme maliyeti getiren tamponlu arka plan kayıt mekanizması ve otomatik saklama süresi temizliği.
@@ -135,16 +157,16 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
   - **Kullanıcı Tanımlı Eşik Kuralları (`014_alert_rules.sql`):** Ayarlanabilir ihlal süresi ve spam önleyici cooldown süreleriyle CPU, RAM ve Disk % eşikleri belirleme.
   - **Arka Plan Kayan Pencere Değerlendiricisi (`ThresholdEvaluatorService.cs`):** 20 saniyede bir periyodik değerlendirme ile anlık sıçramalarda sahte alarmları (flapping) engelleyen akıllı izleme.
   - **Çok Kanallı Bildirim İletimi:** Eşik aşımı ve `[DÜZELDİ]` toparlanma durumlarında Discord, Telegram, Slack, SMTP, Ntfy ve Webhook kanallarına gerçek zamanlı bildirim.
-- **🎨 Midnight v2 Bütünleşik Tasarım Sistemi & Katlanabilir Komuta Düzeni:**
-  - **Merkezi Mimari Yerleşim (`AppLayout.tsx`):** MVC benzeri merkezi yerleşim mimarisi; masaüstünde tek tıkla katlanabilen, açık/kapalı durumunu `localStorage`'da hatırlayan ve kapandığında sol üstte beliren Corvus logolu animasyonlu hap butonla akıcı şekilde geri açılabilen sidebar.
-  - **Kesin Eşik Tabanlı Renk Semantiği:** Grafik ve ilerleme çubuklarındaki süsleme mor/camgöbeği degradeler kaldırıldı; renkler doğrudan operasyonel sağlık eşiklerine bağlandı (<%70 yeşil `#34d399`, %70-89 kehribar sarı `#fbbf24`, >=%90 gül kırmızısı `#f87171`).
-  - **Modüler UI Bileşen Kütüphanesi (`src/components/ui/`):** Tek dosyaya kod yığma yasağına ve temiz mimariye tam uyumlu, tip güvenli bileşenler: `Button`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
-  - **Düz Midnight Zemini & Cam Katmanlar:** `#0d0e15` düz zemin, yüksek kontrastlı yarı saydam `surface` kartları (`rgba(27,29,42,0.9)`), tekil açık gri `#d5d5dc` odak rengi ve akıcı giriş animasyonları (`animate-rv`).
-- **🔐 Rol Tabanlı Yetkilendirme (RBAC) & Kalıcı Oturumlar (Session Store):**
-  - `admin` (tam yetki) ve `viewer` (salt okuma) rolleri ile uç nokta düzeyinde RBAC koruması (`RequireAdminAttribute`).
-  - Kalıcı SQLite oturum deposu (`user_sessions` tablosu): Konteyner yeniden başladığında veya güncellendiğinde oturumun düşmesini önler; bellek üzerinde mikrosaniye seviyesinde doğrulama hızını korur.
-  - Bağımsız modüler **Profil ve Güvenlik Sayfası** (`/profile`): Şifre değiştirme, 2FA yönetimi ve yöneticiler için kullanıcı ekleme/silme paneli.
-  - Merkezi `corvus_unauthorized` oturum düşüş yakalayıcısı: Oturum bittiğinde ekranda kırmızı hata yerine kullanıcıyı doğrudan ve zarifçe giriş ekranına yönlendirir.
+- **🎨 ObsidianUI Tasarım Sistemi & Hareket Fiziği Motoru:**
+  - **Bulut Beyazı Teması:** Yüksek kontrastlı nötr palet (`#F5F6F8`) ve dikkat dağıtmayan sıfır-gradyan tasarımı.
+  - **Eşik Tabanlı Renk Semantiği:** Doğrudan operasyonel sağlık eşiklerine bağlı katı renk kuralları (<%70 yeşil `#34d399`, %70-89 kehribar sarı `#fbbf24`, >=%90 gül kırmızısı `#f87171`).
+  - **Yay Fiziği Mikro-Animasyonlar:** 180ms - 220ms yavaşlama fiziği (`cubic-bezier(0.16, 1, 0.3, 1)`) ve yerleşik `prefers-reduced-motion` desteği.
+  - **Modüler UI Bileşen Kütüphanesi (`src/components/ui/`):** Tek dosyaya kod yığma yasağına tam uyumlu bileşenler: `Button`, `Modal`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
+- **🔐 3 Seviyeli Rol Tabanlı Yetkilendirme (RBAC) & Kalıcı Oturumlar (Session Store):**
+  - Granüler `admin` (tam sistem yetkisi), `operator` (konteyner ve yığın operasyonları) ve `viewer` (salt okuma denetimi) rolleri ile `CorvusAuthFilter` koruması.
+  - Kalıcı oturum deposu (`user_sessions` tablosu): Konteyner yeniden başladığında veya güncellendiğinde oturumun düşmesini önler; bellek üzerinde mikrosaniye seviyesinde doğrulama hızını korur.
+  - Bağımsız modüler **Profil ve Güvenlik Sayfası** (`/profile`): Şifre değiştirme, 2FA yönetimi ve 3 seviyeli kullanıcı yetkilendirme paneli.
+  - Merkezi `corvus_unauthorized` oturum düşüş yakalayıcısı: Oturum bittiğinde kullanıcıyı doğrudan ve zarifçe giriş ekranına yönlendirir.
 - **📱 Mobil Cam Altbar (Mobile Glass Bottom Navigation):**
   - Tablet ve mobil ekranlar için özel tasarlanmış, kayan göstergeli ve genişleyen 7 sekmeli buzlu cam (frosted glass) alt gezinti çubuğu (`BottomNav.tsx`).
   - Ekran alanını daraltan eski mobil üst bar ve hamburger çekmece menüsü kaldırılarak tam ekran temiz mobil deneyim.
@@ -345,9 +367,16 @@ labels:
 | `GET /api/settings/db-stats` | Gerçek zamanlı SQLite ve WAL dosya boyutu telemetrisi |
 | `GET /api/settings` | Tüm sistem ayarlarını getirir |
 | `PUT /api/settings` | Sistem ayarlarını günceller |
-| `POST /api/notifications/test` | Test bildirimi gönderir (Discord, Telegram, Ntfy, Webhook) |
 | `GET /api/stream/events` | Server-Sent Events canlı durum akışı |
 | `GET /api/auth/status` | Mevcut oturum ve Zero-Trust SSO tespiti |
+| `GET /api/systems` | Kayıtlı uç sunucuları ve anlık CPU, RAM, Disk metriklerini listeler |
+| `POST /api/systems` | Yeni bir uç sunucu kaydeder ve ajan token'ı üretir |
+| `GET /api/systems/{id}/stream` | **SSE:** 100ms uyarlanabilir yüksek frekanslı canlı telemetri akışı |
+| `GET /agent/connect` | **WSS Tüneli:** Çift yönlü güvenli Corvus Uç Ajan bağlantısı |
+| `GET /api/systemd/services` | Beyaz liste onaylı Linux systemd servislerini listeler |
+| `POST /api/systemd/services/{name}/restart` | Belirtilen systemd servisini yeniden başlatır |
+| `GET /api/systemd/services/{name}/logs` | Canlı systemd journalctl loglarını akıtır |
+| `GET /api/activity` | Yapılandırılmış denetim izi ve olay zaman tüneli |
 
 ---
 
@@ -369,9 +398,13 @@ labels:
    cd ../Corvus.Api
    dotnet run
    ```
-3. **Testleri Çalıştırma:**
+3. **Otomatik Testleri Çalıştırma (Toplam 320 Test):**
    ```bash
+   # Backend Testleri (291 başarılı xUnit testi)
    dotnet test tests/Corvus.Api.Tests
+
+   # Frontend Testleri (29 başarılı Vitest testi)
+   cd src/Corvus.Web && npm test
    ```
 
 ---

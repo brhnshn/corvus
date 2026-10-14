@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Database" />
-  <img src="https://img.shields.io/badge/Tests-256_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-320_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -36,7 +36,7 @@
 > 🎮 **Try the In-Browser Live Demo (No Install Needed):**  
 > **[https://demo.usecorvus.me](https://demo.usecorvus.me)** — Explore live Docker management, interactive terminal, and real-time telemetry sandbox with zero server load.
 
-Engineered with **ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time compilation) and an embedded **SQLite WAL engine**, Corvus runs in a single self-contained container with a deterministic **<30 MB RAM footprint**. It consolidates real-time Docker container discovery, interactive web terminal access, multi-protocol uptime & SSL monitoring, time-series telemetry downsampling, and an unauthenticated public status page into a single featherweight binary.
+Engineered with **ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time compilation) and an embedded **SQLite WAL engine** (with optional PostgreSQL backend), Corvus runs in a single self-contained container with a deterministic **<30 MB RAM footprint**. It consolidates real-time Docker container discovery, multi-node edge agent telemetry, interactive web terminal access, multi-protocol uptime & SSL monitoring, time-series telemetry downsampling, and an unauthenticated public status page into a single featherweight binary.
 
 ---
 
@@ -44,7 +44,7 @@ Engineered with **ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time compilation)
 
 Get Corvus up and running on your Docker host with a single command:
 
-### Option A: Single Docker Command
+### Option A: Single Docker Command (Corvus Hub)
 ```bash
 docker run -d \
   --name corvus \
@@ -83,6 +83,20 @@ volumes:
 docker compose up -d
 ```
 
+### Option C: Corvus Edge Agent (For Remote / Monitored Nodes)
+Deploy the ultra-lightweight (<10 MB RAM) edge agent to monitor additional VPS nodes without opening inbound ports:
+```bash
+docker run -d \
+  --name corvus-agent \
+  --restart unless-stopped \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v /proc:/host/proc:ro \
+  -v /sys:/host/sys:ro \
+  -e CORVUS_HUB_URL=wss://corvus.yourdomain.com \
+  -e CORVUS_SYSTEM_TOKEN=crv_live_... \
+  ghcr.io/brhnshn/corvus-agent:latest
+```
+
 Open your browser at **`http://localhost:8090`** (or public status page at **`http://localhost:8090/status`**).
 
 ---
@@ -118,15 +132,23 @@ Corvus is built from the ground up to challenge the misconception that modern en
 ## ✨ Key Features
 
 - **🌐 Multi-Node Systems Cockpit & Edge Agent (`/systems`):**
-  - **Zero-Inbound Port Architecture:** Edge servers connect outbound to Corvus Hub over encrypted TLS WebSocket (`/api/v1/agent/tunnel`), requiring zero open ports or firewall changes on monitored nodes.
+  - **Zero-Inbound Port Architecture:** Edge servers connect outbound to Corvus Hub over encrypted TLS WebSocket (`/agent/connect`), requiring zero open ports or firewall changes on monitored nodes.
   - **Ultra-Lightweight Edge Agent (`src/Corvus.Agent`):** Standalone .NET 9 Native AOT executable consuming <10 MB RAM, collecting CPU, RAM, Disk, and Network telemetries directly via Linux `/proc` filesystem.
   - **Zero-Alloc In-Memory Ring Buffer:** Stores rolling 60 telemetry points (3 minutes) in RAM using a 128-byte unmanaged struct (~7.2 KB RAM per node; ~360 KB for 50 systems) with 60s batched disk flushes.
+  - **100ms Adaptive Systems SSE Stream (`/api/systems/{id}/stream`):** Delivers ultra-responsive real-time metric streams straight to the dashboard with zero polling overhead.
   - **Remote Docker Orchestration via Tunnel:** Manage remote containers (`start`, `stop`, `restart`, `logs`) across disparate VPS nodes directly through the Corvus UI cockpit.
-  - **1-Click Host Registration:** Instant Docker run command generated with cryptographically secure node tokens (`crv_node_live_...`).
+  - **1-Click Host Registration:** Instant Docker run command generated with cryptographically secure node tokens (`crv_live_...`).
+- **⚙️ Linux Systemd Service Management & Live Journalctl:**
+  - Whitelist-filtered, regex-guarded Linux systemd unit inspection (`/api/systemd/services`).
+  - Unit lifecycle control: Start, stop, restart, enable on boot, and disable on boot with administrative safeguards.
+  - Live execution log streaming via `journalctl -u {service} -n 100`.
+- **📝 Visual Docker Compose & .env Stack Editor:**
+  - In-browser code editor with automatic TAB key indentation detection, dirty state warnings, and automated `.bak` backups before saves.
+  - Live streamed deployment and one-click container re-creation with automatic fallback rollback on failure.
 - **⌨️ Universal Command Palette (`Ctrl+K` / `Cmd+K`) & Micro-Animations:**
   - **Zero-Dependency Fuzzy Search (`fuzzySearch.ts`):** Lightweight string matching algorithm delivering instant results across all pages, containers, actions, and settings.
-  - **Full Keyboard Navigation:** Arrow key browsing (`↑`/`↓`/`Enter`) with quick shortcuts (`G D` Dashboard, `G C` Containers, `G A` Activity, `R` Refresh).
-  - **Interactive Micro-Transitions (`PageTransition.tsx`, `useAnimatedNumber.ts`, `Skeleton.tsx`):** 150ms fluid page transitions honoring `prefers-reduced-motion`, smooth live metric counter interpolations, and shimmer skeleton loading states.
+  - **Full Keyboard Navigation:** Arrow key browsing (`↑`/`↓`/`Enter`) with quick shortcuts (`G D` Dashboard, `G C` Containers, `G S` Systems, `G A` Activity, `R` Refresh).
+  - **Interactive Micro-Transitions (`PageTransition.tsx`, `useAnimatedNumber.ts`, `Skeleton.tsx`):** 180-220ms spring physics entrance transitions honoring `prefers-reduced-motion`, smooth live metric counter interpolations, and shimmer skeleton loading states.
 - **📜 Event History & Audit Timeline (`/activity`):**
   - **Structured Audit Logging Engine (`015_activity_logs.sql`):** Captures container lifecycle changes (start, stop, restart), metric threshold alerts, and administrator actions.
   - **Non-Blocking Channel Pipeline (`ActivityLogService.cs`):** High-throughput, zero-latency buffered queuing using `System.Threading.Channels` with automated retention cleanup.
@@ -135,14 +157,14 @@ Corvus is built from the ground up to challenge the misconception that modern en
   - **User-Configurable Metric Rules (`014_alert_rules.sql`):** Set CPU, RAM, and Disk % thresholds with customizable evaluation duration and anti-spam cooldown protection.
   - **Background Sliding Window Evaluator (`ThresholdEvaluatorService.cs`):** Continuous 20-second evaluation preventing false positives from transient spikes.
   - **Multi-Channel Dispatch:** Real-time breach warnings and `[RESOLVED]` recovery notifications dispatched across Discord, Telegram, Slack, SMTP, Ntfy, and Webhooks.
-- **🎨 Midnight v2 Unified Design System & Collapsible Command Layout:**
-  - **Unified Architectural Layout (`AppLayout.tsx`):** MVC-like central layout with a desktop collapsible sidebar that remembers its open/closed state in `localStorage`, complete with an animated floating Corvus pill button to smoothly restore the sidebar when collapsed.
-  - **Strict Threshold-Driven Color Semantics:** Replaced arbitrary cyan/purple gradients with strict operational threshold colors across charts and progress bars (<70% green `#34d399`, 70-89% amber `#fbbf24`, >=90% rose `#f87171`).
-  - **Modular UI Component Library (`src/components/ui/`):** Enterprise-grade, type-safe components adhering to the zero-monolith clean architecture rule: `Button`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
-  - **Flat Midnight Backdrop & Glass Surfaces:** Refined `#0d0e15` base with high-contrast, semi-transparent `surface` cards (`rgba(27,29,42,0.9)`), single accent `#d5d5dc` indicator, and smooth entrance transitions (`animate-rv`).
-- **🔐 Role-Based Access Control (RBAC) & Persistent Sessions:**
-  - Granular `admin` (full mutations) and `viewer` (read-only) roles protected at the endpoint level via `RequireAdminAttribute`.
-  - Persistent SQLite session store (`user_sessions` table): Ensures user sessions survive container upgrades, restarts, and redeployments without losing sub-microsecond in-memory verification.
+- **🎨 ObsidianUI Design System & Motion Physics Engine:**
+  - **Greyish Cloud White Theme:** High-contrast neutral palette (`#F5F6F8`) with zero distracting gradients.
+  - **Threshold-Driven Color Semantics:** Strict operational threshold colors across charts and progress bars (<70% green `#34d399`, 70-89% amber `#fbbf24`, >=90% rose `#f87171`).
+  - **Spring Micro-Animations:** 180ms - 220ms deceleration physics (`cubic-bezier(0.16, 1, 0.3, 1)`) with native `prefers-reduced-motion` compliance.
+  - **Modular UI Component Library (`src/components/ui/`):** Enterprise-grade, type-safe components adhering to the zero-monolith clean architecture rule: `Button`, `Modal`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
+- **🔐 3-Tier Role-Based Access Control (RBAC) & Persistent Sessions:**
+  - Granular `admin` (full system mutation), `operator` (container & stack operations), and `viewer` (read-only audit) roles protected at the endpoint level via `CorvusAuthFilter`.
+  - Persistent session store (`user_sessions` table): Ensures user sessions survive container upgrades, restarts, and redeployments without losing sub-microsecond in-memory verification.
   - Modular **Profile & Security View** (`/profile`): Self-service password updates, 2FA management, and administrative user provisioning.
   - Centralized `corvus_unauthorized` session interceptor: Gracefully redirects users back to login without throwing unhandled exceptions.
 - **📱 Mobile Glass Bottom Navigation Bar:**
@@ -348,9 +370,16 @@ labels:
 | `GET /api/settings/db-stats` | Real-time SQLite database & WAL disk size telemetry |
 | `GET /api/settings` | Retrieve all system settings |
 | `PUT /api/settings` | Update system configuration parameters |
-| `POST /api/notifications/test` | Test alert dispatch (Discord, Telegram, Ntfy, Webhook) |
 | `GET /api/stream/events` | Server-Sent Events live status stream |
 | `GET /api/auth/status` | Current session & Zero-Trust SSO detection |
+| `GET /api/systems` | List registered fleet systems with live CPU, RAM, Disk metrics |
+| `POST /api/systems` | Register a new edge node and issue agent token |
+| `GET /api/systems/{id}/stream` | **SSE:** 100ms adaptive high-frequency telemetry stream |
+| `GET /agent/connect` | **WSS Tunnel:** Secure bidirectional Edge Agent connection |
+| `GET /api/systemd/services` | List whitelist-filtered Linux systemd services |
+| `POST /api/systemd/services/{name}/restart` | Restart systemd unit |
+| `GET /api/systemd/services/{name}/logs` | Stream live systemd journalctl execution logs |
+| `GET /api/activity` | Structured audit trail and event timeline |
 
 ---
 
@@ -372,9 +401,13 @@ labels:
    cd ../Corvus.Api
    dotnet run
    ```
-3. **Running Tests:**
+3. **Running Automated Tests (320 Total):**
    ```bash
+   # Backend Tests (291 passing xUnit tests)
    dotnet test tests/Corvus.Api.Tests
+
+   # Frontend Tests (29 passing Vitest tests)
+   cd src/Corvus.Web && npm test
    ```
 
 ---
