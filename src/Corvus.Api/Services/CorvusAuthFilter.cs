@@ -58,11 +58,30 @@ public class CorvusAuthFilter : IEndpointFilter
         }
         else
         {
-            // 2. Cookie veya query param tabanlı oturum doğrulaması
+            // 2. Cookie, Authorization header veya özel akışlar (WebSocket/SSE) için query param doğrulaması
             string? token = httpContext.Request.Cookies["corvus_session"];
+            if (string.IsNullOrEmpty(token))
+            {
+                string? authHeader = httpContext.Request.Headers.Authorization.ToString();
+                if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    token = authHeader.Substring(7).Trim();
+                }
+            }
+
+            // Güvenlik sıkılaştırması: ?token= query parametresi YALNIZCA tarayıcıların özel başlık ekleyemediği
+            // WebSocket ve SSE (EventSource) akışlarında kabul edilir; standart REST API çağrılarında URL sızıntısını engellemek için reddedilir.
             if (string.IsNullOrEmpty(token) && httpContext.Request.Query.TryGetValue("token", out var qToken))
             {
-                token = qToken.ToString();
+                bool isSpecialStream = httpContext.WebSockets.IsWebSocketRequest ||
+                                      httpContext.Request.Path.Value?.Contains("/stream", StringComparison.OrdinalIgnoreCase) == true ||
+                                      httpContext.Request.Path.Value?.Contains("/terminal", StringComparison.OrdinalIgnoreCase) == true ||
+                                      httpContext.Request.Path.Value?.Contains("/tunnel", StringComparison.OrdinalIgnoreCase) == true;
+
+                if (isSpecialStream)
+                {
+                    token = qToken.ToString();
+                }
             }
 
             var (isValid, user) = _auth.ValidateSessionToken(token);

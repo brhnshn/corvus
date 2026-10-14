@@ -3,6 +3,33 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.2] - 2026-10-14 — Güvenlik Sıkılaştırması, Sıfır-Tahsisli Native AOT ve Hafif SVG Grafikler
+
+### Düzeltilenler (Fixed)
+- **WebSocket Terminal CSWSH Koruması**:
+  - `ContainersEndpoints.cs` (`/{id}/terminal`) içerisindeki WebSocket yükseltme el sıkışmasında `Request.Headers.Origin` başlığı `Request.Host` ile sıkı kontrole tabi tutuldu; siteler arası WebSocket ele geçirme (CSWSH) saldırıları `403 Forbidden` ile engellendi.
+- **URL Parametresinde Jeton Sızıntısının Kapatılması ve Bearer Desteği**:
+  - `CorvusAuthFilter.cs` içindeki URL `?token=` parametre kabulü, tarayıcıların özel başlık ekleyemediği gerçek zamanlı akış uç noktalarıyla (`/terminal`, `/stream`, `/tunnel`) sınırlandırıldı.
+  - Standart REST uç noktalarında URL üzerinden oturum jetonu iletimi engellenerek jetonların proxy erişim loglarına, tarayıcı geçmişine ve `Referer` başlıklarına sızması önlendi.
+  - Standart RFC 6750 `Authorization: Bearer <token>` başlığıyla kimlik doğrulama desteği eklendi.
+- **Eşzamanlı Veritabanı Yedeği DoS Kilidi**:
+  - `GET /api/backup/download` altındaki SQLite `VACUUM INTO` işlemi eşzamanlı istek kilidi (`SemaphoreSlim(1, 1)`) ile korumaya alındı; çoklu çağrılarla sunucu diskinin dolması, kilitlenmesi veya bellek tükenmesi riski bertaraf edildi.
+- **Konteyner Yetki Yükseltme Koruması (Hardening)**:
+  - `docker-compose.yml` içerisine `security_opt: ["no-new-privileges:true"]` direktifi eklenerek konteyner içerisindeki setuid/setgid ikili dosyalarıyla yetki yükseltme açığı kapatıldı.
+- **Evrensel HTTP Güvenlik Başlıkları Katmanı (Middleware)**:
+  - `Program.cs` içerisine hafif bir ara yazılım (middleware) eklenerek tüm yanıtlara `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin` ve `Content-Security-Policy` başlıkları eklendi.
+
+### Performans (Performance)
+- **`recharts` Bağımlılığının Kaldırılması ve Ultra Hafif Doğal SVG Grafikler**:
+  - CPU, RAM ve Konteyner geçmiş metriklerinde kullanılan hantal `recharts` kütüphanesi yerine sıfır bağımlılıklı, hafif ObsidianUI SVG bileşeni (`ObsidianAreaChart.tsx`) geliştirildi.
+  - 39 npm paketi bağımlılıktan temizlendi; istemci paket (bundle) boyutu ~353 kB sıkıştırılmamış (~102 kB gzipped) hafifletildi ve akıcı imleç izleme ile tepe nokta inceleme yeteneği korundu.
+- **Ajan Tünelinde Sıfır-Tahsisli (Zero-Alloc) JSON Ayrıştırma**:
+  - `AgentTunnelEndpoints.cs` içerisinde ajanlardan gelen her telemetri paketinde oluşan 64 KB yığın tampon tahsisi ve UTF-8 dize dönüşümleri kaldırılarak `ArrayPool<byte>.Shared` ve `ReadOnlySpan<byte>` tabanlı sıfır-tahsisli JSON ayrıştırma (`JsonSerializer.Deserialize`) mimarisine geçildi.
+  - Gen0 çöp toplayıcı (GC) baskısı minimum seviyeye indirildi.
+- **Asenkron Terminal Soket Akışı ve Arka Planda Oturum Temizliği**:
+  - `ContainersEndpoints.cs` terminal soket döngülerindeki (`PumpDockerToWsAsync`, `PumpWsToDockerAsync`) gereksiz `Task.Run` ThreadPool sarmalayıcıları kaldırılarak doğrudan `Task.WhenAny` ile asenkron yürütmeye geçirildi.
+  - `AuthService.cs` içindeki veritabanı oturum yazma işlemi doğrudan asenkron `await` ile güvene alındı ve süresi dolmuş oturumların periyodik temizliği `MetricsRetentionWorker` arka plan işçisine bağlandı.
+
 ## [1.6.1] - 2026-10-14 — ObsidianUI İskelet, Kenar Çubuğu ve Üst Çubuk Yerleşim Düzeltmesi
 
 ### Düzeltilenler (Fixed)

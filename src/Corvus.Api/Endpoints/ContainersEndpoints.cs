@@ -254,6 +254,23 @@ public static class ContainersEndpoints
                 return Results.BadRequest("WebSocket isteği bekleniyor.");
             }
 
+            // WebSocket CSWSH (Cross-Site WebSocket Hijacking) Koruması
+            if (context.Request.Headers.TryGetValue("Origin", out var originValues) && !string.IsNullOrWhiteSpace(originValues))
+            {
+                if (Uri.TryCreate(originValues.ToString(), UriKind.Absolute, out var originUri))
+                {
+                    if (!string.Equals(originUri.Authority, context.Request.Host.Value, StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger.LogWarning("WebSocket CSWSH engellendi: Origin={Origin}, Host={Host}", originValues, context.Request.Host);
+                        return Results.StatusCode(StatusCodes.Status403Forbidden);
+                    }
+                }
+                else
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
+            }
+
             string rawShell = context.Request.Query["shell"].ToString().Trim();
             
             // Güvenli kabuk aday listesi ve akıllı fallback zinciri (/bin/sh -> sh -> /bin/bash -> /bin/ash)
@@ -332,84 +349,9 @@ public static class ContainersEndpoints
             {
                 var ct = linkedCts.Token;
 
-                // Docker -> WebSocket pompası
-                var dockerToWsTask = Task.Run(async () =>
-                {
-                    byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
-                    try
-                    {
-                        while (!ct.IsCancellationRequested && webSocket.State == WebSocketState.Open)
-                        {
-                            int bytesRead = await dockerStream.ReadAsync(buffer, 0, buffer.Length, ct);
-                            if (bytesRead == 0) break;
-
-                            await webSocket.SendAsync(
-                                new ArraySegment<byte>(buffer, 0, bytesRead),
-                                WebSocketMessageType.Binary,
-                                endOfMessage: true,
-                                ct);
-                        }
-                    }
-                    catch (OperationCanceledException) { }
-                    catch (Exception ex) when (ex is IOException or SocketException or WebSocketException) { }
-                    finally
-                    {
-                        ArrayPool<byte>.Shared.Return(buffer);
-                        linkedCts.Cancel();
-                    }
-                }, ct);
-
-                // WebSocket -> Docker pompası (ve resize mesajları)
-                var wsToDockerTask = Task.Run(async () =>
-                {
-                    byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
-                    try
-                    {
-                        while (!ct.IsCancellationRequested && webSocket.State == WebSocketState.Open)
-                        {
-                            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-                            if (result.MessageType == WebSocketMessageType.Close)
-                            {
-                                break;
-                            }
-
-                            if (result.Count > 0)
-                            {
-                                // Terminal resize kontrolü: {"type":"resize","cols":80,"rows":24}
-                                if (result.MessageType == WebSocketMessageType.Text && 
-                                    buffer[0] == (byte)'{' && 
-                                    Encoding.UTF8.GetString(buffer, 0, result.Count).Contains("\"resize\""))
-                                {
-                                    try
-                                    {
-                                        var jsonStr = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                                        using var doc = JsonDocument.Parse(jsonStr);
-                                        if (doc.RootElement.TryGetProperty("cols", out var colsProp) &&
-                                            doc.RootElement.TryGetProperty("rows", out var rowsProp))
-                                        {
-                                            int cols = colsProp.GetInt32();
-                                            int rows = rowsProp.GetInt32();
-                                            _ = docker.ResizeExecAsync(activeExecId, cols, rows, ct);
-                                        }
-                                    }
-                                    catch { }
-                                }
-                                else
-                                {
-                                    await dockerStream.WriteAsync(buffer.AsMemory(0, result.Count), ct);
-                                    await dockerStream.FlushAsync(ct);
-                                }
-                            }
-                        }
-                    }
-                    catch (OperationCanceledException) { }
-                    catch (Exception ex) when (ex is IOException or SocketException or WebSocketException) { }
-                    finally
-                    {
-                        ArrayPool<byte>.Shared.Return(buffer);
-                        linkedCts.Cancel();
-                    }
-                }, ct);
+                // Docker <-> WebSocket doğrudan asenkron I/O pompaları (ThreadPool Task.Run sarmalayıcısı olmadan)
+                var dockerToWsTask = PumpDockerToWsAsync(dockerStream, webSocket, linkedCts, ct);
+                var wsToDockerTask = PumpWsToDockerAsync(dockerStream, webSocket, activeExecId, docker, linkedCts, ct);
 
                 await Task.WhenAny(dockerToWsTask, wsToDockerTask);
 
@@ -477,5 +419,92 @@ public static class ContainersEndpoints
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).AddEndpointFilter<CorvusAuthFilter>();
+    }
+
+    private static async Task PumpDockerToWsAsync(
+        Stream dockerStream,
+        WebSocket webSocket,
+        CancellationTokenSource linkedCts,
+        CancellationToken ct)
+    {
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+        try
+        {
+            while (!ct.IsCancellationRequested && webSocket.State == WebSocketState.Open)
+            {
+                int bytesRead = await dockerStream.ReadAsync(buffer, 0, buffer.Length, ct);
+                if (bytesRead == 0) break;
+
+                await webSocket.SendAsync(
+                    new ArraySegment<byte>(buffer, 0, bytesRead),
+                    WebSocketMessageType.Binary,
+                    endOfMessage: true,
+                    ct);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or SocketException or WebSocketException) { }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+            linkedCts.Cancel();
+        }
+    }
+
+    private static async Task PumpWsToDockerAsync(
+        Stream dockerStream,
+        WebSocket webSocket,
+        string activeExecId,
+        IDockerService docker,
+        CancellationTokenSource linkedCts,
+        CancellationToken ct)
+    {
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+        try
+        {
+            while (!ct.IsCancellationRequested && webSocket.State == WebSocketState.Open)
+            {
+                var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    break;
+                }
+
+                if (result.Count > 0)
+                {
+                    // Terminal resize kontrolü: {"type":"resize","cols":80,"rows":24}
+                    if (result.MessageType == WebSocketMessageType.Text && 
+                        buffer[0] == (byte)'{' && 
+                        Encoding.UTF8.GetString(buffer, 0, result.Count).Contains("\"resize\""))
+                    {
+                        try
+                        {
+                            var jsonStr = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                            using var doc = JsonDocument.Parse(jsonStr);
+                            if (doc.RootElement.TryGetProperty("cols", out var colsProp) &&
+                                doc.RootElement.TryGetProperty("rows", out var rowsProp))
+                            {
+                                int cols = colsProp.GetInt32();
+                                int rows = rowsProp.GetInt32();
+                                _ = docker.ResizeExecAsync(activeExecId, cols, rows, ct);
+                            }
+                        }
+                        catch { }
+                    }
+                    else
+                    {
+                        await dockerStream.WriteAsync(buffer.AsMemory(0, result.Count), ct);
+                        await dockerStream.FlushAsync(ct);
+                    }
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or SocketException or WebSocketException) { }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+            linkedCts.Cancel();
+        }
     }
 }

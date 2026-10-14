@@ -6,20 +6,32 @@ namespace Corvus.Api.Endpoints;
 
 public static class BackupEndpoints
 {
+    private static readonly SemaphoreSlim BackupLock = new(1, 1);
+
     public static void MapBackupEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api")
             .AddEndpointFilter<CorvusAuthFilter>();
 
-        // Corvus Veritabanı Yedek İndirme (Dahili Sıcak Yedek Snapshot)
+        // Corvus Veritabanı Yedek İndirme (Dahili Sıcak Yedek Snapshot - DoS ve kilit korumalı)
         group.MapGet("/backup/download", async (
             IDbConnectionFactory db,
             IBackupRepository repo,
-            IEventBroadcaster broadcaster) =>
+            IEventBroadcaster broadcaster,
+            CancellationToken ct) =>
         {
+            if (!await BackupLock.WaitAsync(TimeSpan.FromSeconds(5), ct))
+            {
+                return Results.Json(
+                    new GenericApiResponse(false, "Halihazırda devam eden bir veritabanı yedekleme işlemi mevcut. Lütfen biraz sonra tekrar deneyin."),
+                    CorvusJsonSerializerContext.Default.GenericApiResponse,
+                    statusCode: StatusCodes.Status429TooManyRequests);
+            }
+
             string dbPath = db.DatabasePath;
             if (!File.Exists(dbPath))
             {
+                BackupLock.Release();
                 return Results.NotFound(new GenericApiResponse(false, "Veritabanı dosyası bulunamadı."));
             }
 
@@ -62,6 +74,10 @@ public static class BackupEndpoints
                     try { File.Delete(tempFile); } catch { }
                 }
                 throw;
+            }
+            finally
+            {
+                BackupLock.Release();
             }
         }).RequireAdmin();
 

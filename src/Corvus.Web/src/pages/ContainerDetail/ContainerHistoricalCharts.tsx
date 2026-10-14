@@ -1,15 +1,7 @@
-import React from 'react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid
-} from 'recharts';
+import React, { useMemo } from 'react';
 import { Cpu, HardDrive } from 'lucide-react';
 import { formatBytes } from '../../utils/format';
+import { ObsidianAreaChart, type ChartDataPoint } from '../../components/ui/ObsidianAreaChart';
 
 export interface ContainerTelemetryPoint {
   time: string;
@@ -42,8 +34,24 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
   const currentMemBytes = latest?.memoryUsageBytes ?? 0;
 
   // Renk tanımları
-  const cpuColor = currentCpu >= 85 ? '#f87171' : currentCpu >= 60 ? '#fbbf24' : '#818cf8';
-  const memColor = currentMemPercent >= 85 ? '#f87171' : currentMemPercent >= 60 ? '#fbbf24' : '#34d399';
+  const cpuColor = currentCpu >= 85 ? 'var(--status-down)' : currentCpu >= 60 ? 'var(--status-warn)' : '#818cf8';
+  const memColor = currentMemPercent >= 85 ? 'var(--status-down)' : currentMemPercent >= 60 ? 'var(--status-warn)' : 'var(--status-up)';
+
+  const cpuChartData: ChartDataPoint[] = useMemo(() => {
+    return data.map((d) => ({
+      time: d.time,
+      fullTime: d.fullTime,
+      value: d.cpuPercent,
+    }));
+  }, [data]);
+
+  const memChartData: ChartDataPoint[] = useMemo(() => {
+    return data.map((d) => ({
+      time: d.time,
+      fullTime: d.fullTime,
+      value: d.memoryUsageBytes,
+    }));
+  }, [data]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-rv">
@@ -64,57 +72,16 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
           </span>
         </div>
 
-        <div className="h-44 w-full pt-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 8, right: 10, left: -24, bottom: 0 }}>
-              <defs>
-                <linearGradient id="containerCpuGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={cpuColor} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={cpuColor} stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-              <XAxis
-                dataKey="time"
-                stroke="rgba(255,255,255,0.3)"
-                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="rgba(255,255,255,0.3)"
-                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-                domain={[0, 'auto']}
-                unit="%"
-              />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const point = payload[0].payload as ContainerTelemetryPoint;
-                    return (
-                      <div className="sheet-glass border border-white/15 rounded-xl p-2.5 shadow-xl text-xs space-y-1">
-                        <div className="text-[10px] font-mono text-[#9ba0b5]">{point.fullTime}</div>
-                        <div className="font-mono font-bold text-indigo-300">
-                          CPU: %{point.cpuPercent.toFixed(1)}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="cpuPercent"
-                stroke={cpuColor}
-                strokeWidth={2}
-                fill="url(#containerCpuGrad)"
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="w-full pt-1">
+          <ObsidianAreaChart
+            data={cpuChartData}
+            color={cpuColor}
+            height={180}
+            min={0}
+            unit="%"
+            valueFormatter={(val) => `CPU: %${val.toFixed(1)}`}
+            ariaLabel="Konteyner CPU Grafiği"
+          />
         </div>
       </section>
 
@@ -137,57 +104,19 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
           </span>
         </div>
 
-        <div className="h-44 w-full pt-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 8, right: 10, left: -24, bottom: 0 }}>
-              <defs>
-                <linearGradient id="containerMemGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={memColor} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={memColor} stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-              <XAxis
-                dataKey="time"
-                stroke="rgba(255,255,255,0.3)"
-                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="rgba(255,255,255,0.3)"
-                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-                domain={[0, 'auto']}
-                unit="%"
-              />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const point = payload[0].payload as ContainerTelemetryPoint;
-                    return (
-                      <div className="sheet-glass border border-white/15 rounded-xl p-2.5 shadow-xl text-xs space-y-1">
-                        <div className="text-[10px] font-mono text-[#9ba0b5]">{point.fullTime}</div>
-                        <div className="font-mono font-bold text-emerald-300">
-                          RAM: {formatBytes(point.memoryUsageBytes)} (%{point.memoryPercent.toFixed(1)})
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="memoryPercent"
-                stroke={memColor}
-                strokeWidth={2}
-                fill="url(#containerMemGrad)"
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="w-full pt-1">
+          <ObsidianAreaChart
+            data={memChartData}
+            color={memColor}
+            height={180}
+            min={0}
+            max={memoryLimitBytes > 0 ? memoryLimitBytes : undefined}
+            valueFormatter={(val) => {
+              const pct = memoryLimitBytes > 0 ? Math.round((val / memoryLimitBytes) * 100) : null;
+              return pct !== null ? `${formatBytes(val)} (%${pct})` : formatBytes(val);
+            }}
+            ariaLabel="Konteyner Bellek Grafiği"
+          />
         </div>
       </section>
     </div>

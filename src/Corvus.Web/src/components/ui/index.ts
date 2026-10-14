@@ -16,6 +16,7 @@ export * from './Toast';
 export * from './MotionStage';
 export * from './AnimatedNumber';
 export * from './AnimatedBar';
+export * from './ObsidianAreaChart';
 
 // Legacy / Specialized Components (Preserved for compatibility)
 export * from './Pill';

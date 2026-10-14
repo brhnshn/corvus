@@ -162,20 +162,22 @@ public class AuthService : IAuthService
         return (false, null);
     }
 
+    public static void CleanExpiredSessions()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var kvp in ActiveSessions)
+        {
+            if (now >= kvp.Value.ExpiresAt)
+            {
+                ActiveSessions.TryRemove(kvp.Key, out _);
+            }
+        }
+    }
+
     public string GenerateSessionToken(string username)
     {
         // Periyodik bayat oturum temizliği (bellek sızıntısı koruması)
-        if (ActiveSessions.Count > 100)
-        {
-            var now = DateTime.UtcNow;
-            foreach (var kvp in ActiveSessions)
-            {
-                if (now >= kvp.Value.ExpiresAt)
-                {
-                    ActiveSessions.TryRemove(kvp.Key, out _);
-                }
-            }
-        }
+        CleanExpiredSessions();
 
         byte[] bytes = new byte[32];
         RandomNumberGenerator.Fill(bytes);
@@ -187,14 +189,7 @@ public class AuthService : IAuthService
         {
             try
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _sessionRepo.CreateSessionAsync(token, username, expiresAt);
-                    }
-                    catch { }
-                });
+                _ = _sessionRepo.CreateSessionAsync(token, username, expiresAt);
             }
             catch { }
         }
@@ -221,7 +216,7 @@ public class AuthService : IAuthService
             ActiveSessions.TryRemove(token, out _);
             if (_sessionRepo != null)
             {
-                _ = Task.Run(async () => { try { await _sessionRepo.DeleteSessionAsync(token); } catch { } });
+                try { _ = _sessionRepo.DeleteSessionAsync(token); } catch { }
             }
             return (false, null);
         }
@@ -241,7 +236,7 @@ public class AuthService : IAuthService
                     }
 
                     // Süresi dolmuş oturumu SQLite'tan sil
-                    _ = Task.Run(async () => { try { await _sessionRepo.DeleteSessionAsync(token); } catch { } });
+                    try { _ = _sessionRepo.DeleteSessionAsync(token); } catch { }
                 }
             }
             catch { }
@@ -257,7 +252,7 @@ public class AuthService : IAuthService
             ActiveSessions.TryRemove(token, out _);
             if (_sessionRepo != null)
             {
-                _ = Task.Run(async () => { try { await _sessionRepo.DeleteSessionAsync(token); } catch { } });
+                try { _ = _sessionRepo.DeleteSessionAsync(token); } catch { }
             }
         }
     }

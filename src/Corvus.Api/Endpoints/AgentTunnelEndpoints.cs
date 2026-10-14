@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -59,7 +60,8 @@ public static class AgentTunnelEndpoints
             logger.LogInformation("Agent tunnel açıldı: {SystemName} ({SystemId}) IP: {Ip}",
                 system.Name, systemId, clientIp);
 
-            var buffer = new byte[64 * 1024]; // 64 KB buffer
+            // Sıfır-tahsisli (zero-allocation) ArrayPool bellek tamponu
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
 
             try
             {
@@ -72,10 +74,10 @@ public static class AgentTunnelEndpoints
                         break;
                     }
 
-                    if (result.MessageType == WebSocketMessageType.Text)
+                    if (result.MessageType == WebSocketMessageType.Text && result.Count > 0)
                     {
-                        string json = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        ProcessTextMessage(json, systemId, ringBuffer, systemRepo, tunnelManager, logger);
+                        // String nesnesi üretmeden doğrudan ReadOnlySpan<byte> üzerinden sıfır tahsisle ayrıştır
+                        ProcessTextMessage(buffer.AsSpan(0, result.Count), systemId, ringBuffer, systemRepo, tunnelManager, logger);
                     }
                     else if (result.MessageType == WebSocketMessageType.Binary)
                     {
@@ -90,6 +92,7 @@ public static class AgentTunnelEndpoints
             }
             finally
             {
+                ArrayPool<byte>.Shared.Return(buffer);
                 tunnelManager.UnregisterTunnel(systemId, webSocket);
                 logger.LogInformation("Agent tunnel kapandı: {SystemId}", systemId);
 
@@ -104,7 +107,7 @@ public static class AgentTunnelEndpoints
     }
 
     private static void ProcessTextMessage(
-        string json,
+        ReadOnlySpan<byte> utf8Json,
         string systemId,
         ITelemetryRingBuffer ringBuffer,
         ISystemRepository systemRepo,
@@ -113,7 +116,7 @@ public static class AgentTunnelEndpoints
     {
         try
         {
-            var msg = JsonSerializer.Deserialize(json, CorvusJsonSerializerContext.Default.AgentTunnelMessage);
+            var msg = JsonSerializer.Deserialize(utf8Json, CorvusJsonSerializerContext.Default.AgentTunnelMessage);
             if (msg == null) return;
 
             if (msg.Type == "telemetry" && msg.Telemetry != null)

@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-10-14 — Security Hardening, Zero-Alloc Native AOT & Lightweight SVG Charts
+
+### Fixed
+- **WebSocket Terminal CSWSH Protection**:
+  - Enforced strict `Request.Headers.Origin` validation against `Request.Host` during WebSocket upgrade handshakes in `ContainersEndpoints.cs` (`/{id}/terminal`), blocking Cross-Site WebSocket Hijacking attacks with `403 Forbidden`.
+- **Query String Session Token Leakage & Bearer Auth**:
+  - Restricted URL `?token=` query parameter validation in `CorvusAuthFilter.cs` exclusively to streaming endpoints (`/terminal`, `/stream`, `/tunnel`) where browser clients cannot inject custom headers.
+  - Blocked query string token transmission on standard REST endpoints, eliminating session token leakage into proxy logs, browser history, and `Referer` headers.
+  - Added full support for standard RFC 6750 `Authorization: Bearer <token>` authentication headers.
+- **Concurrent Database Backup DoS Guard**:
+  - Protected `GET /api/backup/download` SQLite `VACUUM INTO` execution with a concurrency lock (`SemaphoreSlim(1, 1)`), preventing disk saturation, process freezing, and database contention from concurrent requests.
+- **Container Privilege Escalation Hardening**:
+  - Added `security_opt: ["no-new-privileges:true"]` to `docker-compose.yml` to prevent privilege escalation via setuid/setgid binaries inside running containers.
+- **Global HTTP Security Headers Middleware**:
+  - Added lightweight security headers middleware in `Program.cs` injecting `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`, and `Content-Security-Policy` across all HTTP responses.
+
+### Performance
+- **Eliminated `recharts` Dependency & Ultra-Lightweight Native SVG Charts**:
+  - Replaced the heavy `recharts` charting library with a custom, zero-dependency ObsidianUI SVG chart component (`ObsidianAreaChart.tsx`) across CPU, RAM, and Container historical metrics.
+  - Removed 39 npm dependencies and reduced client bundle size by ~353 kB uncompressed (~102 kB gzipped) while adding smooth cursor scrubbing and interactive peak inspection.
+- **Zero-Allocation JSON Parsing in Agent Tunnel**:
+  - Replaced 64 KB heap buffer allocations and UTF-8 string conversions per telemetry ping in `AgentTunnelEndpoints.cs` with rented buffers (`ArrayPool<byte>.Shared`) and span-based zero-allocation deserialization (`JsonSerializer.Deserialize(ReadOnlySpan<byte>, ...)`).
+- **Asynchronous Terminal Socket Pump & Background Session Purging**:
+  - Removed unnecessary `Task.Run` ThreadPool dispatch wrappers in `ContainersEndpoints.cs` terminal loops (`PumpDockerToWsAsync`, `PumpWsToDockerAsync`) in favor of direct async execution with `Task.WhenAny`.
+  - In `AuthService.cs`, eliminated fire-and-forget `Task.Run` session persistence, and wired periodic in-memory and database expired session cleanup into `MetricsRetentionWorker`.
+
 ## [1.6.1] - 2026-10-14 — ObsidianUI Shell, Sidebar & Navbar Layout Fix
 
 ### Fixed

@@ -10,6 +10,8 @@ services:
       - CORVUS_DATA_DIR=/data
       - DOCKER_SOCKET=/var/run/docker.sock
       - CORVUS_AUTH_ENABLED=true
+    security_opt:
+      - no-new-privileges:true
     extra_hosts:
       - "host.docker.internal:host-gateway"
     logging:

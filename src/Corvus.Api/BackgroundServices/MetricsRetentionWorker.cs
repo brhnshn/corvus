@@ -40,6 +40,18 @@ public class MetricsRetentionWorker : Microsoft.Extensions.Hosting.BackgroundSer
                 {
                     _logger.LogInformation("MetricsRetentionWorker: {Pruned} eski metrik kaydi saatlik ozetlendi ve budandi.", pruned);
                 }
+
+                // Süresi dolan oturumları veritabanından ve RAM'den temizle
+                try
+                {
+                    var sessionRepo = scope.ServiceProvider.GetService<ISessionRepository>();
+                    if (sessionRepo != null)
+                    {
+                        await sessionRepo.CleanupExpiredSessionsAsync();
+                    }
+                    Corvus.Api.Services.AuthService.CleanExpiredSessions();
+                }
+                catch { }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

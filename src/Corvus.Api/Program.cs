@@ -119,6 +119,17 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Global HTTP Güvenlik Başlıkları (Security Hardening)
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "same-origin";
+    headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self';";
+    await next();
+});
+
 app.UseCors();
 app.UseWebSockets();
 

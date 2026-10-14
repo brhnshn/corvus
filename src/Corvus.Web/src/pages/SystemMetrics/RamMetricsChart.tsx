@@ -1,15 +1,7 @@
-import React from 'react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  CartesianGrid 
-} from 'recharts';
+import React, { useMemo } from 'react';
 import { Database } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { ObsidianAreaChart, type ChartDataPoint } from '../../components/ui/ObsidianAreaChart';
 
 interface RamChartDataPoint {
   time: string;
@@ -32,9 +24,17 @@ export const RamMetricsChart: React.FC<RamMetricsChartProps> = ({
 }) => {
   const { t } = useI18n();
 
-  // Eşik tabanlı renk belirleme (Midnight v2: RAM < 80 ok, 80-89 warn, >=90 err)
+  // Eşik tabanlı renk belirleme (ObsidianUI: RAM < 80 up, 80-89 warn, >=90 down)
   const ramPercent = totalRamGb > 0 ? (currentRamGb / totalRamGb) * 100 : 0;
-  const statusColor = ramPercent >= 90 ? '#f87171' : ramPercent >= 80 ? '#fbbf24' : '#34d399';
+  const statusColor = ramPercent >= 90 ? 'var(--status-down)' : ramPercent >= 80 ? 'var(--status-warn)' : 'var(--status-up)';
+
+  const chartData: ChartDataPoint[] = useMemo(() => {
+    return data.map((d) => ({
+      time: d.time,
+      fullTime: d.fullTime,
+      value: d.ramUsedGb,
+    }));
+  }, [data]);
 
   return (
     <section className="surface rounded-[22px] p-4 sm:p-5 min-w-0 flex flex-col gap-3">
@@ -54,68 +54,21 @@ export const RamMetricsChart: React.FC<RamMetricsChartProps> = ({
         </span>
       </div>
 
-      {/* Grafik */}
-      <div className="h-56 sm:h-64 w-full pt-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 10, left: -16, bottom: 0 }}>
-            <defs>
-              <linearGradient id="ramGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={statusColor} stopOpacity={0.25} />
-                <stop offset="100%" stopColor={statusColor} stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 4" stroke="rgba(255,255,255,0.08)" vertical={false} />
-            <XAxis 
-              dataKey="time" 
-              stroke="#9ba0b5" 
-              fontSize={10} 
-              tickLine={false}
-              axisLine={false}
-              minTickGap={28} 
-              fontFamily="ui-monospace, Menlo, Consolas, monospace"
-            />
-            <YAxis 
-              domain={[0, totalRamGb > 0 ? totalRamGb : 'auto']} 
-              stroke="#9ba0b5" 
-              fontSize={10} 
-              tickLine={false}
-              axisLine={false}
-              unit=" GB" 
-              fontFamily="ui-monospace, Menlo, Consolas, monospace"
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'rgba(27,29,42,0.95)', 
-                borderColor: 'rgba(255,255,255,0.12)', 
-                borderRadius: 12, 
-                fontSize: 11,
-                fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                backdropFilter: 'blur(16px)'
-              }}
-              labelFormatter={(_, items) => {
-                const item = items?.[0]?.payload as RamChartDataPoint | undefined;
-                return item?.fullTime || '';
-              }}
-              itemStyle={{ color: statusColor, fontWeight: 600 }}
-              formatter={(value: unknown, _: unknown, item: { payload?: RamChartDataPoint }) => [
-                `${value} GB / ${item?.payload?.ramTotalGb ?? totalRamGb} GB (%${item?.payload?.ramPercent ?? ''})`,
-                t('metrics.usedRamName') || 'Kullanılan RAM'
-              ]}
-            />
-            <Area 
-              type="monotone" 
-              dataKey="ramUsedGb" 
-              name={t('metrics.usedRamName') || 'Kullanılan RAM'} 
-              stroke={statusColor} 
-              strokeWidth={1.8}
-              fillOpacity={1} 
-              fill="url(#ramGradient)" 
-              dot={false}
-              activeDot={{ r: 4, stroke: statusColor, strokeWidth: 2, fill: '#fff' }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      {/* Hafif Vektörel SVG Grafik */}
+      <div className="w-full pt-1">
+        <ObsidianAreaChart
+          data={chartData}
+          color={statusColor}
+          height={230}
+          min={0}
+          max={totalRamGb > 0 ? totalRamGb : undefined}
+          unit=" GB"
+          valueFormatter={(val) => {
+            const pct = totalRamGb > 0 ? Math.round((val / totalRamGb) * 100) : 0;
+            return `${val.toFixed(1)} GB / ${totalRamGb} GB (%${pct})`;
+          }}
+          ariaLabel="RAM Kullanım Grafiği"
+        />
       </div>
     </section>
   );
