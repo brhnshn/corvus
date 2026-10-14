@@ -222,12 +222,14 @@ public class AgentDockerClient : IAgentDockerClient
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "systemctl",
-                    Arguments = "list-units --type=service --output=json",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                psi.ArgumentList.Add("list-units");
+                psi.ArgumentList.Add("--type=service");
+                psi.ArgumentList.Add("--output=json");
 
                 using var proc = System.Diagnostics.Process.Start(psi);
                 if (proc == null) return new DockerRpcResponse(Success: false, Message: "Failed to start systemctl.");
@@ -255,12 +257,13 @@ public class AgentDockerClient : IAgentDockerClient
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "systemctl",
-                    Arguments = $"{cmdAction} \"{unitName}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                psi.ArgumentList.Add(cmdAction);
+                psi.ArgumentList.Add(unitName);
 
                 using var proc = System.Diagnostics.Process.Start(psi);
                 if (proc == null) return new DockerRpcResponse(Success: false, Message: "Failed to start systemctl.");
@@ -285,12 +288,16 @@ public class AgentDockerClient : IAgentDockerClient
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "journalctl",
-                    Arguments = $"-u \"{unitName}\" -n {tail} --no-pager",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                psi.ArgumentList.Add("-u");
+                psi.ArgumentList.Add(unitName);
+                psi.ArgumentList.Add("-n");
+                psi.ArgumentList.Add(tail.ToString());
+                psi.ArgumentList.Add("--no-pager");
 
                 using var proc = System.Diagnostics.Process.Start(psi);
                 if (proc == null) return new DockerRpcResponse(Success: false, Message: "Failed to start journalctl.");

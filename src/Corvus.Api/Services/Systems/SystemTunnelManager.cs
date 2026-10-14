@@ -39,7 +39,8 @@ public class SystemTunnelManager : ISystemTunnelManager
             }
             return socket;
         });
-        _logger.LogInformation("System tunnel registered for system: {SystemId}", systemId);
+        _logger.LogInformation("System tunnel registered for system: {SystemId}", 
+            Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(systemId));
     }
 
     public void UnregisterTunnel(string systemId, WebSocket socket)
@@ -47,7 +48,8 @@ public class SystemTunnelManager : ISystemTunnelManager
         if (_sockets.TryGetValue(systemId, out var current) && current == socket)
         {
             _sockets.TryRemove(systemId, out _);
-            _logger.LogInformation("System tunnel unregistered for system: {SystemId}", systemId);
+            _logger.LogInformation("System tunnel unregistered for system: {SystemId}", 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(systemId));
         }
     }
 

@@ -261,7 +261,9 @@ public static class ContainersEndpoints
                 {
                     if (!string.Equals(originUri.Authority, context.Request.Host.Value, StringComparison.OrdinalIgnoreCase))
                     {
-                        logger.LogWarning("WebSocket CSWSH engellendi: Origin={Origin}, Host={Host}", originValues, context.Request.Host);
+                        logger.LogWarning("WebSocket CSWSH engellendi: Origin={Origin}, Host={Host}", 
+                            Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(originValues.ToString()), 
+                            Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(context.Request.Host.ToString()));
                         return Results.StatusCode(StatusCodes.Status403Forbidden);
                     }
                 }

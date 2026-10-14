@@ -3,6 +3,22 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.6] - 2026-10-14 — CodeQL Güvenlik Sıkılaştırması ve Komut Enjeksiyonu Koruması
+
+### Düzeltilenler (Fixed)
+- **Komut Satırı Enjeksiyonu Koruması (CWE-78 / CWE-88 - Uncontrolled Command Line)**:
+  - `SystemdServiceClient` ve `AgentDockerClient` içerisinde `systemctl` ve `journalctl` süreç çalıştırmalarında dize birleştirmeli `ProcessStartInfo.Arguments` kullanımı kaldırılarak strongly-typed `ProcessStartInfo.ArgumentList` koleksiyonuna geçildi. Argümanlar kabuk (shell) yorumlaması olmaksızın işletim sistemi çekirdeğine bağımsız diziler olarak iletilerek argüman/komut enjeksiyonu açıkları tamamen kapatıldı.
+  - `ComposeFileService` içerisindeki Docker Compose çalıştırma çağrıları da `ArgumentList.Add(...)` yapısına geçirilerek sağlamlaştırıldı.
+- **Log Enjeksiyonu ve CRLF Temizleme (CWE-117 - Log Entries from User Input)**:
+  - Dışarıdan veya kullanıcıdan gelen parametrelerin loglara doğrudan yazılması engellendi; `SecuritySanitizer.SanitizeLog(...)` ile `\r` ve `\n` karakterleri temizlenerek log bütünlüğü korundu:
+    - `SystemdServiceClient`: Hata loglarındaki `{Unit}` ve `{Action}` parametreleri temizlendi.
+    - `DockerContainerClient`: `GetContainerLogsAsync` hata logundaki `{ContainerId}` temizlendi.
+    - `DockerService`: Konteyneri yeniden oluşturma ve geri alma (rollback) loglarındaki `{Image}`, `{Name}`, `{NewId}` ve `{OldId}` parametreleri temizlendi.
+    - `ContainersEndpoints`: WebSocket CSWSH engelleme uyarısındaki `{Origin}` ve `{Host}` parametreleri temizlendi.
+    - `SystemTunnelManager`: Tünel kayıt ve ayrılma loglarındaki `{SystemId}` parametresi temizlendi.
+
+---
+
 ## [1.6.5] - 2026-10-14 — Kalıcı Bağlamsal Düğüm Ağacı, Kademeli Genel Bakış Yüklemesi, CSP ve Gerçek Veri Disiplini
 
 ### Eklenenler (Added)

@@ -811,11 +811,13 @@ public class DockerService : IDockerService
         // 1. Yeni imajı çek
         if (pullLatest)
         {
-            _logger.LogInformation("Konteyner yeniden oluşturma öncesi güncel imaj çekiliyor: {Image}", imageName);
+            _logger.LogInformation("Konteyner yeniden oluşturma öncesi güncel imaj çekiliyor: {Image}", 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(imageName));
             bool pulled = await _client.PullImageAsync(imageName, cancellationToken);
             if (!pulled)
             {
-                _logger.LogWarning("Güncel imaj çekilemedi, mevcut yerel imajla devam ediliyor: {Image}", imageName);
+                _logger.LogWarning("Güncel imaj çekilemedi, mevcut yerel imajla devam ediliyor: {Image}", 
+                    Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(imageName));
             }
         }
 
@@ -857,7 +859,8 @@ public class DockerService : IDockerService
         var createRes = await _client.CreateContainerAsync(originalName, createReq, cancellationToken);
         if (createRes == null || string.IsNullOrWhiteSpace(createRes.Id))
         {
-            _logger.LogError("Yeni konteyner oluşturulamadı, eski konteyner geri alınıyor: {Name}", originalName);
+            _logger.LogError("Yeni konteyner oluşturulamadı, eski konteyner geri alınıyor: {Name}", 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(originalName));
             // Rollback: eski ismi geri ver, çalışıyorsa yeniden başlat
             await _client.RenameContainerAsync(containerId, originalName, cancellationToken);
             if (wasRunning) await _client.StartContainerAsync(containerId, cancellationToken);
@@ -870,7 +873,8 @@ public class DockerService : IDockerService
         var startRes = await _client.StartContainerAsync(newContainerId, cancellationToken);
         if (!startRes.Success)
         {
-            _logger.LogError("Yeni konteyner başlatılamadı, geri alma yapılıyor: {NewId}", newContainerId);
+            _logger.LogError("Yeni konteyner başlatılamadı, geri alma yapılıyor: {NewId}", 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(newContainerId));
             // Rollback: oluşturulan yeni konteyneri sil, eski konteynerin adını düzeltip başlat
             await _client.DeleteContainerAsync(newContainerId, force: true, removeVolumes: false, cancellationToken);
             await _client.RenameContainerAsync(containerId, originalName, cancellationToken);
@@ -885,7 +889,8 @@ public class DockerService : IDockerService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Eski yedek konteyner silinirken uyarı: {OldId}", containerId);
+            _logger.LogWarning(ex, "Eski yedek konteyner silinirken uyarı: {OldId}", 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
         }
 
         InvalidateContainersCache();

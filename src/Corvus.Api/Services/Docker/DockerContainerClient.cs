@@ -278,7 +278,7 @@ public class DockerContainerClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container logları alınamadı: {ContainerId}", containerId);
+            _logger.LogError(ex, "Container logları alınamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new List<string>();
         }
     }

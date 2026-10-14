@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.6] - 2026-10-14 — CodeQL Security Hardening & Command Injection Protection
+
+### Fixed
+- **Uncontrolled Command Line Hardening (CWE-78 / CWE-88)**:
+  - Migrated `SystemdServiceClient` and `AgentDockerClient` process spawning (`systemctl` and `journalctl`) from string concatenation via `ProcessStartInfo.Arguments` to strongly-typed `ProcessStartInfo.ArgumentList`. Each argument is passed as an isolated token directly to the OS kernel without shell expansion or delimiter injection risks.
+  - Hardened Docker Compose execution in `ComposeFileService` using `ArgumentList.Add(...)` instead of concatenated argument strings.
+- **Log Injection / Forging Sanitization (CWE-117)**:
+  - Sanitized tainted parameters across all logging sinks using `SecuritySanitizer.SanitizeLog(...)` to strip carriage return (`\r`) and newline (`\n`) characters:
+    - `SystemdServiceClient`: Sanitized `{Unit}` and `{Action}` parameters in error logs.
+    - `DockerContainerClient`: Sanitized `{ContainerId}` parameter in `GetContainerLogsAsync` error logging.
+    - `DockerService`: Sanitized `{Image}`, `{Name}`, `{NewId}`, and `{OldId}` parameters during container recreate and rollback flows.
+    - `ContainersEndpoints`: Sanitized `{Origin}` and `{Host}` parameters in WebSocket CSWSH security violation alerts.
+    - `SystemTunnelManager`: Sanitized `{SystemId}` in tunnel connection and disconnection event logging.
+
+---
+
 ## [1.6.5] - 2026-10-14 — Persistent Collapsible Node Tree, Progressive Dashboard Loading, CSP & Real Data Discipline
 
 ### Added

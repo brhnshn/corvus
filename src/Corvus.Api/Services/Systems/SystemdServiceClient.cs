@@ -42,12 +42,14 @@ public class SystemdServiceClient : ISystemdServiceClient
             var psi = new ProcessStartInfo
             {
                 FileName = "systemctl",
-                Arguments = "list-units --type=service --output=json",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            psi.ArgumentList.Add("list-units");
+            psi.ArgumentList.Add("--type=service");
+            psi.ArgumentList.Add("--output=json");
 
             using var proc = Process.Start(psi);
             if (proc == null) return [];
@@ -121,12 +123,13 @@ public class SystemdServiceClient : ISystemdServiceClient
             var psi = new ProcessStartInfo
             {
                 FileName = "systemctl",
-                Arguments = $"{normAction} \"{trimmedName}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            psi.ArgumentList.Add(normAction);
+            psi.ArgumentList.Add(trimmedName);
 
             using var proc = Process.Start(psi);
             if (proc == null)
@@ -148,7 +151,9 @@ public class SystemdServiceClient : ISystemdServiceClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "systemctl eylemi yürütülürken hata: {Unit} - {Action}", trimmedName, normAction);
+            _logger.LogError(ex, "systemctl eylemi yürütülürken hata: {Unit} - {Action}", 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(trimmedName), 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(normAction));
             return new GenericApiResponse(false, $"Hata: {ex.Message}");
         }
     }
@@ -181,12 +186,16 @@ public class SystemdServiceClient : ISystemdServiceClient
             var psi = new ProcessStartInfo
             {
                 FileName = "journalctl",
-                Arguments = $"-u \"{trimmedName}\" -n {clampedLines} --no-pager",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            psi.ArgumentList.Add("-u");
+            psi.ArgumentList.Add(trimmedName);
+            psi.ArgumentList.Add("-n");
+            psi.ArgumentList.Add(clampedLines.ToString());
+            psi.ArgumentList.Add("--no-pager");
 
             using var proc = Process.Start(psi);
             if (proc == null)
@@ -209,7 +218,8 @@ public class SystemdServiceClient : ISystemdServiceClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "journalctl günlükleri alınırken hata: {Unit}", trimmedName);
+            _logger.LogError(ex, "journalctl günlükleri alınırken hata: {Unit}", 
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(trimmedName));
             return new SystemdLogsDto
             {
                 Unit = trimmedName,

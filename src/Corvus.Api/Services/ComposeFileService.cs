@@ -209,13 +209,18 @@ public class ComposeFileService : IComposeFileService
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "docker",
-                Arguments = $"compose -f \"{resolvedFilePath}\" up -d --remove-orphans",
                 WorkingDirectory = workingDir,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            psi.ArgumentList.Add("compose");
+            psi.ArgumentList.Add("-f");
+            psi.ArgumentList.Add(resolvedFilePath);
+            psi.ArgumentList.Add("up");
+            psi.ArgumentList.Add("-d");
+            psi.ArgumentList.Add("--remove-orphans");
 
             System.Diagnostics.Process? proc = null;
             try
@@ -226,7 +231,12 @@ public class ComposeFileService : IComposeFileService
             {
                 // docker bulunamadıysa docker-compose dene
                 psi.FileName = "docker-compose";
-                psi.Arguments = $"-f \"{resolvedFilePath}\" up -d --remove-orphans";
+                psi.ArgumentList.Clear();
+                psi.ArgumentList.Add("-f");
+                psi.ArgumentList.Add(resolvedFilePath);
+                psi.ArgumentList.Add("up");
+                psi.ArgumentList.Add("-d");
+                psi.ArgumentList.Add("--remove-orphans");
                 proc = System.Diagnostics.Process.Start(psi);
             }
 
