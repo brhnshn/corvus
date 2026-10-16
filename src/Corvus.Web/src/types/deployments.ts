@@ -104,3 +104,7 @@ export interface ContainerConnectionTestResult {
   canConnect: boolean;
   message: string;
 }
+
+export interface DeployWebhookInfoResponse {
+  token: string;
+}

@@ -84,3 +84,7 @@ public record ContainerConnectionTestResult(
     bool CanConnect,
     string Message
 );
+
+public record DeployWebhookInfoResponse(
+    string Token
+);

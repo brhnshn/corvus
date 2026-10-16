@@ -238,5 +238,28 @@ public static class DeploymentsEndpoints
 
             return Results.Json(result, CorvusJsonSerializerContext.Default.ContainerConnectionTestResult);
         }).RequireAdmin();
+
+        // 7. Webhook Belirteci Bilgisi (Yoksa otomatik güvenli belirteç oluşturur)
+        group.MapGet("/webhook-token", async (
+            ISettingsRepository settingsRepo,
+            CancellationToken ct) =>
+        {
+            var settings = await settingsRepo.GetAllAsync();
+            string? token = null;
+            if (settings.TryGetValue("deploy_webhook_token", out var dbToken) && !string.IsNullOrWhiteSpace(dbToken))
+            {
+                token = dbToken;
+            }
+            token ??= Environment.GetEnvironmentVariable("CORVUS_DEPLOY_TOKEN");
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                token = $"crd_{Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant()}";
+                await settingsRepo.SetAsync("deploy_webhook_token", token);
+            }
+
+            return Results.Json(new DeployWebhookInfoResponse(token),
+                CorvusJsonSerializerContext.Default.DeployWebhookInfoResponse);
+        }).RequireAdmin();
     }
 }

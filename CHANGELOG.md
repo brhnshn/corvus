@@ -28,6 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `DeploymentEngine.cs`: Added automatic container deletion (`DeleteContainerAsync`) when container startup fails due to port allocation collisions (`port is already allocated`) or unexpected crashes, preventing orphaned stopped containers.
   - Automatically detect and purge leftover `created` or `dead` containers on new deployment triggers, preventing "container already exists" blocking errors.
   - `NewDeploymentModal.tsx`, `tr.ts`, `en.ts`: Added format guidance (`HostPort:ContainerPort`, e.g. `3005:3001`) to help users avoid binding busy host ports.
+- **Real Deploy Token & URL Integration in CI/CD Webhook Wizard**:
+  - `DeploymentsEndpoints.cs` & `deployments.ts`: Added `GET /api/deployments/webhook-token` endpoint with automatic cryptographic token generation (`crd_...`) if none is defined in system settings.
+  - `DeployWebhookWizardModal.tsx`: Replaced static `${CORVUS_DEPLOY_TOKEN}` placeholder with a live, copyable Webhook URL, copyable Secret Name (`CORVUS_DEPLOY_TOKEN`), and copyable Secret Value with toggleable visibility.
 - **Prevent Infinite SSE Reconnection & Log Pollution**:
   - `useDeploymentStream.ts` & `DeploymentProgressModal.tsx`: Stabilized callback and object dependencies (`onCompleted`, `persistActiveDeployment`) using `useRef` to prevent timer re-renders (`durationMs` ticking every 500ms) from re-triggering the stream subscription effect in an infinite loop.
   - `deployments.ts`: Once a deployment finishes (`success`, `failed`, or `rolled_back`), the browser's built-in `EventSource` auto-reconnect cycle is halted via `eventSource.close()`, permanently stopping duplicate log spam and terminal pollution.

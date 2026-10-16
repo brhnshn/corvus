@@ -4,7 +4,8 @@ import type {
   TriggerDeployResponse, 
   DeploymentStreamEvent,
   ScratchDeploymentRequest,
-  ContainerConnectionTestResult
+  ContainerConnectionTestResult,
+  DeployWebhookInfoResponse
 } from '../types/deployments';
 
 export interface GetDeploymentsParams {
@@ -37,6 +38,13 @@ export const deploymentsApi = {
    */
   async testContainerConnection(containerId: string): Promise<ContainerConnectionTestResult> {
     return fetchJson<ContainerConnectionTestResult>(`/deployments/containers/test-connection/${encodeURIComponent(containerId)}`);
+  },
+
+  /**
+   * Fetches the deployment webhook token (auto-creates if none exists).
+   */
+  async getWebhookToken(): Promise<DeployWebhookInfoResponse> {
+    return fetchJson<DeployWebhookInfoResponse>('/deployments/webhook-token');
   },
 
   /**
