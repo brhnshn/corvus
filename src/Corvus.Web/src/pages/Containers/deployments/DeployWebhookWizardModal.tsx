@@ -61,7 +61,7 @@ jobs:
           CORVUS_DEPLOY_TOKEN: \${{ secrets.CORVUS_DEPLOY_TOKEN }}
         run: |
           echo "Triggering Corvus Deployment..."
-          curl -f -X POST "${origin}/api/hooks/deploy/\$CORVUS_DEPLOY_TOKEN?containerId=${encodeURIComponent(containerId)}&wait=true" \\
+          curl -f -X POST "${origin}/api/hooks/deploy/$CORVUS_DEPLOY_TOKEN?containerId=${encodeURIComponent(containerId)}&wait=true" \\
             -H "Content-Type: application/json" \\
             --max-time 180
 `;

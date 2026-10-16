@@ -24,19 +24,6 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
   isRunning,
   memoryLimitBytes = 0
 }) => {
-  if (!isRunning || data.length === 0) {
-    return null;
-  }
-
-  const latest = data[data.length - 1];
-  const currentCpu = latest?.cpuPercent ?? 0;
-  const currentMemPercent = latest?.memoryPercent ?? 0;
-  const currentMemBytes = latest?.memoryUsageBytes ?? 0;
-
-  // Renk tanımları
-  const cpuColor = currentCpu >= 85 ? 'var(--status-down)' : currentCpu >= 60 ? 'var(--status-warn)' : '#818cf8';
-  const memColor = currentMemPercent >= 85 ? 'var(--status-down)' : currentMemPercent >= 60 ? 'var(--status-warn)' : 'var(--status-up)';
-
   const cpuChartData: ChartDataPoint[] = useMemo(() => {
     return data.map((d) => ({
       time: d.time,
@@ -52,6 +39,19 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
       value: d.memoryUsageBytes,
     }));
   }, [data]);
+
+  if (!isRunning || data.length === 0) {
+    return null;
+  }
+
+  const latest = data[data.length - 1];
+  const currentCpu = latest?.cpuPercent ?? 0;
+  const currentMemPercent = latest?.memoryPercent ?? 0;
+  const currentMemBytes = latest?.memoryUsageBytes ?? 0;
+
+  // Renk tanımları
+  const cpuColor = currentCpu >= 85 ? 'var(--status-down)' : currentCpu >= 60 ? 'var(--status-warn)' : '#818cf8';
+  const memColor = currentMemPercent >= 85 ? 'var(--status-down)' : currentMemPercent >= 60 ? 'var(--status-warn)' : 'var(--status-up)';
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-rv">

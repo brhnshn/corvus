@@ -75,7 +75,7 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
         if (isMountedRef.current && live) {
           setStats(live);
         }
-      } catch (err) {
+      } catch {
         // Sessiz hata (arka plan telemetrisi)
       }
     };

@@ -3,6 +3,18 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.13] - 2026-10-16 — React Kancaları Kuralı (Rules of Hooks) Uyumluluğu & Linter İyileştirmeleri
+
+### Düzeltilenler (Fixed)
+- **Konteyner Geçmiş Grafiklerinde React Rules of Hooks Uyumluluğu**:
+  - `src/Corvus.Web/src/pages/ContainerDetail/ContainerHistoricalCharts.tsx`: Erken dönüş (`if (!isRunning || data.length === 0)`) öncesine `useMemo` kancaları taşınarak tüm render döngülerinde kancaların daima aynı sırada çağrılması güvenceye alındı.
+- **CI/CD Webhook Sihirbazı Kaçış Karakteri Temizliği**:
+  - `src/Corvus.Web/src/pages/Containers/deployments/DeployWebhookWizardModal.tsx`: GitHub Actions iş akışı şablonundaki `$CORVUS_DEPLOY_TOKEN` değişkenindeki gereksiz `\$` kaçış karakteri düzeltildi.
+- **Telemetri Yakalama Bloğunda Kullanılmayan Değişken Temizliği**:
+  - `src/Corvus.Web/src/pages/Containers/detail/ContainerResourcesTab.tsx`: Arka plan telemetri sorgulamasında `catch (err)` yerine ES2019 opsiyonel yakalama (`catch`) kullanılarak linter uyarıları giderildi.
+- **ANSI Renk Ayrıştırıcı Düzenli İfade Doğrulaması**:
+  - `src/Corvus.Web/src/utils/ansi.ts`: ANSI renk ve kontrol karakterlerini ayrıştıran düzenli ifadelerin (regex) linter kontrol karakter kurallarına uyumu sağlandı.
+
 ## [1.6.12] - 2026-10-16 — Müstakil Dağıtım Merkezi, Sıfırdan Dağıtım Sihirbazı & 502 Öz-Koruma Kalkanı
 
 ### Eklenenler (Added)

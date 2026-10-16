@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.13] - 2026-10-16 — Strict React Rules of Hooks Compliance & Linter Hardening
+
+### Fixed
+- **React Rules of Hooks Compliance in Container Historical Charts**:
+  - `src/Corvus.Web/src/pages/ContainerDetail/ContainerHistoricalCharts.tsx`: Moved `useMemo` hooks before the conditional early return (`if (!isRunning || data.length === 0)`), guaranteeing consistent hook execution order across all renders.
+- **CI/CD Webhook Wizard Template String Escape**:
+  - `src/Corvus.Web/src/pages/Containers/deployments/DeployWebhookWizardModal.tsx`: Fixed unnecessary escape on `$CORVUS_DEPLOY_TOKEN` inside the GitHub Actions workflow snippet.
+- **Unused Error Parameter in Telemetry Catch Block**:
+  - `src/Corvus.Web/src/pages/Containers/detail/ContainerResourcesTab.tsx`: Refactored background telemetry polling to use ES2019 optional catch binding (`catch`), eliminating unused error variable warnings.
+- **ANSI Escape Sequence Regular Expression Clarification**:
+  - `src/Corvus.Web/src/utils/ansi.ts`: Added targeted ESLint control-character ignore comments on ANSI stripping and tokenizing regular expressions.
+
 ## [1.6.12] - 2026-10-16 — Dedicated Deployment Center, Deploy from Scratch Wizard & 502 Self-Preservation Guard
 
 ### Added

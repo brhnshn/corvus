@@ -57,6 +57,7 @@ const ANSI_BG_MAP: Record<number, string> = {
 export function stripAnsi(input: string): string {
   if (!input) return '';
   // Match CSI codes like \u001b[...m and OSC codes
+  // eslint-disable-next-line no-control-regex
   return input.replace(/\x1b\[[0-9;]*[a-zA-Z]|\x1b\].*?\x07/g, '');
 }
 
@@ -68,6 +69,7 @@ export function parseAnsiToSegments(input: string): AnsiSegment[] {
 
   const segments: AnsiSegment[] = [];
   // Regex to find ANSI escape sequence: \x1b[ ... m or \u001b[ ... m
+  // eslint-disable-next-line no-control-regex
   const ansiRegex = /\x1b\[([0-9;]*)m/g;
 
   let lastIndex = 0;
