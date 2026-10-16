@@ -218,6 +218,9 @@ export const NewDeploymentModal: React.FC<NewDeploymentModalProps> = ({
                 placeholder={t('deployments.portsPlaceholder')}
                 className="w-full h-[38px] px-3.5 rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-white/[0.05] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-xs outline-none focus:border-[var(--cloud-400)] transition-colors font-mono"
               />
+              <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                {t('deployments.portsHelp')}
+              </p>
             </div>
 
             {/* Ortam Değişkenleri */}

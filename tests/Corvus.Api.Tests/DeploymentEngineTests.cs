@@ -14,6 +14,7 @@ public class DeploymentEngineTests : IDisposable
     {
         public bool ShouldPullFail { get; set; }
         public bool ShouldStartCrash { get; set; }
+        public bool ShouldStartFail { get; set; }
         public int PullCount { get; private set; }
         public int StartCount { get; private set; }
         public int StopCount { get; private set; }
@@ -22,7 +23,17 @@ public class DeploymentEngineTests : IDisposable
 
         public override Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default)
         {
-            if (containerId.Contains("invalid") || containerId.Contains("new_web")) return Task.FromResult<DockerContainerInspectInfo?>(null);
+            if (containerId.Contains("invalid") || containerId.Contains("new_web") || containerId.Contains("mcp_everything")) return Task.FromResult<DockerContainerInspectInfo?>(null);
+
+            if (containerId.Contains("dead_container"))
+            {
+                return Task.FromResult<DockerContainerInspectInfo?>(new DockerContainerInspectInfo
+                {
+                    Id = "dead_container_id",
+                    Name = "/dead_container",
+                    State = new DockerContainerState { Running = false, Status = "created" }
+                });
+            }
 
             if (containerId.Contains("corvus"))
             {
@@ -88,6 +99,10 @@ public class DeploymentEngineTests : IDisposable
         public override Task<DockerActionResult> StartContainerAsync(string containerId, CancellationToken cancellationToken = default)
         {
             StartCount++;
+            if (ShouldStartFail)
+            {
+                return Task.FromResult(new DockerActionResult(false, "Bind for 0.0.0.0:3001 failed: port is already allocated"));
+            }
             return Task.FromResult(new DockerActionResult(true, "Started"));
         }
 
@@ -366,6 +381,53 @@ public class DeploymentEngineTests : IDisposable
             engine.StartDeploymentAsync("corvus_web_id", "manual", "tester"));
 
         Assert.Contains("Corvus kendi konteynerini", ex.Message);
+    }
+
+    [Fact]
+    public async Task StartScratchDeploymentAsync_WhenContainerStartFails_CleansUpOrphanedContainer()
+    {
+        var client = new MockDeploymentHttpClient { ShouldStartFail = true };
+        var repo = new MockDeploymentRepo();
+        var lockMgr = new DeploymentLockManager();
+        var bcast = new MockBroadcaster();
+        var engine = new DeploymentEngine(client, repo, lockMgr, bcast, NullLogger<DeploymentEngine>.Instance);
+
+        var req = new ScratchDeploymentRequest(
+            Image: "mcp/everything:latest",
+            ContainerName: "mcp_everything",
+            Ports: "3001:3001"
+        );
+
+        var record = await engine.StartScratchDeploymentAsync(req, "tester");
+        Assert.NotNull(record);
+
+        await engine.WaitForCompletionAsync(record.Id, TimeSpan.FromSeconds(5));
+
+        var finished = await repo.GetByIdAsync(record.Id);
+        Assert.NotNull(finished);
+        Assert.Equal("failed", finished.Status);
+        Assert.Contains("port is already allocated", finished.ErrorMessage);
+        Assert.Contains("Geçici konteyner temizlendi", finished.LogOutput);
+        Assert.True(client.DeleteCount > 0, "Failed scratch container should have been deleted automatically.");
+    }
+
+    [Fact]
+    public async Task StartScratchDeploymentAsync_WhenExistingDeadContainerPresent_PurgesAndContinues()
+    {
+        var client = new MockDeploymentHttpClient();
+        var repo = new MockDeploymentRepo();
+        var lockMgr = new DeploymentLockManager();
+        var bcast = new MockBroadcaster();
+        var engine = new DeploymentEngine(client, repo, lockMgr, bcast, NullLogger<DeploymentEngine>.Instance);
+
+        var req = new ScratchDeploymentRequest(
+            Image: "alpine:latest",
+            ContainerName: "dead_container"
+        );
+
+        var record = await engine.StartScratchDeploymentAsync(req, "tester");
+        Assert.NotNull(record);
+        Assert.True(client.DeleteCount > 0, "Old dead container should have been purged before starting scratch deploy.");
     }
 
     public void Dispose() { }

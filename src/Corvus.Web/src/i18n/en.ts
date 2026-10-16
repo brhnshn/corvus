@@ -474,6 +474,7 @@ export const en = {
     containerNamePlaceholder: 'e.g. my-web-app',
     portsLabel: 'Port Mappings (Host:Container)',
     portsPlaceholder: 'e.g. 8080:80, 443:443',
+    portsHelp: 'Format: HostPort:ContainerPort (e.g. 3005:3001). Ensure host port is not already bound on server.',
     envLabel: 'Environment Variables (One KEY=VALUE per line)',
     envPlaceholder: 'NODE_ENV=production\nPORT=80\nAPI_KEY=secret_key',
     restartPolicyLabel: 'Restart Policy',

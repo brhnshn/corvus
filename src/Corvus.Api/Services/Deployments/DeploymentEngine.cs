@@ -574,8 +574,17 @@ public class DeploymentEngine : IDeploymentEngine
         var existing = await _dockerClient.InspectContainerAsync(containerName, cancellationToken);
         if (existing != null)
         {
-            lockReleaser.Dispose();
-            throw new InvalidOperationException($"'{containerName}' adında bir konteyner zaten mevcut. Lütfen farklı bir isim seçin veya mevcut konteyneri güncelleyin.");
+            // Eğer önceki başarısız bir denemeden kalmış 'created' veya 'dead' konteyner ise otomatik temizle
+            string existingStatus = existing.State?.Status?.ToLowerInvariant() ?? "";
+            if (existing.State?.Running != true && (existingStatus == "created" || existingStatus == "dead"))
+            {
+                await _dockerClient.DeleteContainerAsync(existing.Id, force: true, removeVolumes: false, cancellationToken);
+            }
+            else
+            {
+                lockReleaser.Dispose();
+                throw new InvalidOperationException($"'{containerName}' adında bir konteyner zaten mevcut. Lütfen farklı bir isim seçin veya mevcut konteyneri güncelleyin.");
+            }
         }
 
         string deploymentId = $"dep_scratch_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid().ToString("N")[..6]}";
@@ -791,6 +800,21 @@ public class DeploymentEngine : IDeploymentEngine
             stopwatch.Stop();
             long durationMs = stopwatch.ElapsedMilliseconds;
             _logger.LogError(ex, "Sıfırdan dağıtım başarısız oldu: {DeploymentId}", record.Id);
+
+            // Başarısızlık durumunda oluşturulan geçici konteyneri otomatik temizle (Artık/Öksüz konteyner bırakmama garantisi)
+            if (!string.IsNullOrWhiteSpace(createdContainerId))
+            {
+                try
+                {
+                    AppendLog($"\u001b[33mBaşarısız olan geçici konteyner temizleniyor ({createdContainerId[..Math.Min(12, createdContainerId.Length)]})...\u001b[0m\n");
+                    await _dockerClient.DeleteContainerAsync(createdContainerId, force: true, removeVolumes: false);
+                    AppendLog("\u001b[32m✔ Geçici konteyner temizlendi.\u001b[0m\n");
+                }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogWarning(cleanupEx, "Başarısız sıfırdan dağıtım sonrası konteyner temizlenemedi: {ContainerId}", createdContainerId);
+                }
+            }
 
             record.Status = "failed";
             record.CurrentStep = "failed";

@@ -476,6 +476,7 @@ export const tr: TranslationDictionary = {
     containerNamePlaceholder: 'örn. my-web-app',
     portsLabel: 'Port Eşlemeleri (Host:Container)',
     portsPlaceholder: 'örn. 8080:80, 443:443',
+    portsHelp: 'Format: SunucuPortu:KonteynerPortu (örn. 3005:3001). Sunucuda halihazırda kullanılan bir port seçilmemelidir.',
     envLabel: 'Ortam Değişkenleri (Her satıra KEY=VALUE)',
     envPlaceholder: 'NODE_ENV=production\nPORT=80\nAPI_KEY=gizli_anahtar',
     restartPolicyLabel: 'Yeniden Başlatma Politikası',
