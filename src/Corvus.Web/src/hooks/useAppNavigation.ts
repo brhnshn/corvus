@@ -5,6 +5,7 @@ export const VALID_PAGES: PageId[] = [
   'dashboard', 
   'services', 
   'containers', 
+  'deployments',
   'systems',
   'metrics', 
   'uptime', 

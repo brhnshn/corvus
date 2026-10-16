@@ -22,7 +22,23 @@ public class DeploymentEngineTests : IDisposable
 
         public override Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default)
         {
-            if (containerId.Contains("invalid")) return Task.FromResult<DockerContainerInspectInfo?>(null);
+            if (containerId.Contains("invalid") || containerId.Contains("new_web")) return Task.FromResult<DockerContainerInspectInfo?>(null);
+
+            if (containerId.Contains("corvus"))
+            {
+                return Task.FromResult<DockerContainerInspectInfo?>(new DockerContainerInspectInfo
+                {
+                    Id = containerId,
+                    Name = "/corvus-api",
+                    Image = "ghcr.io/corvus/corvus:latest",
+                    Config = new DockerContainerConfig
+                    {
+                        Image = "ghcr.io/corvus/corvus:latest",
+                        Env = new List<string> { "CORVUS_PORT=8090" }
+                    },
+                    State = new DockerContainerState { Running = true }
+                });
+            }
 
             var info = new DockerContainerInspectInfo
             {
@@ -220,6 +236,86 @@ public class DeploymentEngineTests : IDisposable
         // Geri alma adımları yapıldı: Eski ad geri verildi
         Assert.True(client.RenameCount >= 2);
         Assert.False(lockMgr.IsLocked("c_crash"));
+    }
+
+    [Fact]
+    public async Task StartDeploymentAsync_WhenTargetIsCorvusSelf_ThrowsInvalidOperationException_Preventing502()
+    {
+        var client = new MockDeploymentHttpClient();
+        var repo = new MockDeploymentRepo();
+        var lockMgr = new DeploymentLockManager();
+        var bcast = new MockBroadcaster();
+        var engine = new DeploymentEngine(client, repo, lockMgr, bcast, NullLogger<DeploymentEngine>.Instance);
+
+        // Corvus container inspect info taklidi
+        var selfContainerInspect = new DockerContainerInspectInfo
+        {
+            Id = "corvus_prod_123",
+            Name = "/corvus-api",
+            Config = new DockerContainerConfig
+            {
+                Image = "ghcr.io/corvus/corvus:latest",
+                Env = new List<string> { "CORVUS_PORT=8090", "CORVUS_DATA_DIR=/data" }
+            }
+        };
+
+        // Mock client inspect override için containerId 'corvus' içeren ID ile çağrıldığında
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            engine.StartDeploymentAsync("corvus_api", "manual_ui", "user"));
+
+        Assert.Contains("502 Bad Gateway", ex.Message);
+    }
+
+    [Fact]
+    public async Task StartScratchDeploymentAsync_SuccessfulPipeline_CreatesAndStartsContainer()
+    {
+        var client = new MockDeploymentHttpClient();
+        var repo = new MockDeploymentRepo();
+        var lockMgr = new DeploymentLockManager();
+        var bcast = new MockBroadcaster();
+        var engine = new DeploymentEngine(client, repo, lockMgr, bcast, NullLogger<DeploymentEngine>.Instance);
+
+        var req = new ScratchDeploymentRequest(
+            Image: "nginx:alpine",
+            ContainerName: "new_web",
+            Ports: "8080:80",
+            Env: "ENV=production\nPORT=80",
+            RestartPolicy: "unless-stopped"
+        );
+
+        var record = await engine.StartScratchDeploymentAsync(req, "tester");
+        Assert.NotNull(record);
+        Assert.Equal("new_web", record.TargetName);
+        Assert.Equal("manual_scratch", record.TriggerType);
+
+        await engine.WaitForCompletionAsync(record.Id, TimeSpan.FromSeconds(5));
+
+        var finished = await repo.GetByIdAsync(record.Id);
+        Assert.NotNull(finished);
+        Assert.Equal("success", finished.Status);
+        Assert.Equal("completed", finished.CurrentStep);
+        Assert.Contains("Sıfırdan Dağıtım Başarıyla Tamamlandı", finished.LogOutput);
+    }
+
+    [Fact]
+    public async Task StartScratchDeploymentAsync_WhenContainerAlreadyExists_ThrowsConflict()
+    {
+        var client = new MockDeploymentHttpClient();
+        var repo = new MockDeploymentRepo();
+        var lockMgr = new DeploymentLockManager();
+        var bcast = new MockBroadcaster();
+        var engine = new DeploymentEngine(client, repo, lockMgr, bcast, NullLogger<DeploymentEngine>.Instance);
+
+        // 'my-service' mock client'ta var
+        var req = new ScratchDeploymentRequest(
+            Image: "redis:alpine",
+            ContainerName: "my-service"
+        );
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            engine.StartScratchDeploymentAsync(req, "tester"));
+
+        Assert.Contains("zaten mevcut", ex.Message);
     }
 
     public void Dispose() { }

@@ -381,6 +381,8 @@ public record NotificationResult(
 [JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentCompletedEventPayload))]
 [JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentStartedGlobalPayload))]
 [JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentErrorResponse))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.ScratchDeploymentRequest))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.ContainerConnectionTestResult))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }

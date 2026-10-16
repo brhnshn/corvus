@@ -137,5 +137,106 @@ public static class DeploymentsEndpoints
                     CorvusJsonSerializerContext.Default.DeploymentErrorResponse, statusCode: 500);
             }
         }).AddEndpointFilter<CorvusAuthFilter>().RequireAdmin();
+
+        // 5. Sıfırdan Dağıtım Başlatma (Deploy from Scratch)
+        group.MapPost("/scratch", async (
+            ScratchDeploymentRequest request,
+            IDeploymentEngine engine,
+            HttpContext context,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                string triggeredBy = context.User?.Identity?.Name ?? "web_ui";
+                var record = await engine.StartScratchDeploymentAsync(request, triggeredBy, ct);
+
+                var response = new DeploymentTriggerResponse(
+                    record.Id,
+                    record.TargetName,
+                    record.Status,
+                    "Scratch deployment queued successfully."
+                );
+
+                return Results.Json(response, CorvusJsonSerializerContext.Default.DeploymentTriggerResponse, statusCode: 202);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.Json(new DeploymentErrorResponse(ex.Message),
+                    CorvusJsonSerializerContext.Default.DeploymentErrorResponse, statusCode: 400);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Json(new DeploymentErrorResponse(ex.Message),
+                    CorvusJsonSerializerContext.Default.DeploymentErrorResponse, statusCode: 409);
+            }
+            catch (Exception ex)
+            {
+                return Results.Json(new DeploymentErrorResponse($"Sıfırdan dağıtım başlatılamadı: {ex.Message}"),
+                    CorvusJsonSerializerContext.Default.DeploymentErrorResponse, statusCode: 500);
+            }
+        }).RequireAdmin();
+
+        // 6. Konteyner Bağlantı ve Sağlık Testi
+        group.MapGet("/containers/test-connection/{id}", async (
+            string id,
+            IDockerHttpClient dockerClient,
+            CancellationToken ct) =>
+        {
+            var inspect = await dockerClient.InspectContainerAsync(id, ct);
+            if (inspect == null)
+            {
+                return Results.Json(new DeploymentErrorResponse($"Konteyner bulunamadı: {id}"),
+                    CorvusJsonSerializerContext.Default.DeploymentErrorResponse, statusCode: 404);
+            }
+
+            string name = (inspect.Name ?? "").TrimStart('/');
+            bool isRunning = inspect.State?.Running == true;
+            string status = inspect.State?.Status ?? (isRunning ? "running" : "stopped");
+            string? health = inspect.State?.Health?.Status;
+
+            // IP Çözümleme
+            string? ip = inspect.NetworkSettings?.IPAddress;
+            if (string.IsNullOrWhiteSpace(ip) && inspect.NetworkSettings?.Networks != null)
+            {
+                ip = inspect.NetworkSettings.Networks.Values.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n.IPAddress))?.IPAddress;
+            }
+
+            // Portlar
+            var exposed = new List<string>();
+            if (inspect.NetworkSettings?.Ports != null)
+            {
+                foreach (var (k, v) in inspect.NetworkSettings.Ports)
+                {
+                    if (v != null && v.Count > 0)
+                    {
+                        var host = v[0];
+                        exposed.Add($"{host.HostPort}->{k}");
+                    }
+                    else
+                    {
+                        exposed.Add(k);
+                    }
+                }
+            }
+
+            bool canConnect = isRunning;
+            string msg = isRunning
+                ? (health == "unhealthy" ? "Konteyner çalışıyor ancak sağlık testi (healthcheck) başarısız!" : "Konteyner sağlıklı şekilde çalışıyor ve ağ üzerinden erişilebilir durumda.")
+                : "Konteyner şu anda durdurulmuş vaziyette.";
+
+            var result = new ContainerConnectionTestResult(
+                id,
+                name,
+                isRunning,
+                status,
+                health,
+                ip,
+                exposed,
+                canConnect,
+                msg
+            );
+
+            return Results.Json(result, CorvusJsonSerializerContext.Default.ContainerConnectionTestResult);
+        }).RequireAdmin();
     }
 }

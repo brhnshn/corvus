@@ -18,6 +18,11 @@ public interface IDeploymentEngine
         bool pullLatest = true,
         CancellationToken cancellationToken = default);
 
+    Task<DeploymentRecord> StartScratchDeploymentAsync(
+        ScratchDeploymentRequest request,
+        string triggeredBy = "user",
+        CancellationToken cancellationToken = default);
+
     Task WaitForCompletionAsync(string deploymentId, TimeSpan timeout, CancellationToken cancellationToken = default);
 
     IAsyncEnumerable<DeploymentStreamMessage> SubscribeStreamAsync(string deploymentId, CancellationToken cancellationToken = default);
@@ -77,6 +82,15 @@ public class DeploymentEngine : IDeploymentEngine
         if (string.IsNullOrWhiteSpace(imageName))
         {
             throw new InvalidOperationException($"Konteyner ({containerId}) için imaj bilgisi çözülemedi.");
+        }
+
+        // Corvus Öz-Koruma Kuralı (Self-Preservation Guard - 502 Bad Gateway Önleme)
+        if (IsSelfContainer(inspect, containerId, originalName))
+        {
+            throw new InvalidOperationException(
+                "Corvus kendi konteynerini panel içerisinden canlı olarak durdurup yeniden oluşturamaz. " +
+                "Bu işlem çalışan API sunucusunu durduracağı için '502 Bad Gateway' kesintisine yol açar. " +
+                "Corvus sürümünü güncellemek için lütfen harici CI/CD Webhook veya docker compose komutunu kullanınız.");
         }
 
         // 2. Kilit denemesi (Fail-Fast 409)
@@ -523,6 +537,375 @@ public class DeploymentEngine : IDeploymentEngine
                 _completionSources.TryRemove(record.Id, out _);
             });
         }
+    }
+
+    public async Task<DeploymentRecord> StartScratchDeploymentAsync(
+        ScratchDeploymentRequest request,
+        string triggeredBy = "user",
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Image))
+        {
+            throw new ArgumentException("İmaj adı zorunludur.", nameof(request.Image));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ContainerName))
+        {
+            throw new ArgumentException("Konteyner adı zorunludur.", nameof(request.ContainerName));
+        }
+
+        string containerName = request.ContainerName.Trim().TrimStart('/');
+        string imageName = request.Image.Trim();
+
+        // 1. Kilit kontrolü (containerName bazında)
+        if (!_lockManager.TryAcquireLock($"scratch_{containerName}", out var lockReleaser))
+        {
+            throw new InvalidOperationException($"Bu konteyner ismi ({containerName}) için şu anda aktif bir dağıtım yürütülüyor.");
+        }
+
+        // 2. Mevcut konteyner çakışma kontrolü
+        var existing = await _dockerClient.InspectContainerAsync(containerName, cancellationToken);
+        if (existing != null)
+        {
+            lockReleaser.Dispose();
+            throw new InvalidOperationException($"'{containerName}' adında bir konteyner zaten mevcut. Lütfen farklı bir isim seçin veya mevcut konteyneri güncelleyin.");
+        }
+
+        string deploymentId = $"dep_scratch_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid().ToString("N")[..6]}";
+        var tcs = new TaskCompletionSource<DeploymentRecord>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _completionSources[deploymentId] = tcs;
+
+        var record = new DeploymentRecord
+        {
+            Id = deploymentId,
+            TargetType = "container",
+            TargetId = containerName,
+            TargetName = containerName,
+            TriggerType = "manual_scratch",
+            TriggeredBy = triggeredBy,
+            Status = "pending",
+            CurrentStep = "queued",
+            ImageName = imageName,
+            CreatedAt = DateTime.UtcNow.ToString("o")
+        };
+
+        await _deploymentRepo.CreateAsync(record);
+
+        var startedPayload = new DeploymentStartedGlobalPayload(
+            deploymentId,
+            containerName,
+            containerName,
+            "manual_scratch",
+            triggeredBy,
+            imageName
+        );
+        DispatchGlobalEvent("deployment_started", JsonSerializer.Serialize(startedPayload, CorvusJsonSerializerContext.Default.DeploymentStartedGlobalPayload));
+
+        // Arka planda güvenli yürütme başlat
+        _ = Task.Run(async () =>
+        {
+            using (lockReleaser)
+            {
+                try
+                {
+                    await ExecuteScratchPipelineAsync(record, request);
+                    tcs.TrySetResult(record);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Sıfırdan dağıtım yürütülürken beklenmeyen hata oluştu: {DeploymentId}", deploymentId);
+                    tcs.TrySetException(ex);
+                }
+            }
+        }, CancellationToken.None);
+
+        return record;
+    }
+
+    private async Task ExecuteScratchPipelineAsync(DeploymentRecord record, ScratchDeploymentRequest request)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var logBuffer = new StringBuilder();
+        string containerName = record.TargetName;
+        string imageName = record.ImageName;
+
+        void AppendLog(string chunk)
+        {
+            logBuffer.Append(chunk);
+            var payload = JsonSerializer.Serialize(new DeploymentLogChunkEventPayload(
+                "log",
+                record.Id,
+                chunk,
+                DateTime.UtcNow.ToString("o")
+            ), CorvusJsonSerializerContext.Default.DeploymentLogChunkEventPayload);
+
+            DispatchStreamMessage(record.Id, new DeploymentStreamMessage("log", payload));
+        }
+
+        async Task ChangeStepAsync(string step)
+        {
+            record.CurrentStep = step;
+            await _deploymentRepo.UpdateStepAsync(record.Id, step);
+
+            var payload = JsonSerializer.Serialize(new DeploymentStepChangedEventPayload(
+                "step_changed",
+                record.Id,
+                step,
+                DateTime.UtcNow.ToString("o")
+            ), CorvusJsonSerializerContext.Default.DeploymentStepChangedEventPayload);
+
+            DispatchStreamMessage(record.Id, new DeploymentStreamMessage("step_changed", payload));
+            DispatchGlobalEvent("deployment_step_changed", payload);
+        }
+
+        AppendLog($"\u001b[36m[Corvus Engine] Sıfırdan Dağıtım Başlatıldı: {containerName} (ID: {record.Id})\u001b[0m\n");
+        AppendLog($"Hedef İmaj: {imageName} | Yeniden Başlatma: {request.RestartPolicy ?? "unless-stopped"}\n\n");
+
+        string? createdContainerId = null;
+
+        try
+        {
+            // Adım 1: Pre-pull (Fail-Fast Kapısı)
+            await ChangeStepAsync("pulling");
+            AppendLog($"\u001b[33m--- Adım 1/3: İmaj çekiliyor ({imageName}) ---\u001b[0m\n");
+
+            bool pullSuccess = await _dockerClient.PullImageProgressAsync(imageName, chunk =>
+            {
+                AppendLog(chunk);
+                return Task.CompletedTask;
+            });
+
+            if (!pullSuccess)
+            {
+                throw new InvalidOperationException($"'{imageName}' imajı Docker Hub veya Registry'den çekilemedi. Lütfen imaj adını ve tag'ini kontrol edin.");
+            }
+
+            AppendLog($"\u001b[32m✔ İmaj başarıyla çekildi.\u001b[0m\n\n");
+
+            // İmaj ID çözümü
+            var imgInspect = await _dockerClient.InspectImageAsync(imageName);
+            if (imgInspect != null)
+            {
+                record.NewDigest = imgInspect.Id;
+                AppendLog($"İmaj ID: {imgInspect.Id}\n");
+            }
+
+            // Adım 2: Konteyner Oluşturma (Creating)
+            await ChangeStepAsync("recreating");
+            AppendLog($"\u001b[33m--- Adım 2/3: Konteyner yapılandırılıyor ve oluşturuluyor ---\u001b[0m\n");
+
+            var envList = ParseEnvironmentVariables(request.Env);
+            var (portBindings, exposedPorts) = ParsePortBindings(request.Ports);
+
+            var createReq = new DockerContainerCreateRequest
+            {
+                Image = imageName,
+                Env = envList.Count > 0 ? envList : null,
+                HostConfig = new DockerHostConfig
+                {
+                    RestartPolicy = new DockerRestartPolicy
+                    {
+                        Name = string.IsNullOrWhiteSpace(request.RestartPolicy) ? "unless-stopped" : request.RestartPolicy
+                    },
+                    PortBindings = portBindings.Count > 0 ? portBindings : null
+                }
+            };
+
+            AppendLog($"'{containerName}' isimli yeni konteyner oluşturuluyor...\n");
+            if (portBindings.Count > 0)
+            {
+                AppendLog($"Port Eşlemeleri: {string.Join(", ", portBindings.Keys)}\n");
+            }
+            if (envList.Count > 0)
+            {
+                AppendLog($"Ortam Değişkenleri: {envList.Count} adet tanımlandı.\n");
+            }
+
+            var createRes = await _dockerClient.CreateContainerAsync(containerName, createReq);
+            if (createRes == null || string.IsNullOrWhiteSpace(createRes.Id))
+            {
+                throw new InvalidOperationException("Konteyner oluşturulamadı (Docker API cevabı boş döndü).");
+            }
+
+            createdContainerId = createRes.Id;
+            AppendLog($"\u001b[32m✔ Konteyner başarıyla oluşturuldu (ID: {createdContainerId[..Math.Min(12, createdContainerId.Length)]}).\u001b[0m\n\n");
+
+            // Adım 3: Başlatma & Canlılık Doğrulama (Starting & Healthcheck)
+            await ChangeStepAsync("healthcheck");
+            AppendLog($"\u001b[33m--- Adım 3/3: Konteyner başlatılıyor ve doğrulanıyor ---\u001b[0m\n");
+
+            var startRes = await _dockerClient.StartContainerAsync(createdContainerId);
+            if (!startRes.Success)
+            {
+                throw new InvalidOperationException($"Konteyner başlatılamadı: {startRes.Message}");
+            }
+
+            AppendLog("Konteyner başlatıldı. Erken kararlılık kontrol ediliyor (1.5s)...\n");
+            await Task.Delay(1500);
+
+            var inspectAfter = await _dockerClient.InspectContainerAsync(createdContainerId);
+            if (inspectAfter?.State?.Running != true)
+            {
+                string exitCode = inspectAfter?.State?.ExitCode.ToString() ?? "unknown";
+                string err = inspectAfter?.State?.Error ?? "Bilinmeyen hata";
+                throw new InvalidOperationException($"Konteyner başlatıldıktan hemen sonra durdu (ExitCode: {exitCode}, Error: {err}).");
+            }
+
+            AppendLog("\u001b[32m✔ Konteyner sağlıklı şekilde çalışıyor!\u001b[0m\n\n");
+
+            // Başarılı Tamamlama
+            stopwatch.Stop();
+            long durationMs = stopwatch.ElapsedMilliseconds;
+            record.Status = "success";
+            record.CurrentStep = "completed";
+            record.DurationMs = durationMs;
+            record.CompletedAt = DateTime.UtcNow.ToString("o");
+
+            AppendLog($"\u001b[32m=== [Corvus Engine] Sıfırdan Dağıtım Başarıyla Tamamlandı ({durationMs} ms) ===\u001b[0m\n");
+            record.LogOutput = logBuffer.ToString();
+
+            await _deploymentRepo.CompleteAsync(record.Id, "success", record.NewDigest, durationMs, null, record.LogOutput);
+
+            var compPayload = JsonSerializer.Serialize(new DeploymentCompletedEventPayload(
+                "completed",
+                record.Id,
+                "success",
+                durationMs,
+                record.NewDigest,
+                null,
+                DateTime.UtcNow.ToString("o")
+            ), CorvusJsonSerializerContext.Default.DeploymentCompletedEventPayload);
+
+            DispatchStreamMessage(record.Id, new DeploymentStreamMessage("completed", compPayload));
+            DispatchGlobalEvent("deployment_completed", compPayload);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            long durationMs = stopwatch.ElapsedMilliseconds;
+            _logger.LogError(ex, "Sıfırdan dağıtım başarısız oldu: {DeploymentId}", record.Id);
+
+            record.Status = "failed";
+            record.CurrentStep = "failed";
+            record.DurationMs = durationMs;
+            record.ErrorMessage = ex.Message;
+            record.CompletedAt = DateTime.UtcNow.ToString("o");
+
+            AppendLog($"\n\u001b[31m[HATA] Dağıtım başarısız: {ex.Message}\u001b[0m\n");
+            record.LogOutput = logBuffer.ToString();
+
+            await _deploymentRepo.CompleteAsync(record.Id, "failed", null, durationMs, ex.Message, record.LogOutput);
+
+            var failPayload = JsonSerializer.Serialize(new DeploymentCompletedEventPayload(
+                "completed",
+                record.Id,
+                "failed",
+                durationMs,
+                null,
+                ex.Message,
+                DateTime.UtcNow.ToString("o")
+            ), CorvusJsonSerializerContext.Default.DeploymentCompletedEventPayload);
+
+            DispatchStreamMessage(record.Id, new DeploymentStreamMessage("completed", failPayload));
+            DispatchGlobalEvent("deployment_failed", failPayload);
+        }
+        finally
+        {
+            if (_streamSubscribers.TryRemove(record.Id, out var subs))
+            {
+                foreach (var channel in subs.Values)
+                {
+                    channel.Writer.TryComplete();
+                }
+            }
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000);
+                _completionSources.TryRemove(record.Id, out _);
+            });
+        }
+    }
+
+    private static (Dictionary<string, List<DockerPortBindingHost>?> PortBindings, Dictionary<string, object> ExposedPorts) ParsePortBindings(string? portsRaw)
+    {
+        var bindings = new Dictionary<string, List<DockerPortBindingHost>?>();
+        var exposed = new Dictionary<string, object>();
+
+        if (string.IsNullOrWhiteSpace(portsRaw))
+            return (bindings, exposed);
+
+        var entries = portsRaw.Split(new[] { ',', '\n', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var entry in entries)
+        {
+            // Format: "8080:80" veya "8080:80/tcp" veya "53:53/udp"
+            var parts = entry.Split(':');
+            if (parts.Length == 2)
+            {
+                string hostPort = parts[0].Trim();
+                string containerPortPart = parts[1].Trim();
+                string containerPortKey = containerPortPart.Contains('/') ? containerPortPart : $"{containerPortPart}/tcp";
+
+                bindings[containerPortKey] = new List<DockerPortBindingHost>
+                {
+                    new() { HostPort = hostPort, HostIp = "0.0.0.0" }
+                };
+                exposed[containerPortKey] = new object();
+            }
+        }
+
+        return (bindings, exposed);
+    }
+
+    private static List<string> ParseEnvironmentVariables(string? envRaw)
+    {
+        var list = new List<string>();
+        if (string.IsNullOrWhiteSpace(envRaw))
+            return list;
+
+        var lines = envRaw.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var line in lines)
+        {
+            if (line.StartsWith('#') || !line.Contains('='))
+                continue;
+
+            list.Add(line);
+        }
+
+        return list;
+    }
+
+    private static bool IsSelfContainer(DockerContainerInspectInfo inspect, string containerId, string originalName)
+    {
+        string hostName = Environment.MachineName;
+        if (!string.IsNullOrWhiteSpace(hostName))
+        {
+            if (containerId.StartsWith(hostName, StringComparison.OrdinalIgnoreCase) ||
+                hostName.StartsWith(containerId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        if (inspect.Config?.Env != null)
+        {
+            foreach (var env in inspect.Config.Env)
+            {
+                if (env.StartsWith("CORVUS_PORT=", StringComparison.OrdinalIgnoreCase) ||
+                    env.StartsWith("CORVUS_DATA_DIR=", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+        }
+
+        string img = inspect.Config?.Image ?? inspect.Image ?? string.Empty;
+        if (img.Contains("corvus", StringComparison.OrdinalIgnoreCase) && originalName.Contains("corvus", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private void DispatchStreamMessage(string deploymentId, DeploymentStreamMessage message)

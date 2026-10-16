@@ -2,7 +2,9 @@ import { fetchJson } from './http';
 import type { 
   DeploymentRecord, 
   TriggerDeployResponse, 
-  DeploymentStreamEvent 
+  DeploymentStreamEvent,
+  ScratchDeploymentRequest,
+  ContainerConnectionTestResult
 } from '../types/deployments';
 
 export interface GetDeploymentsParams {
@@ -12,12 +14,29 @@ export interface GetDeploymentsParams {
 
 export const deploymentsApi = {
   /**
-   * Triggers a new deployment for a container. Returns 202 Accepted.
+   * Triggers a new deployment for an existing container. Returns 202 Accepted.
    */
   async triggerDeploy(containerId: string): Promise<TriggerDeployResponse> {
     return fetchJson<TriggerDeployResponse>(`/containers/${encodeURIComponent(containerId)}/deploy`, {
       method: 'POST'
     });
+  },
+
+  /**
+   * Deploys a new container from scratch (image, name, ports, env). Returns 202 Accepted.
+   */
+  async triggerScratchDeploy(req: ScratchDeploymentRequest): Promise<TriggerDeployResponse> {
+    return fetchJson<TriggerDeployResponse>('/deployments/scratch', {
+      method: 'POST',
+      body: JSON.stringify(req)
+    });
+  },
+
+  /**
+   * Tests connection and health status of an existing container.
+   */
+  async testContainerConnection(containerId: string): Promise<ContainerConnectionTestResult> {
+    return fetchJson<ContainerConnectionTestResult>(`/deployments/containers/test-connection/${encodeURIComponent(containerId)}`);
   },
 
   /**

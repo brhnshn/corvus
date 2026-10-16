@@ -2,7 +2,7 @@
  * Corvus Deployment Center Types
  */
 
-export type DeploymentTriggerType = 'manual_ui' | 'webhook_github' | 'scheduled';
+export type DeploymentTriggerType = 'manual_ui' | 'manual_scratch' | 'webhook_github' | 'scheduled';
 
 export type DeploymentStatus = 'pending' | 'in_progress' | 'success' | 'failed' | 'rolled_back';
 
@@ -82,4 +82,25 @@ export interface ActiveDeploymentState {
   durationMs?: number;
   logs: string[];
   error?: string | null;
+}
+
+export interface ScratchDeploymentRequest {
+  image: string;
+  containerName: string;
+  ports?: string;
+  env?: string;
+  restartPolicy?: string;
+  network?: string;
+}
+
+export interface ContainerConnectionTestResult {
+  containerId: string;
+  name: string;
+  isRunning: boolean;
+  status: string;
+  healthStatus?: string | null;
+  ipAddress?: string | null;
+  exposedPorts: string[];
+  canConnect: boolean;
+  message: string;
 }

@@ -55,6 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
     dashboard: t('nav.dashboard') || 'Kontrol Paneli',
     services: t('nav.services') || 'Servisler',
     containers: t('nav.containers') || 'Konteynerler',
+    deployments: t('deployments.title') || 'Dağıtım Merkezi',
     systems: t('nav.systems') || 'Sistemler',
     metrics: t('nav.metrics') || 'Sistem Metrikleri',
     uptime: t('nav.uptime') || 'Uptime',

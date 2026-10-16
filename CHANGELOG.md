@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.11] - 2026-10-16 — Dedicated Deployment Center, Deploy from Scratch Wizard & 502 Self-Preservation Guard
+
+### Added
+- **Dedicated Deployment Center Page (`/deployments`)**:
+  - `src/Corvus.Web/src/pages/Deployments/`: Promoted deployments from container detail sub-tabs to a first-class, standalone navigation page accessible via the main sidebar and mobile bottom navigation with the `Rocket` icon.
+  - `DeploymentsOverview.tsx`: Introduced 4 high-level KPI cards displaying Total Deployments, Success Rate percentage, Active/Queued count, and Average Deployment Duration.
+  - `DeploymentsHistoryTable.tsx`: Added comprehensive audit trail table with multi-state filtering (`all`, `success`, `failed`, `pending`), real-time search across container names/images/IDs, duration tracking, and one-click log drawer inspection.
+  - `NewDeploymentModal.tsx`: Built dual-tab deployment wizard:
+    - **Tab 1: Deploy from Scratch (New Service)**: Direct deployment of unconfigured Docker images (`nginx:alpine`, `ghcr.io/...`, `redis:latest`) with customizable container names, host-to-container port bindings, multiline environment variables, and restart policies (`unless-stopped`, `always`, `on-failure`, `no`).
+    - **Tab 2: Connect & Test Existing Containers**: Instant health inspection, internal IP resolution, exposed port validation, quick redeploy trigger, and CI/CD webhook setup.
+- **Backend Scratch Container Deployment Engine**:
+  - `IDeploymentEngine.cs` & `DeploymentEngine.cs`: Added `StartScratchDeploymentAsync` implementing fail-fast pre-pull validation, port/env parsing, container instantiation (`CreateContainerAsync`), startup verification (`StartContainerAsync`), and real-time ANSI log streaming.
+  - `DeploymentsEndpoints.cs`: Exposed `POST /api/deployments/scratch` and `GET /api/deployments/containers/test-connection/{id}` (.RequireAdmin).
+
+### Security & Stability
+- **Self-Preservation Guard (502 Bad Gateway Prevention)**:
+  - `DeploymentEngine.cs`: Added strict self-container detection (`IsSelfContainer`). Prevents users from attempting to stop/recreate Corvus's own container from inside the panel. Halting Corvus while serving requests caused instant process termination and upstream reverse proxy `502 Bad Gateway` errors. Informative guidance directs users to external CI/CD webhooks or docker compose.
+- **Native AOT Contract Hardening**:
+  - `CorvusJsonSerializerContext.cs`: Added `ScratchDeploymentRequest` and `ContainerConnectionTestResult` compile-time type definitions.
+
+### Fixed
+- **Navigation & Routing Synchronization**:
+  - `useAppNavigation.ts` & `AppRouter.tsx`: Registered `deployments` in `VALID_PAGES`, ensuring direct navigation to `/deployments` loads seamlessly without redirecting to `/systems`.
+  - Synchronized dual-language translation dictionaries across `tr.ts` and `en.ts`.
+
+---
+
 ## [1.6.10] - 2026-10-16 — Native AOT Deployment Center, Zero-Downtime Safe Rollback & Synchronous CI/CD Inbound Webhook
 
 ### Added

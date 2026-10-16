@@ -3,6 +3,33 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.11] - 2026-10-16 — Müstakil Dağıtım Merkezi, Sıfırdan Dağıtım Sihirbazı & 502 Öz-Koruma Kalkanı
+
+### Eklenenler (Added)
+- **Müstakil Dağıtım Merkezi Sayfası (`/deployments`)**:
+  - `src/Corvus.Web/src/pages/Deployments/`: Dağıtım işlevleri konteyner detay alt sekmelerinden çıkarılarak, sol ana menü (Sidebar) ve mobil alt gezinme çubuğundan doğrudan erişilebilen birinci sınıf müstakil bir sayfaya (`Rocket` ikonu) dönüştürüldü.
+  - `DeploymentsOverview.tsx`: Toplam Dağıtım, Başarı Oranı yüzdesi, Aktif/Sırada dağıtım sayısı ve Ortalama Dağıtım Süresini gösteren 4 üst düzey KPI kartı eklendi.
+  - `DeploymentsHistoryTable.tsx`: Çoklu durum filtrelemesi (`Tümü`, `Başarılı`, `Başarısız/Geri Alındı`, `İşleniyor/Sırada`), konteyner adı/imaj/ID üzerinden anlık arama, süre takibi ve tek tıkla log inceleme çekmecesi içeren denetim geçmişi tablosu geliştirildi.
+  - `NewDeploymentModal.tsx`: Çift sekmeli modern dağıtım sihirbazı geliştirildi:
+    - **Sekme 1: Sıfırdan Dağıt (Yeni Servis)**: Önceden tanımlı olmayan ham Docker imajlarının (`nginx:alpine`, `ghcr.io/...`, `redis:latest`) doğrudan konteyner adı, host-to-container port eşlemeleri, çok satırlı ortam değişkenleri (`KEY=VALUE`) ve yeniden başlatma politikaları (`unless-stopped`, `always`, `on-failure`, `no`) ile sıfırdan ayağa kaldırılması.
+    - **Sekme 2: Mevcut Konteyner Bağla & Dağıt**: Mevcut çalışan veya durmuş konteynerleri seçerek anlık sağlık ve canlılık kontrolü (`Test Connection`), iç IP çözümleme, açık port doğrulama, tek tıkla hızlı dağıtım ve CI/CD webhook kurulumu.
+- **Backend Sıfırdan Konteyner Dağıtım Motoru**:
+  - `IDeploymentEngine.cs` & `DeploymentEngine.cs`: `StartScratchDeploymentAsync` metodu eklendi. Pre-pull fail-fast kapısı, port/env ayrıştırma, konteyner oluşturma (`CreateContainerAsync`), başlatma doğrulaması (`StartContainerAsync`) ve gerçek zamanlı ANSI log akışı uygulandı.
+  - `DeploymentsEndpoints.cs`: `POST /api/deployments/scratch` ve `GET /api/deployments/containers/test-connection/{id}` uç noktaları eklendi (.RequireAdmin korumalı).
+
+### Güvenlik & Kararlılık (Security & Stability)
+- **Öz-Koruma Kalkanı (502 Bad Gateway Önleme)**:
+  - `DeploymentEngine.cs`: Sıkı `IsSelfContainer` tespiti eklendi. Corvus panelinden Corvus'un kendi konteynerinin durdurulup yeniden oluşturulması engellendi. API sunucusu kendi kendini durdurduğunda ortaya çıkan ani işlem sonlanması ve Nginx/Cloudflare ters vekil `502 Bad Gateway` kesintisi kökten çözüldü; kullanıcı harici CI/CD webhook veya docker compose aracına yönlendirildi.
+- **Native AOT Tip Güvenliği**:
+  - `CorvusJsonSerializerContext.cs`: `ScratchDeploymentRequest` ve `ContainerConnectionTestResult` modelleri derleme zamanı serileştiricisine eklendi.
+
+### Düzeltilenler (Fixed)
+- **Yönlendirme & Navigasyon Senkronizasyonu**:
+  - `useAppNavigation.ts` & `AppRouter.tsx`: `deployments` yolu `VALID_PAGES` listesine kaydedildi; `/deployments` adresine doğrudan girildiğinde `/systems` sayfasına yönlenme sorunu giderildi.
+  - `tr.ts` ve `en.ts` çift dilli sözlükleri sıfır hardcoded metin kuralıyla eşitlendi.
+
+---
+
 ## [1.6.10] - 2026-10-16 — Native AOT Dağıtım Merkezi, Sıfır Kesintili Güvenli Rollback & Senkron CI/CD Webhook
 
 ### Eklenenler (Added)

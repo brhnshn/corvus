@@ -20,6 +20,7 @@ import { ChunkErrorBoundary } from './components/common/ChunkErrorBoundary';
 const DashboardPage = lazyWithRetry(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
 const ServicesPage = lazyWithRetry(() => import('./pages/Services').then(m => ({ default: m.ServicesPage })));
 const ContainersPage = lazyWithRetry(() => import('./pages/Containers').then(m => ({ default: m.ContainersPage })));
+const DeploymentsPage = lazyWithRetry(() => import('./pages/Deployments').then(m => ({ default: m.DeploymentsPage })));
 const SystemsPage = lazyWithRetry(() => import('./pages/Systems').then(m => ({ default: m.SystemsPage })));
 const SystemMetricsPage = lazyWithRetry(() => import('./pages/SystemMetrics').then(m => ({ default: m.SystemMetricsPage })));
 const UptimePage = lazyWithRetry(() => import('./pages/Uptime').then(m => ({ default: m.UptimePage })));
@@ -307,6 +308,7 @@ export const App: React.FC = () => {
               ServicesPage={ServicesPage}
               ContainersPage={ContainersPage}
               ContainerDetailPage={ContainerDetailPage}
+              DeploymentsPage={DeploymentsPage}
               SystemsPage={SystemsPage}
               SystemMetricsPage={SystemMetricsPage}
               UptimePage={UptimePage}

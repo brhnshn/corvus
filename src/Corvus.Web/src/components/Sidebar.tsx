@@ -11,12 +11,13 @@ import {
   Terminal,
   Server,
   ArrowLeftRight,
+  Rocket
 } from 'lucide-react';
 import { StatusDot } from './ui/StatusDot';
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
 
-export type PageId = 'dashboard' | 'services' | 'containers' | 'systems' | 'metrics' | 'uptime' | 'activity' | 'settings' | 'profile';
+export type PageId = 'dashboard' | 'services' | 'containers' | 'deployments' | 'systems' | 'metrics' | 'uptime' | 'activity' | 'settings' | 'profile';
 
 interface SidebarProps {
   currentPage: PageId;
@@ -116,6 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: t('nav.dashboard') || 'Kontrol Paneli', icon: LayoutDashboard },
     { id: 'services', label: t('nav.services') || 'Servisler', icon: Grid },
     { id: 'containers', label: t('nav.containers') || 'Konteynerler', icon: Boxes },
+    { id: 'deployments', label: t('deployments.navItem') || 'Dağıtımlar', icon: Rocket },
     { id: 'metrics', label: t('nav.metrics') || 'Sistem Metrikleri', icon: Activity },
     { id: 'uptime', label: t('nav.uptime') || 'Uptime', icon: Clock },
     { id: 'activity', label: t('nav.activity') || 'Olay Geçmişi', icon: History },

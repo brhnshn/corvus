@@ -52,6 +52,19 @@ public class DeployWebhookEndpointsTests
             return Task.FromResult(rec);
         }
 
+        public Task<DeploymentRecord> StartScratchDeploymentAsync(ScratchDeploymentRequest request, string triggeredBy = "user", CancellationToken cancellationToken = default)
+        {
+            var rec = new DeploymentRecord
+            {
+                Id = "dep_test_scratch",
+                TargetId = request.ContainerName,
+                TargetName = request.ContainerName,
+                Status = "pending",
+                CurrentStep = "queued"
+            };
+            return Task.FromResult(rec);
+        }
+
         public Task WaitForCompletionAsync(string deploymentId, TimeSpan timeout, CancellationToken cancellationToken = default)
         {
             WaitForCompletionCalled = true;

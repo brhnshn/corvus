@@ -63,3 +63,24 @@ public record DeploymentStartedGlobalPayload(
 public record DeploymentErrorResponse(
     string Message
 );
+
+public record ScratchDeploymentRequest(
+    string Image,
+    string ContainerName,
+    string? Ports = null,
+    string? Env = null,
+    string? RestartPolicy = "unless-stopped",
+    string? Network = null
+);
+
+public record ContainerConnectionTestResult(
+    string ContainerId,
+    string Name,
+    bool IsRunning,
+    string Status,
+    string? HealthStatus,
+    string? IpAddress,
+    List<string> ExposedPorts,
+    bool CanConnect,
+    string Message
+);
