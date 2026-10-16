@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useI18n } from '../../../i18n';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
@@ -31,11 +31,11 @@ export const DeploymentProgressModal: React.FC<DeploymentProgressModalProps> = (
 }) => {
   const { t } = useI18n();
 
-  const handleCompleted = (status: DeploymentStatus) => {
+  const handleCompleted = useCallback((status: DeploymentStatus) => {
     if (status === 'success') {
       onSuccess?.();
     }
-  };
+  }, [onSuccess]);
 
   const {
     currentStep,

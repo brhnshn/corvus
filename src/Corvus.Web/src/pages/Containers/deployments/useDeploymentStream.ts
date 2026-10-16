@@ -35,6 +35,16 @@ export function useDeploymentStream({
   const startTimeRef = useRef<number>(Date.now());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const onCompletedRef = useRef(onCompleted);
+  useEffect(() => {
+    onCompletedRef.current = onCompleted;
+  }, [onCompleted]);
+
+  const containerInfoRef = useRef({ containerId, containerName });
+  useEffect(() => {
+    containerInfoRef.current = { containerId, containerName };
+  }, [containerId, containerName]);
+
   // Sync state to localStorage for persistence across F5
   const persistActiveDeployment = useCallback((activeState: Partial<ActiveDeploymentState> | null) => {
     if (typeof window === 'undefined') return;
@@ -50,14 +60,19 @@ export function useDeploymentStream({
         ...existing,
         ...activeState,
         deploymentId: deploymentId || existing.deploymentId || '',
-        containerId: containerId || existing.containerId || '',
-        containerName: containerName || existing.containerName || ''
+        containerId: containerInfoRef.current.containerId || existing.containerId || '',
+        containerName: containerInfoRef.current.containerName || existing.containerName || ''
       };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
     } catch {
       // storage error safe fallback
     }
-  }, [deploymentId, containerId, containerName]);
+  }, [deploymentId]);
+
+  const persistRef = useRef(persistActiveDeployment);
+  useEffect(() => {
+    persistRef.current = persistActiveDeployment;
+  }, [persistActiveDeployment]);
 
   // Connect to SSE stream
   useEffect(() => {
@@ -78,11 +93,17 @@ export function useDeploymentStream({
     const handleEvent = (event: DeploymentStreamEvent) => {
       if (event.type === 'step_changed') {
         setCurrentStep(event.step);
-        persistActiveDeployment({ currentStep: event.step, status: 'in_progress' });
+        persistRef.current({ currentStep: event.step, status: 'in_progress' });
       } else if (event.type === 'log') {
         if (event.chunk) {
           const lines = event.chunk.split('\n').filter(Boolean);
-          setLogs((prev) => [...prev, ...lines]);
+          setLogs((prev) => {
+            // Eğer aynı log bloğu zaten eklenmişse mükerrer ekleme
+            if (prev.length > 0 && lines.length === prev.length && lines[0] === prev[0]) {
+              return prev;
+            }
+            return [...prev, ...lines];
+          });
         }
       } else if (event.type === 'completed') {
         setStatus(event.status);
@@ -105,8 +126,8 @@ export function useDeploymentStream({
         }
 
         // Clean up active deployment persistence after completion
-        persistActiveDeployment(null);
-        onCompleted?.(event.status);
+        persistRef.current(null);
+        onCompletedRef.current?.(event.status);
       }
     };
 
@@ -124,9 +145,10 @@ export function useDeploymentStream({
       unsubscribe();
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, [deploymentId, onCompleted, persistActiveDeployment]);
+  }, [deploymentId]);
 
   const clearLogs = useCallback(() => {
     setLogs([]);
