@@ -174,7 +174,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-28 text-[#9ba0b5] gap-3">
         <RefreshCw className="w-7 h-7 animate-spin text-indigo-400" />
-        <span className="text-xs font-mono tracking-wider">Konteyner ayrıntıları yükleniyor...</span>
+        <span className="text-xs font-mono tracking-wider">{t('containers.fetchingDetails')}</span>
       </div>
     );
   }
@@ -185,14 +185,14 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
         <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto text-red-400">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h2 className="text-base font-bold text-white">Konteyner Bulunamadı</h2>
+        <h2 className="text-base font-bold text-white">{t('containers.notFoundTitle')}</h2>
         <p className="text-xs text-white/60 leading-relaxed">{error}</p>
         <button
           type="button"
           onClick={onBack}
           className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-md"
         >
-          Konteyner Listesine Dön
+          {t('containers.backToList')}
         </button>
       </div>
     );
@@ -305,7 +305,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
           onClose={() => setShowUpdateModal(false)}
           onSuccess={() => {
             loadContainerData();
-            toast.success('Konteyner başarıyla yeniden oluşturuldu.');
+            toast.success(t('containers.recreateSuccess'));
           }}
         />
       )}

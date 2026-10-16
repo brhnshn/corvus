@@ -6,9 +6,6 @@ import {
   RotateCw, 
   Play, 
   Square, 
-  Copy, 
-  Check, 
-  AlertTriangle, 
   Server,
   Layers
 } from 'lucide-react';
@@ -17,12 +14,13 @@ import { systemsApi } from '../../api/systems';
 import type { SystemdUnitDto, SystemSummaryDto } from '../../types';
 import { useI18n } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { Modal } from '../../components/ui/Modal';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
 import { Button } from '../../components/ui/Button';
 import { formatBytes } from '../../utils/format';
 import { MotionItem } from '../../components/ui/MotionStage';
+import { SystemdLogsModal } from './SystemdLogsModal';
+import { SystemdConfirmModal } from './SystemdConfirmModal';
 
 export interface SystemdUnitsTabProps {
   isAdmin?: boolean;
@@ -381,105 +379,24 @@ export const SystemdUnitsTab: React.FC<SystemdUnitsTabProps> = ({
       )}
 
       {/* 3. Journalctl Logları Modalı */}
-      <Modal
+      <SystemdLogsModal
+        unitName={logsModalUnit}
         isOpen={Boolean(logsModalUnit)}
         onClose={() => setLogsModalUnit(null)}
-        title={t('services.systemdLogsTitle', { unit: logsModalUnit || '' })}
-        subtitle={t('services.systemdLogsSubtitle')}
-        icon={<Terminal className="w-5 h-5 text-[var(--cloud-200)]" />}
-        maxWidth="max-w-4xl"
-      >
-        <div className="space-y-3">
-          {/* Üst Toolbar */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-[var(--text-muted)] font-mono">
-                {t('services.systemdLines')}:
-              </span>
-              {[50, 100, 250, 500].map((lines) => (
-                <button
-                  key={lines}
-                  type="button"
-                  onClick={() => reloadLogs(lines)}
-                  className={`text-[11px] font-mono px-2 py-0.5 rounded transition-colors ${
-                    logLines === lines 
-                      ? 'bg-[var(--cloud-200)] text-[var(--bg-canvas)] font-semibold' 
-                      : 'bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {lines}
-                </button>
-              ))}
-            </div>
-
-            <Button
-              variant="default"
-              size="sm"
-              onClick={copyLogsToClipboard}
-              icon={logsCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            >
-              {logsCopied ? t('services.systemdLogsCopied') : t('services.systemdCopyLogs')}
-            </Button>
-          </div>
-
-          {/* Log Çıktısı Kutusu */}
-          <div className="relative font-mono text-xs p-4 bg-[#0a0a0c] border border-[var(--border-hairline)] rounded-lg overflow-x-auto max-h-[60vh] select-text">
-            {loadingLogs ? (
-              <div className="flex items-center justify-center py-12 text-[var(--text-muted)] gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin text-[var(--cloud-300)]" />
-                <span>{t('services.systemdRefreshing')}</span>
-              </div>
-            ) : logs.length === 0 ? (
-              <p className="text-[var(--text-muted)] text-center py-8">
-                {t('services.systemdNoLogsFound')}
-              </p>
-            ) : (
-              <pre className="text-[var(--text-primary)] whitespace-pre leading-relaxed select-text font-mono text-[11px]">
-                {logs.join('\n')}
-              </pre>
-            )}
-          </div>
-        </div>
-      </Modal>
+        logs={logs}
+        loadingLogs={loadingLogs}
+        logLines={logLines}
+        logsCopied={logsCopied}
+        onReloadLogs={reloadLogs}
+        onCopyLogs={copyLogsToClipboard}
+      />
 
       {/* 4. Onay Modalı (Restart / Stop) */}
-      <Modal
-        isOpen={Boolean(confirmModal)}
+      <SystemdConfirmModal
+        confirmModal={confirmModal}
         onClose={() => setConfirmModal(null)}
-        title={confirmModal?.action === 'restart' ? t('services.systemdRestart') : t('services.systemdStop')}
-        subtitle={confirmModal?.unitName}
-        icon={<AlertTriangle className="w-5 h-5 text-amber-400" />}
-        maxWidth="max-w-md"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-[var(--text-secondary)]">
-            {confirmModal?.action === 'restart'
-              ? t('services.systemdConfirmRestart', { unit: confirmModal?.unitName || '' })
-              : t('services.systemdConfirmStop', { unit: confirmModal?.unitName || '' })}
-          </p>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setConfirmModal(null)}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant={confirmModal?.action === 'stop' ? 'danger' : 'cloud'}
-              size="sm"
-              onClick={() => {
-                if (confirmModal) {
-                  handleUnitAction(confirmModal.unitName, confirmModal.action);
-                }
-              }}
-            >
-              {confirmModal?.action === 'restart' ? t('services.systemdRestart') : t('services.systemdStop')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleUnitAction}
+      />
     </div>
   );
 };

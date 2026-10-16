@@ -81,8 +81,14 @@ public class AuthService : IAuthService
     public async Task<bool> IsRegistrationEnabledAsync()
     {
         string? val = await _settings.GetAsync("registration_enabled");
-        // Varsayılan olarak açıktır ("true")
-        return val == null || string.Equals(val, "true", StringComparison.OrdinalIgnoreCase);
+        if (val != null)
+        {
+            return string.Equals(val, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Ayar henüz yoksa: Sistemde kullanıcı varsa false (kapalı), hiç kullanıcı yoksa ilk kurulum için true
+        bool hasUsers = await HasUsersAsync();
+        return !hasUsers;
     }
 
     public async Task SetRegistrationEnabledAsync(bool enabled)
@@ -97,6 +103,8 @@ public class AuthService : IAuthService
         {
             return (false, "Yeni kullanıcı kayıtları kapatılmıştır.");
         }
+
+        bool hasUsers = await HasUsersAsync();
 
         string cleanUser = username?.Trim() ?? string.Empty;
         if (cleanUser.Length < 3)
@@ -115,16 +123,25 @@ public class AuthService : IAuthService
             return (false, "Bu kullanıcı adı zaten kayıtlı.");
         }
 
+        string role = !hasUsers ? "admin" : "viewer";
+
         var user = new User
         {
             Id = Guid.NewGuid().ToString("N"),
             Username = cleanUser,
             PasswordHash = HashPassword(password),
-            Role = "admin",
+            Role = role,
             CreatedAt = DateTime.UtcNow.ToString("o")
         };
 
         await _userRepo.CreateAsync(user);
+
+        if (!hasUsers)
+        {
+            // İlk kullanıcı admin yapıldıktan sonra açık kayıt varsayılan olarak kapatılır
+            await _settings.SetAsync("registration_enabled", "false");
+        }
+
         return (true, null);
     }
 
@@ -147,7 +164,7 @@ public class AuthService : IAuthService
                 {
                     // Eski düz SHA-256 parolasını şeffaf biçimde güvenli PBKDF2'ye yükselt
                     string upgradedHash = HashPassword(password);
-                    _ = _userRepo.UpdatePasswordAsync(user.Username, upgradedHash);
+                    await _userRepo.UpdatePasswordAsync(user.Username, upgradedHash);
                 }
                 return (true, user.Username);
             }

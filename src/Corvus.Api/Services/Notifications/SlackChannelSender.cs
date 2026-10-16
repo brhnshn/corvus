@@ -30,7 +30,7 @@ public class SlackChannelSender : ISlackChannelSender
 
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient("NotificationClient");
             client.Timeout = TimeSpan.FromSeconds(8);
 
             long unixNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

@@ -153,35 +153,35 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
   return (
     <form onSubmit={handleSave} className="space-y-4">
       {/* Başlık ve Canlı Durum Rozeti */}
-      <div className="p-4 surface border border-white/10 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-4 surface border border-[var(--border-hairline)] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h4 className="text-xs font-bold text-[#eceef6]">
-              {t('containers.tabResources')} & Canlı Telemetri
+            <h4 className="text-xs font-bold text-[var(--text-primary)]">
+              {t('containers.tabResources')} & {t('containers.tabTelemetryLive')}
             </h4>
             {isRunning ? (
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Canlı Veri (2.5s)
+                {t('containers.liveDataBadge', { interval: '2.5s' })}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                Konteyner Durdu
+                {t('containers.containerStoppedBadge')}
               </span>
             )}
           </div>
-          <p className="text-xs text-[#9ba0b5] mt-0.5">
-            Çalışma zamanı cgroup kaynak kısıtlamalarını yönetin ve anlık CPU, bellek ile I/O tüketimini izleyin.
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+            {t('containers.resourcesSubtitle')}
           </p>
         </div>
 
         {/* Canlı Trafik Özet Rozeti */}
         {isRunning && stats && (
-          <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px] font-mono shrink-0">
-            <div className="flex items-center gap-1 text-[#9ba0b5]">
+          <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-[var(--border-hairline)] text-[11px] font-mono shrink-0">
+            <div className="flex items-center gap-1 text-[var(--text-muted)]">
               <ArrowDownUp className="w-3.5 h-3.5 text-sky-400" />
-              <span>Ağ:</span>
+              <span>{t('containers.networkBadge')}</span>
             </div>
             <span className="text-emerald-400 font-medium">↓ {formatBytes(stats.networkRxBytes)}</span>
             <span className="text-sky-400 font-medium">↑ {formatBytes(stats.networkTxBytes)}</span>
@@ -192,14 +192,16 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
       {/* CANLI PERFORMANS KARTLARI (GERÇEK VERİLER) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* CPU Canlı Telemetri Kartı */}
-        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
+        <div className="p-4 surface border border-[var(--border-hairline)] rounded-2xl space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Cpu className="w-4 h-4 text-sky-400" />
-              <span className="text-xs font-bold text-[#eceef6]">Anlık CPU Kullanımı</span>
+              <span className="text-xs font-bold text-[var(--text-primary)]">
+                {t('containers.liveCpuUsage')}
+              </span>
             </div>
-            <span className="text-xs font-mono font-bold text-[#eceef6]">
-              {isRunning && stats ? `${stats.cpuPercent.toFixed(1)}%` : isRunning ? 'Hesaplanıyor...' : '0.0%'}
+            <span className="text-xs font-mono font-bold text-[var(--text-primary)]">
+              {isRunning && typeof stats?.cpuPercent === 'number' ? `${stats.cpuPercent.toFixed(1)}%` : '-'}
             </span>
           </div>
 
@@ -211,27 +213,29 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-[#9ba0b5]">
-            <span>Aktif Sınır:</span>
-            <span className="font-mono text-[#eceef6] font-medium">
+          <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+            <span>{t('containers.activeLimit')}</span>
+            <span className="font-mono text-[var(--text-primary)] font-medium">
               {initialNanoCpus > 0 
-                ? `${(initialNanoCpus / 1_000_000_000).toFixed(1)} vCPU Çekirdek` 
-                : 'Sınırsız (Tüm Host Çekirdekleri)'}
+                ? `${(initialNanoCpus / 1_000_000_000).toFixed(1)} ${t('containers.coresUnit')}` 
+                : t('containers.allHostCores')}
             </span>
           </div>
         </div>
 
         {/* Bellek (RAM) Canlı Telemetri Kartı */}
-        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
+        <div className="p-4 surface border border-[var(--border-hairline)] rounded-2xl space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <HardDrive className="w-4 h-4 text-purple-400" />
-              <span className="text-xs font-bold text-[#eceef6]">Anlık Bellek (RAM) Kullanımı</span>
+              <span className="text-xs font-bold text-[var(--text-primary)]">
+                {t('containers.liveMemoryUsage')}
+              </span>
             </div>
-            <span className="text-xs font-mono font-bold text-[#eceef6]">
-              {isRunning && stats 
+            <span className="text-xs font-mono font-bold text-[var(--text-primary)]">
+              {isRunning && stats && typeof stats.memoryUsageBytes === 'number'
                 ? `${formatBytes(stats.memoryUsageBytes)} (${stats.memoryPercent.toFixed(1)}%)`
-                : isRunning ? 'Hesaplanıyor...' : '0 B (0%)'}
+                : '-'}
             </span>
           </div>
 
@@ -243,29 +247,30 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-[#9ba0b5]">
-            <span>{initialMemoryBytes > 0 ? 'Yapılandırılmış Limit:' : 'Host Toplam RAM:'}</span>
-            <span className="font-mono text-[#eceef6] font-medium">
+          <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+            <span>{initialMemoryBytes > 0 ? t('containers.configuredLimit') : t('containers.hostTotalRam')}</span>
+            <span className="font-mono text-[var(--text-primary)] font-medium">
               {initialMemoryBytes > 0 
                 ? formatBytes(initialMemoryBytes) 
                 : stats?.memoryLimitBytes 
-                  ? `${formatBytes(stats.memoryLimitBytes)} (Sınırsız)`
-                  : 'Sınırsız'}
+                  ? `${formatBytes(stats.memoryLimitBytes)} (${t('containers.unlimited')})`
+                  : t('containers.unlimited')}
             </span>
           </div>
         </div>
       </div>
 
       {/* Compose Bildirimi (Varsa) */}
+      {/* Compose Bildirimi (Varsa) */}
       {composeProject && (
         <div className="p-3.5 rounded-2xl border border-sky-500/20 bg-sky-500/5 flex items-start gap-3 text-xs">
           <Layers className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
-            <p className="font-medium text-[#eceef6]">
-              Docker Compose Yığın Üyesi: <span className="font-mono text-sky-300">{composeProject}</span> {composeService && `(${composeService})`}
+            <p className="font-medium text-[var(--text-primary)]">
+              {t('containers.composeMemberNotice', { project: composeProject, service: composeService ? `(${composeService})` : '' })}
             </p>
-            <p className="text-[11px] text-[#9ba0b5] leading-relaxed">
-              Bu formdan uygulanan limitler anında çalışan konteynere yansıtılır. Konteyner silinip <code className="text-sky-300 font-mono">docker compose up</code> ile yeniden oluşturulduğunda sınırların kalıcı olması için projenin compose dosyasında <code className="text-sky-300 font-mono">deploy.resources.limits</code> belirtmeniz önerilir.
+            <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+              {t('containers.composeMemberHelp')}
             </p>
           </div>
         </div>
@@ -292,11 +297,11 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
       {/* Girdi Alanları (CPU & Memory Limits) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* CPU Limits Formu */}
-        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
+        <div className="p-4 surface border border-[var(--border-hairline)] rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-[#d5d5dc]" />
-            <label className="text-xs font-bold text-[#eceef6]">
-              {t('containers.cpuLimitLabel')} (vCPU Çekirdek)
+            <Cpu className="w-4 h-4 text-[var(--border-subtle)]" />
+            <label className="text-xs font-bold text-[var(--text-primary)]">
+              {t('containers.cpuLimitLabel')} ({t('containers.coresUnit')})
             </label>
           </div>
 
@@ -309,10 +314,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
               value={cpuCores}
               disabled={!isAdmin || saving}
               onChange={(e) => setCpuCores(e.target.value)}
-              placeholder="0 (Sınırsız)"
-              className="w-full px-3.5 py-2 text-xs font-mono bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl text-[#eceef6] focus:outline-none focus:border-[#d5d5dc] transition-colors disabled:opacity-50"
+              placeholder={`0 (${t('containers.unlimited')})`}
+              className="w-full px-3.5 py-2 text-xs font-mono bg-white/[0.04] border border-[var(--border-hairline)] hover:border-white/20 rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-subtle)] transition-colors disabled:opacity-50"
             />
-            <p className="text-[11px] text-[#9ba0b5]">
+            <p className="text-[11px] text-[var(--text-secondary)]">
               {t('containers.cpuLimitHelp')}
             </p>
           </div>
@@ -328,10 +333,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
                   className={`px-2.5 py-1 text-[11px] font-mono rounded-lg border transition-colors cursor-pointer ${
                     cpuCores === preset
                       ? 'bg-white text-black font-bold border-white'
-                      : 'bg-white/[0.04] text-[#9ba0b5] border-white/10 hover:text-[#eceef6] hover:bg-white/[0.08]'
+                      : 'bg-white/[0.04] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:text-[var(--text-primary)] hover:bg-white/[0.08]'
                   }`}
                 >
-                  {preset === '0' ? 'Sınırsız' : `${preset} Çekirdek`}
+                  {preset === '0' ? t('containers.unlimited') : `${preset} ${t('containers.coresUnit')}`}
                 </button>
               ))}
             </div>
@@ -339,10 +344,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
         </div>
 
         {/* Memory Limits Formu */}
-        <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
+        <div className="p-4 surface border border-[var(--border-hairline)] rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-[#d5d5dc]" />
-            <label className="text-xs font-bold text-[#eceef6]">
+            <HardDrive className="w-4 h-4 text-[var(--border-subtle)]" />
+            <label className="text-xs font-bold text-[var(--text-primary)]">
               {t('containers.memoryLimitLabel')} (MB)
             </label>
           </div>
@@ -355,10 +360,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
               value={memoryMb}
               disabled={!isAdmin || saving}
               onChange={(e) => setMemoryMb(e.target.value)}
-              placeholder="0 (Sınırsız)"
-              className="w-full px-3.5 py-2 text-xs font-mono bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl text-[#eceef6] focus:outline-none focus:border-[#d5d5dc] transition-colors disabled:opacity-50"
+              placeholder={`0 (${t('containers.unlimited')})`}
+              className="w-full px-3.5 py-2 text-xs font-mono bg-white/[0.04] border border-[var(--border-hairline)] hover:border-white/20 rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-subtle)] transition-colors disabled:opacity-50"
             />
-            <p className="text-[11px] text-[#9ba0b5]">
+            <p className="text-[11px] text-[var(--text-secondary)]">
               {t('containers.memoryLimitHelp')}
             </p>
           </div>
@@ -367,7 +372,7 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
           {isAdmin && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {[
-                { label: 'Sınırsız', val: '0' },
+                { label: t('containers.unlimited'), val: '0' },
                 { label: '256 MB', val: '256' },
                 { label: '512 MB', val: '512' },
                 { label: '1 GB', val: '1024' },
@@ -382,7 +387,7 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
                   className={`px-2.5 py-1 text-[11px] font-mono rounded-lg border transition-colors cursor-pointer ${
                     memoryMb === p.val
                       ? 'bg-white text-black font-bold border-white'
-                      : 'bg-white/[0.04] text-[#9ba0b5] border-white/10 hover:text-[#eceef6] hover:bg-white/[0.08]'
+                      : 'bg-white/[0.04] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:text-[var(--text-primary)] hover:bg-white/[0.08]'
                   }`}
                 >
                   {p.label}
@@ -394,10 +399,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
       </div>
 
       {/* Restart Policy Formu */}
-      <div className="p-4 surface border border-white/10 rounded-2xl space-y-3">
+      <div className="p-4 surface border border-[var(--border-hairline)] rounded-2xl space-y-3">
         <div className="flex items-center gap-2">
-          <RotateCcw className="w-4 h-4 text-[#d5d5dc]" />
-          <label className="text-xs font-bold text-[#eceef6]">
+          <RotateCcw className="w-4 h-4 text-[var(--border-subtle)]" />
+          <label className="text-xs font-bold text-[var(--text-primary)]">
             {t('containers.restartPolicyLabel')}
           </label>
         </div>
@@ -413,8 +418,8 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
               key={item.id}
               className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                 restartPolicy === item.id
-                  ? 'bg-white/[0.08] border-white/30 text-[#eceef6] shadow-sm'
-                  : 'bg-white/[0.02] border-white/10 text-[#9ba0b5] hover:border-white/20'
+                  ? 'bg-white/[0.08] border-white/30 text-[var(--text-primary)] shadow-sm'
+                  : 'bg-white/[0.02] border-[var(--border-hairline)] text-[var(--text-secondary)] hover:border-white/20'
               }`}
             >
               <input
@@ -426,8 +431,8 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
                 onChange={() => setRestartPolicy(item.id)}
                 className="sr-only"
               />
-              <div className="font-bold text-xs text-[#eceef6] mb-0.5">{item.label}</div>
-              <div className="text-[11px] leading-relaxed text-[#9ba0b5]">{item.desc}</div>
+              <div className="font-bold text-xs text-[var(--text-primary)] mb-0.5">{item.label}</div>
+              <div className="text-[11px] leading-relaxed text-[var(--text-secondary)]">{item.desc}</div>
             </label>
           ))}
         </div>
@@ -439,12 +444,12 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-black bg-white hover:bg-[#d5d5dc] rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-black bg-white hover:bg-[var(--border-subtle)] rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer"
           >
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Güncelleniyor...</span>
+                <span>{t('containers.updatingResources')}</span>
               </>
             ) : (
               <>

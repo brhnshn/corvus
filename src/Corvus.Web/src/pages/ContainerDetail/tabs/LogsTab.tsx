@@ -82,7 +82,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
             {containerName}
           </span>
           <span className="text-xs font-mono text-[#9ba0b5] px-2 py-0.5 rounded-full bg-white/[0.04]">
-            {filteredLogs.length} satır
+            {t('containers.composeLines', { count: filteredLogs.length })}
           </span>
         </div>
 
@@ -94,7 +94,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('common.search') || 'Loglarda ara...'}
+              placeholder={t('common.search')}
               className="pl-8 pr-3 py-1.5 rounded-xl bg-black/40 border border-white/10 text-xs text-[#eceef6] placeholder:text-[#9ba0b5] focus:outline-hidden focus:border-indigo-400 w-36 sm:w-44"
             />
           </div>
@@ -105,11 +105,11 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
             onChange={(e) => setTail(Number(e.target.value))}
             className="px-2.5 py-1.5 rounded-xl bg-black/40 border border-white/10 text-xs text-[#eceef6] focus:outline-hidden cursor-pointer font-mono"
           >
-            <option value={50}>50 satır</option>
-            <option value={100}>100 satır</option>
-            <option value={250}>250 satır</option>
-            <option value={500}>500 satır</option>
-            <option value={1000}>1000 satır</option>
+            <option value={50}>{t('containers.composeLines', { count: 50 })}</option>
+            <option value={100}>{t('containers.composeLines', { count: 100 })}</option>
+            <option value={250}>{t('containers.composeLines', { count: 250 })}</option>
+            <option value={500}>{t('containers.composeLines', { count: 500 })}</option>
+            <option value={1000}>{t('containers.composeLines', { count: 1000 })}</option>
           </select>
 
           {/* Canlı Akış Toggle */}
@@ -122,14 +122,14 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
                 : 'bg-white/[0.04] text-[#9ba0b5] border-white/10'
             }`}
           >
-            {autoRefresh ? '● Canlı Akış' : '○ Duraklatıldı'}
+            {autoRefresh ? `● ${t('containers.tabLogs')}` : `○ ${t('containers.statePaused')}`}
           </button>
 
           {/* Otomatik Kaydırma */}
           <button
             type="button"
             onClick={() => setAutoScroll(!autoScroll)}
-            title="Otomatik en alta kaydır"
+            title={t('containers.autoScrollBottom')}
             className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
               autoScroll
                 ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
@@ -144,6 +144,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
             type="button"
             onClick={() => fetchLogs(true)}
             disabled={refreshing}
+            title={t('common.refresh')}
             className="p-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -154,7 +155,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
             type="button"
             onClick={handleCopyLogs}
             className="p-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 transition-colors cursor-pointer"
-            title="Tüm logları kopyala"
+            title={t('containers.copyAllLogs')}
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
@@ -164,7 +165,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
             type="button"
             onClick={handleClearDisplay}
             className="p-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-red-400 border border-white/10 transition-colors cursor-pointer"
-            title="Ekranı temizle"
+            title={t('containers.clearScreen')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -179,11 +180,11 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
         {loading && logs.length === 0 ? (
           <div className="flex items-center justify-center h-full text-[#9ba0b5] gap-2">
             <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
-            <span>Loglar yükleniyor...</span>
+            <span>{t('common.loading')}</span>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="flex items-center justify-center h-full text-white/40">
-            {search ? 'Aramayla eşleşen log kaydı bulunamadı.' : 'Henüz log çıktısı yok.'}
+            {search ? t('containers.noLogsMatchingSearch') : t('containers.noLogsYet')}
           </div>
         ) : (
           filteredLogs.map((line, index) => (

@@ -22,3 +22,15 @@ export const formatServiceUrl = (url?: string): string => {
   }
   return cleanUrl;
 };
+
+/**
+ * URL dizesinden port numarasını ayıklar; geçersiz veya portsuz ise boş dize döner.
+ */
+export const extractPort = (urlStr: string): number | '' => {
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.port ? parseInt(parsed.port, 10) : '';
+  } catch {
+    return '';
+  }
+};

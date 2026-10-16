@@ -14,12 +14,59 @@ public static class SettingsEndpoints
         group.MapGet("/settings", async (ISettingsRepository repo) =>
         {
             var settings = await repo.GetAllAsync();
-            return Results.Ok(settings);
-        });
+            var masked = new Dictionary<string, string>(settings);
+            string[] sensitiveKeys =
+            [
+                "smtp_pass",
+                "notification_telegram_bot_token",
+                "notification_discord_webhook_url",
+                "notification_slack_webhook_url",
+                "notification_webhook_url",
+                "deploy_webhook_token"
+            ];
+
+            foreach (var key in sensitiveKeys)
+            {
+                if (masked.TryGetValue(key, out var val) && !string.IsNullOrEmpty(val))
+                {
+                    masked[key] = "******";
+                }
+            }
+
+            return Results.Ok(masked);
+        }).RequireAdmin();
+
+        group.MapGet("/settings/public", async (ISettingsRepository repo) =>
+        {
+            var all = await repo.GetAllAsync();
+            var publicDict = new Dictionary<string, string>();
+            string[] publicKeys = ["system_language", "theme", "refresh_interval"];
+            foreach (var key in publicKeys)
+            {
+                if (all.TryGetValue(key, out var val))
+                {
+                    publicDict[key] = val;
+                }
+            }
+            return Results.Ok(publicDict);
+        }).AllowViewer();
 
         group.MapPut("/settings", async (Dictionary<string, string> settings, ISettingsRepository repo) =>
         {
-            await repo.SetBatchAsync(settings);
+            var existing = await repo.GetAllAsync();
+            var toSave = new Dictionary<string, string>();
+            foreach (var (k, v) in settings)
+            {
+                if (v == "******" && existing.TryGetValue(k, out var oldVal))
+                {
+                    toSave[k] = oldVal;
+                }
+                else
+                {
+                    toSave[k] = v;
+                }
+            }
+            await repo.SetBatchAsync(toSave);
             return Results.Ok(new GenericApiResponse(true, "Ayarlar kaydedildi."));
         }).RequireAdmin();
 

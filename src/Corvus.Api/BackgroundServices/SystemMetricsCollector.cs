@@ -31,7 +31,10 @@ public class SystemMetricsCollector : BackgroundService
                 using var scope = _services.CreateScope();
                 var repo = scope.ServiceProvider.GetRequiredService<IMetricsRepository>();
 
-                var metric = CollectMetrics();
+                var (rxSec, txSec) = GetNetworkRateBytesPerSec();
+                var (load1, load5, load15) = GetLoadAverages();
+
+                var metric = CollectMetrics(rxSec, txSec);
                 await repo.InsertAsync(metric);
 
                 // Yerel Sunucuyu (Host Node) Systems Filosuna Entegre Et
@@ -54,11 +57,11 @@ public class SystemMetricsCollector : BackgroundService
                     ramTotalBytes: ramTotalBytes,
                     diskUsedBytes: diskUsedBytes,
                     diskTotalBytes: diskTotalBytes,
-                    netRxBytesSec: 0,
-                    netTxBytesSec: 0,
-                    loadAvg1m: 0.1f,
-                    loadAvg5m: 0.1f,
-                    loadAvg15m: 0.1f
+                    netRxBytesSec: rxSec,
+                    netTxBytesSec: txSec,
+                    loadAvg1m: load1,
+                    loadAvg5m: load5,
+                    loadAvg15m: load15
                 );
 
                 ringBuffer.Push("local-host", in point);
@@ -108,7 +111,80 @@ public class SystemMetricsCollector : BackgroundService
         _logger.LogInformation("SystemMetricsCollector durduruldu.");
     }
 
-    private SystemMetric CollectMetrics()
+    private long _lastNetRx = 0;
+    private long _lastNetTx = 0;
+    private DateTime _lastNetTime = DateTime.UtcNow;
+
+    private (long RxSec, long TxSec) GetNetworkRateBytesPerSec()
+    {
+        long currentRx = 0;
+        long currentTx = 0;
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/proc/net/dev"))
+        {
+            try
+            {
+                foreach (var line in File.ReadLines("/proc/net/dev").Skip(2))
+                {
+                    var parts = line.Split(':', StringSplitOptions.TrimEntries);
+                    if (parts.Length == 2 && !parts[0].StartsWith("lo"))
+                    {
+                        var stats = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (stats.Length >= 9 &&
+                            long.TryParse(stats[0], out long rx) &&
+                            long.TryParse(stats[8], out long tx))
+                        {
+                            currentRx += rx;
+                            currentTx += tx;
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        var now = DateTime.UtcNow;
+        double seconds = (now - _lastNetTime).TotalSeconds;
+
+        long rxRate = 0;
+        long txRate = 0;
+
+        if (seconds > 0 && _lastNetRx > 0)
+        {
+            rxRate = (long)Math.Max(0, (currentRx - _lastNetRx) / seconds);
+            txRate = (long)Math.Max(0, (currentTx - _lastNetTx) / seconds);
+        }
+
+        _lastNetRx = currentRx;
+        _lastNetTx = currentTx;
+        _lastNetTime = now;
+
+        return (rxRate, txRate);
+    }
+
+    private static (float Load1, float Load5, float Load15) GetLoadAverages()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/proc/loadavg"))
+        {
+            try
+            {
+                string text = File.ReadAllText("/proc/loadavg");
+                var parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 3 &&
+                    float.TryParse(parts[0], System.Globalization.CultureInfo.InvariantCulture, out float l1) &&
+                    float.TryParse(parts[1], System.Globalization.CultureInfo.InvariantCulture, out float l5) &&
+                    float.TryParse(parts[2], System.Globalization.CultureInfo.InvariantCulture, out float l15))
+                {
+                    return (l1, l5, l15);
+                }
+            }
+            catch { }
+        }
+
+        return (0.0f, 0.0f, 0.0f);
+    }
+
+    private SystemMetric CollectMetrics(long netRxSec = 0, long netTxSec = 0)
     {
         // CPU hesabı
         double cpuPercent = GetHostCpuPercent();
@@ -162,8 +238,8 @@ public class SystemMetricsCollector : BackgroundService
         }
         catch
         {
-            ramTotalMb = 4096;
-            ramUsedMb = 1024;
+            ramTotalMb = 0;
+            ramUsedMb = 0;
         }
 
         // Disk hesabı (Linux kök dosya sistemi veya en büyük hazır disk)
@@ -199,8 +275,8 @@ public class SystemMetricsCollector : BackgroundService
         }
         catch
         {
-            diskTotalGb = 50;
-            diskUsedGb = 15;
+            diskTotalGb = 0;
+            diskUsedGb = 0;
         }
 
         return new SystemMetric
@@ -208,11 +284,11 @@ public class SystemMetricsCollector : BackgroundService
             RecordedAt = DateTime.UtcNow.ToString("o"),
             CpuPercent = Math.Clamp(cpuPercent, 0, 100),
             RamUsedMb = ramUsedMb,
-            RamTotalMb = ramTotalMb > 0 ? ramTotalMb : 4096,
+            RamTotalMb = ramTotalMb,
             DiskUsedGb = diskUsedGb,
-            DiskTotalGb = diskTotalGb > 0 ? diskTotalGb : 50,
-            NetworkRxBytes = 0,
-            NetworkTxBytes = 0
+            DiskTotalGb = diskTotalGb,
+            NetworkRxBytes = netRxSec,
+            NetworkTxBytes = netTxSec
         };
     }
 

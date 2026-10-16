@@ -97,15 +97,15 @@ public static class ContainersEndpoints
             await repo.SaveContainerTagsAsync(id, cleanTags);
             docker.InvalidateContainersCache();
 
-            var username = httpContext.User.Identity?.Name ?? "admin";
+            var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
             var logger = loggerFactory.CreateLogger("ContainersEndpoints");
             logger.LogInformation("Audit: User '{Username}' updated tags for container '{ContainerId}' to [{Tags}]",
                 Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(username),
                 Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(id),
                 Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(string.Join(", ", cleanTags)));
 
-            var tagsJson = JsonSerializer.Serialize(cleanTags, CorvusJsonSerializerContext.Default.ListString);
-            broadcaster.Broadcast("container_tags_updated", $"{{\"containerId\":\"{id}\",\"tags\":{tagsJson}}}");
+            var payloadJson = JsonSerializer.Serialize(new ContainerTagsUpdatedEventPayload(id, cleanTags), CorvusJsonSerializerContext.Default.ContainerTagsUpdatedEventPayload);
+            broadcaster.Broadcast("container_tags_updated", payloadJson);
 
             return Results.Json(
                 new GenericApiResponse(true, "Konteyner etiketleri başarıyla güncellendi."),
@@ -128,7 +128,7 @@ public static class ContainersEndpoints
                 var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "restart", ContainerId: id));
                 if (rpcResp.Success)
                 {
-                    var username = httpContext.User.Identity?.Name ?? "admin";
+                    var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
                     activityLogger?.Log(username, "container_restart", "container", id, rpcResp.Message);
                     return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container yeniden başlatıldı."));
                 }
@@ -138,7 +138,7 @@ public static class ContainersEndpoints
             var result = await docker.RestartContainerAsync(id);
             if (result.Success)
             {
-                var username = httpContext.User.Identity?.Name ?? "admin";
+                var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
                 activityLogger?.Log(username, "container_restart", "container", id, result.Message);
             }
             return result.Success 
@@ -164,7 +164,7 @@ public static class ContainersEndpoints
                 var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "start", ContainerId: id));
                 if (rpcResp.Success)
                 {
-                    var username = httpContext.User.Identity?.Name ?? "admin";
+                    var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
                     activityLogger?.Log(username, "container_start", "container", id, rpcResp.Message);
                     return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container başlatıldı."));
                 }
@@ -174,7 +174,7 @@ public static class ContainersEndpoints
             var result = await docker.StartContainerAsync(id);
             if (result.Success)
             {
-                var username = httpContext.User.Identity?.Name ?? "admin";
+                var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
                 activityLogger?.Log(username, "container_start", "container", id, result.Message);
             }
             return result.Success 
@@ -200,7 +200,7 @@ public static class ContainersEndpoints
                 var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "stop", ContainerId: id));
                 if (rpcResp.Success)
                 {
-                    var username = httpContext.User.Identity?.Name ?? "admin";
+                    var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
                     activityLogger?.Log(username, "container_stop", "container", id, rpcResp.Message);
                     return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container durduruldu."));
                 }
@@ -210,7 +210,7 @@ public static class ContainersEndpoints
             var result = await docker.StopContainerAsync(id);
             if (result.Success)
             {
-                var username = httpContext.User.Identity?.Name ?? "admin";
+                var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
                 activityLogger?.Log(username, "container_stop", "container", id, result.Message);
             }
             return result.Success 
@@ -607,12 +607,25 @@ public static class ContainersEndpoints
             }
         }).RequireAdmin();
 
-        group.MapGet("/{id}/inspect", async (string id, IDockerService docker, CancellationToken ct) =>
+        group.MapGet("/{id}/inspect", async (string id, HttpContext context, IDockerService docker, CancellationToken ct) =>
         {
             var inspect = await docker.InspectContainerAsync(id, ct);
-            return inspect != null
-                ? Results.Json(inspect, CorvusJsonSerializerContext.Default.DockerContainerInspectInfo)
-                : Results.Json(new GenericApiResponse(false, "Container inspect verisi alınamadı."), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 404);
+            if (inspect == null)
+            {
+                return Results.Json(new GenericApiResponse(false, "Container inspect verisi alınamadı."), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 404);
+            }
+
+            string? role = context.Items["Corvus_Role"] as string;
+            if (string.Equals(role, "viewer", StringComparison.OrdinalIgnoreCase) && inspect.Config?.Env != null)
+            {
+                inspect.Config.Env = inspect.Config.Env.Select(env =>
+                {
+                    int eqIndex = env.IndexOf('=');
+                    return eqIndex > 0 ? $"{env[..(eqIndex + 1)]}******" : "******";
+                }).ToList();
+            }
+
+            return Results.Json(inspect, CorvusJsonSerializerContext.Default.DockerContainerInspectInfo);
         });
 
         group.MapPost("/{id}/update", async (string id, DockerContainerUpdateRequest request, IDockerService docker, CancellationToken ct) =>
@@ -646,7 +659,7 @@ public static class ContainersEndpoints
                 : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden oluşturulamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
-        });
+        }).RequireAdmin();
 
         app.MapPost("/api/v1/containers/{id}/recreate", async (string id, ContainerImageRecreateRequest? request, IDockerService docker, CancellationToken ct) =>
         {
@@ -657,7 +670,8 @@ public static class ContainersEndpoints
                 : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden oluşturulamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
-        }).AddEndpointFilter<CorvusAuthFilter>();
+        }).AddEndpointFilter<CorvusAuthFilter>()
+          .RequireAdmin();
     }
 
     private static List<DockerPortInfo> ParsePorts(string? portsJson)

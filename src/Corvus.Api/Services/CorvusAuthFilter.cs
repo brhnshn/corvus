@@ -96,6 +96,14 @@ public class CorvusAuthFilter : IEndpointFilter
         httpContext.Items["Corvus_User"] = username;
         httpContext.Items["Corvus_Role"] = role;
 
+        var claims = new List<System.Security.Claims.Claim>
+        {
+            new(System.Security.Claims.ClaimTypes.Name, username ?? "anonymous"),
+            new(System.Security.Claims.ClaimTypes.Role, role)
+        };
+        var identity = new System.Security.Claims.ClaimsIdentity(claims, "CorvusAuth");
+        httpContext.User = new System.Security.Claims.ClaimsPrincipal(identity);
+
         var endpoint = httpContext.GetEndpoint();
 
         // RBAC Denetimi 1: Eğer uç nokta RequireAdminAttribute istiyorsa ve rol admin değilse 403 Forbidden dön

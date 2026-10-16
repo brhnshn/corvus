@@ -1,6 +1,7 @@
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services.Notifications;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Corvus.Api.Services;
 
@@ -39,6 +40,7 @@ public class NotificationService : INotificationService
     private readonly ISmtpChannelSender _smtp;
     private readonly ILogger<NotificationService> _logger;
 
+    [ActivatorUtilitiesConstructor]
     public NotificationService(
         ISettingsRepository settings,
         IDiscordChannelSender discord,

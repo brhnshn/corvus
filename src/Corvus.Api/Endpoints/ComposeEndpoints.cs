@@ -13,19 +13,20 @@ public static class ComposeEndpoints
 
     private static void MapGroup(RouteGroupBuilder group)
     {
-        group.AddEndpointFilter<CorvusAuthFilter>();
+        group.AddEndpointFilter<CorvusAuthFilter>()
+            .RequireAdmin();
 
         group.MapGet("/{projectName}/file", async (string projectName, IComposeFileService composeService, CancellationToken ct) =>
         {
             var result = await composeService.GetComposeFileAsync(projectName, ct);
             return Results.Json(result, CorvusJsonSerializerContext.Default.ComposeFileDto);
-        });
+        }).RequireAdmin();
 
         group.MapGet("/{projectName}", async (string projectName, IComposeFileService composeService, CancellationToken ct) =>
         {
             var result = await composeService.GetComposeFileAsync(projectName, ct);
             return Results.Json(result, CorvusJsonSerializerContext.Default.ComposeFileDto);
-        });
+        }).RequireAdmin();
 
         group.MapPut("/{projectName}/file", async (string projectName, SaveComposeFileRequest request, IComposeFileService composeService, CancellationToken ct) =>
         {
@@ -33,7 +34,7 @@ public static class ComposeEndpoints
             return result.Success
                 ? Results.Ok(result)
                 : Results.Json(result, CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 400);
-        });
+        }).RequireAdmin();
 
         group.MapPut("/{projectName}", async (string projectName, SaveComposeFileRequest request, IComposeFileService composeService, CancellationToken ct) =>
         {
@@ -41,7 +42,7 @@ public static class ComposeEndpoints
             return result.Success
                 ? Results.Ok(result)
                 : Results.Json(result, CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 400);
-        });
+        }).RequireAdmin();
 
         group.MapPost("/{projectName}/deploy", async (string projectName, IComposeFileService composeService, CancellationToken ct) =>
         {
@@ -49,6 +50,6 @@ public static class ComposeEndpoints
             return result.Success
                 ? Results.Json(result, CorvusJsonSerializerContext.Default.ComposeDeployResult)
                 : Results.Json(result, CorvusJsonSerializerContext.Default.ComposeDeployResult, statusCode: 400);
-        });
+        }).RequireAdmin();
     }
 }

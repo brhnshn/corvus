@@ -36,12 +36,25 @@ public static class AuthEndpoints
 
         group.MapPost("/register", async (AuthRegisterRequest request, HttpContext context, IAuthService auth) =>
         {
+            string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            if (auth.IsAuthEnabled && auth.IsLoginRateLimited(clientIp))
+            {
+                return Results.Json(
+                    new GenericApiResponse(false, "Çok fazla istek. Lütfen 1 dakika sonra tekrar deneyin."),
+                    CorvusJsonSerializerContext.Default.GenericApiResponse,
+                    statusCode: StatusCodes.Status429TooManyRequests);
+            }
+
             string username = request.Username?.Trim() ?? string.Empty;
             string password = request.Password ?? string.Empty;
 
             var (success, errorMessage) = await auth.RegisterAsync(username, password);
             if (!success)
             {
+                if (errorMessage == "Yeni kullanıcı kayıtları kapatılmıştır.")
+                {
+                    return Results.Json(new GenericApiResponse(false, errorMessage), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: StatusCodes.Status403Forbidden);
+                }
                 return Results.BadRequest(new GenericApiResponse(false, errorMessage));
             }
 

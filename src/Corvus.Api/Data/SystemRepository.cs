@@ -120,9 +120,13 @@ public class SystemRepository : ISystemRepository
 
     public async Task<int> UpsertContainersCacheAsync(string systemId, List<SystemContainerCacheEntity> containers)
     {
-        if (containers.Count == 0) return 0;
-
         using var conn = _db.CreateConnection();
+
+        if (containers.Count == 0)
+        {
+            return await conn.ExecuteAsync("DELETE FROM system_containers_cache WHERE system_id = @SystemId", new { SystemId = systemId });
+        }
+
         var sql = @"
             INSERT INTO system_containers_cache (system_id, container_id, name, image, state, status, cpu_percent, memory_bytes, ports_json, updated_at)
             VALUES (@SystemId, @ContainerId, @Name, @Image, @State, @Status, @CpuPercent, @MemoryBytes, @PortsJson, @UpdatedAt)
@@ -135,7 +139,15 @@ public class SystemRepository : ISystemRepository
                 memory_bytes = excluded.memory_bytes,
                 ports_json = excluded.ports_json,
                 updated_at = excluded.updated_at";
-        return await conn.ExecuteAsync(sql, containers);
+
+        int affected = await conn.ExecuteAsync(sql, containers);
+
+        var activeIds = containers.Select(c => c.ContainerId).ToList();
+        await conn.ExecuteAsync(
+            "DELETE FROM system_containers_cache WHERE system_id = @SystemId AND container_id NOT IN @ActiveIds",
+            new { SystemId = systemId, ActiveIds = activeIds });
+
+        return affected;
     }
 
     public async Task<List<SystemContainerCacheEntity>> GetCachedContainersAsync(string systemId)

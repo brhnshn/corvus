@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense, lazy } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { api, type AuthStatus, invalidateCache } from './api/client';
 import { AppLayout } from './components/layout/AppLayout';
 import type { PageId } from './components/Sidebar';
@@ -13,30 +13,8 @@ import {
 } from './components/common/CommandPalette';
 import { PageTransition } from './components/common/PageTransition';
 import { useToast } from './components/ui/Toast';
-
-// Chunk yükleme hatalarını (yeni dağıtımlarda 404 veren eski JS dosyalarını) yakalayıp tazeleyen dirençli lazy sarmalayıcı
-function lazyWithRetry<T extends React.ComponentType<any>>(
-  componentImport: () => Promise<{ default: T }>
-) {
-  return lazy(async () => {
-    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
-      window.sessionStorage.getItem('chunk_reload_retry') || 'false'
-    );
-    try {
-      const component = await componentImport();
-      window.sessionStorage.removeItem('chunk_reload_retry');
-      return component;
-    } catch (error) {
-      if (!pageHasAlreadyBeenForceRefreshed) {
-        window.sessionStorage.setItem('chunk_reload_retry', 'true');
-        window.location.reload();
-        return new Promise<{ default: T }>(() => {});
-      }
-      window.sessionStorage.removeItem('chunk_reload_retry');
-      throw error;
-    }
-  });
-}
+import { lazyWithRetry } from './utils/lazyWithRetry';
+import { ChunkErrorBoundary } from './components/common/ChunkErrorBoundary';
 
 // Code-splitting via lazyWithRetry for bundle optimization (Roadmap 3.1)
 const DashboardPage = lazyWithRetry(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
@@ -51,85 +29,6 @@ const ContainerDetailPage = lazyWithRetry(() => import('./pages/ContainerDetail'
 const ActivityTimelinePage = lazyWithRetry(() => import('./pages/ActivityTimeline').then(m => ({ default: m.ActivityTimelinePage })));
 const AuthPage = lazyWithRetry(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const PublicStatus = lazyWithRetry(() => import('./pages/PublicStatus'));
-
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
-interface ErrorBoundaryState {
-  hasError: boolean;
-  isChunkError: boolean;
-  errorMessage?: string;
-}
-
-class ChunkErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false, isChunkError: false };
-  }
-
-  static getDerivedStateFromError(error: any): ErrorBoundaryState {
-    const msg = error?.message || String(error || '');
-    const isChunk =
-      error?.name === 'ChunkLoadError' ||
-      msg.includes('Failed to fetch dynamically imported module') ||
-      msg.includes('Loading chunk') ||
-      msg.includes('dynamically imported module');
-    return { hasError: true, isChunkError: isChunk, errorMessage: msg };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      if (this.state.isChunkError) {
-        return (
-          <div className="min-h-screen bg-black text-slate-100 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-full max-w-md sheet-glass border border-white/10 rounded-[28px] p-8 space-y-4 shadow-2xl">
-              <RefreshCw className="w-10 h-10 text-white mx-auto animate-spin" />
-              <h2 className="text-lg font-bold text-white">Yeni Sürüm Algılandı</h2>
-              <p className="text-xs text-white/60 leading-relaxed">
-                Sistem güncellendiği için sayfanın taze varlıklarla yeniden yüklenmesi gerekiyor.
-              </p>
-              <button
-                onClick={() => {
-                  window.sessionStorage.removeItem('chunk_reload_retry');
-                  window.location.reload();
-                }}
-                className="px-5 py-2.5 bg-white hover:bg-white/90 rounded-xl text-xs font-semibold text-black transition-all cursor-pointer shadow-md"
-              >
-                Sayfayı Yenile
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div className="min-h-screen bg-[#0d0e15] text-[#eceef6] flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-full max-w-md bg-[#161824] border border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl">
-            <h2 className="text-base font-semibold text-red-400">Bir Arayüz Hatası Oluştu</h2>
-            <p className="text-xs text-[#9ba0b5] leading-relaxed font-mono break-words">
-              {this.state.errorMessage || 'Beklenmeyen bir bileşen hatası meydana geldi.'}
-            </p>
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => this.setState({ hasError: false, isChunkError: false })}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs text-white transition-all cursor-pointer"
-              >
-                Yeniden Dene
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-white hover:bg-white/90 rounded-xl text-xs font-semibold text-black transition-all cursor-pointer"
-              >
-                Sayfayı Yenile
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const PageLoader = () => (
   <div className="flex items-center justify-center py-20 text-[#9ca3af]">

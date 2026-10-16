@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
@@ -14,8 +15,18 @@ public static class PushEndpoints
             PushBackupRequest? body, 
             IBackupRepository repo, 
             IPushMonitorRepository pushRepo,
+            ISettingsRepository settingsRepo,
             IEventBroadcaster broadcaster) =>
         {
+            var monitor = await pushRepo.GetByTokenAsync(token);
+            string? backupToken = await settingsRepo.GetAsync("backup_push_token");
+            bool isBackupToken = !string.IsNullOrEmpty(backupToken) && string.Equals(backupToken, token, StringComparison.Ordinal);
+
+            if (monitor == null && !isBackupToken)
+            {
+                return Results.NotFound(new GenericApiResponse(false, "Geçersiz veya bulunamayan push belirteci."));
+            }
+
             var evt = new BackupEvent
             {
                 Token = token,
@@ -26,8 +37,15 @@ public static class PushEndpoints
             };
 
             await repo.InsertAsync(evt);
-            await pushRepo.RecordPingAsync(token);
-            broadcaster.Broadcast("push_received", $"{{\"token\":\"{token}\",\"status\":\"{evt.Status}\"}}");
+            if (monitor != null)
+            {
+                await pushRepo.RecordPingAsync(token);
+            }
+
+            var payloadJson = JsonSerializer.Serialize(
+                new PushReceivedEventPayload(token, evt.Status),
+                CorvusJsonSerializerContext.Default.PushReceivedEventPayload);
+            broadcaster.Broadcast("push_received", payloadJson);
 
             return Results.Ok(new GenericApiResponse(true, "Push bildirimi başarıyla kaydedildi."));
         });
@@ -39,8 +57,18 @@ public static class PushEndpoints
             string? msg, 
             IBackupRepository repo, 
             IPushMonitorRepository pushRepo,
+            ISettingsRepository settingsRepo,
             IEventBroadcaster broadcaster) =>
         {
+            var monitor = await pushRepo.GetByTokenAsync(token);
+            string? backupToken = await settingsRepo.GetAsync("backup_push_token");
+            bool isBackupToken = !string.IsNullOrEmpty(backupToken) && string.Equals(backupToken, token, StringComparison.Ordinal);
+
+            if (monitor == null && !isBackupToken)
+            {
+                return Results.NotFound(new GenericApiResponse(false, "Geçersiz veya bulunamayan push belirteci."));
+            }
+
             var evt = new BackupEvent
             {
                 Token = token,
@@ -50,23 +78,36 @@ public static class PushEndpoints
             };
 
             await repo.InsertAsync(evt);
-            await pushRepo.RecordPingAsync(token);
-            broadcaster.Broadcast("push_received", $"{{\"token\":\"{token}\",\"status\":\"{evt.Status}\"}}");
+            if (monitor != null)
+            {
+                await pushRepo.RecordPingAsync(token);
+            }
+
+            var payloadJson = JsonSerializer.Serialize(
+                new PushReceivedEventPayload(token, evt.Status),
+                CorvusJsonSerializerContext.Default.PushReceivedEventPayload);
+            broadcaster.Broadcast("push_received", payloadJson);
 
             return Results.Ok(new GenericApiResponse(true, "Push bildirimi başarıyla kaydedildi."));
         });
 
-        // Dead Man's Snitch Monitör Yönetimi
-        var snitchGroup = app.MapGroup("/api/push-monitors")
-            .AddEndpointFilter<CorvusAuthFilter>();
+        // Dead Man's Snitch Monitör Yönetimi (Hem /api/push-monitors hem de /api/push/monitors desteklenir)
+        MapPushMonitorRoutes(app.MapGroup("/api/push-monitors"));
+        MapPushMonitorRoutes(app.MapGroup("/api/push/monitors"));
+    }
 
-        snitchGroup.MapGet("/", async (IPushMonitorRepository pushRepo) =>
+    private static void MapPushMonitorRoutes(RouteGroupBuilder group)
+    {
+        group.AddEndpointFilter<CorvusAuthFilter>()
+             .RequireAdmin();
+
+        group.MapGet("/", async (IPushMonitorRepository pushRepo) =>
         {
             var monitors = await pushRepo.GetAllAsync();
             return Results.Ok(monitors);
-        });
+        }).RequireAdmin();
 
-        snitchGroup.MapPost("/", async (CreatePushMonitorRequest request, IPushMonitorRepository pushRepo) =>
+        group.MapPost("/", async (CreatePushMonitorRequest request, IPushMonitorRepository pushRepo) =>
         {
             if (string.IsNullOrWhiteSpace(request.Name))
             {
@@ -90,9 +131,9 @@ public static class PushEndpoints
 
             await pushRepo.CreateAsync(monitor);
             return Results.Ok(monitor);
-        });
+        }).RequireAdmin();
 
-        snitchGroup.MapPut("/{id}", async (string id, UpdatePushMonitorRequest request, IPushMonitorRepository pushRepo) =>
+        group.MapPut("/{id}", async (string id, UpdatePushMonitorRequest request, IPushMonitorRepository pushRepo) =>
         {
             var existing = await pushRepo.GetByIdAsync(id);
             if (existing == null) return Results.NotFound(new GenericApiResponse(false, "Monitör bulunamadı."));
@@ -103,14 +144,14 @@ public static class PushEndpoints
 
             await pushRepo.UpdateAsync(existing);
             return Results.Ok(existing);
-        });
+        }).RequireAdmin();
 
-        snitchGroup.MapDelete("/{id}", async (string id, IPushMonitorRepository pushRepo) =>
+        group.MapDelete("/{id}", async (string id, IPushMonitorRepository pushRepo) =>
         {
             bool deleted = await pushRepo.DeleteAsync(id);
             return deleted 
                 ? Results.Ok(new GenericApiResponse(true, "Monitör silindi.")) 
                 : Results.NotFound(new GenericApiResponse(false, "Monitör bulunamadı."));
-        });
+        }).RequireAdmin();
     }
 }

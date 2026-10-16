@@ -20,6 +20,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 // HTTP Client & Bağımlılık Enjeksiyonu
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("NotificationClient")
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false
+    });
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddScoped<IServicesRepository, ServicesRepository>();
 builder.Services.AddScoped<IMetricsRepository, MetricsRepository>();
@@ -37,15 +42,24 @@ builder.Services.AddScoped<ISystemMetricRepository, SystemMetricRepository>();
 
 builder.Services.AddSingleton<IDockerHttpClient, DockerHttpClient>();
 builder.Services.AddSingleton<IDockerService, DockerService>();
-builder.Services.AddSingleton<IAuthService, AuthService>();
-builder.Services.AddSingleton<CorvusAuthFilter>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<CorvusAuthFilter>();
 builder.Services.AddSingleton<Corvus.Api.Services.Notifications.IDiscordChannelSender, Corvus.Api.Services.Notifications.DiscordChannelSender>();
 builder.Services.AddSingleton<Corvus.Api.Services.Notifications.ITelegramChannelSender, Corvus.Api.Services.Notifications.TelegramChannelSender>();
 builder.Services.AddSingleton<Corvus.Api.Services.Notifications.INtfyChannelSender, Corvus.Api.Services.Notifications.NtfyChannelSender>();
 builder.Services.AddSingleton<Corvus.Api.Services.Notifications.IWebhookChannelSender, Corvus.Api.Services.Notifications.WebhookChannelSender>();
 builder.Services.AddSingleton<Corvus.Api.Services.Notifications.ISlackChannelSender, Corvus.Api.Services.Notifications.SlackChannelSender>();
 builder.Services.AddSingleton<Corvus.Api.Services.Notifications.ISmtpChannelSender, Corvus.Api.Services.Notifications.SmtpChannelSender>();
-builder.Services.AddSingleton<INotificationService, NotificationService>();
+builder.Services.AddSingleton<INotificationService>(sp => new NotificationService(
+    sp.GetRequiredService<ISettingsRepository>(),
+    sp.GetRequiredService<Corvus.Api.Services.Notifications.IDiscordChannelSender>(),
+    sp.GetRequiredService<Corvus.Api.Services.Notifications.ITelegramChannelSender>(),
+    sp.GetRequiredService<Corvus.Api.Services.Notifications.INtfyChannelSender>(),
+    sp.GetRequiredService<Corvus.Api.Services.Notifications.IWebhookChannelSender>(),
+    sp.GetRequiredService<Corvus.Api.Services.Notifications.ISlackChannelSender>(),
+    sp.GetRequiredService<Corvus.Api.Services.Notifications.ISmtpChannelSender>(),
+    sp.GetRequiredService<ILogger<NotificationService>>()
+));
 builder.Services.AddSingleton<IFlappingDetector, FlappingDetector>();
 builder.Services.AddSingleton<IEventBroadcaster, EventBroadcaster>();
 builder.Services.AddSingleton<IUpdateCheckerService, UpdateCheckerService>();

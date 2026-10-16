@@ -58,7 +58,7 @@ public class ContainerDiscoveryService : BackgroundService
                             if (prevState == "running" && (currentState == "exited" || currentState == "dead"))
                             {
                                 // Konteyner çalışırken aniden kapandı; Inspect ile çıkış kodunu doğrula
-                                _ = CheckAndAlertCrashAsync(c, stoppingToken);
+                                await CheckAndAlertCrashAsync(c, stoppingToken);
                             }
                         }
                         _previousStates[c.Id] = currentState;
@@ -194,7 +194,7 @@ public class ContainerDiscoveryService : BackgroundService
                 var autoHeal = scope.ServiceProvider.GetService<IAutoHealingService>();
                 if (autoHeal != null)
                 {
-                    _ = autoHeal.TryAutoHealAsync(container, exitCode, ct);
+                    await autoHeal.TryAutoHealAsync(container, exitCode, ct);
                 }
             }
         }

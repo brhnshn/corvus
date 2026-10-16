@@ -93,6 +93,8 @@ public class AgentTunnelClient : IAgentTunnelClient
         }
     }
 
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
+
     private async Task RunSendTelemetryLoopAsync(ClientWebSocket ws, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested && ws.State == WebSocketState.Open)
@@ -124,7 +126,18 @@ public class AgentTunnelClient : IAgentTunnelClient
                 );
 
                 byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(message, AgentJsonSerializerContext.Default.AgentTunnelMessage);
-                await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+                await _sendLock.WaitAsync(ct);
+                try
+                {
+                    if (ws.State == WebSocketState.Open)
+                    {
+                        await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+                    }
+                }
+                finally
+                {
+                    _sendLock.Release();
+                }
 
                 await Task.Delay(TimeSpan.FromSeconds(3), ct);
             }
@@ -172,7 +185,18 @@ public class AgentTunnelClient : IAgentTunnelClient
                         );
 
                         byte[] resBytes = JsonSerializer.SerializeToUtf8Bytes(resMsg, AgentJsonSerializerContext.Default.AgentTunnelMessage);
-                        await ws.SendAsync(new ArraySegment<byte>(resBytes), WebSocketMessageType.Text, true, ct);
+                        await _sendLock.WaitAsync(ct);
+                        try
+                        {
+                            if (ws.State == WebSocketState.Open)
+                            {
+                                await ws.SendAsync(new ArraySegment<byte>(resBytes), WebSocketMessageType.Text, true, ct);
+                            }
+                        }
+                        finally
+                        {
+                            _sendLock.Release();
+                        }
                     }
                 }
             }

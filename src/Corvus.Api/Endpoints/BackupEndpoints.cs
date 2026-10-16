@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
@@ -61,7 +62,8 @@ public static class BackupEndpoints
                     Message = "Corvus veritabanı yedeği alındı"
                 };
                 await repo.InsertAsync(evt);
-                broadcaster.Broadcast("push_received", $"{{\"token\":\"internal_corvus_db\",\"status\":\"success\"}}");
+                var payloadJson = JsonSerializer.Serialize(new PushReceivedEventPayload("internal_corvus_db", "success"), CorvusJsonSerializerContext.Default.PushReceivedEventPayload);
+                broadcaster.Broadcast("push_received", payloadJson);
 
                 string fileName = $"corvus-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.db";
                 var fileStream = new FileStream(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.DeleteOnClose);

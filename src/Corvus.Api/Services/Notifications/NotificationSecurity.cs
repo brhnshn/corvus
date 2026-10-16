@@ -1,4 +1,5 @@
 using System.Net;
+using Corvus.Api.Utils;
 
 namespace Corvus.Api.Services.Notifications;
 
@@ -20,8 +21,15 @@ public static class NotificationSecurity
         }
 
         string host = uri.DnsSafeHost.Trim('[', ']').ToLowerInvariant();
-        if (host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0" || host == "::" ||
-            host == "169.254.169.254" || host == "metadata.google.internal")
+        if (host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0" || host == "::")
+        {
+            errorMessage = isTr 
+                ? "Güvenlik uyarısı: Hedef URL yerel veya bulut metadata adresine işaret ediyor (SSRF Koruması)." 
+                : "Security warning: Target URL points to local or cloud metadata address (SSRF Protection).";
+            return false;
+        }
+
+        if (SsrfGuard.IsBlockedHostOrIp(host, out var ssrfErr))
         {
             errorMessage = isTr 
                 ? "Güvenlik uyarısı: Hedef URL yerel veya bulut metadata adresine işaret ediyor (SSRF Koruması)." 
@@ -36,20 +44,41 @@ public static class NotificationSecurity
                 ip = ip.MapToIPv4();
             }
 
-            bool isLinkLocalV4 = ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &&
-                                 ip.GetAddressBytes()[0] == 169 && ip.GetAddressBytes()[1] == 254;
-
             if (IPAddress.IsLoopback(ip) || 
                 ip.Equals(IPAddress.Any) || 
                 ip.Equals(IPAddress.IPv6Any) || 
-                ip.IsIPv6LinkLocal || 
-                ip.IsIPv6SiteLocal ||
-                isLinkLocalV4)
+                SsrfGuard.IsBlockedIp(ip))
             {
                 errorMessage = isTr 
                     ? "Güvenlik uyarısı: Hedef URL yerel veya bulut metadata adresine işaret ediyor (SSRF Koruması)." 
                     : "Security warning: Target URL points to local or cloud metadata address (SSRF Protection).";
                 return false;
+            }
+        }
+        else
+        {
+            // DNS Çözümlemesi ile Rebinding / nip.io koruması
+            try
+            {
+                var addresses = Dns.GetHostAddresses(host);
+                foreach (var addr in addresses)
+                {
+                    var resolvedIp = addr.IsIPv4MappedToIPv6 ? addr.MapToIPv4() : addr;
+                    if (IPAddress.IsLoopback(resolvedIp) || 
+                        resolvedIp.Equals(IPAddress.Any) || 
+                        resolvedIp.Equals(IPAddress.IPv6Any) || 
+                        SsrfGuard.IsBlockedIp(resolvedIp))
+                    {
+                        errorMessage = isTr 
+                            ? "Güvenlik uyarısı: Hedef URL yerel veya bulut metadata adresine işaret ediyor (SSRF Koruması)." 
+                            : "Security warning: Target URL points to local or cloud metadata address (SSRF Protection).";
+                        return false;
+                    }
+                }
+            }
+            catch
+            {
+                // DNS çözümleme hatası
             }
         }
 

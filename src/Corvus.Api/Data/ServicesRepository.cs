@@ -1,4 +1,5 @@
 using Dapper;
+using System.Data.Common;
 using Corvus.Api.Models;
 
 namespace Corvus.Api.Data;
@@ -120,38 +121,81 @@ public class ServicesRepository : IServicesRepository
         return System.Text.Json.JsonSerializer.Serialize(clean, CorvusJsonSerializerContext.Default.ListString);
     }
 
-    private static Service MapRowToService(ServiceDbRow r) => new Service
+    private static Service MapReaderToService(DbDataReader r)
     {
-        Id = r.id,
-        Source = r.source,
-        ContainerId = r.container_id,
-        SystemId = r.system_id ?? "local-host",
-        Name = r.OverrideName ?? r.name,
-        Description = r.OverrideDescription ?? r.description,
-        Url = r.OverrideUrl ?? r.url,
-        Icon = r.OverrideIcon ?? r.icon,
-        Category = r.OverrideCategory ?? r.category,
-        HealthCheckUrl = r.OverrideHealthCheckUrl ?? r.health_check_url,
-        Status = r.status,
-        CreatedAt = r.created_at,
-        UpdatedAt = r.updated_at,
-        CheckType = r.OverrideCheckType ?? r.check_type ?? "http",
-        Port = r.OverridePort ?? r.port,
-        SslExpiryDays = r.ssl_expiry_days,
-        SslIssuer = r.ssl_issuer,
-        IsPublic = (r.OverrideIsPublic ?? r.is_public ?? 0) == 1,
-        IsUptimeEnabled = (r.OverrideIsUptimeEnabled ?? r.is_uptime_enabled ?? 0) == 1,
-        DisplayOrder = r.display_order ?? 0,
-        CheckInterval = r.OverrideCheckInterval ?? r.check_interval ?? 60,
-        MaxRetries = r.OverrideMaxRetries ?? r.max_retries ?? 1,
-        RetryInterval = r.OverrideRetryInterval ?? r.retry_interval ?? 30,
-        TimeoutSeconds = r.OverrideTimeoutSeconds ?? r.timeout_seconds ?? 5,
-        IgnoreTls = (r.OverrideIgnoreTls ?? r.ignore_tls ?? 0) == 1,
-        AcceptedStatusCodes = r.OverrideAcceptedStatusCodes ?? r.accepted_status_codes ?? "200-299",
-        HttpMethod = r.OverrideHttpMethod ?? r.http_method ?? "GET",
-        ExpectedBody = r.OverrideExpectedBody ?? r.expected_body,
-        Tags = ParseTags(r.OverrideTags ?? r.tags)
-    };
+        string GetStr(string col, string def = "")
+        {
+            int ord = r.GetOrdinal(col);
+            return r.IsDBNull(ord) ? def : r.GetString(ord);
+        }
+
+        string? GetNullableStr(string col)
+        {
+            int ord = r.GetOrdinal(col);
+            return r.IsDBNull(ord) ? null : r.GetString(ord);
+        }
+
+        int? GetNullableInt(string col)
+        {
+            int ord = r.GetOrdinal(col);
+            return r.IsDBNull(ord) ? null : Convert.ToInt32(r.GetValue(ord));
+        }
+
+        var overrideName = GetNullableStr("OverrideName");
+        var overrideDescription = GetNullableStr("OverrideDescription");
+        var overrideUrl = GetNullableStr("OverrideUrl");
+        var overrideIcon = GetNullableStr("OverrideIcon");
+        var overrideCategory = GetNullableStr("OverrideCategory");
+        var overrideHealthCheckUrl = GetNullableStr("OverrideHealthCheckUrl");
+        var overrideCheckType = GetNullableStr("OverrideCheckType");
+        var overridePort = GetNullableInt("OverridePort");
+        var overrideIsPublic = GetNullableInt("OverrideIsPublic");
+        var overrideIsUptimeEnabled = GetNullableInt("OverrideIsUptimeEnabled");
+        var overrideCheckInterval = GetNullableInt("OverrideCheckInterval");
+        var overrideMaxRetries = GetNullableInt("OverrideMaxRetries");
+        var overrideRetryInterval = GetNullableInt("OverrideRetryInterval");
+        var overrideTimeoutSeconds = GetNullableInt("OverrideTimeoutSeconds");
+        var overrideIgnoreTls = GetNullableInt("OverrideIgnoreTls");
+        var overrideAcceptedStatusCodes = GetNullableStr("OverrideAcceptedStatusCodes");
+        var overrideHttpMethod = GetNullableStr("OverrideHttpMethod");
+        var overrideExpectedBody = GetNullableStr("OverrideExpectedBody");
+        var overrideTags = GetNullableStr("OverrideTags");
+
+        var tagsRaw = overrideTags ?? GetNullableStr("tags");
+
+        return new Service
+        {
+            Id = GetStr("id"),
+            Source = GetStr("source"),
+            ContainerId = GetNullableStr("container_id"),
+            SystemId = GetNullableStr("system_id") ?? "local-host",
+            Name = overrideName ?? GetStr("name"),
+            Description = overrideDescription ?? GetNullableStr("description"),
+            Url = overrideUrl ?? GetNullableStr("url"),
+            Icon = overrideIcon ?? GetNullableStr("icon"),
+            Category = overrideCategory ?? GetNullableStr("category"),
+            HealthCheckUrl = overrideHealthCheckUrl ?? GetNullableStr("health_check_url"),
+            Status = GetStr("status"),
+            CreatedAt = GetStr("created_at"),
+            UpdatedAt = GetStr("updated_at"),
+            CheckType = overrideCheckType ?? GetNullableStr("check_type") ?? "http",
+            Port = overridePort ?? GetNullableInt("port"),
+            SslExpiryDays = GetNullableInt("ssl_expiry_days"),
+            SslIssuer = GetNullableStr("ssl_issuer"),
+            IsPublic = (overrideIsPublic ?? GetNullableInt("is_public") ?? 0) == 1,
+            IsUptimeEnabled = (overrideIsUptimeEnabled ?? GetNullableInt("is_uptime_enabled") ?? 0) == 1,
+            DisplayOrder = GetNullableInt("display_order") ?? 0,
+            CheckInterval = overrideCheckInterval ?? GetNullableInt("check_interval") ?? 60,
+            MaxRetries = overrideMaxRetries ?? GetNullableInt("max_retries") ?? 1,
+            RetryInterval = overrideRetryInterval ?? GetNullableInt("retry_interval") ?? 30,
+            TimeoutSeconds = overrideTimeoutSeconds ?? GetNullableInt("timeout_seconds") ?? 5,
+            IgnoreTls = (overrideIgnoreTls ?? GetNullableInt("ignore_tls") ?? 0) == 1,
+            AcceptedStatusCodes = overrideAcceptedStatusCodes ?? GetNullableStr("accepted_status_codes") ?? "200-299",
+            HttpMethod = overrideHttpMethod ?? GetNullableStr("http_method") ?? "GET",
+            ExpectedBody = overrideExpectedBody ?? GetNullableStr("expected_body"),
+            Tags = ParseTags(tagsRaw)
+        };
+    }
 
     private const string BaseSelectSql = @"
         SELECT s.id, s.source, s.container_id, s.system_id, s.name, s.description, s.url, s.icon, s.category, s.health_check_url, s.status, s.created_at, s.updated_at,
@@ -182,41 +226,67 @@ public class ServicesRepository : IServicesRepository
 
     public async Task<List<Service>> GetAllAsync(string? systemId = null)
     {
-        using var conn = _db.CreateConnection();
+        using var conn = (Microsoft.Data.Sqlite.SqliteConnection)_db.CreateConnection();
         string whereClause = "";
-        object? param = null;
 
         if (!string.IsNullOrWhiteSpace(systemId) && systemId.ToLowerInvariant() != "all")
         {
             whereClause = " WHERE (s.system_id = @systemId OR (@systemId = 'local-host' AND (s.system_id IS NULL OR s.system_id = '' OR s.system_id = 'local-host')))";
-            param = new { systemId = systemId.Trim() };
         }
 
         var sql = $"{BaseSelectSql}{whereClause} ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
 
-        var rows = await conn.QueryAsync<ServiceDbRow>(sql, param);
-        return rows.Select(MapRowToService).ToList();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        if (!string.IsNullOrWhiteSpace(systemId) && systemId.ToLowerInvariant() != "all")
+        {
+            cmd.Parameters.AddWithValue("@systemId", systemId.Trim());
+        }
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        var list = new List<Service>();
+        while (await reader.ReadAsync())
+        {
+            list.Add(MapReaderToService(reader));
+        }
+        return list;
     }
 
     public async Task<List<Service>> GetPublicServicesAsync()
     {
-        using var conn = _db.CreateConnection();
+        using var conn = (Microsoft.Data.Sqlite.SqliteConnection)_db.CreateConnection();
         var sql = $@"{BaseSelectSql}
             WHERE COALESCE(o.is_public, s.is_public, 0) = 1
               AND COALESCE(o.is_uptime_enabled, s.is_uptime_enabled, 0) = 1
             ORDER BY s.display_order ASC, s.category ASC, s.name ASC";
 
-        var rows = await conn.QueryAsync<ServiceDbRow>(sql);
-        return rows.Select(MapRowToService).ToList();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        var list = new List<Service>();
+        while (await reader.ReadAsync())
+        {
+            list.Add(MapReaderToService(reader));
+        }
+        return list;
     }
 
     public async Task<Service?> GetByIdAsync(string id)
     {
-        using var conn = _db.CreateConnection();
+        using var conn = (Microsoft.Data.Sqlite.SqliteConnection)_db.CreateConnection();
         var sql = $"{BaseSelectSql} WHERE s.id = @id";
 
-        var r = await conn.QuerySingleOrDefaultAsync<ServiceDbRow>(sql, new { id });
-        return r == null ? null : MapRowToService(r);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.Parameters.AddWithValue("@id", id);
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+        {
+            return MapReaderToService(reader);
+        }
+        return null;
     }
 
     public async Task<Service> CreateManualAsync(CreateServiceRequest request, string? systemId = null)
@@ -526,11 +596,15 @@ public class ServicesRepository : IServicesRepository
         using var conn = (Microsoft.Data.Sqlite.SqliteConnection)_db.CreateConnection();
         using var tx = conn.BeginTransaction();
 
+        string targetSystemId = services.FirstOrDefault()?.SystemId ?? "local-host";
+        if (string.IsNullOrWhiteSpace(targetSystemId)) targetSystemId = "local-host";
+
         var upsertSql = @"
-            INSERT INTO services (id, source, container_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, tags)
-            VALUES (@Id, 'docker', @ContainerId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @Tags)
+            INSERT INTO services (id, source, container_id, system_id, name, description, url, icon, category, health_check_url, status, created_at, updated_at, check_type, port, is_public, is_uptime_enabled, display_order, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, tags)
+            VALUES (@Id, 'docker', @ContainerId, @SystemId, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @Status, @CreatedAt, @UpdatedAt, @CheckType, @Port, @IsPublicInt, @IsUptimeEnabledInt, @DisplayOrder, @CheckInterval, @MaxRetries, @RetryInterval, @TimeoutSeconds, @IgnoreTlsInt, @AcceptedStatusCodes, @HttpMethod, @Tags)
             ON CONFLICT(id) DO UPDATE SET
                 container_id = excluded.container_id,
+                system_id = COALESCE(excluded.system_id, services.system_id, 'local-host'),
                 status = CASE 
                     WHEN COALESCE(services.is_uptime_enabled, 0) = 0 THEN excluded.status
                     WHEN excluded.status = 'down' THEN 'down'
@@ -555,6 +629,7 @@ public class ServicesRepository : IServicesRepository
             await conn.ExecuteAsync(upsertSql, new {
                 s.Id,
                 s.ContainerId,
+                SystemId = string.IsNullOrWhiteSpace(s.SystemId) ? targetSystemId : s.SystemId,
                 s.Name,
                 s.Description,
                 s.Url,
@@ -582,13 +657,13 @@ public class ServicesRepository : IServicesRepository
 
         if (activeContainerIds.Count == 0)
         {
-            await conn.ExecuteAsync("DELETE FROM services WHERE source = 'docker'", transaction: tx);
+            await conn.ExecuteAsync("DELETE FROM services WHERE source = 'docker' AND (system_id = @targetSystemId OR (@targetSystemId = 'local-host' AND (system_id IS NULL OR system_id = '')))", new { targetSystemId }, transaction: tx);
         }
         else
         {
             await conn.ExecuteAsync(
-                "DELETE FROM services WHERE source = 'docker' AND container_id NOT IN @activeContainerIds",
-                new { activeContainerIds },
+                "DELETE FROM services WHERE source = 'docker' AND (system_id = @targetSystemId OR (@targetSystemId = 'local-host' AND (system_id IS NULL OR system_id = ''))) AND container_id NOT IN @activeContainerIds",
+                new { targetSystemId, activeContainerIds },
                 tx);
         }
 
@@ -630,19 +705,24 @@ public class ServicesRepository : IServicesRepository
 
     public async Task<Dictionary<string, List<string>>> GetAllContainerTagsAsync()
     {
-        using var conn = _db.CreateConnection();
+        using var conn = (Microsoft.Data.Sqlite.SqliteConnection)_db.CreateConnection();
         var sql = "SELECT container_id, tags FROM service_overrides WHERE tags IS NOT NULL AND tags != '' AND tags != '[]'";
-        var rows = await conn.QueryAsync<ContainerTagsDbRow>(sql);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+
+        using var reader = await cmd.ExecuteReaderAsync();
         var dict = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var row in rows)
+        while (await reader.ReadAsync())
         {
-            if (!string.IsNullOrWhiteSpace(row.container_id))
+            string containerId = reader.IsDBNull(0) ? "" : reader.GetString(0);
+            string? tags = reader.IsDBNull(1) ? null : reader.GetString(1);
+            if (!string.IsNullOrWhiteSpace(containerId))
             {
-                var parsed = ParseTags(row.tags);
-                dict[row.container_id] = parsed;
-                if (row.container_id.Length >= 12)
+                var parsed = ParseTags(tags);
+                dict[containerId] = parsed;
+                if (containerId.Length >= 12)
                 {
-                    dict[row.container_id[..12]] = parsed;
+                    dict[containerId[..12]] = parsed;
                 }
             }
         }

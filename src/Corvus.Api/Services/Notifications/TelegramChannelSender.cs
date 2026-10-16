@@ -25,7 +25,7 @@ public class TelegramChannelSender : ITelegramChannelSender
     {
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient("NotificationClient");
             client.Timeout = TimeSpan.FromSeconds(8);
 
             string safeTitle = WebUtility.HtmlEncode(title);

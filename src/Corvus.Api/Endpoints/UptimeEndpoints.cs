@@ -67,6 +67,11 @@ public static class UptimeEndpoints
                         }
                     }
 
+                    if (SsrfGuard.IsBlockedHostOrIp(host, out var tcpSsrfErr))
+                    {
+                        return Results.BadRequest(new TestConnectionResponse(false, null, 0, tcpSsrfErr ?? "SSRF Engellendi"));
+                    }
+
                     using var tcpClient = new TcpClient();
                     await tcpClient.ConnectAsync(host, port, cts.Token);
                     sw.Stop();
@@ -103,6 +108,11 @@ public static class UptimeEndpoints
                     int colonIdx = target.IndexOf(':');
                     if (colonIdx >= 0) target = target[..colonIdx];
                     target = target.Trim();
+
+                    if (SsrfGuard.IsBlockedHostOrIp(target, out var pingSsrfErr))
+                    {
+                        return Results.BadRequest(new TestConnectionResponse(false, null, 0, pingSsrfErr ?? "SSRF Engellendi"));
+                    }
 
                     using var ping = new Ping();
                     int timeoutMs = timeoutSec * 1000;
@@ -148,7 +158,18 @@ public static class UptimeEndpoints
                         targetUrl = $"http://{targetUrl}";
                     }
 
-                    var handler = new HttpClientHandler();
+                    if (Uri.TryCreate(targetUrl, UriKind.Absolute, out var targetUri))
+                    {
+                        if (SsrfGuard.IsBlockedHostOrIp(targetUri.DnsSafeHost, out var httpSsrfErr))
+                        {
+                            return Results.BadRequest(new TestConnectionResponse(false, null, 0, httpSsrfErr ?? "SSRF Engellendi"));
+                        }
+                    }
+
+                    var handler = new HttpClientHandler
+                    {
+                        AllowAutoRedirect = false
+                    };
                     if (req.IgnoreTls ?? true)
                     {
                         handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;

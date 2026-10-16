@@ -66,12 +66,12 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
         setErrorMessage(data.error);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Compose dosyası yüklenemedi.';
+      const msg = err instanceof Error ? err.message : t('containers.composeNotFound');
       setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
-  }, [projectName]);
+  }, [projectName, t]);
 
   useEffect(() => {
     if (isOpen && projectName) {
@@ -122,12 +122,12 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
         toast.success(msg);
         if (onSuccess) onSuccess();
       } else {
-        const err = res.message || 'Kaydetme başarısız oldu.';
+        const err = res.message || t('containers.composeSaveFailed');
         setErrorMessage(err);
         toast.error(err);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Compose dosyası kaydedilemedi.';
+      const msg = err instanceof Error ? err.message : t('containers.composeSaveFailed');
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -157,7 +157,7 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
       });
 
       if (!saveRes.success) {
-        setErrorMessage(saveRes.message || 'Dosyalar kaydedilemedi.');
+        setErrorMessage(saveRes.message || t('containers.composeSaveFailed'));
         setDeploying(false);
         return;
       }
@@ -176,7 +176,7 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
         toast.error(err);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Compose dağıtımı sırasında hata oluştu.';
+      const msg = err instanceof Error ? err.message : t('containers.composeDeployError');
       setErrorMessage(msg);
       toast.error(msg);
     } finally {

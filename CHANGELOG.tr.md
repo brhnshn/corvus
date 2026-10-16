@@ -3,6 +3,60 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.9] - 2026-10-16 — Güvenlik Sıkılaştırması, Telemetri Doğruluğu, Eşzamanlılık Kilitleri ve Servisler AOT Çözümü
+
+### Güvenlik (Security)
+- **Açık Kayıt & Yetki Yükseltme Koruması (CWE-269 / CWE-284)**:
+  - `AuthService.cs` & `AuthEndpoints.cs`: İlk kurulumda sistemde kullanıcı yoksa ilk kaydolan yönetici (`admin`) olarak atanır ve sistem kaydı derhal otomatik olarak kapatılır (`registration_enabled = false`). Sistemde kullanıcı varken kayıt kapalıysa dışarıdan gelen istekler `403 Forbidden` ile reddedilir; kayıt yönetici tarafından açılmışsa yeni kullanıcılar yalnızca salt-okunur `viewer` rolüyle kaydedilir. `/api/auth/register` uç noktasına IP tabanlı rate limiting koruması eklendi.
+- **Sistem Sırlarının ve Webhook Belirteçlerinin Korunması (CWE-200)**:
+  - `SettingsEndpoints.cs`: `GET /api/settings` uç noktası `.RequireAdmin()` ile kilitlendi. Dönen sistem ayarları içindeki `smtp_pass`, `notification_telegram_bot_token`, Discord/Slack webhook URL'leri ve `deploy_webhook_token` değerleri `******` ile maskelendi.
+  - Salt-okunur frontend tercihleri için yalnızca genel ayarları (`system_language`, `theme`, `refresh_interval`) sunan `/api/settings/public` (.AllowViewer) uç noktası eklendi.
+- **SSRF ve DNS Rebinding Koruması (CWE-918)**:
+  - `SsrfGuard.cs`: Link-local IPv4 (`169.254.0.0/16`), Cloud Metadata (`169.254.169.254`, `metadata.google.internal`), IPv6 link-local (`fe80::/10`) ve `0.0.0.0/8` IP bloklarına erişim engellendi. `nip.io` ve `sslip.io` gibi DNS rebinding saldırılarına karşı IP çözümleme kontrolü eklendi.
+  - `NotificationClient` & `NotificationSecurity.cs`: Bildirim isteklerinde `AllowAutoRedirect = false` yapılandırılarak HTTP 302 yönlendirmeleriyle iç ağa sızma girişimleri engellendi. Uptime test bağlantı uç noktaları `SsrfGuard` ile korundu.
+- **Agent Path Traversal ve Docker Soketi CRLF Enjeksiyonu (CWE-22 / CWE-93)**:
+  - `AgentDockerClient.cs`: `projectName` ve `containerId` için regex doğrulamaları eklendi. Stack dizinlerinin `stacks` kök dizini altında kaldığı `Path.GetFullPath` ile teyit edildi. Docker UDS HTTP isteklerinde `\r\n` CRLF kontrolü ve `Uri.EscapeDataString` uygulandı.
+- **RBAC Yetki Sıkılaştırması (CWE-862)**:
+  - `ComposeEndpoints.cs`: Compose dosya okuma, güncelleme ve deploy uç noktaları `.RequireAdmin()` ile korundu.
+  - `ContainersEndpoints.cs`: Konteyner yeniden oluşturma (`/recreate`) uç noktaları `.RequireAdmin()` altına alındı. `/inspect` uç noktasında `viewer` kullanıcıları için ortam değişkenleri (`ENV`) `KEY=******` şeklinde maskelendi.
+  - `PushEndpoints.cs`: Push monitor yönetim uç noktaları admin rolüne bağlandı; `/api/push/{token}` uç noktasında geçersiz token'lar veritabanına yazılmadan `404 Not Found` dönülerek disk DoS açığı kapatıldı.
+  - Native AOT uyumlu `PushReceivedEventPayload` ve `ContainerTagsUpdatedEventPayload` sınıfları `CorvusJsonSerializerContext`'e kaydedilerek SSE string injection açıkları giderildi.
+
+### Düzeltilenler (Fixed)
+- **Servisler Sayfası HTTP 500 Hatası Çözümü (Native AOT Uyumlu Veri Okuyucu)**:
+  - `ServicesRepository.cs`: Servisler sayfasına girildiğinde `/api/services` uç noktasında oluşan `PlatformNotSupportedException: Dynamic code generation is not supported on this platform` (HTTP 500) hatası giderildi. SQL sorgusu string interpolasyonu ile birleştirildiğinde Dapper.AOT kaynak üreticisi derleme zamanında interceptor üretememekte ve runtime'da Native AOT ortamında yasak olan `Reflection.Emit` mekanizmasına düşmekteydi. `GetAllAsync`, `GetPublicServicesAsync`, `GetByIdAsync` ve `GetAllContainerTagsAsync` metotları doğrudan sıfır-allocation `DbDataReader` okuyucusuna (`MapReaderToService`) dönüştürülerek %100 Native AOT uyumluluğu ve sıfır reflection hatası sağlandı.
+- **Dependency Injection (DI) Yaşam Döngüsü Hizalaması**:
+  - `Program.cs`: `IUserRepository` (Scoped) bağımlılığının `IAuthService` ve `CorvusAuthFilter` (Singleton) tarafından doğrudan talep edilmesinden kaynaklanan DI doğrulama hatası (`Cannot consume scoped service 'IUserRepository' from singleton 'IAuthService'`) giderildi; `IAuthService` ve `CorvusAuthFilter` servisleri `Scoped` olarak kaydedildi.
+- **NotificationService Kurucu Metot Belirsizliği Giderildi**:
+  - `NotificationService.cs` ve `Program.cs`: `NotificationService` üzerinde testler ve DI için iki kurucu bulunması sebebiyle oluşan `AmbiguousMatchException / Unable to activate type 'NotificationService'` hatası birincil kurucuya `[ActivatorUtilitiesConstructor]` eklenerek ve DI kaydında açık lambda factory tanımlanarak çözüldü.
+- **Frontend Modüler Ayrımı ve Temiz Mimari (`GEMINI.md`)**:
+  - `App.tsx`: `lazyWithRetry` fonksiyonu bağımsız `utils/lazyWithRetry.ts` dosyasına, `ChunkErrorBoundary` sınıfı ise `components/common/ChunkErrorBoundary.tsx` dosyasına taşınarak `App.tsx` sadeleştirildi.
+  - `SystemdUnitsTab.tsx`: İç içe gömülü büyük modallar bağımsız dosyalara bölündü (`SystemdLogsModal.tsx` ve `SystemdConfirmModal.tsx`).
+  - `EnableUptimeModal.tsx`: Bileşen içine gömülü URL ayrıştırma mantığı (`extractPort`) `utils/url.ts` dosyasına taşındı.
+  - `ContainerRow.tsx`: Kod içindeki üçüncü taraf proje ismi referansı kaldırılarak `"Satır içi Hızlı Konteyner Eylemleri (Inline Quick Actions)"` olarak güncellendi (`GEMINI.md` bağımsız terminoloji).
+- **Gerçek Veri Disiplini ve Null-Safety (`GEMINI.md`)**:
+  - `ContainerResourcesTab.tsx`: Konteyner çalışmıyorken veya telemetri beklenirken sahte `0.0%` veya `0 B (0%)` basılması engellendi; temiz tire (`-`) gösterimine geçildi.
+  - Inline hex renk kodları ObsidianUI CSS değişkenleriyle (`var(--text-primary)`, `var(--text-secondary)`, `var(--border-subtle)`) standartlaştırıldı.
+- **Çift Dilli Uluslararasılaştırma (i18n Senkronizasyonu)**:
+  - `tr.ts` ve `en.ts` dosyalarına 20'den fazla yeni çeviri anahtarı eklenerek `ContainerResourcesTab`, `SystemPruneModal`, `ComposeConfigModal`, `LogsTab` ve `ContainerDetail` bileşenlerindeki tüm sabit (hardcoded) metinler tip güvenli `t(...)` kancasına bağlandı.
+- **Agent Telemetrisi & Gerçek Zamanlı CPU Matematiği**:
+  - `SystemMetricCollector.cs` (Agent): Boot anından beri kümülatif ortalama alan hatalı CPU hesabı yerine, iki ölçüm periyodu arasındaki delta (`deltaBusy / deltaTotal`) üzerinden gerçek anlık CPU kullanımı hesaplandı (`iowait`, `irq`, `softirq`, `steal` dahil).
+  - Kod içerisindeki sahte fallback değerleri (`5.0f`, `4GB RAM`, `100GB Disk`, `0.1 loadavg`) tamamen temizlenerek standart `0.0f` ve `0` sayılarına dönüştürüldü.
+  - `SystemMetricsCollector.cs` (API): `local-host` için sabit sahte yük (`0.1f`) yerine `/proc/loadavg` ve gerçek zamanlı `/proc/net/dev` üzerinden anlık ağ hızı (Rx/Tx B/s) bağlandı.
+- **WebSocket Eşzamanlılık Kilitleri (Race Condition Çözümü)**:
+  - `AgentTunnelClient.cs` & `SystemTunnelManager.cs`: `WebSocket.SendAsync` çağrıları `SemaphoreSlim(1, 1)` kilit mekanizması altına alındı; periyodik telemetri gönderimi ile gelen Docker RPC komut yanıtlarının aynı soket üzerinde eşzamanlı çakışması ve tünel kopması engellendi.
+- **Docker HTTP Chunked Ayrıştırma ve Multiplexed Stream Demuxer**:
+  - `AgentDockerClient.cs`: Docker Unix Domain Socket yanıtlarındaki `Transfer-Encoding: chunked` çerçeveleme başlıkları ayrıştırıldı, `Connection: close` başlığı eklendi. Log çıktılarındaki 8 baytlık Docker binary stream başlığı (`[stream_type, size...]`) ayıklanarak UI log ekranlarındaki bozuk binary karakterler giderildi.
+- **Çoklu Düğüm Servis ve Konteyner İzolasyonu**:
+  - `ServicesRepository.cs`: `SyncDockerBatchAsync` sorgularına `system_id` izolasyonu eklendi; bir sunucunun diğer sunucu servislerini ezmesi engellendi.
+  - `SystemRepository.cs`: `UpsertContainersCacheAsync` içinde uzak sunucuda silinen konteynerler önbellekten temizlendi (`DELETE FROM system_containers_cache WHERE system_id = @SystemId AND container_id NOT IN @ActiveIds`).
+- **Denetim Günlüğü (Audit Log) Kimlik Eşleme**:
+  - `CorvusAuthFilter.cs` & `ContainersEndpoints.cs`: Doğrulanan kullanıcı `ClaimsPrincipal` olarak atandı; konteyner aksiyonlarının loglarda sürekli `"admin"` olarak görünmesi hatası giderildi.
+- **Scope Yaşam Döngüsü Koruma**:
+  - `AuthService.cs` ve `ContainerDiscoveryService.cs` içindeki fire-and-forget `Task.Run` çağrıları `await` edilerek DbContext ve DI scope disposal hataları engellendi.
+
+---
+
 ## [1.6.8] - 2026-10-15 — Servisler, Uptime ve Olay Geçmişinde Düğüm İzolasyonu ve Kenar Çubuğu Hiyerarşisi Ayrımı
 
 ### Düzeltilenler (Fixed)

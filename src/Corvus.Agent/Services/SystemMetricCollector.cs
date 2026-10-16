@@ -15,6 +15,9 @@ public class SystemMetricCollector : ISystemMetricCollector
     private long _lastNetTx = 0;
     private DateTime _lastNetTime = DateTime.UtcNow;
 
+    private long _prevTotalCpu = 0;
+    private long _prevIdleCpu = 0;
+
     public AgentTelemetryPayload CollectMetrics()
     {
         float cpu = GetCpuUsagePercent();
@@ -39,9 +42,9 @@ public class SystemMetricCollector : ISystemMetricCollector
         );
     }
 
-    private static float GetCpuUsagePercent()
+    private float GetCpuUsagePercent()
     {
-        // Linux /proc/stat CPU hesaplama veya Process CPU fallback
+        // Linux /proc/stat CPU hesaplama (Delta tabanlı)
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/proc/stat"))
         {
             try
@@ -57,11 +60,24 @@ public class SystemMetricCollector : ISystemMetricCollector
                         long.TryParse(parts[3], out long system) &&
                         long.TryParse(parts[4], out long idle))
                     {
-                        long total = user + nice + system + idle;
-                        long busy = user + nice + system;
-                        if (total > 0)
+                        long iowait = parts.Length > 5 && long.TryParse(parts[5], out long iw) ? iw : 0;
+                        long irq = parts.Length > 6 && long.TryParse(parts[6], out long iq) ? iq : 0;
+                        long softirq = parts.Length > 7 && long.TryParse(parts[7], out long siq) ? siq : 0;
+                        long steal = parts.Length > 8 && long.TryParse(parts[8], out long st) ? st : 0;
+
+                        long total = user + nice + system + idle + iowait + irq + softirq + steal;
+                        long idleAll = idle + iowait;
+
+                        long deltaTotal = total - _prevTotalCpu;
+                        long deltaIdle = idleAll - _prevIdleCpu;
+
+                        _prevTotalCpu = total;
+                        _prevIdleCpu = idleAll;
+
+                        if (deltaTotal > 0 && deltaIdle >= 0 && deltaTotal >= deltaIdle)
                         {
-                            return (float)Math.Round((busy * 100.0) / total, 1);
+                            double busyDelta = deltaTotal - deltaIdle;
+                            return (float)Math.Round((busyDelta * 100.0) / deltaTotal, 1);
                         }
                     }
                 }
@@ -69,7 +85,7 @@ public class SystemMetricCollector : ISystemMetricCollector
             catch { }
         }
 
-        return 5.0f; // Minimal fallback
+        return 0.0f;
     }
 
     private static (long Used, long Total) GetRamUsageBytes()
@@ -107,9 +123,9 @@ public class SystemMetricCollector : ISystemMetricCollector
 
         // Cross-platform GC memory fallback
         long mem = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
-        long totalRam = mem > 0 ? mem : 4L * 1024 * 1024 * 1024;
+        long totalRam = mem > 0 ? mem : 0;
         long usedRam = GC.GetTotalMemory(false);
-        return (usedRam > 0 ? usedRam : 512L * 1024 * 1024, totalRam);
+        return (usedRam > 0 ? usedRam : 0, totalRam);
     }
 
     private static long ParseMemInfoKb(string line)
@@ -164,7 +180,7 @@ public class SystemMetricCollector : ISystemMetricCollector
         }
         catch { }
 
-        return (10L * 1024 * 1024 * 1024, 100L * 1024 * 1024 * 1024);
+        return (0, 0);
     }
 
     private (long RxSec, long TxSec) GetNetworkRateBytesPerSec()
@@ -233,6 +249,6 @@ public class SystemMetricCollector : ISystemMetricCollector
             catch { }
         }
 
-        return (0.1f, 0.1f, 0.1f);
+        return (0.0f, 0.0f, 0.0f);
     }
 }

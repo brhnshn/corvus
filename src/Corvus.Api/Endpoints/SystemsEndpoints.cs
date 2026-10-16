@@ -548,7 +548,7 @@ public static class SystemsEndpoints
             return result.Success
                 ? Results.Ok(result)
                 : Results.Json(result, CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 400);
-        });
+        }).RequireAdmin();
 
         group.MapPost("/{id}/systemd/{unitName}/action", async (
             string id,
@@ -581,7 +581,7 @@ public static class SystemsEndpoints
             return rpcRes.Success
                 ? Results.Ok(new GenericApiResponse(true, rpcRes.Message ?? "Eylem tamamlandı."))
                 : Results.Json(new GenericApiResponse(false, rpcRes.Message ?? "Eylem başarısız."), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 400);
-        });
+        }).RequireAdmin();
 
         group.MapGet("/systemd/{unitName}/logs", async (
             string unitName,

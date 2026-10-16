@@ -32,7 +32,7 @@ public class NtfyChannelSender : INtfyChannelSender
 
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient("NotificationClient");
             client.Timeout = TimeSpan.FromSeconds(8);
 
             using var req = new HttpRequestMessage(HttpMethod.Post, ntfyUrl);

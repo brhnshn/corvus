@@ -130,11 +130,46 @@ public class AuthServiceTests
     {
         var authService = CreateService();
         await authService.RegisterAsync("sameuser", "pass123");
+        await authService.SetRegistrationEnabledAsync(true);
 
         var (success, error) = await authService.RegisterAsync("sameuser", "otherpass");
 
         Assert.False(success);
         Assert.Equal("Bu kullanıcı adı zaten kayıtlı.", error);
+    }
+
+    [Fact]
+    public async Task First_User_Becomes_Admin_And_Subsequent_User_Becomes_Viewer()
+    {
+        var userRepo = new FakeUserRepository();
+        var authService = CreateService(userRepo: userRepo);
+
+        // First user registers
+        var (s1, e1) = await authService.RegisterAsync("firstadmin", "pass123");
+        Assert.True(s1);
+        Assert.Null(e1);
+
+        var adminUser = await userRepo.GetByUsernameAsync("firstadmin");
+        Assert.NotNull(adminUser);
+        Assert.Equal("admin", adminUser.Role);
+
+        // Registration is automatically disabled
+        Assert.False(await authService.IsRegistrationEnabledAsync());
+
+        // Second user cannot register while disabled
+        var (s2, e2) = await authService.RegisterAsync("seconduser", "pass123");
+        Assert.False(s2);
+        Assert.Equal("Yeni kullanıcı kayıtları kapatılmıştır.", e2);
+
+        // When admin re-enables registration
+        await authService.SetRegistrationEnabledAsync(true);
+        var (s3, e3) = await authService.RegisterAsync("seconduser", "pass123");
+        Assert.True(s3);
+        Assert.Null(e3);
+
+        var viewerUser = await userRepo.GetByUsernameAsync("seconduser");
+        Assert.NotNull(viewerUser);
+        Assert.Equal("viewer", viewerUser.Role);
     }
 
     [Fact]

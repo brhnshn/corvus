@@ -18,9 +18,20 @@ public interface ISystemTunnelManager
     WebSocket? GetActiveSocket(string systemId);
 }
 
+public sealed class TunnelConnection
+{
+    public WebSocket Socket { get; }
+    public SemaphoreSlim SendLock { get; } = new(1, 1);
+
+    public TunnelConnection(WebSocket socket)
+    {
+        Socket = socket;
+    }
+}
+
 public class SystemTunnelManager : ISystemTunnelManager
 {
-    private readonly ConcurrentDictionary<string, WebSocket> _sockets = new();
+    private readonly ConcurrentDictionary<string, TunnelConnection> _connections = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<DockerRpcResponse>> _pendingRpc = new();
     private readonly ILogger<SystemTunnelManager> _logger;
 
@@ -31,13 +42,14 @@ public class SystemTunnelManager : ISystemTunnelManager
 
     public void RegisterTunnel(string systemId, WebSocket socket)
     {
-        _sockets.AddOrUpdate(systemId, socket, (_, old) =>
+        var newConn = new TunnelConnection(socket);
+        _connections.AddOrUpdate(systemId, newConn, (_, old) =>
         {
-            if (old != socket && old.State == WebSocketState.Open)
+            if (old.Socket != socket && old.Socket.State == WebSocketState.Open)
             {
-                try { old.Abort(); } catch { }
+                try { old.Socket.Abort(); } catch { }
             }
-            return socket;
+            return newConn;
         });
         _logger.LogInformation("System tunnel registered for system: {SystemId}", 
             Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(systemId));
@@ -45,9 +57,9 @@ public class SystemTunnelManager : ISystemTunnelManager
 
     public void UnregisterTunnel(string systemId, WebSocket socket)
     {
-        if (_sockets.TryGetValue(systemId, out var current) && current == socket)
+        if (_connections.TryGetValue(systemId, out var current) && current.Socket == socket)
         {
-            _sockets.TryRemove(systemId, out _);
+            _connections.TryRemove(systemId, out _);
             _logger.LogInformation("System tunnel unregistered for system: {SystemId}", 
                 Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(systemId));
         }
@@ -55,21 +67,21 @@ public class SystemTunnelManager : ISystemTunnelManager
 
     public bool IsConnected(string systemId)
     {
-        return _sockets.TryGetValue(systemId, out var socket) && socket.State == WebSocketState.Open;
+        return _connections.TryGetValue(systemId, out var conn) && conn.Socket.State == WebSocketState.Open;
     }
 
     public WebSocket? GetActiveSocket(string systemId)
     {
-        if (_sockets.TryGetValue(systemId, out var socket) && socket.State == WebSocketState.Open)
+        if (_connections.TryGetValue(systemId, out var conn) && conn.Socket.State == WebSocketState.Open)
         {
-            return socket;
+            return conn.Socket;
         }
         return null;
     }
 
     public async Task<DockerRpcResponse> SendDockerRequestAsync(string systemId, DockerRpcRequest request, TimeSpan? timeout = null)
     {
-        if (!IsConnected(systemId) || !_sockets.TryGetValue(systemId, out var socket))
+        if (!IsConnected(systemId) || !_connections.TryGetValue(systemId, out var conn))
         {
             return new DockerRpcResponse(Success: false, Message: "System is offline or tunnel is closed.");
         }
@@ -91,7 +103,23 @@ public class SystemTunnelManager : ISystemTunnelManager
 
         try
         {
-            await socket.SendAsync(new ArraySegment<byte>(jsonBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+            await conn.SendLock.WaitAsync(CancellationToken.None);
+            try
+            {
+                if (conn.Socket.State == WebSocketState.Open)
+                {
+                    await conn.Socket.SendAsync(new ArraySegment<byte>(jsonBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+                else
+                {
+                    _pendingRpc.TryRemove(correlationId, out _);
+                    return new DockerRpcResponse(Success: false, Message: "Tunnel socket is not open.");
+                }
+            }
+            finally
+            {
+                conn.SendLock.Release();
+            }
         }
         catch (Exception ex)
         {
@@ -123,9 +151,20 @@ public class SystemTunnelManager : ISystemTunnelManager
 
     public async Task SendRawBinaryAsync(string systemId, ReadOnlyMemory<byte> binaryPayload)
     {
-        if (_sockets.TryGetValue(systemId, out var socket) && socket.State == WebSocketState.Open)
+        if (_connections.TryGetValue(systemId, out var conn) && conn.Socket.State == WebSocketState.Open)
         {
-            await socket.SendAsync(binaryPayload, WebSocketMessageType.Binary, true, CancellationToken.None);
+            await conn.SendLock.WaitAsync(CancellationToken.None);
+            try
+            {
+                if (conn.Socket.State == WebSocketState.Open)
+                {
+                    await conn.Socket.SendAsync(binaryPayload, WebSocketMessageType.Binary, true, CancellationToken.None);
+                }
+            }
+            finally
+            {
+                conn.SendLock.Release();
+            }
         }
     }
 }

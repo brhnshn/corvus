@@ -3,6 +3,60 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.9] - 2026-10-16 — Security Hardening, Real-time Telemetry, Concurrency Locks & Services Native AOT Resolution
+
+### Security
+- **Open Registration & Privilege Escalation Mitigation (CWE-269 / CWE-284)**:
+  - `AuthService.cs` & `AuthEndpoints.cs`: Initial setup creates the first user as an `admin` and immediately closes open registration (`registration_enabled = false`). When users exist and registration is disabled, registration attempts return `403 Forbidden`. When registration is explicitly re-enabled by an admin, newly registered accounts receive the least-privilege `viewer` role by default. Added IP rate limiting on `/api/auth/register`.
+- **System Secret & Deploy Token Masking (CWE-200)**:
+  - `SettingsEndpoints.cs`: Locked `GET /api/settings` with `.RequireAdmin()`. Masked sensitive secrets (`smtp_pass`, `notification_telegram_bot_token`, Discord/Slack webhook URLs, and `deploy_webhook_token`) as `******`. Prevented overwriting actual stored values with mask placeholders on `PUT`.
+  - Added a dedicated `/api/settings/public` (.AllowViewer) endpoint for non-sensitive frontend preferences (`system_language`, `theme`, `refresh_interval`).
+- **SSRF & DNS Rebinding Protection (CWE-918)**:
+  - `SsrfGuard.cs`: Introduced centralized IP and host validator blocking IPv4 link-local (`169.254.0.0/16`), Cloud Metadata (`169.254.169.254`, `metadata.google.internal`), IPv6 link-local (`fe80::/10`), and `0.0.0.0/8`. Enforced DNS resolution checks to foil `nip.io` / `sslip.io` DNS rebinding attempts.
+  - `NotificationClient` & `NotificationSecurity.cs`: Configured notification HTTP handlers with `AllowAutoRedirect = false` to prevent 302 redirects into internal infrastructure. Secured Uptime test connection endpoints with `SsrfGuard`.
+- **Agent Path Traversal & Docker Socket CRLF Defense (CWE-22 / CWE-93)**:
+  - `AgentDockerClient.cs`: Enforced strict regex constraints on `projectName` and `containerId`. Verified stack working paths stay anchored within the base `stacks/` directory via `Path.GetFullPath`. Guarded Docker Unix domain socket HTTP calls against CRLF injection and URL-encoded container identifiers via `Uri.EscapeDataString`.
+- **RBAC Role Sıkılaştırması (CWE-862)**:
+  - `ComposeEndpoints.cs`: Required admin permissions (`.RequireAdmin()`) for reading, saving, and deploying Docker Compose configurations.
+  - `ContainersEndpoints.cs`: Locked container recreate (`/recreate`) actions to admin users. Masked container environment variables (`KEY=******`) in `/inspect` responses for `viewer` accounts.
+  - `PushEndpoints.cs`: Enforced admin authorization for push monitor management. Rejected unrecognized push tokens at `/api/push/{token}` with immediate `404 Not Found` without touching the database to stop disk DoS attacks.
+  - Registered strongly-typed `PushReceivedEventPayload` and `ContainerTagsUpdatedEventPayload` in `CorvusJsonSerializerContext` for Native AOT safe JSON serialization without string interpolation vulnerabilities.
+
+### Fixed
+- **Services Endpoint HTTP 500 Resolution (Native AOT Safe Data Reader)**:
+  - `ServicesRepository.cs`: Resolved `PlatformNotSupportedException: Dynamic code generation is not supported on this platform` when querying `/api/services`. Dynamic SQL string interpolation prevented Dapper.AOT source generator from intercepting queries, causing a runtime fallback to `Reflection.Emit` which is disallowed in Native AOT. Migrated `GetAllAsync`, `GetPublicServicesAsync`, `GetByIdAsync`, and `GetAllContainerTagsAsync` to direct, zero-allocation `DbDataReader` mapping (`MapReaderToService`), ensuring 100% Native AOT compatibility and eliminating runtime reflection errors.
+- **Dependency Injection Lifetime Validation**:
+  - `Program.cs`: Fixed startup failure `Cannot consume scoped service 'IUserRepository' from singleton 'IAuthService'`. Aligned service lifetimes by registering `IAuthService` and `CorvusAuthFilter` as `Scoped` to match the scoped lifetime of database repositories.
+- **NotificationService Constructor Disambiguation**:
+  - `NotificationService.cs` & `Program.cs`: Fixed DI activation error `Unable to activate type 'NotificationService'. The following constructors are ambiguous`. Marked the primary production constructor with `[ActivatorUtilitiesConstructor]` and provided an explicit factory resolver in DI registration.
+- **Frontend Modular Decomposition & Clean Architecture (`GEMINI.md`)**:
+  - `App.tsx`: Extracted `lazyWithRetry` to `utils/lazyWithRetry.ts` and `ChunkErrorBoundary` to `components/common/ChunkErrorBoundary.tsx`, significantly reducing top-level complexity.
+  - `SystemdUnitsTab.tsx`: Extracted monolithic inline dialogs into standalone components (`SystemdLogsModal.tsx` and `SystemdConfirmModal.tsx`).
+  - `EnableUptimeModal.tsx`: Extracted inline URL port extraction logic to `utils/url.ts`.
+  - `ContainerRow.tsx`: Sanitized third-party software references, replacing with standard engineering nomenclature (`Inline Quick Actions`).
+- **Real Data Discipline & Null-Safety Guardrails (`GEMINI.md`)**:
+  - `ContainerResourcesTab.tsx`: Replaced misleading `0.0%` / `0 B (0%)` fallback representations with clean dashes (`-`) when telemetry is pending or container is offline.
+  - Standardized hardcoded hex color codes to semantic ObsidianUI tokens (`var(--text-primary)`, `var(--text-secondary)`, `var(--border-subtle)`).
+- **Dual-Language Internationalization (i18n Synchronization)**:
+  - Added 20+ strongly-typed translation keys across `tr.ts` and `en.ts`, migrating all hardcoded UI strings in `ContainerResourcesTab`, `SystemPruneModal`, `ComposeConfigModal`, `LogsTab`, and `ContainerDetail` to `t(...)` hooks.
+- **Agent Telemetry & Real-Time CPU Delta Math**:
+  - `SystemMetricCollector.cs` (Agent): Replaced inaccurate boot cumulative average with delta calculation (`deltaBusy / deltaTotal`) between measurement intervals (incorporating `iowait`, `irq`, `softirq`, `steal`).
+  - Purged all fake fallback figures (`5.0f`, `4GB RAM`, `100GB Disk`, `0.1 loadavg`), returning standard `0.0f` and `0` when unsupported.
+  - `SystemMetricsCollector.cs` (API): Replaced static `0.1f` load average with `/proc/loadavg` and hooked real-time `/proc/net/dev` for accurate Rx/Tx bytes/sec rates.
+- **WebSocket Concurrency & Socket Contention Locks**:
+  - `AgentTunnelClient.cs` & `SystemTunnelManager.cs`: Guarded `WebSocket.SendAsync` calls behind `SemaphoreSlim(1, 1)` locks, resolving socket contention race conditions between periodic telemetry pings and incoming RPC command dispatches.
+- **Docker HTTP Chunked Decoder & Multiplexed Stream Demuxer**:
+  - `AgentDockerClient.cs`: Added robust `Transfer-Encoding: chunked` framing parser and enforced `Connection: close`. Implemented 8-byte multiplexed stream header demuxer (`[stream_type, size...]`) to clean corrupted binary headers from container logs in the UI.
+- **Multi-Node Service & Container Isolation**:
+  - `ServicesRepository.cs`: Added `system_id` parameter and isolation checks to `SyncDockerBatchAsync` queries to prevent cross-node service overwrites.
+  - `SystemRepository.cs`: Evicted deleted containers from `system_containers_cache` in `UpsertContainersCacheAsync` (`DELETE ... WHERE container_id NOT IN @ActiveIds`).
+- **Audit Log Actor Attribution**:
+  - `CorvusAuthFilter.cs` & `ContainersEndpoints.cs`: Injected authenticated `ClaimsPrincipal` on `HttpContext.User`, resolving the issue where container actions were consistently attributed to `"admin"` in logs.
+- **Async Scope Lifetime Safeguard**:
+  - `AuthService.cs` & `ContainerDiscoveryService.cs`: Properly awaited background database tasks to prevent DbContext and DI scope disposal races.
+
+---
+
 ## [1.6.8] - 2026-10-15 — Fleet-Wide Services, Uptime & Activity Log Node Isolation & Sidebar Hierarchy Refactor
 
 ### Fixed

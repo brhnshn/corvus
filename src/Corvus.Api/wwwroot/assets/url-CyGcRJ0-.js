@@ -1,1 +1,0 @@
-var e=e=>{if(!e)return``;let t=e.trim();/^https?:\/\//i.test(t)||(t=`http://${t}`);try{let e=new URL(t);if((e.hostname===`localhost`||e.hostname===`127.0.0.1`)&&window.location.hostname!==`localhost`&&window.location.hostname!==`127.0.0.1`)return e.hostname=window.location.hostname,e.toString()}catch{}return t};export{e as t};

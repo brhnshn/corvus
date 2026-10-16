@@ -452,10 +452,13 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
             <>
               {/* Canlı Hesaplanan Geri Kazanım Özeti */}
               <div className="text-xs">
-                <span className="text-[#9ba0b5]">Seçilen: </span>
-                <span className="font-semibold text-[#eceef6]">{selectedSummary.count} öge</span>
+                <span className="text-[var(--text-secondary)]">
+                  {t('containers.selectedCount', { count: selectedSummary.count })}
+                </span>
                 <span className="mx-2 text-white/20">|</span>
-                <span className="text-[#9ba0b5]">Kazanılacak: </span>
+                <span className="text-[var(--text-secondary)]">
+                  {t('containers.reclaimableAmount', { amount: '' })}
+                </span>
                 <span className="font-mono font-bold text-emerald-400">
                   {formatBytes(selectedSummary.bytes)}
                 </span>
@@ -466,9 +469,9 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   type="button"
                   onClick={onClose}
                   disabled={isExecuting}
-                  className="px-4 py-2 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-[var(--border-hairline)] bg-white/[0.04] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  {t('common.cancel') || 'Vazgeç'}
+                  {t('common.cancel')}
                 </button>
 
                 <button
@@ -480,13 +483,13 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   {isExecuting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{t('containers.pruningInProgress') || 'Temizleniyor...'}</span>
+                      <span>{t('containers.pruningInProgress')}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
                       <span>
-                        Seçilenleri Temizle ({selectedSummary.count})
+                        {t('containers.pruneSelectedBtn', { count: selectedSummary.count })}
                       </span>
                     </>
                   )}

@@ -144,6 +144,16 @@ public record AuthLoginRequest(
     string Password
 );
 
+public record PushReceivedEventPayload(
+    [property: JsonPropertyName("token")] string Token,
+    [property: JsonPropertyName("status")] string Status
+);
+
+public record ContainerTagsUpdatedEventPayload(
+    [property: JsonPropertyName("containerId")] string ContainerId,
+    [property: JsonPropertyName("tags")] List<string> Tags
+);
+
 public record AuthRegisterRequest(
     string Username,
     string Password
@@ -265,6 +275,8 @@ public record NotificationResult(
 [JsonSerializable(typeof(PublicServiceDto))]
 [JsonSerializable(typeof(PublicStatusPageDto))]
 [JsonSerializable(typeof(ServerEventDto))]
+[JsonSerializable(typeof(PushReceivedEventPayload))]
+[JsonSerializable(typeof(ContainerTagsUpdatedEventPayload))]
 [JsonSerializable(typeof(VersionInfoDto))]
 [JsonSerializable(typeof(GitHubReleaseDto))]
 [JsonSerializable(typeof(DbStatsResponse))]

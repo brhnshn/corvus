@@ -5,6 +5,7 @@ import type { Service } from '../../../types';
 import { useI18n } from '../../../i18n';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
+import { extractPort } from '../../../utils/url';
 
 interface EnableUptimeModalProps {
   isOpen: boolean;
@@ -52,15 +53,6 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
       setPort(service.port || (service.url ? extractPort(service.url) : ''));
     }
   }, [service]);
-
-  function extractPort(urlStr: string): number | '' {
-    try {
-      const parsed = new URL(urlStr);
-      return parsed.port ? parseInt(parsed.port, 10) : '';
-    } catch {
-      return '';
-    }
-  }
 
   if (!isOpen || !service) return null;
 
