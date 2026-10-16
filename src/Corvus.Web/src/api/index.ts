@@ -9,6 +9,7 @@ import { alertsApi } from './alerts';
 import { activityLogsApi } from './activityLogs';
 import { systemsApi } from './systems';
 import { systemdApi } from './systemd';
+import { deploymentsApi } from './deployments';
 
 export const api = {
   ...authApi,
@@ -21,7 +22,8 @@ export const api = {
   ...alertsApi,
   ...activityLogsApi,
   ...systemsApi,
-  ...systemdApi
+  ...systemdApi,
+  ...deploymentsApi
 };
 
 export { fetchJson, fetchCachedJson, invalidateCache } from './http';
@@ -36,4 +38,5 @@ export { alertsApi } from './alerts';
 export { activityLogsApi } from './activityLogs';
 export { systemsApi } from './systems';
 export { systemdApi } from './systemd';
+export { deploymentsApi } from './deployments';
 export * from '../types';

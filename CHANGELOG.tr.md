@@ -3,6 +3,42 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.10] - 2026-10-16 — Native AOT Dağıtım Merkezi, Sıfır Kesintili Güvenli Rollback & Senkron CI/CD Webhook
+
+### Eklenenler (Added)
+- **Native AOT Konteyner Dağıtım Merkezi (Self-Hosted PaaS Motoru)**:
+  - `019_deployments_sqlite.sql` & `DeploymentRepository.cs`: Kalıcı `deployments` SQLite şeması ve hedef, tetikleyici türü (`manual_ui`, `webhook_github`, `scheduled`), durum (`pending`, `in_progress`, `success`, `failed`, `rolled_back`), aşamalar, imaj digest farkları, milisaniye cinsinden süre ve ANSI log çıktılarını indeksleyen Dapper.AOT repository katmanı eklendi.
+  - `DeploymentEngine.cs`: Çift hatlı tamponlama (dual-path buffering) mimarisine sahip yüksek performanslı arka plan dağıtım motoru. Canlı Docker pull katman ilerlemesini RAM üzerinden (<1ms) doğrudan `IEventBroadcaster` ile SSE abonelerine akıtırken, SQLite WAL kilitlenmelerini (`SQLITE_BUSY`) önlemek için veritabanına yalnızca aşama geçişlerinde ve bitişte toplu (batch) yazım yapar.
+  - `DeploymentLockManager.cs`: Konteyner düzeyinde ince taneli asenkron kilit (`ConcurrentDictionary<string, SemaphoreSlim>`). Eşzamanlı mükerrer dağıtım tetiklemelerini fail-fast `409 Conflict` ile reddeder; yarış durumlarını ve mükerrer konteyner çakışmalarını tamamen durdurur.
+  - `DeploymentsEndpoints.cs`: Minimal API rotaları eklendi: `/api/containers/{id}/deploy` (202 Accepted tetikleyici), `/api/deployments` (filtrelenebilir geçmiş listesi), `/api/deployments/{id}` (yürütme detayları ve birikmiş loglar) ve `/api/deployments/{id}/stream` (gerçek zamanlı SSE akışı).
+- **Senkron CI/CD Webhook & Global Pipeline Durumu (`&wait=true`)**:
+  - `DeployWebhookEndpoints.cs`: `POST /api/hooks/deploy/{token}` uç noktası `&wait=true` parametresiyle genişletildi. Dağıtım sağlık kontrollerini geçene kadar (HTTP 200 dönerek) veya başarısız/rollback olana kadar (HTTP 500 dönerek) HTTP bağlantısını açık tutar; GitHub Actions / GitLab CI hatlarının harici araçlara gerek kalmadan gerçek başarı/başarısızlık durumunu yansıtmasını sağlar.
+  - Aktif oturumlara global WebSocket üzerinden `deployment_started` bildirimi yayınlar; doğrudan canlı modalı açan kayan bildirimler sunar.
+- **Vercel Seviyesinde Modüler Frontend Dağıtım Merkezi**:
+  - `DeploymentStepper.tsx`: Gerçek zamanlı aşama sayaçlarına sahip 5 aşamalı görsel ilerleme çubuğu (`Kuyrukta` ➔ `İmaj Çekiliyor` ➔ `Yeniden Oluşturuluyor` ➔ `Sağlık Kontrolü` ➔ `Canlı` / `Geri Alındı`).
+  - `DeploymentTerminalLog.tsx`: Regex log araması, otomatik kaydırma kilidi, tek tıkla panoya kopyalama ve temizleme özellikli derin koyu temalı ANSI terminal konsolu.
+  - `DeploymentProgressModal.tsx`: ESC dinleyicisi, focus-trap ve arka plana küçültme hapı içeren erişilebilir diyalog penceresi. `localStorage` sayesinde sayfa yenilense (F5) dahi aktif dağıtımı sıfır log kaybıyla anında geri yükler.
+  - `DeploymentsTable.tsx` & `ContainerDeploymentsTab.tsx`: Durum rozetleri, tetikleyici kaynakları, süre, eski/yeni imaj özetleri ve log çekmecesi inceleme özellikli denetim geçmişi tablosu.
+  - `DeployWebhookWizardModal.tsx`: Güvenli dağıtım belirteci üreten ve hazır GitHub Actions `.github/workflows/deploy.yml` YAML kod şablonu sunan sıfır sürtünmeli entegrasyon sihirbazı.
+  - `ansi.ts`: Sıfır bağımlılıklı, güvenli HTML span dönüştürücü ve ANSI temizleme motoru.
+
+### Güvenlik (Security)
+- **Fail-Fast Pre-Pull Geçiş Kapısı (%100 Uptime Güvencesi)**:
+  - `DockerService.cs` & `DockerImageClient.cs`: Uzak imaj çekimlerinde zorunlu ön doğrulama uygulandı. Uzak registry 401 Unauthorized, 404 Not Found dönerse veya zaman aşımına uğrarsa çalışan konteyner **asla durdurulmaz ve adı değiştirilmez**; üretim kesintisi sıfıra indirilir.
+- **Deterministik Nano-Benzersiz Rollback**:
+  - Yedek konteyner adlandırması `${originalName}_corvus_backup_${timestamp}_${guid}` formatına dönüştürülerek hızlı ardışık dağıtımlardaki isim çakışması açıkları engellendi.
+  - Sıralı atomik rollback güvencesi: Başarısız konteyneri zorla sonlandır ve sil, ismin serbest kaldığını teyit et, yedeği orijinal adına geri taşı ve başlat.
+- **Native AOT Derleme Zamanı Event Serileştirmesi**:
+  - `CorvusJsonSerializerContext.cs`: Strongly-typed dağıtım event modelleri (`DeploymentTriggerResponse`, `DeploymentStepChangedEventPayload`, `DeploymentLogChunkEventPayload`, `DeploymentCompletedEventPayload`, `DeploymentStartedGlobalPayload`, `DeploymentErrorResponse`) derleme zamanı kaynak üreticisine kaydedildi; .NET 9 Native AOT çalışma zamanı reflection çökmeleri önlendi.
+
+### Düzeltilenler (Fixed)
+- **Konteyner Satırı Hızlı Eylemler Entegrasyonu**:
+  - `ContainerRow.tsx` & `ContainerActionSheet.tsx`: "Dağıt" butonu ve GitHub Actions sihirbazı konteyner durumuyla sorunsuz bağlandı; UI düzen kaymaları engellendi.
+- **Çift Dilli i18n Senkronizasyonu**:
+  - `tr.ts` ve `en.ts` dosyalarına sıfır hardcoded metin kuralıyla `deployments` sözlük anahtarları eksiksiz eklendi.
+
+---
+
 ## [1.6.9] - 2026-10-16 — Güvenlik Sıkılaştırması, Telemetri Doğruluğu, Eşzamanlılık Kilitleri ve Servisler AOT Çözümü
 
 ### Güvenlik (Security)

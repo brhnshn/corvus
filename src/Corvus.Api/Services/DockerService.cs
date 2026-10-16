@@ -808,7 +808,7 @@ public class DockerService : IDockerService
         string originalName = (inspect.Name ?? "").TrimStart('/');
         bool wasRunning = inspect.State?.Running == true;
 
-        // 1. Yeni imajı çek
+        // 1. Yeni imajı çek (Fail-Fast Kapısı: İmaj çekilemezse çalışan konteynere ASLA dokunulmayacak)
         if (pullLatest)
         {
             _logger.LogInformation("Konteyner yeniden oluşturma öncesi güncel imaj çekiliyor: {Image}", 
@@ -816,8 +816,9 @@ public class DockerService : IDockerService
             bool pulled = await _client.PullImageAsync(imageName, cancellationToken);
             if (!pulled)
             {
-                _logger.LogWarning("Güncel imaj çekilemedi, mevcut yerel imajla devam ediliyor: {Image}", 
+                _logger.LogError("Pre-pull fail-fast: Güncel imaj çekilemediği için çalışan konteynere dokunulmadı: {Image}", 
                     Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(imageName));
+                return new DockerActionResult(false, $"Pre-pull fail-fast: '{imageName}' imajı çekilemedi. Konteyner kesintisiz çalışmaya devam ediyor.", 502);
             }
         }
 
@@ -831,8 +832,8 @@ public class DockerService : IDockerService
             }
         }
 
-        // 3. Eski konteyneri geçici bir isme yeniden adlandır (rollback emniyeti)
-        string backupName = $"{originalName}_old_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+        // 3. Eski konteyneri geçici bir isme yeniden adlandır (Nano-benzersiz rollback emniyeti)
+        string backupName = $"{originalName}_corvus_backup_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid().ToString("N")[..6]}";
         var renameRes = await _client.RenameContainerAsync(containerId, backupName, cancellationToken);
         if (!renameRes.Success)
         {

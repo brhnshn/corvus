@@ -13,6 +13,7 @@ export interface ContainerListProps {
   onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
   onOpenImageUpdate?: (container: DockerContainer) => void;
+  onDeploy?: (container: DockerContainer) => void;
   updatesMap?: Record<string, boolean>;
 }
 
@@ -26,6 +27,7 @@ export const ContainerList: React.FC<ContainerListProps> = ({
   onSelectTag,
   isAdmin = true,
   onOpenImageUpdate,
+  onDeploy,
   updatesMap = {},
 }) => {
   return (
@@ -53,6 +55,7 @@ export const ContainerList: React.FC<ContainerListProps> = ({
             onSelectTag={onSelectTag}
             isAdmin={isAdmin}
             onOpenImageUpdate={onOpenImageUpdate}
+            onDeploy={onDeploy}
             hasUpdate={updatesMap[container.Id]}
           />
         ))}

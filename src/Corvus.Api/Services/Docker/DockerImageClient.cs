@@ -33,14 +33,75 @@ public class DockerImageClient
 
     public async Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default)
     {
+        return await PullImageProgressAsync(imageName, null, cancellationToken);
+    }
+
+    public async Task<bool> PullImageProgressAsync(string imageName, Func<string, Task>? onLogChunk = null, CancellationToken cancellationToken = default)
+    {
         try
         {
-            using var response = await _transport.HttpClient.PostAsync($"/images/create?fromImage={Uri.EscapeDataString(imageName)}", null, cancellationToken);
-            return response.IsSuccessStatusCode;
+            var request = new HttpRequestMessage(HttpMethod.Post, $"/images/create?fromImage={Uri.EscapeDataString(imageName)}");
+            using var response = await _transport.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Docker imaj çekme (pull) HTTP başarısız: {StatusCode} for {Image}", response.StatusCode, imageName);
+                return false;
+            }
+
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var reader = new StreamReader(stream);
+
+            string? line;
+            while (!cancellationToken.IsCancellationRequested && (line = await reader.ReadLineAsync(cancellationToken)) != null)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                string formattedLine = line;
+                try
+                {
+                    using var doc = JsonDocument.Parse(line);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("error", out var errProp))
+                    {
+                        var errMsg = errProp.GetString();
+                        if (onLogChunk != null) await onLogChunk($"\u001b[31mError: {errMsg}\u001b[0m\n");
+                        _logger.LogError("Docker pull hatası döndü: {Error}", errMsg);
+                        return false;
+                    }
+
+                    string status = root.TryGetProperty("status", out var sProp) ? sProp.GetString() ?? "" : "";
+                    string id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
+                    string progress = root.TryGetProperty("progress", out var pProp) ? pProp.GetString() ?? "" : "";
+
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        formattedLine = $"{id}: {status} {progress}".TrimEnd();
+                    }
+                    else
+                    {
+                        formattedLine = status;
+                    }
+                }
+                catch
+                {
+                    // JSON ayrıştırılamazsa raw satırı ilet
+                }
+
+                if (onLogChunk != null && !string.IsNullOrWhiteSpace(formattedLine))
+                {
+                    await onLogChunk(formattedLine + "\n");
+                }
+            }
+
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Docker imaj çekme (pull) başarısız: {Image}", imageName);
+            if (onLogChunk != null)
+            {
+                try { await onLogChunk($"\u001b[31mPull error: {ex.Message}\u001b[0m\n"); } catch { }
+            }
             return false;
         }
     }

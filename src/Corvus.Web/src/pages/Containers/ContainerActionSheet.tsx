@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sheet } from '../../components/ui/Sheet';
+import { useI18n } from '../../i18n';
 import { 
   FileText, 
   Terminal, 
@@ -7,7 +8,8 @@ import {
   Play, 
   Square, 
   RotateCw, 
-  Pause 
+  Pause,
+  Rocket
 } from 'lucide-react';
 import type { DockerContainer } from '../../types';
 
@@ -20,6 +22,8 @@ export interface ContainerActionSheetProps {
   onOpenTerminal?: (id: string, name: string) => void;
   onEditTags?: (container: DockerContainer) => void;
   onInspect?: (container: DockerContainer) => void;
+  onDeploy?: (container: DockerContainer) => void;
+  onOpenWebhookWizard?: (container: DockerContainer) => void;
   isAdmin?: boolean;
 }
 
@@ -32,8 +36,11 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
   onOpenTerminal,
   onEditTags,
   onInspect,
+  onDeploy,
+  onOpenWebhookWizard,
   isAdmin = true,
 }) => {
+  const { t } = useI18n();
   if (!container) return null;
 
   const rawName = container.Names?.[0] || container.Id.slice(0, 12);
@@ -81,6 +88,37 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
             <span>Konteyner Detay Sayfası</span>
           </button>
         )}
+
+        {/* Canlı Dağıt (Deploy) */}
+        {isAdmin && onDeploy && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onDeploy(container);
+            }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-semibold text-indigo-200 bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/25 border border-indigo-500/30 transition-colors cursor-pointer text-left mb-1"
+          >
+            <Rocket className="w-[18px] h-[18px] text-indigo-400 shrink-0" />
+            <span>{t('deployments.deployActionSheet')}</span>
+          </button>
+        )}
+
+        {/* CI/CD Webhook Sihirbazı */}
+        {isAdmin && onOpenWebhookWizard && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenWebhookWizard(container);
+            }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#eceef6] hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors cursor-pointer text-left mb-1"
+          >
+            <Rocket className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
+            <span>{t('deployments.webhookWizardActionSheet')}</span>
+          </button>
+        )}
+
         {/* Loglar */}
         <button
           type="button"

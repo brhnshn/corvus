@@ -1,1 +1,0 @@
-function e(e){if(!e||e<=0)return`0 B`;let t=1024,n=[`B`,`KB`,`MB`,`GB`,`TB`],r=Math.floor(Math.log(e)/Math.log(t));return`${parseFloat((e/t**r).toFixed(1))} ${n[r]}`}export{e as t};

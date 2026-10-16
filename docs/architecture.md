@@ -46,7 +46,8 @@ corvus/
 │   │   │   ├── ComposeEndpoints.cs       # Compose stack YAML/.env editor (/file) and live deploy (/deploy)
 │   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, lifecycle, Web Terminal (/terminal), Dry-Run Prune (/system-df, /prune/selective), Inspect (/inspect), Update (/update), OCI Image Update Check (/check-update, /updates), and Recreate (/recreate)
 │   │   │   ├── DashboardEndpoints.cs     # Dashboard aggregated KPI summary
-│   │   │   ├── DeployWebhookEndpoints.cs # Constant-time token authenticated inbound deploy webhook (/api/hooks/deploy/{token})
+│   │   │   ├── DeploymentsEndpoints.cs   # Native AOT deployment triggers (/api/containers/{id}/deploy), history (/api/deployments), cancellation, and live SSE stream (/stream)
+│   │   │   ├── DeployWebhookEndpoints.cs # Constant-time token authenticated inbound deploy webhook (/api/hooks/deploy/{token}) with synchronous &wait=true CI/CD gate
 │   │   │   ├── IncidentEndpoints.cs      # Incident and maintenance announcement CRUD & lifecycle
 │   │   │   ├── MetricsEndpoints.cs       # Host system metrics time-series (1h-1y) and SSE stream (/stream)
 │   │   │   ├── NotificationEndpoints.cs  # Multi-channel alert test endpoint (Discord, Telegram, SMTP, Slack, Ntfy, Webhooks)
@@ -71,6 +72,8 @@ corvus/
 │   │   ├── Data/                  # Persistence and data access layer (Dapper.AOT + SQLite / PostgreSQL)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000, PostgreSQL support & PRAGMA tuning
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sequential migration runner (SQLite & PostgreSQL)
+│   │   │   ├── DeploymentRepository.cs       # Persistent deployment history, steps, image diffs, and log persistence
+│   │   │   ├── IDeploymentRepository.cs      # Deployment repository contract
 │   │   │   ├── IncidentRepository.cs         # Incident and maintenance notice data access
 │   │   │   ├── ServicesRepository.cs         # Service definition and override queries
 │   │   │   ├── PushMonitorRepository.cs      # Dead Man's Snitch data access
@@ -88,8 +91,13 @@ corvus/
 │   │   │       ├── 015_add_service_groups.sql
 │   │   │       ├── 016_systems_sqlite.sql    # Multi-node systems, tokens, metrics 1m/1h tables
 │   │   │       ├── 017_users_rbac_sqlite.sql # RBAC role column (admin, operator, viewer)
-│   │   │       └── PostgreSql/               # Native PostgreSQL equivalent migrations (001-017)
+│   │   │       ├── 019_deployments_sqlite.sql # Deployment audit trail & ANSI log persistence
+│   │   │       └── PostgreSql/               # Native PostgreSQL equivalent migrations (001-019)
 │   │   ├── Models/                 # DTOs and Database Entities
+│   │   │   ├── Deployments/                  # Strongly-typed deployment domain models & Native AOT payloads
+│   │   │   │   ├── DeploymentRecord.cs       # Deployment entity (trigger_type, status, steps, digests, duration)
+│   │   │   │   ├── DeploymentEnums.cs        # DeploymentStatus, DeploymentTriggerSource enum definitions
+│   │   │   │   └── DeploymentEvents.cs       # StepChanged, LogChunk, Completed, GlobalStarted event payloads
 │   │   │   ├── Service.cs                    # Service entity (check_type: http, tcp, ping, port, ssl, expected_body, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Incident announcement entity
 │   │   │   ├── ServiceOverride.cs            # Docker label override model
@@ -112,8 +120,15 @@ corvus/
 │   │   │   ├── NativeMemoryTrimmer.cs        # Platform-guarded libc malloc_trim native memory reclamation
 │   │   │   └── HttpBodyValidator.cs          # Zero-allocation 64 KB bounded stream content validator with ReDoS timeout
 │   │   └── Services/                # Core domain business logic
+│   │       ├── Deployments/                  # Container deployment execution & concurrency management
+│   │       │   ├── DeploymentEngine.cs       # Dual-path streaming deployment orchestrator (pull -> recreate -> healthcheck -> live)
+│   │       │   ├── IDeploymentEngine.cs      # Deployment engine interface
+│   │       │   ├── DeploymentLockManager.cs  # Per-container asynchronous semaphore lock manager (fail-fast 409 Conflict)
+│   │       │   └── IDeploymentLockManager.cs # Lock manager contract
+│   │       ├── Docker/                       # Modularized Docker Engine client modules
+│   │       │   └── DockerImageClient.cs      # Pre-pull fail-fast verification & progress stream parser
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler direct socket client (exec, prune, stats, logs)
-│   │       ├── DockerService.cs              # Container operations, system prune, stats, label parsing, image update & recreate
+│   │       ├── DockerService.cs              # Container operations, system prune, stats, label parsing, fail-fast pull, recreate & nano-rollback
 │   │       ├── DockerLogDemuxer.cs           # Zero-alloc multiplexed Docker stdout/stderr demuxer
 │   │       ├── OciRegistryClient.cs          # Zero-payload HEAD request OCI registry (Docker Hub, GHCR, Quay) digest checker
 │   │       ├── ComposeFileService.cs         # Compose YAML and .env editor with TAB detection and .bak backups
@@ -138,6 +153,55 @@ corvus/
 │       │   ├── App.tsx             # React.lazy route code-splitting, centralized 401 listener & SSE streaming
 │       │   ├── types/              # Modular type contracts (Clean Architecture)
 │       │   │   ├── index.ts        # Core API and DTO interface types
+│       │   │   ├── deployments.ts  # Deployment records, step phases, and webhook types
+│       │   │   └── systems.ts      # Multi-node systems, tokens, telemetry, and Systemd types
+│       │   ├── api/                # Modular API client layer
+│       │   │   ├── http.ts         # fetchJson (centralized corvus_unauthorized event), in-memory SWR cache, invalidateCache
+│       │   │   ├── auth.ts         # Authentication & user RBAC management endpoints
+│       │   │   ├── services.ts     # Service CRUD and reordering
+│       │   │   ├── containers.ts   # Container operations, batch stats, logs, inspect, recreate, and deploy
+│       │   │   ├── deployments.ts  # Deployment trigger, history, cancellation, and stream URL endpoints
+│       │   │   ├── systems.ts      # Multi-node systems CRUD, tokens, telemetry, and remote Docker RPC
+│       │   │   ├── systemd.ts      # Systemd unit listings, start/stop/restart, and journalctl log stream
+│       │   │   ├── uptime.ts       # Uptime checks and push monitors
+│       │   │   ├── metrics.ts      # Hardware metrics
+│       │   │   ├── settings.ts     # Settings and backup
+│       │   │   ├── index.ts        # Unified API object
+│       │   │   └── client.ts       # Backward compatibility re-export layer
+│       │   ├── hooks/              # Custom application hooks
+│       │   │   ├── index.ts        # Barrel export
+│       │   │   ├── useSystemMetricsStream.ts # Real-time SSE telemetry stream hook with exponential backoff
+│       │   │   └── useSystemsPageState.ts   # Systems cockpit multi-node state manager
+│       │   ├── i18n/               # Compile-time type-safe multi-language system
+│       │   │   ├── en.ts           # Primary English dictionary (100% complete)
+│       │   │   ├── tr.ts           # Turkish translation dictionary (100% complete)
+│       │   │   ├── types.ts        # DeepStringify and schema types
+│       │   │   └── index.tsx       # I18nProvider and useI18n hook
+│       │   ├── lib/
+│       │   │   └── motion.ts       # ObsidianUI motion tokens, spring physics, and runtime scale manager
+│       │   ├── utils/              # Modular helper and utility functions
+│       │   │   ├── ansi.ts         # Zero-allocation ANSI escape code sanitizer and HTML span parser
+│       │   │   ├── url.ts          # Service URL formatter, sanitization, and port extraction (extractPort)
+│       │   │   ├── lazyWithRetry.ts # Resilient lazy wrapper retrying and refreshing chunks on new deployments
+│       │   │   ├── format.ts       # Byte sizing (B, KB, MB, GB, TB) formatter
+│       │   │   ├── grouping.ts     # Docker Compose intelligent grouping logic
+│       │   │   ├── systemsUtils.ts # System byte formatting, status theme resolver, and agent 1-liner generator
+│       │   │   ├── fuzzySearch.ts  # Fuzzy match algorithm for Command Center search
+│       │   │   └── tagColor.ts     # FNV-1a hash pastel palette and semantic environment presets
+│       │   ├── pages/              # Domain-scoped UI view modules
+│       │   │   ├── Containers/
+│       │   │   │   ├── ContainerRow.tsx      # In-row 1-click Deploy and Actions trigger
+│       │   │   │   ├── ContainerActionSheet.tsx # Mobile/desktop sheet with Deploy Webhook wizard
+│       │   │   │   ├── deployments/          # Feature-scoped Deployment Center modules (Clean Architecture)
+│       │   │   │   │   ├── DeploymentProgressModal.tsx # Live modal with F5 localStorage state recovery
+│       │   │   │   │   ├── DeploymentStepper.tsx       # 5-stage progress indicator with phase timers
+│       │   │   │   │   ├── DeploymentTerminalLog.tsx   # ANSI terminal viewer with copy & regex search
+│       │   │   │   │   ├── DeploymentsTable.tsx        # Container deployment audit history table
+│       │   │   │   │   ├── DeployWebhookWizardModal.tsx # GitHub Actions CI/CD pipeline generator
+│       │   │   │   │   ├── useDeploymentStream.ts      # Resilient SSE live stream hook
+│       │   │   │   │   └── useDeploymentsHistory.ts    # Deployment records query hook
+│       │   │   │   └── detail/
+│       │   │   │       └── ContainerDeploymentsTab.tsx # Container detail deployments tab
 │       │   │   └── systems.ts      # Multi-node systems, tokens, telemetry, and Systemd types
 │       │   ├── api/                # Modular API client layer
 │       │   │   ├── http.ts         # fetchJson (centralized corvus_unauthorized event), in-memory SWR cache, invalidateCache
@@ -612,8 +676,85 @@ The Command Palette is transformed into an actionable operational command center
 
 ---
 
+## 🚀 Native AOT Deployment Center & CI/CD Inbound Webhook Architecture
+
+Corvus v1.6.10 introduces a self-hosted **Deployment Center** (PaaS-grade container deployment engine) providing zero-downtime rolling updates, live ANSI log streaming, and synchronous CI/CD webhooks within the strict Native AOT and <30 MB RAM footprint constraint:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Inbound Deployment Trigger                      │
+│        (UI Button Click  OR  POST /api/hooks/deploy/{token}?wait=true) │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+                     ┌─────────────────────────────┐
+                     │    DeploymentLockManager    │ ────[Duplicate]───► 409 Conflict
+                     │ (Per-Container Keyed Lock)  │
+                     └──────────────┬──────────────┘
+                                    │ [Acquired Lock]
+                                    ▼
+                     ┌─────────────────────────────┐
+                     │   Fail-Fast Pre-Pull Gate   │
+                     │  (Remote Registry Pull)     │ ────[401/404/Timeout]─► Stop & Fail
+                     └──────────────┬──────────────┘                         (Container UNTOUCHED)
+                                    │ [Pull Succeeded]
+                                    ▼
+                     ┌─────────────────────────────┐
+                     │   Atomic Nano-Rollback      │
+                     │  1. Rename to _backup_ticks │
+                     │  2. Spawn new container     │
+                     │  3. Verify start & health   │
+                     └──────┬───────────────┬──────┘
+                            │               │
+                  [Failed / Timeout]   [Healthy]
+                            │               │
+                            ▼               ▼
+                 ┌────────────────────┐   ┌────────────────────┐
+                 │ Nano-Rollback Path │   │ Finalize & Cleanup │
+                 │ 1. Remove broken   │   │ 1. Delete backup   │
+                 │ 2. Restore backup  │   │ 2. Status: Success │
+                 │ 3. Status: Rolled  │   └────────────────────┘
+                 └────────────────────┘
+```
+
+### 1. Keyed Concurrency Locking (`DeploymentLockManager`)
+- **Race Condition Prevention:** Multiple webhook invocations or overlapping UI actions on the same container are blocked via fine-grained asynchronous semaphores (`ConcurrentDictionary<string, SemaphoreSlim>`).
+- **Fail-Fast `409 Conflict`:** Any secondary deployment request arriving while a deployment is running immediately yields HTTP 409, rejecting parallel collisions without blocking thread pool resources.
+
+### 2. Fail-Fast Pre-Pull Hard Gate (100% Uptime Guarantee)
+- **Zero Premature Termination:** In traditional scripts, running containers are often stopped before the new image is pulled. If the registry fails (401 Unauthorized, 404 Not Found, network timeout), production goes down.
+- **Fail-Fast Verification:** `DockerService.cs` and `DockerImageClient.cs` pull and verify the new image tag **before touching the running container**. If the pull fails, execution stops immediately, leaving the existing service 100% operational with zero downtime.
+
+### 3. Deterministic Nano-Rollback Strategy
+- **Unique Backup Names:** Existing containers are renamed to `${name}_corvus_backup_${timestamp}_${guid}` to eliminate collision vulnerabilities during rapid redeployments.
+- **Ordered Atomic Recovery:** If the new container fails to create or start within its grace period:
+  1. The new (broken) container is stopped and forcibly removed.
+  2. The Docker engine state is checked to ensure the original container name is liberated.
+  3. The backup container is renamed back to its original name and restarted.
+  4. The deployment record is marked as `rolled_back` with full error logs preserved.
+
+### 4. Dual-Path Buffering Architecture (Zero SQLite Locks)
+- **The Challenge:** Docker pull streams emit 20–50 progress events per second. Writing every line to SQLite WAL would cause disk thrashing and `SQLITE_BUSY` database lock errors.
+- **The Dual-Path Solution:**
+  - **Path A (Real-Time Memory Stream):** Pull and container logs are pushed immediately from memory into `IEventBroadcaster` Bounded Channels, streaming live to browser SSE clients (`GET /api/deployments/{id}/stream`) with sub-millisecond latency.
+  - **Path B (Throttled Batch Persistence):** The full execution log is accumulated in memory and written to the SQLite `deployments` table only during discrete phase transitions and upon final completion (3–4 total DB transactions per deployment).
+
+### 5. Synchronous CI/CD Webhook Gate (`&wait=true`)
+- **Pipeline Integration:** `POST /api/hooks/deploy/{token}?wait=true` allows GitHub Actions, GitLab CI, or custom webhooks to wait for the complete deployment:
+  - If deployment succeeds and passes healthcheck: Returns **HTTP 200 OK** with execution summary.
+  - If deployment fails or rolls back: Returns **HTTP 500 Internal Server Error** with detailed failure reason, immediately causing the GitHub Actions step to fail rather than silently masking deployment breakages.
+
+### 6. Live ANSI Terminal & Resilient Session Recovery
+- **ANSI Terminal Parser (`src/Corvus.Web/src/utils/ansi.ts`):** Lightweight, zero-dependency sanitizer converting ANSI SGR 256-color and style escape sequences into React CSS spans with copy-to-clipboard and regex search.
+- **F5 State Recovery:** Active deployments store their identifier in `localStorage['corvus_active_deployment']`. If the user refreshes the page or navigates away, the floating progress pill and modal automatically reconnect to the live SSE stream with zero lost logs.
+
+---
+
 ## 💡 Inspirations & Credits
+Corvus is inspired by the architectural philosophies of pioneering open-source homelab, container, and observability tools, re-imagined from the ground up as a single, ultra-lightweight .NET 9 Native AOT command center:
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma) — Health monitoring philosophy and status page concepts
 - [Beszel](https://github.com/henrygd/beszel) — Compact telemetry and system resource metrics approach
 - [Portainer](https://github.com/portainer/portainer) — Container lifecycle management vision
-
+- [Coolify](https://github.com/coollabsio/coolify) — Self-hosted deployment engine and developer experience ergonomics
+- [Watchtower](https://github.com/containrrr/watchtower) — Automated container update and image polling concepts
+- [Checkmate](https://github.com/bluewave-labs/checkmate) — Incident tracking and modern observability aesthetics

@@ -73,6 +73,9 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     public Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) =>
         _imageClient.PullImageAsync(imageName, cancellationToken);
 
+    public Task<bool> PullImageProgressAsync(string imageName, Func<string, Task>? onLogChunk = null, CancellationToken cancellationToken = default) =>
+        _imageClient.PullImageProgressAsync(imageName, onLogChunk, cancellationToken);
+
     public Task<DockerImagesPruneResponse?> PruneImagesAsync(bool all = false, CancellationToken cancellationToken = default) =>
         _imageClient.PruneImagesAsync(all, cancellationToken);
 

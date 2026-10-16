@@ -46,7 +46,8 @@ corvus/
 │   │   │   ├── ComposeEndpoints.cs       # Compose stack YAML/.env düzenleme (/file) ve canlı dağıtım (/deploy)
 │   │   │   ├── ContainersEndpoints.cs    # Containers, /stats, /logs/stream, kontroller, Web Terminali (/terminal), Kuru Çalıştırmalı Temizlik (/system-df, /prune/selective), Detay (/inspect), Güncelleme (/update), OCI İmaj Güncelleme Kontrolü (/check-update, /updates) ve Yeniden Oluşturma (/recreate)
 │   │   │   ├── DashboardEndpoints.cs     # 2.5s in-memory önbellekli Dashboard KPI özeti
-│   │   │   ├── DeployWebhookEndpoints.cs # CI/CD için sabit zamanlı güvenli dağıtım webhook'u (/api/hooks/deploy/{token})
+│   │   │   ├── DeploymentsEndpoints.cs   # Native AOT dağıtım tetikleme (/api/containers/{id}/deploy), geçmiş (/api/deployments), iptal ve canlı SSE akışı (/stream)
+│   │   │   ├── DeployWebhookEndpoints.cs # CI/CD için sabit zamanlı güvenli dağıtım webhook'u (/api/hooks/deploy/{token}) ve senkron &wait=true kapısı
 │   │   │   ├── IncidentEndpoints.cs      # Sistem olayları ve planlı bakım CRUD & yaşam döngüsü
 │   │   │   ├── MetricsEndpoints.cs       # Sistem donanım metrikleri zaman serisi (1h-1y) ve SSE akışı (/stream)
 │   │   │   ├── NotificationEndpoints.cs  # Çok kanallı alarm test uç noktası (Discord, Telegram, SMTP, Slack, Ntfy, Webhook)
@@ -71,6 +72,8 @@ corvus/
 │   │   ├── Data/                  # Veri erişim katmanı (Dapper.AOT + SQLite / PostgreSQL)
 │   │   │   ├── DbConnectionFactory.cs        # SQLite WAL, busy_timeout=5000, PostgreSQL desteği ve PRAGMA optimizasyonları
 │   │   │   ├── DatabaseMigrator.cs           # DbUp sıralı göç yöneticisi (SQLite ve PostgreSQL)
+│   │   │   ├── DeploymentRepository.cs       # Kalıcı dağıtım geçmişi, aşamalar, imaj özet farkları ve ANSI logları
+│   │   │   ├── IDeploymentRepository.cs      # Dağıtım veri deposu arayüz sözleşmesi
 │   │   │   ├── IncidentRepository.cs         # Sistem olayları ve duyurular veri erişimi
 │   │   │   ├── ServicesRepository.cs         # Servis ve override sorguları
 │   │   │   ├── PushMonitorRepository.cs      # Dead Man's Snitch veri erişimi
@@ -88,8 +91,13 @@ corvus/
 │   │   │       ├── 015_add_service_groups.sql
 │   │   │       ├── 016_systems_sqlite.sql    # Çoklu sistem, token ve metrik 1m/1h tabloları
 │   │   │       ├── 017_users_rbac_sqlite.sql # RBAC rol sütunu (admin, operator, viewer)
-│   │   │       └── PostgreSql/               # PostgreSQL eşdeğer göç scriptleri (001-017)
+│   │   │       ├── 019_deployments_sqlite.sql # Dağıtım denetim günlüğü ve ANSI log saklama şeması
+│   │   │       └── PostgreSql/               # PostgreSQL eşdeğer göç scriptleri (001-019)
 │   │   ├── Models/                 # DTO'lar ve Veritabanı Varlıkları
+│   │   │   ├── Deployments/                  # Tip-güvenli dağıtım alanı modelleri ve Native AOT payload'ları
+│   │   │   │   ├── DeploymentRecord.cs       # Dağıtım kaydı (hedef, tetikleyici, durum, aşamalar, digest, süre)
+│   │   │   │   ├── DeploymentEnums.cs        # DeploymentStatus, DeploymentTriggerSource enum tanımları
+│   │   │   │   └── DeploymentEvents.cs       # StepChanged, LogChunk, Completed, GlobalStarted olay modelleri
 │   │   │   ├── Service.cs                    # Servis modeli (check_type: http, tcp, ping, port, ssl, expected_body, is_public, display_order)
 │   │   │   ├── ServiceIncident.cs            # Sistem olay duyurusu modeli
 │   │   │   ├── ServiceOverride.cs            # Docker override modeli
@@ -112,8 +120,15 @@ corvus/
 │   │   │   ├── NativeMemoryTrimmer.cs        # Platform korumalı libc malloc_trim bellek iadesi
 │   │   │   └── HttpBodyValidator.cs          # Sıfır bellek tahsisli gövde arama ve ReDoS zaman aşımı koruması
 │   │   └── Services/                # Çekirdek alan iş mantığı
+│   │       ├── Deployments/                  # Konteyner dağıtım yürütme ve eşzamanlılık yönetimi
+│   │       │   ├── DeploymentEngine.cs       # Çift hatlı tamponlamalı dağıtım orkestratörü (pull -> recreate -> healthcheck -> live)
+│   │       │   ├── IDeploymentEngine.cs      # Dağıtım motoru arayüzü
+│   │       │   ├── DeploymentLockManager.cs  # Konteyner başına asenkron kilit yöneticisi (fail-fast 409 Conflict)
+│   │       │   └── IDeploymentLockManager.cs # Kilit yöneticisi sözleşmesi
+│   │       ├── Docker/                       # Modüler Docker motor istemci modülleri
+│   │       │   └── DockerImageClient.cs      # Ön çekim (pre-pull) fail-fast doğrulama ve katman ilerleme ayrıştırıcısı
 │   │       ├── DockerHttpClient.cs           # SocketsHttpHandler doğrudan soket istemcisi (exec, prune, stats, logs)
-│   │       ├── DockerService.cs              # Konteyner operasyonları, sistem temizliği, stats, etiket ayrıştırma, imaj güncelleme ve yeniden oluşturma
+│   │       ├── DockerService.cs              # Konteyner operasyonları, sistem temizliği, stats, etiket ayrıştırma, fail-fast pull, recreate ve nano-rollback
 │   │       ├── DockerLogDemuxer.cs           # Sıfır bellek tahsisli çoğullanmış Docker stdout/stderr ayrıştırıcısı
 │   │       ├── OciRegistryClient.cs          # Sıfır yüklü HEAD istekleriyle OCI kayıt defteri digest denetleyicisi
 │   │       ├── ComposeFileService.cs         # TAB karakter denetimli ve .bak yedekli Compose YAML/.env editör servisi
@@ -138,12 +153,14 @@ corvus/
 │       │   ├── App.tsx             # React.lazy rota kod bölme, merkezi 401 dinleyicisi ve SSE akışı
 │       │   ├── types/              # Modüler tip sözleşmeleri (Temiz Mimari)
 │       │   │   ├── index.ts        # Temel API ve DTO arayüz tipleri
+│       │   │   ├── deployments.ts  # Dağıtım kayıtları, adım aşamaları ve webhook tipleri
 │       │   │   └── systems.ts      # Çoklu sistem, token, telemetri ve Systemd tipleri
 │       │   ├── api/                # Modüler API istemci katmanı
 │       │   │   ├── http.ts         # fetchJson (merkezi oturum geçersiz kılma), SWR önbellek, invalidateCache
 │       │   │   ├── auth.ts         # Kimlik doğrulama ve kullanıcı RBAC yönetim uç noktaları
 │       │   │   ├── services.ts     # Servis CRUD ve sıralama
 │       │   │   ├── containers.ts   # Konteyner işlemleri, batch stats, loglar, inspect, recreate ve deploy
+│       │   │   ├── deployments.ts  # Dağıtım tetikleme, geçmiş, iptal ve stream URL uç noktaları
 │       │   │   ├── systems.ts      # Çoklu sistem CRUD, tokenler, telemetri ve uzaktan Docker RPC
 │       │   │   ├── systemd.ts      # Systemd birim listesi, start/stop/restart ve journalctl log akışı
 │       │   │   ├── uptime.ts       # Uptime kontrolleri ve push monitörleri
@@ -163,6 +180,7 @@ corvus/
 │       │   ├── lib/
 │       │   │   └── motion.ts       # ObsidianUI hareket jetonları, yay fiziği ve çalışma zamanı hız yöneticisi
 │       │   ├── utils/              # Modüler yardımcı fonksiyonlar
+│       │   │   ├── ansi.ts         # Sıfır bağımlılıklı ANSI renk kodları ve HTML span ayrıştırıcısı
 │       │   │   ├── url.ts          # Servis URL biçimlendirme, temizleme ve port ayrıştırma (extractPort)
 │       │   │   ├── lazyWithRetry.ts # Yeni sürümlerde chunk yükleme hatalarını yakalayıp tazeleyen dirençli lazy sarmalayıcı
 │       │   │   ├── format.ts       # Bayt boyutu (B, KB, MB, GB, TB) biçimlendirici
@@ -170,6 +188,20 @@ corvus/
 │       │   │   ├── systemsUtils.ts # Sistem bayt formatlama, durum tema çözücü ve ajan 1-satırlık komut üreteci
 │       │   │   ├── fuzzySearch.ts  # Komut Merkezi bulanık arama algoritması
 │       │   │   └── tagColor.ts     # FNV-1a hash pastel paleti ve anlamsal ortam ön ayarları
+│       │   ├── pages/              # Alan odaklı UI görünüm modülleri
+│       │   │   ├── Containers/
+│       │   │   │   ├── ContainerRow.tsx      # Satır içi 1 tıkla Dağıt ve Eylem tetikleyicisi
+│       │   │   │   ├── ContainerActionSheet.tsx # Mobil/masaüstü Dağıtım Webhook sihirbazı sayfası
+│       │   │   │   ├── deployments/          # Özellik odaklı Dağıtım Merkezi modülleri (Temiz Mimari)
+│       │   │   │   │   ├── DeploymentProgressModal.tsx # F5 localStorage durum kurtarmalı canlı modal
+│       │   │   │   │   ├── DeploymentStepper.tsx       # Aşama sayaçlı 5 kademeli ilerleme çubuğu
+│       │   │   │   │   ├── DeploymentTerminalLog.tsx   # Kopyalama ve regex aramalı ANSI terminali
+│       │   │   │   │   ├── DeploymentsTable.tsx        # Konteyner dağıtım denetim geçmişi tablosu
+│       │   │   │   │   ├── DeployWebhookWizardModal.tsx # GitHub Actions CI/CD boru hattı üreteci
+│       │   │   │   │   ├── useDeploymentStream.ts      # Dayanıklı SSE canlı akış kancası
+│       │   │   │   │   └── useDeploymentsHistory.ts    # Dağıtım kayıtları sorgulama kancası
+│       │   │   │   └── detail/
+│       │   │   │       └── ContainerDeploymentsTab.tsx # Konteyner detay dağıtım geçmişi sekmesi
 │       │   ├── components/         # Ortak global UI bileşenleri ve Tasarım Sistemi
 │       │   │   ├── common/                   # Ortak alan bileşenleri
 │       │   │   │   ├── ChunkErrorBoundary.tsx # Dinamik modül ve çalışma zamanı hata yakalayıcı kabuk
@@ -614,8 +646,85 @@ Komut Paleti, salt arama aracından eylem yürüten bir komuta merkezine dönü�
 
 ---
 
+## 🚀 Native AOT Dağıtım Merkezi ve CI/CD Webhook Mimarisi
+
+Corvus v1.6.10, katı .NET 9 Native AOT ve <30 MB RAM sınırları içerisinde çalışan, sıfır kesintili (zero-downtime) güncelleme, canlı ANSI log akışı ve senkron CI/CD webhook'larına sahip self-hosted bir **Dağıtım Merkezi (Deployment Center)** motoru sunar:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Gelen Dağıtım Tetiklemesi                       │
+│        (Panelden Buton Tıklaması  VEYA  POST /api/hooks/deploy/{token}?wait=true) │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+                     ┌─────────────────────────────┐
+                     │    DeploymentLockManager    │ ────[Mükerrer İstek]──► 409 Conflict
+                     │ (Konteyner Başına Kilit)    │
+                     └──────────────┬──────────────┘
+                                    │ [Kilit Alındı]
+                                    ▼
+                     ┌─────────────────────────────┐
+                     │   Fail-Fast Pre-Pull Kapısı │
+                     │   (Uzak Registry Pull)      │ ────[401/404/Zaman Aşımı]─► Durdur & Hata
+                     └──────────────┬──────────────┘                             (Konteyner DOKUNULMAZ)
+                                    │ [İmaj Başarıyla Çekildi]
+                                    ▼
+                     ┌─────────────────────────────┐
+                     │   Atomik Nano-Rollback      │
+                     │  1. Yedeğe al (_backup_ticks│
+                     │  2. Yeni konteyneri başlat  │
+                     │  3. Sağlık kontrolü yap     │
+                     └──────┬───────────────┬──────┘
+                            │               │
+                 [Başarısız / Timeout]  [Sağlıklı]
+                            │               │
+                            ▼               ▼
+                 ┌────────────────────┐   ┌────────────────────┐
+                 │ Nano-Rollback Hattı│   │ Tamamlama & Temizlik│
+                 │ 1. Bozuk olanı sil │   │ 1. Yedeği temizle  │
+                 │ 2. Yedeği geri al  │   │ 2. Durum: Success  │
+                 │ 3. Durum: Rolled   │   └────────────────────┘
+                 └────────────────────┘
+```
+
+### 1. Konteyner Düzeyinde Asenkron Kilit (`DeploymentLockManager`)
+- **Yarış Durumu (Race Condition) Engeli:** Aynı konteynere aynı anda gelen mükerrer webhook'lar veya UI tıklamaları, konteyner adına bağlı hafif semaforlar (`ConcurrentDictionary<string, SemaphoreSlim>`) ile kilitlenir.
+- **Fail-Fast `409 Conflict`:** Devam eden bir dağıtım varken gelen ikinci istekler derhal HTTP 409 yanıtıyla reddedilir; thread pool bloke edilmez ve çift işlem çakışmaları sıfıra indirilir.
+
+### 2. Fail-Fast Ön Çekim Kapısı (%100 Kesintisiz Çalışma Güvencesi)
+- **Erken Kapatma Yasağı:** Geleneksel betiklerde yeni imaj çekilmeden önce çalışan konteyner kapatılır. Registry hata verirse (401 Unauthorized, 404 Not Found, ağ kesintisi) servis çöker.
+- **Ön Doğrulama:** `DockerService.cs` ve `DockerImageClient.cs`, çalışan konteynere **dokunmadan önce** yeni imajı çeker ve doğrular. Çekim başarısız olursa operasyon hemen kesilir; çalışan mevcut konteyner sıfır kesintiyle (%100 uptime) hizmet vermeye devam eder.
+
+### 3. Deterministik Nano-Rollback Stratejisi
+- **Benzersiz Yedek İsimlendirmesi:** Hızlı ardışık dağıtımlarda isim çakışmalarını önlemek için mevcut konteyner `${name}_corvus_backup_${timestamp}_${guid}` formatında yeniden adlandırılır.
+- **Sıralı Atomik Kurtarma:** Yeni konteyner oluşturulamazsa veya sağlık süresi içinde ayağa kalkamazsa:
+  1. Başarısız yeni konteyner durdurulur ve zorla silinir.
+  2. Orijinal ismin Docker motorunda serbest kaldığı teyit edilir.
+  3. Yedek konteyner orijinal adına geri taşınır ve başlatılır.
+  4. Dağıtım kaydı `rolled_back` olarak işaretlenir ve tüm hata logları korunur.
+
+### 4. Çift Hatlı Tamponlama Mimarisi (Dual-Path Buffering)
+- **Sorun:** Docker imaj çekim akışı saniyede 20–50 ilerleme satırı üretir. Her satırı SQLite WAL'e yazmak disk kilitlenmelerine (`SQLITE_BUSY`) yol açar.
+- **Çift Hatlı Çözüm:**
+  - **Hat A (Canlı Bellek Akışı):** İlerlemeler bellek üzerinden `IEventBroadcaster` Bounded Channel kuyruğuna aktarılır ve SSE (`GET /api/deployments/{id}/stream`) üzerinden tarayıcıya milisaniyenin altında gecikmeyle ulaştırılır.
+  - **Hat B (Seyreltilmiş Veritabanı Yazımı):** Tüm akış logu bellekte biriktirilir ve SQLite `deployments` tablosuna yalnızca aşama geçişlerinde ve işlem bitiminde yazılır (dağıtım başına yalnızca 3–4 veritabanı işlemi).
+
+### 5. Senkron CI/CD Webhook Kapısı (`&wait=true`)
+- **Boru Hattı Entegrasyonu:** `POST /api/hooks/deploy/{token}?wait=true` uç noktası, GitHub Actions veya GitLab CI'ın dağıtım tamamlanana kadar bağlantıyı açık tutmasını sağlar:
+  - Dağıtım başarılı olup sağlık kontrolünden geçerse: **HTTP 200 OK** döner.
+  - Dağıtım başarısız olur veya rollback gerçekleşirse: Detaylı hata açıklamasıyla **HTTP 500 Internal Server Error** döner. Bu sayede GitHub Actions adımı hatayı maskelemeden derhal başarısız (failed) olarak işaretlenir.
+
+### 6. Canlı ANSI Terminali ve F5 Oturum Kurtarma
+- **ANSI Terminal Ayrıştırıcısı (`src/Corvus.Web/src/utils/ansi.ts`):** ANSI SGR 256-renk ve stil kodlarını güvenli React span öğelerine dönüştürür; regex arama ve panoya kopyalama desteği sunar.
+- **F5 Durum Kurtarma:** Aktif dağıtım kimliği `localStorage['corvus_active_deployment']` üzerinde tutulur. Kullanıcı sayfayı yenilese veya başka sekmeye geçse bile kayan ilerleme hapı ve canlı modal SSE akışına sıfır log kaybıyla yeniden bağlanır.
+
+---
+
 ## 💡 İlham Kaynakları (Inspirations & Credits)
+Corvus, öncü açık kaynak homelab ve gözlemlenebilirlik araçlarının mimari felsefelerinden ilham alarak, tek ve ultra hafif bir .NET 9 Native AOT komuta merkezi olarak sıfırdan yeniden tasarlanmıştır:
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma) — İzleme mantığı ve durum sayfası felsefesi
 - [Beszel](https://github.com/henrygd/beszel) — Hafif telemetri ve sistem kaynak takibi yaklaşımı
 - [Portainer](https://github.com/portainer/portainer) — Konteyner yaşam döngüsü vizyonu
-
+- [Coolify](https://github.com/coollabsio/coolify) — Dağıtım motoru ve geliştirici deneyimi ergonomisi
+- [Watchtower](https://github.com/containrrr/watchtower) — Otomatik konteyner güncelleme ve imaj yoklama kavramları
+- [Checkmate](https://github.com/bluewave-labs/checkmate) — Olay takibi ve modern gözlemlenebilirlik estetiği

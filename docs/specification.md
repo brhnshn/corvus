@@ -61,9 +61,9 @@ Corvus is an open-source, ultra-low resource consumption service launcher and un
 - **Backup & Retention Engine**: Point-in-time lock-free SQLite snapshot downloads (`VACUUM INTO`), live database disk usage telemetry (`GET /api/settings/db-stats`), two-tier retention cleaner (7d raw 1m / 30d 1h rollup / 365d daily SLA), automated `VACUUM;` freelist reclamation
 
 ### Automated Test Suite
-- **320 Total Passing Tests:**
-  - **Backend (291 Tests):** xUnit + Moq + FluentAssertions integration and unit test suite across Minimal API endpoints, background services, repository layers, Docker clients, and RBAC security filters.
-  - **Frontend (29 Tests):** Vitest + React Testing Library unit and component tests validating state management, i18n formatting, fuzzy search, and component rendering.
+- **374 Total Passing Tests:**
+  - **Backend (329 Tests):** xUnit + Moq + FluentAssertions integration and unit test suite across Minimal API endpoints, background services, repository layers, Docker clients, deployment engine, and RBAC security filters.
+  - **Frontend (45 Tests):** Vitest + React Testing Library unit and component tests validating state management, ANSI terminal parsing, stepper stages, i18n formatting, fuzzy search, and component rendering.
 
 ---
 
@@ -303,6 +303,29 @@ Live remote container inventory streamed by the Edge Agent (`016_systems_sqlite.
 | ports_json | TEXT | JSON string array of port bindings |
 | updated_at | TEXT | Last cache synchronization timestamp |
 
+### `deployments`
+Persistent audit trail and execution history for container rollouts (`019_deployments_sqlite.sql`).
+
+| Field | Type | Description |
+|---|---|---|
+| id | TEXT | Primary Key (GUID string) |
+| container_id | TEXT | Target container hash or identifier |
+| container_name | TEXT | Human-readable container name |
+| service_name | TEXT (nullable) | Associated service or Compose stack service name |
+| trigger_type | TEXT | Trigger source (`manual_ui`, `webhook_github`, `webhook_generic`, `scheduled`) |
+| status | TEXT | Lifecycle state (`pending`, `in_progress`, `success`, `failed`, `rolled_back`, `cancelled`) |
+| current_step | TEXT (nullable) | Active stage (`queued`, `pulling`, `recreating`, `healthcheck`, `live`, `rolled_back`) |
+| steps_json | TEXT | JSON array of discrete execution steps with timestamps and status |
+| error_message | TEXT (nullable) | Human-readable failure explanation or stack trace |
+| old_image_digest | TEXT (nullable) | Upstream image digest before deployment |
+| new_image_digest | TEXT (nullable) | Upstream image digest after deployment |
+| duration_ms | INTEGER (nullable) | Total deployment execution time in milliseconds |
+| logs | TEXT (nullable) | Accumulated ANSI execution and layer progress logs |
+| triggered_by | TEXT (nullable) | Initiating username or webhook token identifier |
+| created_at | TEXT | Deployment trigger timestamp (ISO 8601) |
+| started_at | TEXT (nullable) | Execution start timestamp |
+| finished_at | TEXT (nullable) | Execution completion or termination timestamp |
+
 ### `users`, `user_sessions`, and `settings`
 - `users`: `id`, `username`, `password_hash` (PBKDF2), `role` (`admin`, `operator`, `viewer`), `created_at` (`017_users_rbac_sqlite.sql`)
 - `user_sessions`: `token` (PK), `username`, `expires_at`, `created_at` (Persistent session store surviving container redeployments and restarts)
@@ -341,9 +364,14 @@ Live remote container inventory streamed by the Edge Agent (`016_systems_sqlite.
 | `GET /api/containers/{id}/check-update` | Auth | **OCI Digest Inspection:** Performs zero-body HEAD request checking upstream registry (Docker Hub, GHCR, Quay) for new digests |
 | `GET /api/containers/updates` | Auth | **Batch Image Update Status:** Returns list of all active containers with upstream update availability |
 | `POST /api/containers/{id}/recreate` | Admin | **One-Click Recreate:** Pulls latest image, halts previous container, and seamlessly restarts with identical parameters |
+| `POST /api/containers/{id}/deploy` | Admin | **Trigger Deployment:** Initiates asynchronous deployment (pre-pull fail-fast, nano-rollback, live SSE stream); returns 202 Accepted |
+| `GET /api/deployments` | Auth | **Deployment Audit History:** Query paginated/filtered deployment executions (`?container_id=...&limit=...`) |
+| `GET /api/deployments/{id}` | Auth | **Deployment Record:** Retrieve execution status, discrete step timings, image digests, and accumulated logs |
+| `POST /api/deployments/{id}/cancel` | Admin | **Cancel Deployment:** Gracefully cancel in-progress deployment task |
+| `GET /api/deployments/{id}/stream` | Auth | **Deployment SSE Stream:** Real-time Server-Sent Events stream for progress steps and ANSI log chunks |
 | `GET /api/compose/{projectName}/file` | Admin | **Compose YAML Inspector:** Path-traversal sanitized retrieval of `compose.yaml` file contents |
 | `PUT /api/compose/{projectName}/file` | Admin | **Safe Compose In-Place Editor:** Updates Compose configuration file with automated `.bak` backup and optional stack restart |
-| `POST /api/hooks/deploy/{token}` | Constant-Time Token | **CI/CD Inbound Deploy Webhook:** Constant-time token verified inbound webhook triggering server deployment |
+| `POST /api/hooks/deploy/{token}` | Constant-Time Token | **CI/CD Inbound Deploy Webhook:** Constant-time token verified inbound webhook with synchronous `&wait=true` pipeline gate support |
 | `GET /api/containers/tags` | Auth | List all unique environment tags applied to containers |
 | `PUT /api/containers/{id}/tags` | Admin | Update container environment tags (persisted in SQLite `service_overrides`) |
 | `POST /api/containers/{id}/start` | Admin | Start container |
@@ -444,8 +472,8 @@ Live remote container inventory streamed by the Edge Agent (`016_systems_sqlite.
 |---|---|---|
 | **Dashboard** | `/` | Mobile-first 2-column KPI strip, full-width Disk bar, live system pulse hero, GitHub update checker badge, and active containers widget |
 | **Services** | `/services` | Service launchpad, status badges, TCP/ICMP PING indicators, expected body assertion, SSL expiration badge, **environment tags (`TagBadge`)**, **real-time tag filter bar (`TagFilterBar`)**, and reordering controls |
-| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, **Clickable Row Navigation (`ContainerRow`)**, **In-Row Quick Actions Toolbar (`ContainerQuickActions`)**, Start/Stop/Pause/Restart actions, **Bulk Stack Controls (`ComposeStackGroup`)**, **In-Browser YAML & .env Editor (`ComposeConfigModal`)**, **OCI Image Update Sentinel (`ImageUpdateModal`)**, live log terminal, **Interactive Web Terminal**, **Dry-Run Disk Prune (`SystemPruneModal`)**, and **Container Tags & Filter Bar (`TagFilterBar`)** |
-| **Container Detail** | `/containers/:id` | **Dedicated Full-Page Control Center:** Standalone URL-addressable, bookmarkable, deep-linked (`?tab=`) diagnostic dashboard with live telemetry cards (CPU, RAM, Rx/Tx), **Historical Area Telemetry Charts (`ContainerHistoricalCharts`)**, full-screen streaming logs, and xterm.js interactive terminal |
+| **Containers** | `/containers` | Batch stats streaming, live CPU%, RAM, and Net I/O badges, **Clickable Row Navigation (`ContainerRow`)**, **In-Row Quick Actions Toolbar (`ContainerQuickActions`)**, **1-Click Container Deployment**, Start/Stop/Pause/Restart actions, **Bulk Stack Controls (`ComposeStackGroup`)**, **In-Browser YAML & .env Editor (`ComposeConfigModal`)**, **OCI Image Update Sentinel (`ImageUpdateModal`)**, live log terminal, **Interactive Web Terminal**, **Dry-Run Disk Prune (`SystemPruneModal`)**, **Container Tags & Filter Bar (`TagFilterBar`)**, and **CI/CD Webhook Onboarding Wizard (`DeployWebhookWizardModal`)** |
+| **Container Detail** | `/containers/:id` | **Dedicated Full-Page Control Center:** Standalone URL-addressable, bookmarkable, deep-linked (`?tab=`) diagnostic dashboard with live telemetry cards (CPU, RAM, Rx/Tx), **Historical Area Telemetry Charts (`ContainerHistoricalCharts`)**, full-screen streaming logs, xterm.js interactive terminal, and **Container Deployments Tab (`ContainerDeploymentsTab`, `DeploymentsTable`)** |
 | **Systems Cockpit** | `/systems` | **Multi-Node Fleet Control:** Overview of all edge hosts, node health pills, quick telemetry badges (CPU, RAM, Disk), search & tag filtering, and instant 1-click agent registration modal (`AddSystemModal`) |
 | **System Detail** | `/systems/:id` | **Full-Screen Node Diagnostics:** Deep-linked tabs (`?tab=overview\|metrics\|containers\|systemd\|settings`), 100ms adaptive SSE stream (`/api/systems/{id}/stream`), historical charts, remote container control, and Linux systemd unit manager |
 | **Activity Timeline** | `/activity` | **Chronological Audit Trail:** Filter by categories (`container`, `security`, `alert`, `system`), search by resource, and view structured JSON metadata payloads |
@@ -462,7 +490,7 @@ Live remote container inventory streamed by the Edge Agent (`016_systems_sqlite.
 ## 8. Completed Roadmap Milestones
 
 - [x] Native AOT + custom SocketsHttpHandler direct socket client
-- [x] Dapper.AOT + Microsoft.Data.Sqlite + Npgsql PostgreSQL + DbUp schema migrations (001-017)
+- [x] Dapper.AOT + Microsoft.Data.Sqlite + Npgsql PostgreSQL + DbUp schema migrations (001-019)
 - [x] Corvus Edge Agent (`src/Corvus.Agent`) in .NET 9 Native AOT (<10 MB RAM, outbound TLS/WSS tunnel, zero inbound ports)
 - [x] Multi-Node Systems Cockpit (`/systems`, `/systems/:id`) with 100ms adaptive SSE stream
 - [x] Zero-Alloc Unmanaged 128-byte `SystemTelemetryPoint` ring buffer (~7.2 KB RAM per node)
@@ -497,5 +525,9 @@ Live remote container inventory streamed by the Edge Agent (`016_systems_sqlite.
 - [x] Web Container Exec Terminal (`/api/containers/{id}/terminal`, `@xterm/xterm`, bidirectional stream fix, fallback shell chain)
 - [x] Two-Stage Dry-Run System Prune (`/api/containers/system-df`, `/api/containers/prune/selective`, volume protection)
 - [x] Environment Tags & Category Grouping (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`, container tag overrides)
-- [x] 320/320 Passing Automated Tests (291 backend xUnit + 29 frontend Vitest)
+- [x] **Native AOT Container Deployment Center (`019_deployments_sqlite.sql`, `DeploymentEngine.cs`, `DeploymentLockManager.cs`)**
+- [x] **Zero-Downtime Rollback & Fail-Fast Pre-Pull Validation (`DockerService.cs`, `DockerImageClient.cs`)**
+- [x] **Synchronous CI/CD Inbound Webhook Pipeline Gate (`POST /api/hooks/deploy/{token}?wait=true`)**
+- [x] **Vercel-Grade Modular Frontend Deployment Center (`DeploymentStepper`, `DeploymentTerminalLog`, `DeploymentProgressModal`, F5 localStorage state recovery)**
+- [x] 374/374 Passing Automated Tests (329 backend xUnit + 45 frontend Vitest)
 

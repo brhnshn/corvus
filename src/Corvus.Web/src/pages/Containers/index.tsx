@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DockerContainer } from '../../api/client';
-import { RefreshCw, Boxes, Layers, List } from 'lucide-react';
+import { RefreshCw, Boxes, Layers, List, Rocket } from 'lucide-react';
 import { ContainerList } from './ContainerList';
 import { ComposeStackGroup } from './ComposeStackGroup';
 import { ContainerLogsModal } from './ContainerLogsModal';
@@ -11,6 +11,8 @@ import { ImageUpdateModal } from './ImageUpdateModal';
 import { ComposeConfigModal } from './ComposeConfigModal';
 import { ContainerDetailModal } from './detail/ContainerDetailModal';
 import { ContainerActionSheet } from './ContainerActionSheet';
+import { DeploymentProgressModal } from './deployments/DeploymentProgressModal';
+import { DeployWebhookWizardModal } from './deployments/DeployWebhookWizardModal';
 import { ContainersHeader } from './ContainersHeader';
 import { ContainersStats } from './ContainersStats';
 import { SearchInput } from '../../components/ui/SearchInput';
@@ -97,6 +99,12 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
     tagsWithCounts,
     filteredContainers,
     handleTagsUpdated,
+    activeDeployment,
+    isDeployModalOpen,
+    setIsDeployModalOpen,
+    webhookWizardContainer,
+    setWebhookWizardContainer,
+    handleTriggerDeploy
   } = useContainersPageState({ initialAction });
 
   // Ortak Gruplandırma & Compose Stack Motoru
@@ -277,6 +285,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
               name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
               image: c.Image
             })}
+            onDeploy={handleTriggerDeploy}
           />
         )}
 
@@ -306,6 +315,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
               name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
               image: c.Image
             })}
+            onDeploy={handleTriggerDeploy}
           />
         )}
       </MotionItem>
@@ -320,6 +330,8 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
         onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
         onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
         onEditTags={(c) => setEditingTagsContainer(c)}
+        onDeploy={handleTriggerDeploy}
+        onOpenWebhookWizard={(c) => setWebhookWizardContainer(c)}
         isAdmin={effectiveIsAdmin}
       />
 
@@ -334,7 +346,60 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           onClose={() => setSelectedInspectContainer(null)}
           onOpenTerminal={(id, name) => setSelectedTerminalContainer({ id, name })}
           onOpenLogs={(id, name) => setSelectedLogsContainer({ id, name })}
+          onTriggerDeploy={handleTriggerDeploy}
           onContainerActionSuccess={() => loadContainers()}
+        />
+      )}
+
+      {/* Canlı Dağıtım (Deployment) Modalı */}
+      {activeDeployment && (
+        <DeploymentProgressModal
+          isOpen={isDeployModalOpen}
+          deploymentId={activeDeployment.deploymentId}
+          containerId={activeDeployment.containerId}
+          containerName={activeDeployment.containerName}
+          imageName={activeDeployment.imageName}
+          onClose={() => {
+            setIsDeployModalOpen(false);
+            loadContainers(true);
+          }}
+          onMinimize={() => setIsDeployModalOpen(false)}
+          onSuccess={() => {
+            loadContainers(true);
+            toast.success(t('deployments.deploySuccessToast', { name: activeDeployment.containerName }));
+          }}
+        />
+      )}
+
+      {/* Arka Planda Yürüyen Dağıtım İçin Yüzen Mini Durum Rozeti */}
+      {activeDeployment && !isDeployModalOpen && (
+        <div className="fixed bottom-5 right-5 z-40 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <button
+            type="button"
+            onClick={() => setIsDeployModalOpen(true)}
+            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-indigo-600/90 hover:bg-indigo-600 text-white shadow-xl shadow-indigo-500/25 border border-indigo-400/40 text-xs font-medium cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+            </span>
+            <Rocket className="w-3.5 h-3.5" />
+            <span>
+              {t('deployments.runningInBackground', { step: activeDeployment.containerName })}
+            </span>
+            <span className="font-semibold underline ml-1">
+              {t('deployments.viewDeployment')}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* GitHub Actions CI/CD Webhook Sihirbazı Modalı */}
+      {webhookWizardContainer && (
+        <DeployWebhookWizardModal
+          isOpen={!!webhookWizardContainer}
+          containerId={webhookWizardContainer.Id}
+          containerName={webhookWizardContainer.Names?.[0]?.replace(/^\//, '') || webhookWizardContainer.Id.slice(0, 12)}
+          onClose={() => setWebhookWizardContainer(null)}
         />
       )}
 

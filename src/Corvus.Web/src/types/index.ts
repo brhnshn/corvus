@@ -478,5 +478,6 @@ export interface ActivityLogPagedResult {
 }
 
 export * from './systems';
+export * from './deployments';
 
 

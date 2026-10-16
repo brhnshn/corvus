@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '../../../i18n';
-import { Layers, Key, Network, HardDrive, Cpu, Loader2, AlertCircle } from 'lucide-react';
+import { Layers, Key, Network, HardDrive, Cpu, Loader2, AlertCircle, Rocket } from 'lucide-react';
 import { containersApi } from '../../../api/containers';
 import { ContainerOverviewTab } from './ContainerOverviewTab';
 import { ContainerEnvTab } from './ContainerEnvTab';
 import { ContainerNetworkingTab } from './ContainerNetworkingTab';
 import { ContainerStorageTab } from './ContainerStorageTab';
 import { ContainerResourcesTab } from './ContainerResourcesTab';
+import { ContainerDeploymentsTab } from './ContainerDeploymentsTab';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import type { DockerContainerInspectInfo, DockerContainer, ContainerStats } from '../../../types';
@@ -21,10 +22,11 @@ interface ContainerDetailModalProps {
   onClose: () => void;
   onOpenTerminal: (id: string, name: string) => void;
   onOpenLogs: (id: string, name: string) => void;
+  onTriggerDeploy?: (container: DockerContainer) => void;
   onContainerActionSuccess?: () => void;
 }
 
-type TabType = 'overview' | 'env' | 'networking' | 'storage' | 'resources';
+type TabType = 'overview' | 'env' | 'networking' | 'storage' | 'resources' | 'deployments';
 
 export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   containerId,
@@ -36,6 +38,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   onClose,
   onOpenTerminal,
   onOpenLogs,
+  onTriggerDeploy,
   onContainerActionSuccess
 }) => {
   const { t } = useI18n();
@@ -172,6 +175,15 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
             <Cpu className="w-3.5 h-3.5" />
             <span>{t('containers.tabResources') || 'Kaynak Limitleri'}</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('deployments')}
+            className={`tab ${activeTab === 'deployments' ? 'active' : ''}`}
+          >
+            <Rocket className="w-3.5 h-3.5 text-indigo-400" />
+            <span>{t('containers.deployHistoryTab') || 'Dağıtımlar'}</span>
+          </button>
         </div>
 
         {/* Content Body */}
@@ -239,6 +251,19 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
                     loadInspectData();
                     if (onContainerActionSuccess) {
                       onContainerActionSuccess();
+                    }
+                  }}
+                />
+              )}
+
+              {activeTab === 'deployments' && (
+                <ContainerDeploymentsTab
+                  containerId={containerId}
+                  containerName={containerName}
+                  isAdmin={isAdmin}
+                  onTriggerDeploy={() => {
+                    if (containerSummary && onTriggerDeploy) {
+                      onTriggerDeploy(containerSummary);
                     }
                   }}
                 />

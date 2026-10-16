@@ -48,6 +48,8 @@ public class DockerServiceTests
             Task.FromResult<DockerImageInspectInfo?>(null);
         public virtual Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) =>
             Task.FromResult(true);
+        public virtual Task<bool> PullImageProgressAsync(string imageName, Func<string, Task>? onLogChunk = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
         public virtual Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default) =>
             Task.FromResult(new DockerActionResult(true, "Renamed"));
         public virtual Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default) =>
@@ -308,6 +310,7 @@ public class DockerServiceTests
             Task.FromResult(new DockerActionResult(false, "Update container failed", 500));
         public Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default) => Task.FromResult<DockerImageInspectInfo?>(null);
         public Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<bool> PullImageProgressAsync(string imageName, Func<string, Task>? onLogChunk = null, CancellationToken cancellationToken = default) => Task.FromResult(false);
         public Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default) =>
             Task.FromResult(new DockerActionResult(false, "Rename failed", 500));
         public Task<DockerContainerCreateResponse?> CreateContainerAsync(string? name, DockerContainerCreateRequest request, CancellationToken cancellationToken = default) =>
@@ -743,7 +746,7 @@ public class RecreateTestDockerHttpClient : DockerServiceTests.FakeDockerHttpCli
 
     public override Task<DockerActionResult> RenameContainerAsync(string containerId, string newName, CancellationToken cancellationToken = default)
     {
-        if (newName.Contains("_old_"))
+        if (newName.Contains("_corvus_backup_") || newName.Contains("_old_"))
         {
             WasRenamed = true;
         }

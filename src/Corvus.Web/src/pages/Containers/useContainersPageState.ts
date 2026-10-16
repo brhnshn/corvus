@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { api, invalidateCache, type DockerContainer, type ContainerStats } from '../../api/client';
+import { deploymentsApi } from '../../api/deployments';
+import { getSavedActiveDeployment } from './deployments/useDeploymentStream';
 import { useToast } from '../../components/ui/Toast';
+import { useI18n } from '../../i18n';
 import { extractContainerTags } from './ContainerRow';
 
 export interface UseContainersPageStateProps {
@@ -9,6 +12,7 @@ export interface UseContainersPageStateProps {
 
 export function useContainersPageState({ initialAction }: UseContainersPageStateProps = {}) {
   const toast = useToast();
+  const { t } = useI18n();
 
   const [containers, setContainers] = useState<DockerContainer[]>([]);
   const [statsMap, setStatsMap] = useState<Record<string, ContainerStats>>({});
@@ -24,6 +28,27 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
   const [sheetContainer, setSheetContainer] = useState<DockerContainer | null>(null);
   const [imageUpdateContainer, setImageUpdateContainer] = useState<{ id: string; name: string; image: string } | null>(null);
   const [composeConfigProject, setComposeConfigProject] = useState<string | null>(null);
+
+  // Deployment Center states (including F5 restoration)
+  const [activeDeployment, setActiveDeployment] = useState<{
+    deploymentId: string;
+    containerId: string;
+    containerName: string;
+    imageName?: string;
+  } | null>(() => {
+    const saved = getSavedActiveDeployment();
+    if (saved && saved.deploymentId) {
+      return {
+        deploymentId: saved.deploymentId,
+        containerId: saved.containerId,
+        containerName: saved.containerName,
+        imageName: saved.imageName
+      };
+    }
+    return null;
+  });
+  const [isDeployModalOpen, setIsDeployModalOpen] = useState(() => !!activeDeployment);
+  const [webhookWizardContainer, setWebhookWizardContainer] = useState<DockerContainer | null>(null);
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -219,6 +244,26 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     toast.success('Etiketler güncellendi');
   };
 
+  const handleTriggerDeploy = useCallback(async (container: DockerContainer) => {
+    const rawName = container.Names?.[0] || container.Id.slice(0, 12);
+    const cleanName = rawName.replace(/^\//, '');
+
+    try {
+      const res = await deploymentsApi.triggerDeploy(container.Id);
+      setActiveDeployment({
+        deploymentId: res.deploymentId,
+        containerId: container.Id,
+        containerName: cleanName,
+        imageName: container.Image
+      });
+      setIsDeployModalOpen(true);
+      toast.success(t('deployments.deployStartedToast', { name: cleanName }));
+    } catch (err: any) {
+      const msg = err?.message || t('deployments.deployFailedToast');
+      toast.error(msg);
+    }
+  }, [toast, t]);
+
   return {
     containers,
     statsMap,
@@ -254,5 +299,12 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     tagsWithCounts,
     filteredContainers,
     handleTagsUpdated,
+    activeDeployment,
+    setActiveDeployment,
+    isDeployModalOpen,
+    setIsDeployModalOpen,
+    webhookWizardContainer,
+    setWebhookWizardContainer,
+    handleTriggerDeploy
   };
 }

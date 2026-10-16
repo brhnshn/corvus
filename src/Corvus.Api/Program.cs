@@ -39,6 +39,9 @@ builder.Services.AddScoped<IAlertRuleRepository, AlertRuleRepository>();
 builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
 builder.Services.AddScoped<ISystemRepository, SystemRepository>();
 builder.Services.AddScoped<ISystemMetricRepository, SystemMetricRepository>();
+builder.Services.AddSingleton<IDeploymentRepository, DeploymentRepository>();
+builder.Services.AddSingleton<Corvus.Api.Services.Deployments.IDeploymentLockManager, Corvus.Api.Services.Deployments.DeploymentLockManager>();
+builder.Services.AddSingleton<Corvus.Api.Services.Deployments.IDeploymentEngine, Corvus.Api.Services.Deployments.DeploymentEngine>();
 
 builder.Services.AddSingleton<IDockerHttpClient, DockerHttpClient>();
 builder.Services.AddSingleton<IDockerService, DockerService>();
@@ -182,6 +185,7 @@ app.MapIncidentEndpoints();
 app.MapNotificationEndpoints();
 app.MapStreamEndpoints();
 app.MapComposeEndpoints();
+app.MapDeploymentsEndpoints();
 app.MapDeployWebhookEndpoints();
 app.MapAlertRulesEndpoints();
 app.MapActivityLogEndpoints();

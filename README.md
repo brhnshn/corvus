@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Database" />
-  <img src="https://img.shields.io/badge/Tests-320_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-374_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -130,6 +130,15 @@ Corvus is built from the ground up to challenge the misconception that modern en
 ---
 
 ## ✨ Key Features
+
+- **🚀 Native AOT Container Deployment Center & CI/CD Inbound Webhook:**
+  - **Self-Hosted PaaS Engine (`DeploymentEngine.cs`):** 1-click rolling container deployments with discrete 5-step visual progress stepper (`Queued` ➔ `Pulling` ➔ `Recreating` ➔ `Healthcheck` ➔ `Live`).
+  - **Fail-Fast Pre-Pull Validation (100% Uptime Guarantee):** Pulls and verifies new image layers before stopping or modifying the active container; aborts instantly without downtime if registry returns 401/404 or times out.
+  - **Deterministic Nano-Rollback:** Renames running containers to unique temporary backups (`${name}_corvus_backup_${timestamp}_${guid}`) and executes ordered zero-downtime rollback if startup or healthchecks fail.
+  - **Dual-Path Buffering Architecture:** Real-time Docker pull layer progress streams straight from RAM to SSE subscribers (<1ms latency) via `IEventBroadcaster`, while batching writes to SQLite WAL to eliminate database locks (`SQLITE_BUSY`).
+  - **Synchronous CI/CD Pipeline Gate (`&wait=true`):** `POST /api/hooks/deploy/{token}?wait=true` keeps the HTTP connection open and returns HTTP 200 on success or HTTP 500 on failure, enabling GitHub Actions workflows to fail immediately on bad deployments without external tooling.
+  - **Modular ANSI Terminal & Resilient F5 Reconnection:** High-contrast dark terminal log viewer with regex search and clipboard copy, maintaining active deployment state in `localStorage` across page refreshes.
+  - **Zero-Friction CI/CD Webhook Wizard:** 1-click modal generating secure deploy tokens and ready-to-use GitHub Actions workflow YAML files.
 
 - **🌐 Multi-Node Systems Cockpit & Edge Agent (`/systems`):**
   - **Zero-Inbound Port Architecture:** Edge servers connect outbound to Corvus Hub over encrypted TLS WebSocket (`/agent/connect`), requiring zero open ports or firewall changes on monitored nodes.
@@ -403,12 +412,12 @@ labels:
    cd ../Corvus.Api
    dotnet run
    ```
-3. **Running Automated Tests (320 Total):**
+3. **Running Automated Tests (374 Total):**
    ```bash
-   # Backend Tests (291 passing xUnit tests)
+   # Backend Tests (329 passing xUnit tests)
    dotnet test tests/Corvus.Api.Tests
 
-   # Frontend Tests (29 passing Vitest tests)
+   # Frontend Tests (45 passing Vitest tests)
    cd src/Corvus.Web && npm test
    ```
 
@@ -416,10 +425,12 @@ labels:
 
 ## 💡 Inspirations & Credits
 
-Corvus is inspired by the architectural philosophies of pioneering open-source homelab and observability tools, re-imagined from the ground up as a single, ultra-lightweight .NET 9 Native AOT command center:
+Corvus is inspired by the architectural philosophies of pioneering open-source homelab, container management, and observability tools, re-imagined from the ground up as a single, ultra-lightweight .NET 9 Native AOT command center:
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma) — Health monitoring philosophy and status page concepts
 - [Beszel](https://github.com/henrygd/beszel) — Compact telemetry and system resource metrics approach
 - [Portainer](https://github.com/portainer/portainer) — Container lifecycle management vision
+- [Coolify](https://github.com/coollabsio/coolify) — Self-hosted deployment and developer experience philosophy
+- [Watchtower](https://github.com/containrrr/watchtower) — Automated container update and image polling concepts
 - [Checkmate](https://github.com/bluewave-labs/checkmate) — Incident tracking and modern observability aesthetics
 
 ---
@@ -427,3 +438,4 @@ Corvus is inspired by the architectural philosophies of pioneering open-source h
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+

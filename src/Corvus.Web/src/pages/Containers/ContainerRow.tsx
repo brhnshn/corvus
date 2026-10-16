@@ -7,7 +7,8 @@ import {
   ArrowDownRight, 
   ArrowUpRight,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Rocket
 } from 'lucide-react';
 import type { DockerContainer, ContainerStats } from '../../types';
 import { Pill, type StatusType } from '../../components/ui/Pill';
@@ -28,6 +29,7 @@ export interface ContainerRowProps {
   onSelectTag?: (tag: string) => void;
   isAdmin?: boolean;
   onOpenImageUpdate?: (container: DockerContainer) => void;
+  onDeploy?: (container: DockerContainer) => void;
   hasUpdate?: boolean;
 }
 
@@ -53,6 +55,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   onSelectTag,
   isAdmin = true,
   onOpenImageUpdate,
+  onDeploy,
   hasUpdate = false,
 }) => {
   const { t } = useI18n();
@@ -309,6 +312,21 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
               title={t('containers.restart')}
               aria-label={t('containers.restart')}
             />
+
+            {onDeploy && (
+              <Button
+                variant="icon"
+                size="sm"
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  onDeploy(container);
+                }}
+                disabled={actionInProgress}
+                icon={<Rocket className="w-3.5 h-3.5 text-indigo-400" />}
+                title={t('containers.deployTooltip')}
+                aria-label={t('containers.deploy')}
+              />
+            )}
           </>
         )}
 

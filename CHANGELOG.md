@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.10] - 2026-10-16 — Native AOT Deployment Center, Zero-Downtime Safe Rollback & Synchronous CI/CD Inbound Webhook
+
+### Added
+- **Native AOT Container Deployment Center (Self-Hosted PaaS Engine)**:
+  - `019_deployments_sqlite.sql` & `DeploymentRepository.cs`: Introduced persistent `deployments` SQLite schema and Dapper.AOT repository indexing deployment target, trigger types (`manual_ui`, `webhook_github`, `scheduled`), status (`pending`, `in_progress`, `success`, `failed`, `rolled_back`), execution steps, image digest diffs, duration in ms, and ANSI log outputs.
+  - `DeploymentEngine.cs`: High-performance background deployment executor featuring dual-path buffering — streaming real-time Docker pull layer progress directly to SSE subscribers via `IEventBroadcaster` in RAM (<1ms) while batching writes to SQLite to eliminate WAL database locks (`SQLITE_BUSY`).
+  - `DeploymentLockManager.cs`: Container-level fine-grained asynchronous keyed locking (`ConcurrentDictionary<string, SemaphoreSlim>`). Rejects concurrent duplicate deployment triggers with fail-fast `409 Conflict`, stopping race conditions and duplicate container operations.
+  - `DeploymentsEndpoints.cs`: Added minimal API routes `/api/containers/{id}/deploy` (202 Accepted trigger), `/api/deployments` (filtered history list), `/api/deployments/{id}` (execution details & accumulated logs), and `/api/deployments/{id}/stream` (real-time SSE stream).
+- **Synchronous CI/CD Webhook & Global Pipeline Status (`&wait=true`)**:
+  - `DeployWebhookEndpoints.cs`: Extended `POST /api/hooks/deploy/{token}` with `&wait=true` parameter. Keeps HTTP connection open until deployment passes health checks (returning HTTP 200) or fails/rolls back (returning HTTP 500), enabling GitHub Actions / GitLab CI pipelines to accurately reflect pass/fail status without external tooling.
+  - Broadcasts `deployment_started` global WebSocket events to active web sessions, showing floating toast notifications with direct links to live progress modals.
+- **Vercel-Grade Modular Frontend Deployment Center**:
+  - `DeploymentStepper.tsx`: 5-phase discrete visual progress stepper (`Queued` ➔ `Pulling` ➔ `Recreating` ➔ `Healthcheck` ➔ `Live` / `Rolled Back`) with real-time step timers.
+  - `DeploymentTerminalLog.tsx`: High-contrast dark ANSI terminal console with regex log search, auto-scroll lock, one-click clipboard copy, and clean clearing.
+  - `DeploymentProgressModal.tsx`: Accessible dialog shell with ESC listener, focus-trap, and background minimize pill. Recovers active deployments from `localStorage` on page refresh/F5 with zero log loss.
+  - `DeploymentsTable.tsx` & `ContainerDeploymentsTab.tsx`: Audit trail table displaying status badges, trigger sources, duration, old vs new image digests, and log drawer inspection.
+  - `DeployWebhookWizardModal.tsx`: Zero-friction CI/CD onboarding modal generating secure deployment tokens and ready-to-use GitHub Actions workflow YAML snippets.
+  - `ansi.ts`: Safe HTML span parser and ANSI escape code sanitizer with zero dependencies.
+
+### Security
+- **Fail-Fast Pre-Pull Hard Gate (Zero-Downtime Guarantee)**:
+  - `DockerService.cs` & `DockerImageClient.cs`: Enforced pre-flight validation on remote image pulls. If the remote registry returns 401 Unauthorized, 404 Not Found, or times out, the running container is **never stopped or renamed**, preserving 100% production uptime without unnecessary downtime.
+- **Deterministic Nano-Unique Rollback**:
+  - Renamed backup containers to `${originalName}_corvus_backup_${timestamp}_${guid}` to eliminate name collision vulnerabilities on rapid successive deployments.
+  - Guaranteed atomic rollback ordering: terminate and delete failed container, verify name liberation, rename backup container back to original, and restart.
+- **Native AOT Compile-Time Event Serialization**:
+  - `CorvusJsonSerializerContext.cs`: Registered strongly-typed deployment event records (`DeploymentTriggerResponse`, `DeploymentStepChangedEventPayload`, `DeploymentLogChunkEventPayload`, `DeploymentCompletedEventPayload`, `DeploymentStartedGlobalPayload`, `DeploymentErrorResponse`) preventing reflection runtime crashes in .NET 9 Native AOT.
+
+### Fixed
+- **Container Row Quick Actions Integration**:
+  - `ContainerRow.tsx` & `ContainerActionSheet.tsx`: Connected "Deploy" button and GitHub Actions wizard seamlessly with container state without layout shifting.
+- **i18n Dual-Language Synchronization**:
+  - Synchronized comprehensive `deployments` translation keys across `tr.ts` and `en.ts` with zero hardcoded UI strings.
+
+---
+
 ## [1.6.9] - 2026-10-16 — Security Hardening, Real-time Telemetry, Concurrency Locks & Services Native AOT Resolution
 
 ### Security

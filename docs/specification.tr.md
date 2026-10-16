@@ -61,9 +61,9 @@ Corvus, self-hosted sunucular için açık kaynak, düşük kaynak tüketimli, t
 - **Yedekleme ve Saklama Motoru**: Kilitlenmesiz SQLite anlık görüntü indirme (`VACUUM INTO`), gerçek zamanlı veritabanı disk boyutu telemetrisi (`GET /api/settings/db-stats`), iki kademeli saklama temizleyicisi (7 gün 1dk ham / 30 gün 1sa özet / 365 gün günlük SLA), günlük otomatik `VACUUM;` freelist temizliği
 
 ### Otomatik Test Paketi
-- **Toplam 320 Başarılı Test:**
-  - **Backend (291 Test):** Minimal API uç noktaları, arka plan servisleri, repo katmanları, Docker istemcileri ve RBAC güvenlik filtreleri üzerinde xUnit + Moq + FluentAssertions entegrasyon ve birim testleri.
-  - **Frontend (29 Test):** Durum yönetimi, i18n biçimlendirme, bulanık arama ve bileşen render doğrulamaları içeren Vitest + React Testing Library testleri.
+- **Toplam 374 Başarılı Test:**
+  - **Backend (329 Test):** Minimal API uç noktaları, arka plan servisleri, repo katmanları, Docker istemcileri, dağıtım motoru ve RBAC güvenlik filtreleri üzerinde xUnit + Moq + FluentAssertions entegrasyon ve birim testleri.
+  - **Frontend (45 Test):** Durum yönetimi, ANSI terminal ayrıştırma, stepper aşamaları, i18n biçimlendirme, bulanık arama ve bileşen render doğrulamaları içeren Vitest + React Testing Library testleri.
 
 ---
 
@@ -303,6 +303,29 @@ Ajan tarafından canlı akıtılan uzak konteyner önbelleği (`016_systems_sqli
 | ports_json | TEXT | Port eşleştirmeleri JSON dizisi |
 | updated_at | TEXT | Son önbellek eşzamanlama zaman damgası |
 
+### `deployments`
+Konteyner dağıtım ve güncelleme işlemlerinin kalıcı denetim günlüğü (`019_deployments_sqlite.sql`).
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| id | TEXT | Birincil Anahtar (GUID dizesi) |
+| container_id | TEXT | Hedef konteyner hash'i veya tanıtıcısı |
+| container_name | TEXT | Okunabilir konteyner adı |
+| service_name | TEXT (nullable) | İlgili servis veya Compose servis adı |
+| trigger_type | TEXT | Tetikleyici türü (`manual_ui`, `webhook_github`, `webhook_generic`, `scheduled`) |
+| status | TEXT | Yaşam döngüsü durumu (`pending`, `in_progress`, `success`, `failed`, `rolled_back`, `cancelled`) |
+| current_step | TEXT (nullable) | Aktif aşama (`queued`, `pulling`, `recreating`, `healthcheck`, `live`, `rolled_back`) |
+| steps_json | TEXT | Zaman damgaları ve durumları içeren ayrık adımlar JSON dizisi |
+| error_message | TEXT (nullable) | Hata açıklaması veya istisna izi |
+| old_image_digest | TEXT (nullable) | Dağıtım öncesi upstream imaj özeti |
+| new_image_digest | TEXT (nullable) | Dağıtım sonrası yeni imaj özeti |
+| duration_ms | INTEGER (nullable) | Milisaniye cinsinden toplam dağıtım süresi |
+| logs | TEXT (nullable) | Birikmiş ANSI konsol ve katman çekme logları |
+| triggered_by | TEXT (nullable) | İşlemi başlatan kullanıcı adı veya webhook tokeni |
+| created_at | TEXT | Dağıtım oluşturulma zaman damgası (ISO 8601) |
+| started_at | TEXT (nullable) | Yürütmenin başlama zaman damgası |
+| finished_at | TEXT (nullable) | Dağıtımın bitiş veya sonlanma zaman damgası |
+
 ### `users`, `user_sessions` ve `settings`
 - `users`: `id`, `username`, `password_hash` (PBKDF2), `role` (`admin`, `operator`, `viewer`), `created_at` (`017_users_rbac_sqlite.sql`)
 - `user_sessions`: `token` (PK), `username`, `expires_at`, `created_at` (Konteyner yeniden başlasa bile oturumu koruyan kalıcı SQLite/PostgreSQL deposu)
@@ -341,9 +364,14 @@ Ajan tarafından canlı akıtılan uzak konteyner önbelleği (`016_systems_sqli
 | `GET /api/containers/{id}/check-update` | Auth | **OCI Digest Kontrolü:** İlgili konteynerin upstream OCI registry'de (Docker Hub, GHCR, Quay) yeni sürümü olup olmadığını sıfır veri transferiyle sorgular |
 | `GET /api/containers/updates` | Auth | **Toplu İmaj Güncellemeleri:** Tüm çalışan konteynerlerin imaj güncelleme durum listesini döner |
 | `POST /api/containers/{id}/recreate` | Admin | **Tek Tıkla Yeniden Oluşturma:** Yeni imajı çeker, eski konteyneri durdurur ve aynı konfigürasyonla kesintisiz yeniden ayağa kaldırır |
+| `POST /api/containers/{id}/deploy` | Admin | **Dağıtım Tetikleme:** Asenkron dağıtım sürecini başlatır (ön çekim fail-fast, nano-rollback, canlı SSE akışı); 202 Accepted döner |
+| `GET /api/deployments` | Auth | **Dağıtım Denetim Geçmişi:** Sayfalanmış/filtrelenmiş dağıtım kayıtlarını sorgular (`?container_id=...&limit=...`) |
+| `GET /api/deployments/{id}` | Auth | **Dağıtım Kaydı Detayı:** Yürütme durumu, adım süreleri, imaj digest farkları ve birikmiş logları getirir |
+| `POST /api/deployments/{id}/cancel` | Admin | **Dağıtımı İptal Et:** Devam eden dağıtım görevini güvenle iptal eder |
+| `GET /api/deployments/{id}/stream` | Auth | **Dağıtım SSE Canlı Akışı:** İlerleme adımları ve ANSI log parçaları için gerçek zamanlı Server-Sent Events akışı |
 | `GET /api/compose/{projectName}/file` | Admin | **Compose YAML İnceleyici:** Dizin aşımı korumalı `compose.yaml` dosya içeriğini okur |
 | `PUT /api/compose/{projectName}/file` | Admin | **Güvenli Compose Düzenleyici:** Compose dosyasını günceller, otomatik `.bak` yedeği alır ve isteğe bağlı stack'i yeniden başlatır |
-| `POST /api/hooks/deploy/{token}` | Sabit Zamanlı Token | **CI/CD Dağıtım Webhook'u:** Sabit zamanlı kriptografik token ile güvenli gelen dağıtım tetikleyicisi |
+| `POST /api/hooks/deploy/{token}` | Sabit Zamanlı Token | **CI/CD Dağıtım Webhook'u:** Sabit zamanlı kriptografik token doğrulamalı ve senkron `&wait=true` boru hattı kapılı gelen dağıtım tetikleyicisi |
 | `GET /api/containers/tags` | Auth | Konteynerlere atanmış tüm tekil etiketleri listeler |
 | `PUT /api/containers/{id}/tags` | Admin | Konteyner ortam etiketlerini günceller (SQLite `service_overrides` ile kalıcı saklanır) |
 | `POST /api/containers/{id}/start` | Admin | Konteyneri başlatır |
@@ -444,8 +472,8 @@ Ajan tarafından canlı akıtılan uzak konteyner önbelleği (`016_systems_sqli
 |---|---|---|
 | **Dashboard** | `/` | Mobil-öncelikli 2 sütunlu KPI şeridi, tam genişlikte Disk barı, canlı sistem nabzı, GitHub sürüm rozeti ve aktif konteynerler widget'ı |
 | **Servisler** | `/services` | Servis kartları, durum rozetleri, TCP/ICMP PING port göstergeleri, HTTP gövde doğrulaması, SSL kalan gün rozeti, **ortam etiketleri (`TagBadge`)**, **anlık etiket filtreleme çubuğu (`TagFilterBar`)**, yukarı/aşağı sıralama butonları |
-| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, **Tıklanabilir Satır Gezinmesi (`ContainerRow`)**, **Satır İçi Hızlı Aksiyonlar (`ContainerQuickActions`)**, Start/Stop/Pause/Restart aksiyonları, **Toplu Stack Butonları (`ComposeStackGroup`)**, **Tarayıcı İçi YAML & .env Editörü (`ComposeConfigModal`)**, **OCI İmaj Güncelleme Takibi (`ImageUpdateModal`)**, canlı log terminali, **İnteraktif Web Terminali**, **Kuru Çalıştırmalı Disk Temizliği (`SystemPruneModal`)**, **Konteyner Etiketleme & Filtreleme (`TagFilterBar`)** |
-| **Konteyner Detay** | `/containers/:id` | **Tam Ekran Komuta Merkezi:** Bağımsız URL ile erişilebilir, yer imlerine eklenebilir, derin bağlantılı (`?tab=`) kontrol paneli; canlı CPU %, RAM, Ağ Rx/Tx metrik kartları, **Tarihsel Telemetri Area Grafikleri (`ContainerHistoricalCharts`)**, tam ekran loglar ve xterm.js web terminali |
+| **Container'lar** | `/containers` | Toplu stats akışı, anlık CPU%, RAM ve Net I/O rozetleri, **Tıklanabilir Satır Gezinmesi (`ContainerRow`)**, **Satır İçi Hızlı Aksiyonlar (`ContainerQuickActions`)**, **1 Tıkla Konteyner Dağıtımı**, Start/Stop/Pause/Restart aksiyonları, **Toplu Stack Butonları (`ComposeStackGroup`)**, **Tarayıcı İçi YAML & .env Editörü (`ComposeConfigModal`)**, **OCI İmaj Güncelleme Takibi (`ImageUpdateModal`)**, canlı log terminali, **İnteraktif Web Terminali**, **Kuru Çalıştırmalı Disk Temizliği (`SystemPruneModal`)**, **Konteyner Etiketleme & Filtreleme (`TagFilterBar`)** ve **CI/CD Webhook Kurulum Sihirbazı (`DeployWebhookWizardModal`)** |
+| **Konteyner Detay** | `/containers/:id` | **Tam Ekran Komuta Merkezi:** Bağımsız URL ile erişilebilir, yer imlerine eklenebilir, derin bağlantılı (`?tab=`) kontrol paneli; canlı CPU %, RAM, Ağ Rx/Tx metrik kartları, **Tarihsel Telemetri Area Grafikleri (`ContainerHistoricalCharts`)**, tam ekran loglar, xterm.js web terminali ve **Konteyner Dağıtımları Sekmesi (`ContainerDeploymentsTab`, `DeploymentsTable`)** |
 | **Sistemler (Filo)** | `/systems` | **Çok Düğümlü Sunucu Kokpiti:** Tüm uç sunucuların genel görünümü, sunucu sağlık rozetleri, anlık kaynak kullanım özetleri (CPU, RAM, Disk), arama & etiket filtreleme ve 1-tıkla ajan kurulum modalı (`AddSystemModal`) |
 | **Sistem Detay** | `/systems/:id` | **Tam Ekran Sunucu Teşhisi:** Derin bağlantılı sekmeler (`?tab=overview\|metrics\|containers\|systemd\|settings`), 100ms uyarlanabilir canlı SSE telemetri akışı, geçmiş trend grafikleri, uzak konteyner kontrolleri ve Linux systemd servis yöneticisi |
 | **Denetim İzi** | `/activity` | **Kronolojik Olay Zaman Tüneli:** Olay kategorilerine (`container`, `security`, `alert`, `system`) göre filtreleme, kaynak bazlı arama ve yapılandırılmış JSON detayları |
@@ -462,7 +490,7 @@ Ajan tarafından canlı akıtılan uzak konteyner önbelleği (`016_systems_sqli
 ## 8. Tamamlanan Yol Haritası Adımları
 
 - [x] Native AOT + Docker.DotNet doğrulama ve custom SocketsHttpHandler istemcisi
-- [x] Dapper.AOT + Microsoft.Data.Sqlite + Npgsql PostgreSQL + DbUp veri katmanı (001-017)
+- [x] Dapper.AOT + Microsoft.Data.Sqlite + Npgsql PostgreSQL + DbUp veri katmanı (001-019)
 - [x] Corvus Edge Agent (`src/Corvus.Agent`) .NET 9 Native AOT (<10 MB RAM, dışa doğru TLS/WSS tünel, sıfır açık port)
 - [x] Çok Düğümlü Sistemler Kokpiti (`/systems`, `/systems/:id`) ve 100ms uyarlanabilir canlı SSE akışı
 - [x] Sıfır Tahsisli Yönetilmeyen 128-byte `SystemTelemetryPoint` halka tamponu (sunucu başına ~7.2 KB RAM)
@@ -483,7 +511,7 @@ Ajan tarafından canlı akıtılan uzak konteyner önbelleği (`016_systems_sqli
 - [x] Docker Compose Stack Toplu Eylemleri (Toplu Başlat/Durdur/Yeniden Başlat)
 - [x] Konteyner Beklenmedik Kapanma & Crash-Loop Alarmları (ExitCode != 0, OOMKilled)
 - [x] OCI Registry İmaj Güncelleme Sentinel & Digest İzleyici (HEAD istekleriyle tespit, 1-tıkla recreate)
-- [x] Olay Güdümlü Kendi Kendini Onarma (Auto-Healing) ve Sabit Zamanlı CI/CD Dağıtım Webhook'ları
+- [x] Event-Driven Auto-Healing & Constant-Time Inbound Deploy Webhooks
 - [x] Genişletilmiş Uptime: TCP Port Ping, ICMP Ping ve SSL Sertifika erken uyarıları
 - [x] Dead Man's Snitch: Beklenen periyotlu push monitörü ve otomatik gecikme alarmları
 - [x] Halka Açık / Şifresiz Durum Sayfası (`/status` ve `/api/status-page`)
@@ -497,5 +525,9 @@ Ajan tarafından canlı akıtılan uzak konteyner önbelleği (`016_systems_sqli
 - [x] Konteyner İçi Web Terminali (Exec Shell, WebSocket Proxy, çift yönlü akış düzeltmesi ve geri çekilme kabuk zinciri)
 - [x] İki Aşamalı Kuru Çalıştırmalı Sistem Temizliği (System Prune & Güvenli Hacim Koruması)
 - [x] Servis & Konteyner Ortam Etiketleme / Gruplama (`013_service_tags.sql`, `TagBadge`, `TagInput`, `TagFilterBar`, konteyner etiketleri)
-- [x] 320/320 Başarılı Otomatik Test (291 backend xUnit + 29 frontend Vitest)
+- [x] **Native AOT Konteyner Dağıtım Merkezi (`019_deployments_sqlite.sql`, `DeploymentEngine.cs`, `DeploymentLockManager.cs`)**
+- [x] **Sıfır Kesintili Rollback & Fail-Fast Ön Çekim Doğrulaması (`DockerService.cs`, `DockerImageClient.cs`)**
+- [x] **Senkron CI/CD Dağıtım Webhook Kapısı (`POST /api/hooks/deploy/{token}?wait=true`)**
+- [x] **Vercel Seviyesinde Modüler Frontend Dağıtım Merkezi (`DeploymentStepper`, `DeploymentTerminalLog`, `DeploymentProgressModal`, F5 localStorage durum kurtarma)**
+- [x] 374/374 Başarılı Otomatik Test (329 backend xUnit + 45 frontend Vitest)
 

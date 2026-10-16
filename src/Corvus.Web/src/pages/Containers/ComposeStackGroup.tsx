@@ -26,6 +26,7 @@ export interface ComposeStackGroupProps {
   isAdmin?: boolean;
   onOpenComposeConfig?: (projectName: string) => void;
   onOpenImageUpdate?: (container: DockerContainer) => void;
+  onDeploy?: (container: DockerContainer) => void;
   updatesMap?: Record<string, boolean>;
 }
 
@@ -50,6 +51,7 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
   isAdmin = true,
   onOpenComposeConfig,
   onOpenImageUpdate,
+  onDeploy,
   updatesMap,
 }) => {
   const [stackBusy, setStackBusy] = useState<string | null>(null);
@@ -150,6 +152,7 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
               onSelectTag={onSelectTag}
               isAdmin={isAdmin}
               onOpenImageUpdate={onOpenImageUpdate}
+              onDeploy={onDeploy}
               updatesMap={updatesMap}
             />
           </GroupSection>

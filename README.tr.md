@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Veritabanı" />
-  <img src="https://img.shields.io/badge/Testler-320_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-374_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -130,6 +130,15 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
 ---
 
 ## ✨ Temel Özellikler
+
+- **🚀 Native AOT Konteyner Dağıtım Merkezi & CI/CD Dağıtım Webhook'u:**
+  - **Self-Hosted PaaS Motoru (`DeploymentEngine.cs`):** 5 aşamalı görsel ilerleme çubuğu (`Kuyrukta` ➔ `İmaj Çekiliyor` ➔ `Yeniden Oluşturuluyor` ➔ `Sağlık Kontrolü` ➔ `Canlı`) ile tek tıkla konteyner dağıtımı.
+  - **Fail-Fast Ön Çekim Kapısı (%100 Kesintisiz Çalışma Güvencesi):** Yeni imaj katmanları çekilip doğrulanmadan çalışan konteyner asla durdurulmaz veya adı değiştirilmez; registry 401/404 dönerse veya zaman aşımına uğrarsa kesinti yaşanmadan dağıtım derhal durdurulur.
+  - **Deterministik Nano-Rollback:** Çalışan konteyneri benzersiz bir zaman damgasıyla (`_corvus_backup_${timestamp}_${guid}`) yedekler; yeni sürümün başlatılması veya sağlık kontrolü başarısız olursa sıfır kesintiyle otomatik rollback uygular.
+  - **Çift Hatlı Tamponlama Mimarisi:** Canlı Docker imaj çekim ilerleme satırlarını RAM üzerinden `IEventBroadcaster` ile milisaniyenin altında SSE abonelerine akıtırken, SQLite WAL veritabanı kilitlerini (`SQLITE_BUSY`) önlemek için veritabanına toplu (batch) yazım uygular.
+  - **Senkron CI/CD Boru Hattı Kapısı (`&wait=true`):** `POST /api/hooks/deploy/{token}?wait=true` uç noktası HTTP bağlantısını açık tutarak başarıda HTTP 200, başarısızlıkta HTTP 500 döner; böylece GitHub Actions iş akışları harici araçlara gerek duymadan hatayı anında yakalar.
+  - **Modüler ANSI Terminali ve Dayanıklı F5 Yeniden Bağlantısı:** Regex arama ve panoya kopyalama özellikli koyu terminal konsolu; `localStorage` üzerinden sayfa yenilense dahi aktif dağıtım akışına sıfır veri kaybıyla yeniden bağlanır.
+  - **Sıfır Sürtünmeli CI/CD Webhook Sihirbazı:** Tek tıkla güvenli dağıtım tokeni ve kullanıma hazır GitHub Actions `.github/workflows/deploy.yml` YAML kod şablonu üretir.
 
 - **🌐 Çoklu Sistem Yönetimi Kokpiti ve Uç Ajanı (`/systems`):**
   - **Sıfır Açık Port (Zero-Inbound) Mimarisi:** İzlenen uç sunucular Corvus Hub merkezine şifreli TLS WebSocket (`/agent/connect`) üzerinden dışa doğru (outbound) bağlanır; uç sunucuda hiçbir port açmaya veya güvenlik duvarı kuralına gerek kalmaz.
@@ -400,12 +409,12 @@ labels:
    cd ../Corvus.Api
    dotnet run
    ```
-3. **Otomatik Testleri Çalıştırma (Toplam 320 Test):**
+3. **Otomatik Testleri Çalıştırma (Toplam 374 Test):**
    ```bash
-   # Backend Testleri (291 başarılı xUnit testi)
+   # Backend Testleri (329 başarılı xUnit testi)
    dotnet test tests/Corvus.Api.Tests
 
-   # Frontend Testleri (29 başarılı Vitest testi)
+   # Frontend Testleri (45 başarılı Vitest testi)
    cd src/Corvus.Web && npm test
    ```
 
@@ -413,10 +422,12 @@ labels:
 
 ## 💡 İlham Kaynakları & Teşekkürler (Inspirations & Credits)
 
-Corvus, açık kaynak homelab ve sistem izleme ekosistemindeki öncü araçların felsefelerinden ilham alarak .NET 9 Native AOT üzerinde tek ve ultra hafif bir komuta merkezi olarak tasarlanmıştır:
+Corvus, açık kaynak homelab, konteyner yönetimi ve sistem izleme ekosistemindeki öncü araçların felsefelerinden ilham alarak .NET 9 Native AOT üzerinde tek ve ultra hafif bir komuta merkezi olarak tasarlanmıştır:
 - [Uptime Kuma](https://github.com/louislam/uptime-kuma) — İzleme mantığı ve durum sayfası felsefesi
 - [Beszel](https://github.com/henrygd/beszel) — Hafif telemetri ve sistem kaynak takibi yaklaşımı
 - [Portainer](https://github.com/portainer/portainer) — Konteyner yaşam döngüsü vizyonu
+- [Coolify](https://github.com/coollabsio/coolify) — Dağıtım motoru ve geliştirici deneyimi ergonomisi
+- [Watchtower](https://github.com/containrrr/watchtower) — Otomatik konteyner güncelleme ve imaj yoklama kavramları
 - [Checkmate](https://github.com/bluewave-labs/checkmate) — Olay (incident) yönetimi ve modern gözlemlenebilirlik estetiği
 
 ---
@@ -424,3 +435,4 @@ Corvus, açık kaynak homelab ve sistem izleme ekosistemindeki öncü araçları
 ## 📄 Lisans
 
 Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
+

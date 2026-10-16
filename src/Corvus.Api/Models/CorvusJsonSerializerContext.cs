@@ -373,6 +373,14 @@ public record NotificationResult(
 [JsonSerializable(typeof(List<Corvus.Api.Models.Systems.SystemdUnitDto>))]
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemdActionRequest))]
 [JsonSerializable(typeof(Corvus.Api.Models.Systems.SystemdLogsDto))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentRecord))]
+[JsonSerializable(typeof(List<Corvus.Api.Models.Deployments.DeploymentRecord>))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentTriggerResponse))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentStepChangedEventPayload))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentLogChunkEventPayload))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentCompletedEventPayload))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentStartedGlobalPayload))]
+[JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeploymentErrorResponse))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }
