@@ -28,6 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `DeploymentEngine.cs`: Added automatic container deletion (`DeleteContainerAsync`) when container startup fails due to port allocation collisions (`port is already allocated`) or unexpected crashes, preventing orphaned stopped containers.
   - Automatically detect and purge leftover `created` or `dead` containers on new deployment triggers, preventing "container already exists" blocking errors.
   - `NewDeploymentModal.tsx`, `tr.ts`, `en.ts`: Added format guidance (`HostPort:ContainerPort`, e.g. `3005:3001`) to help users avoid binding busy host ports.
+- **Prevent Infinite SSE Reconnection & Log Pollution**:
+  - `deployments.ts` & `useDeploymentStream.ts`: Once a deployment finishes (`success`, `failed`, or `rolled_back`), the browser's built-in `EventSource` auto-reconnect cycle is halted via `eventSource.close()`, permanently stopping duplicate log spam and terminal pollution.
 - **Unintended Corvus Deployment Modal on Page Load**:
   - `useDeploymentStream.ts` & `useDeploymentsPageState.ts`: Fixed an issue where stale deployment records in `localStorage` would automatically trigger the live deployment progress modal for `corvus_web` on page mount. `getSavedActiveDeployment()` was hardened with Corvus self-preservation inspection, 10-minute maximum age timeout, and purging completed deployment entries.
 - **Corvus Container Exclusion from Deployment Targets**:

@@ -87,6 +87,7 @@ export function useDeploymentStream({
       } else if (event.type === 'completed') {
         setStatus(event.status);
         setIsDone(true);
+        setIsConnected(false);
         if (event.durationMs) setDurationMs(event.durationMs);
         if (event.error) setErrorMessage(event.error);
 

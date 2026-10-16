@@ -73,25 +73,39 @@ export const deploymentsApi = {
       url += `?systemId=${encodeURIComponent(activeSystemId)}`;
     }
 
+    let closed = false;
     const eventSource = new EventSource(url);
 
+    const closeStream = () => {
+      if (!closed) {
+        closed = true;
+        eventSource.close();
+      }
+    };
+
     eventSource.onmessage = (event) => {
+      if (closed) return;
       try {
         const parsed: DeploymentStreamEvent = JSON.parse(event.data);
         onMessage(parsed);
+        // Dağıtım sonuçlandıysa (success, failed, rolled_back), EventSource derhal kapatılır;
+        // böylece tarayıcının sonsuz yeniden bağlanıp logları tekrar tekrar eklemesi önlenir!
+        if (parsed.type === 'completed') {
+          closeStream();
+        }
       } catch (err) {
         console.warn('Failed to parse SSE deployment payload:', event.data, err);
       }
     };
 
-    if (onError) {
-      eventSource.onerror = (err) => {
-        onError(err);
-      };
-    }
-
-    return () => {
-      eventSource.close();
+    eventSource.onerror = (err) => {
+      if (closed) return;
+      onError?.(err);
+      if (eventSource.readyState === EventSource.CLOSED) {
+        closeStream();
+      }
     };
+
+    return closeStream;
   }
 };

@@ -28,6 +28,8 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - `DeploymentEngine.cs`: Port çakışması (`port is already allocated`) veya başlangıç hatası durumunda `created` durumunda askıda kalan konteynerlerin otomatik silinmesi (`DeleteContainerAsync`) sağlandı.
   - Önceki denemelerden kalan `created` veya `dead` durumundaki atıl konteynerlerin yeni dağıtım başlatıldığında tespit edilip temizlenmesi güvenceye alındı; böylece kullanıcının "konteyner zaten mevcut" hatasıyla bloke olması engellendi.
   - `NewDeploymentModal.tsx`, `tr.ts`, `en.ts`: Port eşleme alanına açıklayıcı format ipucu (`HostPort:ContainerPort`, örn. `3005:3001`) eklendi.
+- **Canlı Dağıtım Log Akışında Sonsuz Yeniden Bağlanma ve Log Kirliliği Giderildi**:
+  - `deployments.ts` & `useDeploymentStream.ts`: Dağıtım tamamlandığında (`success`, `failed` veya `rolled_back`), tarayıcının yerleşik `EventSource` mekanizmasının her 3 saniyede bir otomatik yeniden bağlanarak logları terminale mükerrer eklemesi (`log kirliliği`) önlendi; akış `close()` ile derhal ve kararlı şekilde sonlandırıldı.
 - **Sayfa Açılışında İstenmeyen Corvus Dağıtım Modalı Açılması**:
   - `useDeploymentStream.ts` & `useDeploymentsPageState.ts`: Sayfa açıldığında `localStorage` üzerinden geçmişte kalmış `corvus_web` dağıtımının okunarak otomatik canlı dağıtım modalını tetiklemesi sorunu giderildi. `getSavedActiveDeployment()` fonksiyonuna sıkı öz-koruma (Corvus isim/imaj/ID tespiti), zaman aşımı (10 dakikadan eski oturumların otomatik temizlenmesi) ve tamamlanmış oturumların silinmesi kontrolleri eklendi.
 - **Konteyner Dağıtım Listesinde Corvus Filtresi**:
