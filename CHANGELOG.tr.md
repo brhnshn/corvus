@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [1.6.11] - 2026-10-16 — Müstakil Dağıtım Merkezi, Sıfırdan Dağıtım Sihirbazı & 502 Öz-Koruma Kalkanı
+## [1.6.12] - 2026-10-16 — Müstakil Dağıtım Merkezi, Sıfırdan Dağıtım Sihirbazı & 502 Öz-Koruma Kalkanı
 
 ### Eklenenler (Added)
 - **Müstakil Dağıtım Merkezi Sayfası (`/deployments`)**:
