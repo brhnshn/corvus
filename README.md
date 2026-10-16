@@ -162,11 +162,13 @@ Corvus is built from the ground up to challenge the misconception that modern en
   - **Threshold-Driven Color Semantics:** Strict operational threshold colors across charts and progress bars (<70% green `#34d399`, 70-89% amber `#fbbf24`, >=90% rose `#f87171`).
   - **Spring Micro-Animations:** 180ms - 220ms deceleration physics (`cubic-bezier(0.16, 1, 0.3, 1)`) with native `prefers-reduced-motion` compliance.
   - **Modular UI Component Library (`src/components/ui/`):** Enterprise-grade, type-safe components adhering to the zero-monolith clean architecture rule: `Button`, `Modal`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
-- **🔐 3-Tier Role-Based Access Control (RBAC) & Persistent Sessions:**
+- **🔐 3-Tier Role-Based Access Control (RBAC) & Security Hardening:**
   - Granular `admin` (full system mutation), `operator` (container & stack operations), and `viewer` (read-only audit) roles protected at the endpoint level via `CorvusAuthFilter`.
-  - Persistent session store (`user_sessions` table): Ensures user sessions survive container upgrades, restarts, and redeployments without losing sub-microsecond in-memory verification.
+  - **Zero-Trust Network Hardening & SSRF Defense (`SsrfGuard`):** Prohibits requests to AWS/GCP/Azure Cloud Metadata (`169.254.169.254`), IPv6 link-local addresses, and DNS rebinding attacks across uptime health probes and outbound webhooks.
+  - **Closed Registration & Secure First-Run Setup:** First-run onboarding securely provisions the initial administrator and automatically disables open registration; sensitive system tokens and notification secrets (`smtp_pass`, webhook secrets) are masked on API responses.
+  - **Persistent Session Store (`user_sessions` table):** Ensures user sessions survive container upgrades, restarts, and redeployments without losing sub-microsecond in-memory verification.
   - Modular **Profile & Security View** (`/profile`): Self-service password updates, 2FA management, and administrative user provisioning.
-  - Centralized `corvus_unauthorized` session interceptor: Gracefully redirects users back to login without throwing unhandled exceptions.
+  - Centralized `corvus_unauthorized` session interceptor and resilient dynamic module reloader (`lazyWithRetry` & `ChunkErrorBoundary`).
 - **📱 Mobile Glass Bottom Navigation Bar:**
   - 7-tab frosted glass bottom navigation bar (`BottomNav.tsx`) with expanding active tabs, sliding indicator, and safe-area notch padding.
   - Clean edge-to-edge mobile experience without redundant top bars or drawer clutter.

@@ -107,6 +107,7 @@ corvus/
 │   │   │   ├── VersionInfo.cs                # Update checker DTO
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration context
 │   │   ├── Utils/                  # Helper utilities
+│   │   │   ├── SsrfGuard.cs                  # Link-local, Cloud Metadata (169.254.169.254), and DNS Rebinding guard
 │   │   │   ├── StatusCodeMatcher.cs          # HTTP status code pattern matcher (ranges and discrete codes)
 │   │   │   ├── NativeMemoryTrimmer.cs        # Platform-guarded libc malloc_trim native memory reclamation
 │   │   │   └── HttpBodyValidator.cs          # Zero-allocation 64 KB bounded stream content validator with ReDoS timeout
@@ -162,7 +163,8 @@ corvus/
 │       │   ├── lib/
 │       │   │   └── motion.ts       # ObsidianUI motion tokens, spring physics, and runtime scale manager
 │       │   ├── utils/              # Modular helper and utility functions
-│       │   │   ├── url.ts          # Service URL formatter and sanitization
+│       │   │   ├── url.ts          # Service URL formatter, sanitization, and port extraction (extractPort)
+│       │   │   ├── lazyWithRetry.ts # Resilient lazy wrapper retrying and refreshing chunks on new deployments
 │       │   │   ├── format.ts       # Byte sizing (B, KB, MB, GB, TB) formatter
 │       │   │   ├── grouping.ts     # Docker Compose intelligent grouping logic
 │       │   │   ├── systemsUtils.ts # System byte formatting, status theme resolver, and agent 1-liner generator
@@ -170,6 +172,7 @@ corvus/
 │       │   │   └── tagColor.ts     # FNV-1a hash pastel palette and semantic environment presets
 │       │   ├── components/         # Shared global UI components & Design System
 │       │   │   ├── common/                   # Shared cross-domain components
+│       │   │   │   ├── ChunkErrorBoundary.tsx # Dynamic module loading & runtime error boundary shell
 │       │   │   │   ├── TagFilterBar.tsx      # Reusable multi-tag filter bar with real-time counters
 │       │   │   │   └── CommandPalette/       # Actionable Ctrl+K command center
 │       │   │   │       ├── CommandPaletteModal.tsx
@@ -224,7 +227,9 @@ corvus/
 │       │   │   ├── Services/
 │       │   │   │   ├── index.tsx             # Service launcher and monitor orchestrator
 │       │   │   │   ├── ServiceCard.tsx       # Service card with tactile physics and quick probe
-│       │   │   │   ├── SystemdUnitsTab.tsx   # Linux systemd service manager with journalctl log viewer
+│       │   │   │   ├── SystemdUnitsTab.tsx   # Linux systemd units tab orchestrator
+│       │   │   │   ├── SystemdLogsModal.tsx  # Standalone journalctl log stream and copy modal
+│       │   │   │   ├── SystemdConfirmModal.tsx # Unit lifecycle action confirmation modal
 │       │   │   │   ├── AddServiceModal.tsx   # Service creation modal
 │       │   │   │   └── EditServiceModal.tsx  # Service configuration modal
 │       │   │   ├── Dashboard/

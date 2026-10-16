@@ -107,6 +107,7 @@ corvus/
 │   │   │   ├── VersionInfo.cs                # Sürüm denetim DTO'su
 │   │   │   └── CorvusJsonSerializerContext.cs # .NET 9 Native AOT JsonSourceGeneration bağlamı
 │   │   ├── Utils/                  # Yardımcı araçlar
+│   │   │   ├── SsrfGuard.cs                  # Link-local, Cloud Metadata (169.254.169.254) ve DNS Rebinding engelleyici
 │   │   │   ├── StatusCodeMatcher.cs          # HTTP durum kodu aralık eşleştirici
 │   │   │   ├── NativeMemoryTrimmer.cs        # Platform korumalı libc malloc_trim bellek iadesi
 │   │   │   └── HttpBodyValidator.cs          # Sıfır bellek tahsisli gövde arama ve ReDoS zaman aşımı koruması
@@ -162,7 +163,8 @@ corvus/
 │       │   ├── lib/
 │       │   │   └── motion.ts       # ObsidianUI hareket jetonları, yay fiziği ve çalışma zamanı hız yöneticisi
 │       │   ├── utils/              # Modüler yardımcı fonksiyonlar
-│       │   │   ├── url.ts          # Servis URL biçimlendirme ve temizleme
+│       │   │   ├── url.ts          # Servis URL biçimlendirme, temizleme ve port ayrıştırma (extractPort)
+│       │   │   ├── lazyWithRetry.ts # Yeni sürümlerde chunk yükleme hatalarını yakalayıp tazeleyen dirençli lazy sarmalayıcı
 │       │   │   ├── format.ts       # Bayt boyutu (B, KB, MB, GB, TB) biçimlendirici
 │       │   │   ├── grouping.ts     # Docker Compose akıllı gruplama mantığı
 │       │   │   ├── systemsUtils.ts # Sistem bayt formatlama, durum tema çözücü ve ajan 1-satırlık komut üreteci
@@ -170,6 +172,7 @@ corvus/
 │       │   │   └── tagColor.ts     # FNV-1a hash pastel paleti ve anlamsal ortam ön ayarları
 │       │   ├── components/         # Ortak global UI bileşenleri ve Tasarım Sistemi
 │       │   │   ├── common/                   # Ortak alan bileşenleri
+│       │   │   │   ├── ChunkErrorBoundary.tsx # Dinamik modül ve çalışma zamanı hata yakalayıcı kabuk
 │       │   │   │   ├── TagFilterBar.tsx      # Sayaçlı çoklu etiket filtreleme çubuğu
 │       │   │   │   └── CommandPalette/       # Aksiyonel Ctrl+K komut merkezi
 │       │   │   │       ├── CommandPaletteModal.tsx
@@ -226,7 +229,9 @@ corvus/
 │       │       ├── Services/
 │       │       │   ├── index.tsx             # Servis başlatıcı ve izleyici orkestratörü
 │       │       │   ├── ServiceCard.tsx       # Dokunsal fizikli ve anlık yoklama özellikli servis kartı
-│       │       │   ├── SystemdUnitsTab.tsx   # journalctl log izleyicili Linux systemd servis yöneticisi
+│       │       │   ├── SystemdUnitsTab.tsx   # Linux systemd birimleri sekmesi
+│       │       │   ├── SystemdLogsModal.tsx  # Bağımsız journalctl log akış ve kopyalama modalı
+│       │       │   ├── SystemdConfirmModal.tsx # Servis durdurma/başlatma onay modalı
 │       │       │   ├── AddServiceModal.tsx   # Servis oluşturma modalı
 │       │       │   └── EditServiceModal.tsx  # Servis düzenleme modalı
 │       │       ├── Dashboard/

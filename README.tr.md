@@ -162,11 +162,13 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
   - **Eşik Tabanlı Renk Semantiği:** Doğrudan operasyonel sağlık eşiklerine bağlı katı renk kuralları (<%70 yeşil `#34d399`, %70-89 kehribar sarı `#fbbf24`, >=%90 gül kırmızısı `#f87171`).
   - **Yay Fiziği Mikro-Animasyonlar:** 180ms - 220ms yavaşlama fiziği (`cubic-bezier(0.16, 1, 0.3, 1)`) ve yerleşik `prefers-reduced-motion` desteği.
   - **Modüler UI Bileşen Kütüphanesi (`src/components/ui/`):** Tek dosyaya kod yığma yasağına tam uyumlu bileşenler: `Button`, `Modal`, `Pill`, `ProgressBar`, `StatTile`, `SearchInput`, `FilterChip`, `TagChip`, `Segment`, `Sheet`, `Toast`, `EmptyState`, `SslBadge`, `HistoryBars`.
-- **🔐 3 Seviyeli Rol Tabanlı Yetkilendirme (RBAC) & Kalıcı Oturumlar (Session Store):**
+- **🔐 3 Seviyeli Rol Tabanlı Yetkilendirme (RBAC) & Güvenlik Zırhı:**
   - Granüler `admin` (tam sistem yetkisi), `operator` (konteyner ve yığın operasyonları) ve `viewer` (salt okuma denetimi) rolleri ile `CorvusAuthFilter` koruması.
-  - Kalıcı oturum deposu (`user_sessions` tablosu): Konteyner yeniden başladığında veya güncellendiğinde oturumun düşmesini önler; bellek üzerinde mikrosaniye seviyesinde doğrulama hızını korur.
+  - **Zero-Trust Ağ Koruması & SSRF Savunması (`SsrfGuard`):** Uptime kontrolleri ve webhook isteklerinde AWS/GCP/Azure Cloud Metadata (`169.254.169.254`), IPv6 link-local ve DNS rebinding saldırılarını ağ seviyesinde engeller.
+  - **Kapalı Kayıt & Güvenli İlk Kurulum:** İlk kurulumda ilk kullanıcı güvenle admin yapılır ve açık kayıt otomatik kapatılır; hassas sistem token'ları ve bildirim sırları (`smtp_pass`, webhook URL'leri) API yanıtlarında dinamik olarak maskelenir.
+  - **Kalıcı Oturum Deposu (`user_sessions` tablosu):** Konteyner yeniden başladığında veya güncellendiğinde oturumun düşmesini önler; bellek üzerinde mikrosaniye seviyesinde doğrulama hızını korur.
   - Bağımsız modüler **Profil ve Güvenlik Sayfası** (`/profile`): Şifre değiştirme, 2FA yönetimi ve 3 seviyeli kullanıcı yetkilendirme paneli.
-  - Merkezi `corvus_unauthorized` oturum düşüş yakalayıcısı: Oturum bittiğinde kullanıcıyı doğrudan ve zarifçe giriş ekranına yönlendirir.
+  - Merkezi `corvus_unauthorized` oturum düşüş yakalayıcısı ve kesintisiz modül tazeleyicisi (`lazyWithRetry` & `ChunkErrorBoundary`).
 - **📱 Mobil Cam Altbar (Mobile Glass Bottom Navigation):**
   - Tablet ve mobil ekranlar için özel tasarlanmış, kayan göstergeli ve genişleyen 7 sekmeli buzlu cam (frosted glass) alt gezinti çubuğu (`BottomNav.tsx`).
   - Ekran alanını daraltan eski mobil üst bar ve hamburger çekmece menüsü kaldırılarak tam ekran temiz mobil deneyim.
