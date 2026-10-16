@@ -6,6 +6,7 @@ import type {
   ActiveDeploymentState, 
   ScratchDeploymentRequest
 } from '../../types/deployments';
+import { getSavedActiveDeployment } from '../Containers/deployments/useDeploymentStream';
 import type { DockerContainer } from '../../types';
 
 export function useDeploymentsPageState() {
@@ -54,18 +55,11 @@ export function useDeploymentsPageState() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Sayfa yenilendiğinde aktif modal kurtarma
+  // Sayfa yenilendiğinde aktif modal kurtarma (Corvus filtreli ve zaman aşımı korumalı)
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('corvus_active_deployment');
-      if (saved) {
-        const parsed = JSON.parse(saved) as ActiveDeploymentState;
-        if (parsed && parsed.status !== 'success' && parsed.status !== 'failed' && parsed.status !== 'rolled_back') {
-          setActiveDeployment(parsed);
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse active deployment from localStorage:', e);
+    const saved = getSavedActiveDeployment();
+    if (saved) {
+      setActiveDeployment(saved);
     }
   }, []);
 

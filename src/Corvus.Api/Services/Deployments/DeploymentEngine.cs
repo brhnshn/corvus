@@ -557,6 +557,13 @@ public class DeploymentEngine : IDeploymentEngine
         string containerName = request.ContainerName.Trim().TrimStart('/');
         string imageName = request.Image.Trim();
 
+        // 0. Corvus Öz-Koruma Kuralı (Self-Preservation Guard)
+        if (containerName.Contains("corvus", StringComparison.OrdinalIgnoreCase) ||
+            imageName.Contains("corvus", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Corvus adı veya imajı içeren konteynerler panel üzerinden dağıtılamaz (Corvus Self-Preservation Guard).");
+        }
+
         // 1. Kilit kontrolü (containerName bazında)
         if (!_lockManager.TryAcquireLock($"scratch_{containerName}", out var lockReleaser))
         {
@@ -900,7 +907,9 @@ public class DeploymentEngine : IDeploymentEngine
         }
 
         string img = inspect.Config?.Image ?? inspect.Image ?? string.Empty;
-        if (img.Contains("corvus", StringComparison.OrdinalIgnoreCase) && originalName.Contains("corvus", StringComparison.OrdinalIgnoreCase))
+        if (originalName.Contains("corvus", StringComparison.OrdinalIgnoreCase) ||
+            img.Contains("corvus", StringComparison.OrdinalIgnoreCase) ||
+            containerId.Contains("corvus", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

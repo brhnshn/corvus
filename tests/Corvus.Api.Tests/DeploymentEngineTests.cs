@@ -146,6 +146,19 @@ public class DeploymentEngineTests : IDisposable
         {
             return Task.FromResult(Records.Values.ToList());
         }
+
+        public Task CleanupStaleDeploymentsAsync()
+        {
+            foreach (var r in Records.Values)
+            {
+                if (r.Status == "pending" || r.Status == "in_progress")
+                {
+                    r.Status = "failed";
+                    r.CurrentStep = "failed";
+                }
+            }
+            return Task.CompletedTask;
+        }
     }
 
     private class MockBroadcaster : IEventBroadcaster
@@ -316,6 +329,43 @@ public class DeploymentEngineTests : IDisposable
             engine.StartScratchDeploymentAsync(req, "tester"));
 
         Assert.Contains("zaten mevcut", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("corvus_web", "nginx:latest")]
+    [InlineData("my_app", "ghcr.io/org/corvus-server:latest")]
+    public async Task StartScratchDeploymentAsync_WhenTargetIsCorvus_ThrowsSelfPreservationGuard(string containerName, string image)
+    {
+        var client = new MockDeploymentHttpClient();
+        var repo = new MockDeploymentRepo();
+        var lockMgr = new DeploymentLockManager();
+        var bcast = new MockBroadcaster();
+        var engine = new DeploymentEngine(client, repo, lockMgr, bcast, NullLogger<DeploymentEngine>.Instance);
+
+        var req = new ScratchDeploymentRequest(
+            Image: image,
+            ContainerName: containerName
+        );
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            engine.StartScratchDeploymentAsync(req, "tester"));
+
+        Assert.Contains("Corvus Self-Preservation Guard", ex.Message);
+    }
+
+    [Fact]
+    public async Task StartDeploymentAsync_WhenContainerIsCorvus_ThrowsSelfPreservationGuard()
+    {
+        var client = new MockDeploymentHttpClient();
+        var repo = new MockDeploymentRepo();
+        var lockMgr = new DeploymentLockManager();
+        var bcast = new MockBroadcaster();
+        var engine = new DeploymentEngine(client, repo, lockMgr, bcast, NullLogger<DeploymentEngine>.Instance);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            engine.StartDeploymentAsync("corvus_web_id", "manual", "tester"));
+
+        Assert.Contains("Corvus kendi konteynerini", ex.Message);
     }
 
     public void Dispose() { }

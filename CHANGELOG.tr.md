@@ -24,6 +24,18 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
   - `CorvusJsonSerializerContext.cs`: `ScratchDeploymentRequest` ve `ContainerConnectionTestResult` modelleri derleme zamanı serileştiricisine eklendi.
 
 ### Düzeltilenler (Fixed)
+- **Sayfa Açılışında İstenmeyen Corvus Dağıtım Modalı Açılması**:
+  - `useDeploymentStream.ts` & `useDeploymentsPageState.ts`: Sayfa açıldığında `localStorage` üzerinden geçmişte kalmış `corvus_web` dağıtımının okunarak otomatik canlı dağıtım modalını tetiklemesi sorunu giderildi. `getSavedActiveDeployment()` fonksiyonuna sıkı öz-koruma (Corvus isim/imaj/ID tespiti), zaman aşımı (10 dakikadan eski oturumların otomatik temizlenmesi) ve tamamlanmış oturumların silinmesi kontrolleri eklendi.
+- **Konteyner Dağıtım Listesinde Corvus Filtresi**:
+  - `NewDeploymentModal.tsx`: Corvus bileşenleri (`corvus`, `corvus_web`, `corvus-api`, `corvus_db`) mevcut konteyner seçim listesinden tamamen filtrelendi; sıfırdan dağıtım formuna da isim ve imaj kontrolü getirilerek Corvus'un yanlışlıkla hedeflenmesi imkansız hale getirildi.
+- **Başlangıçta Askıda Kalan Dağıtımların Temizlenmesi**:
+  - `DeploymentRepository.cs` & `Program.cs`: `CleanupStaleDeploymentsAsync()` metodu eklenerek sunucu başlatıldığında SQLite veritabanındaki yarım kalmış (`pending`, `in_progress`, `pulling`, `recreating`, `healthcheck`) ve Corvus'u hedef alan eski kayıtlar otomatik olarak `failed` statüsüne çekilip `AKTİF / SIRADA` sayacının sonsuz takılı kalması önlendi.
+- **ObsidianUI Tasarım Sistemi Uyumluluğu**:
+  - Dağıtımlar sayfası (`/deployments`) Corvus'un standart ObsidianUI tasarım diline tam uyumlu hale getirildi:
+    - `index.tsx`: `PageHeader` ve `Button variant="cloud"` bileşenleriyle yeniden yapılandırıldı.
+    - `DeploymentsOverview.tsx`: Ham Tailwind kartları yerine `KpiRow`, `KpiCard` ve `StatusDot` (tamsayı `decimals={0}`) standart KPI bileşenleri kullanıldı.
+    - `DeploymentsHistoryTable.tsx`: `Card`, `CardHeader`, `CardTitle`, `SearchInput`, `FilterChip` ve `EmptyState` bileşenleriyle yenilendi.
+    - `NewDeploymentModal.tsx`: Standart `Modal` ve `Button` bileşenlerine geçirilerek tutarlı modal ve form estetiği sağlandı.
 - **Yönlendirme & Navigasyon Senkronizasyonu**:
   - `useAppNavigation.ts` & `AppRouter.tsx`: `deployments` yolu `VALID_PAGES` listesine kaydedildi; `/deployments` adresine doğrudan girildiğinde `/systems` sayfasına yönlenme sorunu giderildi.
   - `tr.ts` ve `en.ts` çift dilli sözlükleri sıfır hardcoded metin kuralıyla eşitlendi.

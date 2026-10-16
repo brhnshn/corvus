@@ -129,10 +129,12 @@ using (var scope = app.Services.CreateScope())
     try
     {
         DatabaseMigrator.Migrate(db, logger);
+        var deployRepo = scope.ServiceProvider.GetRequiredService<Corvus.Api.Data.IDeploymentRepository>();
+        deployRepo.CleanupStaleDeploymentsAsync().GetAwaiter().GetResult();
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Veritabanı migration adımı sırasında kritik hata!");
+        logger.LogError(ex, "Veritabanı migration veya başlangıç temizliği sırasında kritik hata!");
     }
 }
 

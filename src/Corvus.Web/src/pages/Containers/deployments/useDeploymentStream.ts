@@ -144,15 +144,48 @@ export function useDeploymentStream({
 }
 
 /**
- * Helper to retrieve stored active deployment after page refresh (F5)
+ * Helper to retrieve stored active deployment after page refresh (F5).
+ * Enforces Corvus Self-Preservation Guard and purges stale/corrupted entries.
  */
 export function getSavedActiveDeployment(): ActiveDeploymentState | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as ActiveDeploymentState;
+    const parsed = JSON.parse(raw) as ActiveDeploymentState;
+    if (!parsed || !parsed.deploymentId) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return null;
+    }
+
+    // Corvus Öz-Koruma Kuralı (Self-Preservation Guard): Corvus konteynerleri asla canlı modal açamaz
+    const targetName = (parsed.containerName || '').toLowerCase();
+    const imageName = (parsed.imageName || '').toLowerCase();
+    const containerId = (parsed.containerId || '').toLowerCase();
+    if (targetName.includes('corvus') || imageName.includes('corvus') || containerId.includes('corvus')) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return null;
+    }
+
+    // Zaman aşımı koruması: 10 dakikadan eski oturumlar temizlenir
+    if (parsed.startedAt && Date.now() - parsed.startedAt > 10 * 60 * 1000) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return null;
+    }
+
+    // Tamamlanmış durumlar localStorage'da tutulmaz
+    if (parsed.status === 'success' || parsed.status === 'failed' || parsed.status === 'rolled_back') {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return null;
+    }
+
+    return parsed;
   } catch {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     return null;
   }
 }

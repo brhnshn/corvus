@@ -146,4 +146,33 @@ public class DeploymentRepository : IDeploymentRepository
             return rows.AsList();
         }
     }
+
+    public async Task CleanupStaleDeploymentsAsync()
+    {
+        using var conn = _db.CreateConnection();
+        string completedAt = DateTime.UtcNow.ToString("o");
+
+        // 1. Askıda kalan (pending / in_progress / pulling / recreating / healthcheck) süreçleri sonlandır
+        var sqlStale = @"
+            UPDATE deployments
+            SET status = 'failed',
+                current_step = 'failed',
+                error_message = 'Sunucu yeniden başlatıldığı veya işlem zaman aşımına uğradığı için yarıda kesildi.',
+                completed_at = @completedAt
+            WHERE status IN ('pending', 'in_progress', 'pulling', 'recreating', 'healthcheck')";
+
+        await conn.ExecuteAsync(sqlStale, new { completedAt });
+
+        // 2. Corvus self-preservation: Corvus'u hedef alan herhangi bir askıda kalmış veya tamamlanmamış kaydı kapat
+        var sqlSelf = @"
+            UPDATE deployments
+            SET status = 'failed',
+                current_step = 'failed',
+                error_message = 'Corvus kendi kendini panelden dağıtamaz (Corvus Self-Preservation Guard).',
+                completed_at = @completedAt
+            WHERE (LOWER(target_name) LIKE '%corvus%' OR LOWER(image_name) LIKE '%corvus%')
+              AND status NOT IN ('failed', 'rolled_back')";
+
+        await conn.ExecuteAsync(sqlSelf, new { completedAt });
+    }
 }

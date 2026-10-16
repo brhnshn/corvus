@@ -1,6 +1,8 @@
 import React from 'react';
 import { Rocket, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { useDeploymentsPageState } from './useDeploymentsPageState';
 import { DeploymentsOverview } from './DeploymentsOverview';
 import { DeploymentsHistoryTable } from './DeploymentsHistoryTable';
@@ -34,43 +36,37 @@ export const DeploymentsPage: React.FC = () => {
   } = useDeploymentsPageState();
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in">
+    <div className="space-y-4 pb-12 animate-fade-in">
       {/* Üst Başlık & Aksiyon Çubuğu */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <Rocket className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight">
-              {t('deployments.title')}
-            </h1>
-          </div>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+      <PageHeader
+        title={t('deployments.title')}
+        subtitle={
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-[var(--status-up)] shrink-0" />
             <span>{t('deployments.subtitle')}</span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={refresh}
-            disabled={isRefreshing}
-            className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
-            title="Yenile"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
-          </button>
-
-          <button
-            onClick={() => setIsNewDeploymentModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Rocket className="w-4 h-4" />
-            <span>{t('deployments.newDeploymentBtn')}</span>
-          </button>
-        </div>
-      </div>
+          </span>
+        }
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={refresh}
+              disabled={isRefreshing}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[var(--cloud-400)]' : ''}`} />}
+              aria-label="Yenile"
+            />
+            <Button
+              variant="cloud"
+              size="sm"
+              onClick={() => setIsNewDeploymentModalOpen(true)}
+              icon={<Rocket className="w-3.5 h-3.5" />}
+            >
+              {t('deployments.newDeploymentBtn')}
+            </Button>
+          </>
+        }
+      />
 
       {/* 4 Özet Kartı */}
       <DeploymentsOverview stats={stats} />

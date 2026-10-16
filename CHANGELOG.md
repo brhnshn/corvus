@@ -24,6 +24,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `CorvusJsonSerializerContext.cs`: Added `ScratchDeploymentRequest` and `ContainerConnectionTestResult` compile-time type definitions.
 
 ### Fixed
+- **Unintended Corvus Deployment Modal on Page Load**:
+  - `useDeploymentStream.ts` & `useDeploymentsPageState.ts`: Fixed an issue where stale deployment records in `localStorage` would automatically trigger the live deployment progress modal for `corvus_web` on page mount. `getSavedActiveDeployment()` was hardened with Corvus self-preservation inspection, 10-minute maximum age timeout, and purging completed deployment entries.
+- **Corvus Container Exclusion from Deployment Targets**:
+  - `NewDeploymentModal.tsx`: Explicitly filtered out all Corvus internal containers (`corvus`, `corvus_web`, `corvus-api`, `corvus_db`) from existing container selection dropdowns. Added validation on scratch deployment forms to reject container names and images containing `corvus`.
+- **Startup Sweep for Stale Deployments**:
+  - `DeploymentRepository.cs` & `Program.cs`: Implemented `CleanupStaleDeploymentsAsync()` on server startup to mark orphaned or unfinished deployments (`pending`, `in_progress`, `pulling`, `recreating`, `healthcheck`) and Corvus self-deployments as failed, preventing stuck `Active / Queued` counters.
+- **ObsidianUI Design System Alignment**:
+  - Brought the `/deployments` page into full visual alignment with Corvus ObsidianUI specifications:
+    - `index.tsx`: Rebuilt layout using `PageHeader` and `Button variant="cloud"`.
+    - `DeploymentsOverview.tsx`: Replaced raw cards with `KpiRow`, `KpiCard` with `StatusDot` and `decimals={0}` formatting.
+    - `DeploymentsHistoryTable.tsx`: Integrated `Card`, `CardHeader`, `CardTitle`, `SearchInput`, `FilterChip`, and `EmptyState`.
+    - `NewDeploymentModal.tsx`: Migrated to standard `Modal` and tactile `Button` components for cohesive design language.
 - **Navigation & Routing Synchronization**:
   - `useAppNavigation.ts` & `AppRouter.tsx`: Registered `deployments` in `VALID_PAGES`, ensuring direct navigation to `/deployments` loads seamlessly without redirecting to `/systems`.
   - Synchronized dual-language translation dictionaries across `tr.ts` and `en.ts`.

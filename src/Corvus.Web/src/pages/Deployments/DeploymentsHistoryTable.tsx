@@ -4,17 +4,20 @@ import type { DeploymentRecord } from '../../types/deployments';
 import { Pill } from '../../components/ui/Pill';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
+import { Card, CardHeader, CardTitle } from '../../components/ui/Card';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { FilterChip } from '../../components/ui/FilterChip';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { DeploymentTerminalLog } from '../Containers/deployments/DeploymentTerminalLog';
 import { formatRelativeTime } from '../../utils/format';
 import { 
   GitBranch, 
   Terminal, 
   Clock, 
-  Search, 
   Layers
 } from 'lucide-react';
 
-interface DeploymentsHistoryTableProps {
+export interface DeploymentsHistoryTableProps {
   deployments: DeploymentRecord[];
   loading?: boolean;
   searchQuery: string;
@@ -74,7 +77,7 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-mono bg-white/[0.05] text-[var(--text-muted)] border border-[var(--border-subtle)]">
             {t('deployments.triggerManual')}
           </span>
         );
@@ -89,98 +92,72 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
   };
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm">
+    <Card className="overflow-hidden">
       {/* Tablo Üst Başlık & Filtreler */}
-      <div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-indigo-400" />
-          <h3 className="text-sm font-bold text-slate-100">
-            {t('deployments.historyTitle')}
-          </h3>
-          <span className="text-xs text-slate-400 font-mono">
+      <CardHeader
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="w-48 sm:w-60">
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder={t('deployments.searchPlaceholder')}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <FilterChip
+                label={t('deployments.filterAll')}
+                selected={statusFilter === 'all'}
+                onClick={() => setStatusFilter('all')}
+              />
+              <FilterChip
+                label={t('deployments.filterSuccess')}
+                dotColor="var(--status-up)"
+                selected={statusFilter === 'success'}
+                onClick={() => setStatusFilter('success')}
+              />
+              <FilterChip
+                label={t('deployments.filterFailed')}
+                dotColor="var(--status-down)"
+                selected={statusFilter === 'failed'}
+                onClick={() => setStatusFilter('failed')}
+              />
+              <FilterChip
+                label={t('deployments.filterPending')}
+                dotColor="var(--status-warn)"
+                selected={statusFilter === 'pending'}
+                onClick={() => setStatusFilter('pending')}
+              />
+            </div>
+          </div>
+        }
+      >
+        <CardTitle className="flex items-center gap-2">
+          <Terminal className="w-4 h-4 text-[var(--cloud-400)]" />
+          <span>{t('deployments.historyTitle')}</span>
+          <span className="text-xs text-[var(--text-muted)] font-mono font-normal">
             ({deployments.length})
           </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Arama */}
-          <div className="relative flex-1 sm:w-64">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder={t('deployments.searchPlaceholder')}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-            />
-          </div>
-
-          {/* Durum Filtreleri */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 border border-slate-800 rounded-lg text-xs">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-2.5 py-1 rounded font-medium transition-colors ${
-                statusFilter === 'all'
-                  ? 'bg-slate-800 text-slate-100'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {t('deployments.filterAll')}
-            </button>
-            <button
-              onClick={() => setStatusFilter('success')}
-              className={`px-2.5 py-1 rounded font-medium transition-colors ${
-                statusFilter === 'success'
-                  ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {t('deployments.filterSuccess')}
-            </button>
-            <button
-              onClick={() => setStatusFilter('failed')}
-              className={`px-2.5 py-1 rounded font-medium transition-colors ${
-                statusFilter === 'failed'
-                  ? 'bg-rose-950/60 text-rose-400 border border-rose-800/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {t('deployments.filterFailed')}
-            </button>
-            <button
-              onClick={() => setStatusFilter('pending')}
-              className={`px-2.5 py-1 rounded font-medium transition-colors ${
-                statusFilter === 'pending'
-                  ? 'bg-amber-950/60 text-amber-400 border border-amber-800/40'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {t('deployments.filterPending')}
-            </button>
-          </div>
-        </div>
-      </div>
+        </CardTitle>
+      </CardHeader>
 
       {/* Tablo İçeriği */}
       {loading && deployments.length === 0 ? (
-        <div className="py-16 text-center text-xs text-slate-400">
+        <div className="py-16 text-center text-xs text-[var(--text-muted)]">
           {t('common.loading')}
         </div>
       ) : deployments.length === 0 ? (
-        <div className="py-16 text-center flex flex-col items-center justify-center gap-2 p-6">
-          <GitBranch className="w-10 h-10 text-slate-600 mb-1" />
-          <h4 className="text-sm font-semibold text-slate-300">
-            {t('deployments.noDeployments')}
-          </h4>
-          <p className="text-xs text-slate-500 max-w-sm">
-            {t('deployments.noDeploymentsDesc')}
-          </p>
-        </div>
+        <EmptyState
+          icon={<GitBranch className="w-6 h-6" />}
+          title={t('deployments.noDeployments')}
+          description={t('deployments.noDeploymentsDesc')}
+          className="border-none bg-transparent"
+        />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-950/30 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-muted)] font-semibold uppercase tracking-wider text-[11px]">
                 <th className="py-3 px-4">{t('deployments.colStatus')}</th>
                 <th className="py-3 px-4">{t('deployments.colTarget')}</th>
                 <th className="py-3 px-4">{t('deployments.colTrigger')}</th>
@@ -190,30 +167,30 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
                 <th className="py-3 px-4 text-right">{t('deployments.colActions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-[var(--border-hairline)] font-mono">
               {deployments.map((record) => (
-                <tr key={record.id} className="hover:bg-slate-800/30 transition-colors">
+                <tr key={record.id} className="hover:bg-[var(--bg-hover)] transition-colors">
                   <td className="py-3 px-4 whitespace-nowrap">
                     {getStatusBadge(record)}
                   </td>
-                  <td className="py-3 px-4 font-sans font-bold text-slate-200 whitespace-nowrap">
+                  <td className="py-3 px-4 font-sans font-bold text-[var(--text-primary)] whitespace-nowrap">
                     {record.targetName}
                   </td>
                   <td className="py-3 px-4 whitespace-nowrap">
                     {getTriggerBadge(record)}
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-400 max-w-xs truncate" title={record.imageName}>
+                  <td className="py-3 px-4 whitespace-nowrap text-[var(--text-secondary)] max-w-xs truncate" title={record.imageName}>
                     <span>{record.imageName}</span>
                     {record.newDigest && (
-                      <span className="text-[10px] text-slate-500 ml-1.5 font-mono">
+                      <span className="text-[10px] text-[var(--text-muted)] ml-1.5 font-mono">
                         ({record.newDigest.slice(0, 12)})
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-300">
+                  <td className="py-3 px-4 whitespace-nowrap text-[var(--text-primary)]">
                     {formatDuration(record.durationMs)}
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-400" title={record.createdAt}>
+                  <td className="py-3 px-4 whitespace-nowrap text-[var(--text-muted)]" title={record.createdAt}>
                     {formatRelativeTime(record.createdAt)}
                   </td>
                   <td className="py-3 px-4 text-right whitespace-nowrap">
@@ -221,7 +198,7 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
                       variant="ghost" 
                       size="sm"
                       onClick={() => setSelectedLogRecord(record)}
-                      className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300"
+                      className="inline-flex items-center gap-1.5 text-xs text-[var(--cloud-400)] hover:text-[var(--cloud-300)]"
                     >
                       <Terminal className="w-3.5 h-3.5" />
                       {t('deployments.viewLogsBtn')}
@@ -243,13 +220,13 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
           maxWidth="max-w-4xl"
         >
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--border-subtle)] text-xs">
               <div className="flex items-center gap-2">
-                <span className="text-slate-400 font-medium">Hedef:</span>
-                <span className="font-bold text-slate-200 font-sans">{selectedLogRecord.targetName}</span>
-                <span className="text-slate-600">|</span>
-                <span className="text-slate-400 font-medium">İmaj:</span>
-                <span className="font-mono text-slate-300">{selectedLogRecord.imageName}</span>
+                <span className="text-[var(--text-muted)] font-medium">Hedef:</span>
+                <span className="font-bold text-[var(--text-primary)] font-sans">{selectedLogRecord.targetName}</span>
+                <span className="text-[var(--text-muted)]">|</span>
+                <span className="text-[var(--text-muted)] font-medium">İmaj:</span>
+                <span className="font-mono text-[var(--text-secondary)]">{selectedLogRecord.imageName}</span>
               </div>
               <div>
                 {getStatusBadge(selectedLogRecord)}
@@ -263,10 +240,10 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2 text-[11px] text-slate-400">
+            <div className="flex items-center justify-between pt-2 text-[11px] text-[var(--text-muted)]">
               <div>
                 {selectedLogRecord.errorMessage && (
-                  <span className="text-rose-400 font-semibold">
+                  <span className="text-[var(--status-down)] font-semibold">
                     Hata: {selectedLogRecord.errorMessage}
                   </span>
                 )}
@@ -278,6 +255,6 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
           </div>
         </Modal>
       )}
-    </div>
+    </Card>
   );
 };

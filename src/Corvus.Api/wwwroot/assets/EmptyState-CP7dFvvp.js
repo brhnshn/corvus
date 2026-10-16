@@ -1,0 +1,4 @@
+import"./rolldown-runtime-CbXtAM7H.js";import{Yt as e}from"./vendor-icons-DoUE_qvd.js";import{t}from"./vendor-react-Cvd1I6Ja.js";e();var n=t(),r=({icon:e,title:t,description:r,action:i,className:a=``})=>(0,n.jsxs)(`div`,{className:`
+        surface rounded-[22px] p-8 sm:p-12 flex flex-col items-center justify-center text-center select-none
+        ${a}
+      `,children:[e&&(0,n.jsx)(`div`,{className:`w-12 h-12 rounded-2xl border border-white/10 bg-white/[0.06] flex items-center justify-center text-[#9ba0b5] mb-3.5 [&>svg]:w-6 [&>svg]:h-6`,children:e}),(0,n.jsx)(`h3`,{className:`text-base font-semibold text-[#eceef6]`,children:t}),r&&(0,n.jsx)(`p`,{className:`text-xs text-[#9ba0b5] max-w-sm mt-1 mb-4 leading-relaxed`,children:r}),i&&(0,n.jsx)(`div`,{className:`mt-2`,children:i})]});export{r as t};
