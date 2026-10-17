@@ -25,6 +25,7 @@ import { ContainerResourcesTab } from '../Containers/detail/ContainerResourcesTa
 import { ContainerEnvTab } from '../Containers/detail/ContainerEnvTab';
 import { ContainerNetworkingTab } from '../Containers/detail/ContainerNetworkingTab';
 import { ContainerStorageTab } from '../Containers/detail/ContainerStorageTab';
+import { ContainerResourceLimitsModal } from '../Containers/detail/ContainerResourceLimitsModal';
 import { LogsTab } from './tabs/LogsTab';
 import { TerminalTab } from './tabs/TerminalTab';
 import { ImageUpdateModal } from '../Containers/ImageUpdateModal';
@@ -51,6 +52,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showResourceLimitsModal, setShowResourceLimitsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteForce, setDeleteForce] = useState(true);
   const [deleteVolumes, setDeleteVolumes] = useState(false);
@@ -234,6 +236,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
         onSelectTab={setActiveTab}
         isAdmin={isAdmin}
         onOpenUpdateModal={() => setShowUpdateModal(true)}
+        onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
       />
 
       {/* 2. Canlı Telemetri Hero Alanı (CPU / RAM / Ağ) */}
@@ -285,6 +288,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
             onUnpause={() => handleAction('unpause')}
             onOpenTerminal={() => setActiveTab('terminal')}
             onOpenLogs={() => setActiveTab('logs')}
+            onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
           />
         )}
 
@@ -294,6 +298,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
             initialStats={stats || undefined}
             isAdmin={isAdmin}
             onUpdated={loadContainerData}
+            onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
           />
         )}
 
@@ -329,6 +334,17 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
             loadContainerData();
             toast.success(t('containers.recreateSuccess'));
           }}
+        />
+      )}
+
+      {showResourceLimitsModal && (
+        <ContainerResourceLimitsModal
+          isOpen={showResourceLimitsModal}
+          containerId={containerId}
+          containerName={containerName}
+          inspect={inspect}
+          onClose={() => setShowResourceLimitsModal(false)}
+          onSuccess={loadContainerData}
         />
       )}
 

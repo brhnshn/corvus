@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { id: 'services', label: t('nav.services'), icon: Grid },
     { id: 'containers', label: t('nav.containers'), icon: Boxes },
-    { id: 'deployments', label: t('deployments.navItem'), icon: Rocket },
+    { id: 'deployments', label: t('nav.deployments'), icon: Rocket },
     { id: 'metrics', label: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), icon: Clock },
     { id: 'activity', label: t('nav.activity'), icon: History },

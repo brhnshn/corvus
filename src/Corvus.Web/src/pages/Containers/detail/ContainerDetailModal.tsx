@@ -8,6 +8,7 @@ import { ContainerNetworkingTab } from './ContainerNetworkingTab';
 import { ContainerStorageTab } from './ContainerStorageTab';
 import { ContainerResourcesTab } from './ContainerResourcesTab';
 import { ContainerDeploymentsTab } from './ContainerDeploymentsTab';
+import { ContainerResourceLimitsModal } from './ContainerResourceLimitsModal';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import type { DockerContainerInspectInfo, DockerContainer, ContainerStats } from '../../../types';
@@ -47,6 +48,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showResourceLimitsModal, setShowResourceLimitsModal] = useState(false);
 
   const loadInspectData = useCallback(async () => {
     if (!containerId) return;
@@ -227,6 +229,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
                     onClose();
                     onOpenLogs(containerId, containerName);
                   }}
+                  onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
                 />
               )}
 
@@ -253,6 +256,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
                       onContainerActionSuccess();
                     }
                   }}
+                  onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
                 />
               )}
 
@@ -272,6 +276,22 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
           ) : null}
         </div>
       </div>
+
+      {showResourceLimitsModal && inspectData && containerId && (
+        <ContainerResourceLimitsModal
+          isOpen={showResourceLimitsModal}
+          containerId={containerId}
+          containerName={containerName}
+          inspect={inspectData}
+          onClose={() => setShowResourceLimitsModal(false)}
+          onSuccess={() => {
+            loadInspectData();
+            if (onContainerActionSuccess) {
+              onContainerActionSuccess();
+            }
+          }}
+        />
+      )}
     </Modal>
   );
 };

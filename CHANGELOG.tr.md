@@ -3,6 +3,35 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.16] - 2026-10-18 — Canlı Konteyner Kaynak Limitleri & Yeniden Başlatma Politikası Dinamik Düzenleyici
+
+### Eklenenler (Added)
+- **Canlı Konteyner Kaynak Limitleri (CPU/RAM) ve Yeniden Başlatma Politikası Düzenleyici**:
+  - `Corvus.Api/Models/DockerModels.cs`: `DockerHostConfig` modeline `MemorySwap`, `MemoryReservation`, `CpuLimitCores` ve `MemoryLimitMb` alanları eklendi. `DockerContainerUpdateRequest` modeline `MemorySwap` eklendi. Tip güvenli `ContainerResourceUpdateRequest` (`cpuCores`, `memoryMb`, `memorySwapMb`, `restartPolicy`, `maximumRetryCount`) DTO'su oluşturuldu.
+  - `Corvus.Api/Models/CorvusJsonSerializerContext.cs`: `ContainerResourcesUpdatedEventPayload` kaydı oluşturuldu; `ContainerResourceUpdateRequest` ile birlikte Native AOT uyumluluğu için `[JsonSerializable]` ile kaynak üreticisine kaydedildi.
+  - `Corvus.Api/Services/Docker/DockerContainerClient.cs` & `DockerService.cs`: Docker Engine API `POST /containers/{id}/update` uç noktasını kullanan `UpdateContainerConfigAsync` metodu geliştirildi. Girdi doğrulamaları (negatif olmayan CPU, sıfırdan büyükse en az 6 MB bellek sınırı, geçerli restart politikaları `no`/`always`/`unless-stopped`/`on-failure`, negatif olmayan deneme sayısı), otomatik birim dönüşümleri (çekirdek -> NanoCPUs, MB -> bayt, Docker'ın "MemorySwap limit should be greater or equal to Memory limit" hatasını önleyen akıllı `MemorySwap = -1` yönetimi), çok katmanlı takas alanı yedekleme mantığı (swap accounting kapalı çekirdeklerde `Memory * 2` ve takassız geri dönüşler), `_statsCache` tahliyesi ve otomatik konteyner önbellek geçersiz kılma mekanizması eklendi.
+  - `Corvus.Api/Endpoints/ContainersEndpoints.cs`: Yönetici yetkisi gerektiren (`.RequireAdmin()`) `PATCH /api/containers/{id}/resources` ile birlikte `POST /{id}/resources` ve `POST /{id}/update-config` takma uç noktaları tanımlandı. Yapılandırılmış denetim günlüğü (`container.update_resources`), önbellek geçersiz kılma ve gerçek zamanlı SSE bildirimi (`container_resources_updated`) entegre edildi.
+  - `Corvus.Web/src/types/index.ts` & `src/api/containers.ts`: Ön yüz veri modelleri ve `updateContainerResources(id, req)` servis metodu eklendi.
+  - `Corvus.Web/src/pages/Containers/detail/inspectHelpers.ts`: `getInspectHostConfig` fonksiyonu Docker Engine API'sinden gelen PascalCase alanları ile camelCase alanları kusursuz eşleyecek şekilde normalize edildi; böylece mevcut CPU, RAM ve yeniden başlatma politikası bilgileri arayüzde daima doğru okundu.
+  - `Corvus.Web/src/pages/Containers/detail/ContainerResourceLimitsModal.tsx`: Konteyneri yeniden oluşturmadan ve durdurmadan CPU kotasını ve RAM sınırını canlı ayarlamaya yarayan, hızlı hazır ayar rozetleri (`0.5c`, `1.0c`, `2.0c`, `4.0c`, `256MB`, `512MB`, `1GB`, `2GB`, `4GB`, `8GB`), yeniden başlatma politikası radyo kartları, hata durumunda deneme sayısı girişi, istemci taraflı doğrulama ve mevcut yapılandırma kartı içeren bağımsız modüler modal geliştirildi.
+  - `Corvus.Web/src/pages/ContainerDetail/` & `Containers/detail/`: Limit düzenleme modalı `ContainerDetailHeader`, `ContainerOverviewTab`, `ContainerResourcesTab` ve `ContainerDetailModal` bileşenlerine kusursuz biçimde bağlandı; `App.tsx` üzerinde SSE olaylarıyla inspect önbelleği geçersiz kılma sağlandı.
+  - `i18n/en.ts` & `i18n/tr.ts`: Tüm metinler sıfır sabit dizge kuralına uygun olarak Türkçe ve İngilizce eşzamanlı lokalize edildi.
+  - `tests`: 21 adet backend birim testi (`ContainerResourceLimitsTests.cs`) ve 9 adet frontend birim testi (`ContainerResourceLimitsModal.test.tsx`) yazılarak tüm birim dönüşümleri, Docker uç durumları, takas alanı geri dönüşleri, PascalCase inspect uyumluluğu, AOT serileştirmesi, arayüz etkileşimleri ve form doğrulamaları %100 doğrulandı.
+
+## [1.6.15] - 2026-10-18 — Dağıtım Merkezi Tarayıcı Sekme Başlığı & Gezinme i18n Düzeltmesi
+
+### Düzeltilenler (Fixed)
+- **Dağıtım Merkezi Sayfası Tarayıcı Sekme Başlığı (document.title) Düzeltmesi & Mimari Modülerleştirme**:
+  - `utils/pageTitle.ts`: GEMINI.md modüler mimari kurallarına uygun olarak `App.tsx` ve `Header.tsx` arasında tek doğruluk kaynağı (single source of truth) sağlayan, tip güvenli `getPageTitle` ve `formatDocumentTitle` yardımcı fonksiyonları oluşturuldu. `formatDocumentTitle`, `"Corvus - Corvus"`, `"undefined - Corvus"` ve boş başlık senaryolarına karşı zırhlandı.
+  - `App.tsx`: `useEffect` içindeki `document.title` yönetimi `formatDocumentTitle(getPageTitle(...))` kullanımına dönüştürüldü, mükerrer switch-case bloğu kaldırıldı.
+  - `Header.tsx`: Mükerrer `pageTitleMap` sözlüğü kaldırılarak doğrudan `getPageTitle(currentPage, t) || 'Corvus'` entegrasyonu sağlandı.
+  - `i18n/en.ts` & `i18n/tr.ts`: `nav` sözlüğü altına simetrik `deployments` anahtarı (`'Deployments'` ve `'Dağıtımlar'`) eklenerek navigasyon anahtarları eksiksiz hale getirildi.
+  - `Sidebar.tsx` & `BottomNav.tsx`: Dağıtımlar menü öğesi etiketi `t('nav.deployments')` olarak standartlaştırıldı.
+  - `Deployments/index.tsx`: Sabit kodlanmış `aria-label="Yenile"` metni `{t('common.refresh')}` olarak düzeltildi.
+  - `commandItems.ts`: Komut Paletine (`Ctrl+K`) Roket ikonlu `page-deployments` hızlı sayfa geçiş öğesi eklendi.
+  - `i18n/index.tsx`: `I18nProvider` bileşenine testlerde dil kontrolü sağlayan isteğe bağlı `initialLanguage` desteği eklendi.
+  - `pageTitles.test.tsx`: Test paketi genişletilerek `getPageTitle`, `formatDocumentTitle`, tüm `VALID_PAGES` için Header render'ı ve Komut Paleti entegrasyonunu doğrulayan 7 kapsamlı teste çıkarıldı.
+
 ## [1.6.14] - 2026-10-17 — Manuel Durdurma Sonrası Otomatik Başlatma Koruması, Uçtan Uca Konteyner Silme & Arayüz / i18n İyileştirmeleri
 
 ### Eklenenler (Added)

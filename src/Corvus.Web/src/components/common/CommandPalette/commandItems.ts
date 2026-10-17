@@ -12,7 +12,8 @@ import {
   ExternalLink,
   History,
   Trash2,
-  Server
+  Server,
+  Rocket
 } from 'lucide-react';
 import type { CommandItem } from './types';
 import type { PageId } from '../../Sidebar';
@@ -61,6 +62,14 @@ export async function fetchCommandItems({
       icon: Boxes,
       shortcut: 'G C',
       onSelect: () => onNavigate('containers'),
+    },
+    {
+      id: 'page-deployments',
+      title: t('deployments.title') || t('nav.deployments'),
+      category: 'pages',
+      icon: Rocket,
+      shortcut: 'G Y',
+      onSelect: () => onNavigate('deployments'),
     },
     {
       id: 'page-metrics',

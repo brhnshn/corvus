@@ -37,7 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
     { id: 'dashboard', label: t('nav.dashboard'), full: t('nav.dashboard'), icon: LayoutDashboard },
     { id: 'services', label: t('nav.services'), full: t('nav.services'), icon: Grid },
     { id: 'containers', label: t('nav.containers'), full: t('nav.containers'), icon: Boxes },
-    { id: 'deployments', label: t('deployments.navItem'), full: t('deployments.title'), icon: Rocket },
+    { id: 'deployments', label: t('nav.deployments'), full: t('deployments.title'), icon: Rocket },
     { id: 'metrics', label: t('nav.metricsShort'), full: t('nav.metrics'), icon: Activity },
     { id: 'uptime', label: t('nav.uptime'), full: t('nav.uptime'), icon: Clock },
     { id: 'activity', label: t('nav.activityShort'), full: t('nav.activity'), icon: History },

@@ -58,6 +58,9 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
     public Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default) =>
         _containerClient.UpdateContainerAsync(containerId, request, cancellationToken);
 
+    public Task<DockerActionResult> UpdateContainerConfigAsync(string containerId, ContainerResourceUpdateRequest request, CancellationToken cancellationToken = default) =>
+        _containerClient.UpdateContainerConfigAsync(containerId, request, cancellationToken);
+
     public Task<DockerContainersPruneResponse?> PruneContainersAsync(CancellationToken cancellationToken = default) =>
         _containerClient.PruneContainersAsync(cancellationToken);
 

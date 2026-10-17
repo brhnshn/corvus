@@ -44,6 +44,8 @@ public class DockerServiceTests
             Task.FromResult(new DockerActionResult(true, "Volume deleted"));
         public virtual Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(new DockerActionResult(true, "Container updated"));
+        public virtual Task<DockerActionResult> UpdateContainerConfigAsync(string containerId, ContainerResourceUpdateRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(true, "Container config updated"));
         public virtual Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default) =>
             Task.FromResult<DockerImageInspectInfo?>(null);
         public virtual Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) =>
@@ -308,6 +310,8 @@ public class DockerServiceTests
             Task.FromResult(new DockerActionResult(false, "Delete volume failed", 500));
         public Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(new DockerActionResult(false, "Update container failed", 500));
+        public Task<DockerActionResult> UpdateContainerConfigAsync(string containerId, ContainerResourceUpdateRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new DockerActionResult(false, "Update container config failed", 500));
         public Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default) => Task.FromResult<DockerImageInspectInfo?>(null);
         public Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default) => Task.FromResult(false);
         public Task<bool> PullImageProgressAsync(string imageName, Func<string, Task>? onLogChunk = null, CancellationToken cancellationToken = default) => Task.FromResult(false);

@@ -118,6 +118,19 @@ export const containersApi = {
       body: JSON.stringify(req)
     });
     invalidateCache('/containers');
+    invalidateCache(`/containers/${id}/inspect`);
+    invalidateCache('/services');
+    invalidateCache('/dashboard');
+    return res;
+  },
+
+  updateContainerResources: async (id: string, req: import('../types').ContainerResourceUpdateRequest) => {
+    const res = await fetchJson<{ success: boolean; message?: string }>(`/containers/${id}/resources`, {
+      method: 'PATCH',
+      body: JSON.stringify(req)
+    });
+    invalidateCache('/containers');
+    invalidateCache(`/containers/${id}/inspect`);
     invalidateCache('/services');
     invalidateCache('/dashboard');
     return res;

@@ -696,6 +696,10 @@ public static class ContainersEndpoints
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
 
+        group.MapPatch("/{id}/resources", HandleUpdateResourcesAsync).RequireAdmin();
+        group.MapPost("/{id}/resources", HandleUpdateResourcesAsync).RequireAdmin();
+        group.MapPost("/{id}/update-config", HandleUpdateResourcesAsync).RequireAdmin();
+
         group.MapGet("/{id}/check-update", async (string id, IDockerService docker, CancellationToken ct) =>
         {
             var updateInfo = await docker.CheckContainerUpdateAsync(id, ct);
@@ -834,5 +838,56 @@ public static class ContainersEndpoints
             ArrayPool<byte>.Shared.Return(buffer);
             linkedCts.Cancel();
         }
+    }
+
+    private static async Task<IResult> HandleUpdateResourcesAsync(
+        string id,
+        ContainerResourceUpdateRequest request,
+        IDockerService docker,
+        IEventBroadcaster broadcaster,
+        IActivityLogService? activityLogger,
+        ILoggerFactory loggerFactory,
+        HttpContext httpContext,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return Results.BadRequest(new GenericApiResponse(false, "Container ID boş olamaz."));
+        }
+
+        var result = await docker.UpdateContainerConfigAsync(id, request, ct);
+        if (!result.Success)
+        {
+            return Results.Json(
+                new GenericApiResponse(false, result.Message ?? "Container kaynak limitleri güncellenemedi."),
+                CorvusJsonSerializerContext.Default.GenericApiResponse,
+                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
+        }
+
+        docker.InvalidateContainersCache();
+
+        var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString();
+        var logger = loggerFactory.CreateLogger("ContainersEndpoints");
+        var detailsJson = JsonSerializer.Serialize(request, CorvusJsonSerializerContext.Default.ContainerResourceUpdateRequest);
+
+        logger.LogInformation("Audit: User '{Username}' updated resources for container '{ContainerId}': {Details}",
+            Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(username),
+            Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(id),
+            Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(detailsJson));
+
+        activityLogger?.Log(username, "container.update_resources", "container", id, detailsJson, ip);
+
+        var eventPayload = new ContainerResourcesUpdatedEventPayload(
+            id,
+            request.CpuCores,
+            request.MemoryMb,
+            request.RestartPolicy,
+            request.MaximumRetryCount
+        );
+        var payloadJson = JsonSerializer.Serialize(eventPayload, CorvusJsonSerializerContext.Default.ContainerResourcesUpdatedEventPayload);
+        broadcaster.Broadcast("container_resources_updated", payloadJson);
+
+        return Results.Ok(new GenericApiResponse(true, result.Message ?? "Container kaynak limitleri başarıyla güncellendi."));
     }
 }

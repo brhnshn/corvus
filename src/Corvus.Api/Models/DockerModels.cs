@@ -179,6 +179,18 @@ public class DockerHostConfig
     [JsonPropertyName("CpuShares")]
     public long CpuShares { get; set; }
 
+    [JsonPropertyName("MemorySwap")]
+    public long MemorySwap { get; set; }
+
+    [JsonPropertyName("MemoryReservation")]
+    public long MemoryReservation { get; set; }
+
+    [JsonPropertyName("CpuLimitCores")]
+    public double CpuLimitCores => NanoCpus > 0 ? (double)NanoCpus / 1_000_000_000.0 : 0;
+
+    [JsonPropertyName("MemoryLimitMb")]
+    public long MemoryLimitMb => Memory > 0 ? Memory / (1024 * 1024) : 0;
+
     [JsonPropertyName("NetworkMode")]
     public string? NetworkMode { get; set; }
 
@@ -272,11 +284,32 @@ public class DockerContainerUpdateRequest
     [JsonPropertyName("Memory")]
     public long? Memory { get; set; }
 
+    [JsonPropertyName("MemorySwap")]
+    public long? MemorySwap { get; set; }
+
     [JsonPropertyName("MemoryReservation")]
     public long? MemoryReservation { get; set; }
 
     [JsonPropertyName("RestartPolicy")]
     public DockerRestartPolicy? RestartPolicy { get; set; }
+}
+
+public class ContainerResourceUpdateRequest
+{
+    [JsonPropertyName("cpuCores")]
+    public double? CpuCores { get; set; }
+
+    [JsonPropertyName("memoryMb")]
+    public long? MemoryMb { get; set; }
+
+    [JsonPropertyName("memorySwapMb")]
+    public long? MemorySwapMb { get; set; }
+
+    [JsonPropertyName("restartPolicy")]
+    public string? RestartPolicy { get; set; }
+
+    [JsonPropertyName("maximumRetryCount")]
+    public int? MaximumRetryCount { get; set; }
 }
 
 public class DockerContainerHealth

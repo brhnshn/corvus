@@ -240,6 +240,110 @@ public class DockerContainerClient
         }
     }
 
+    public async Task<DockerActionResult> UpdateContainerConfigAsync(string containerId, ContainerResourceUpdateRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(containerId))
+        {
+            return new DockerActionResult(false, "Container ID boş olamaz.", 400);
+        }
+
+        if (request == null)
+        {
+            return new DockerActionResult(false, "Güncelleme isteği boş olamaz.", 400);
+        }
+
+        if (request.CpuCores.HasValue && request.CpuCores.Value < 0)
+        {
+            return new DockerActionResult(false, "CPU çekirdek değeri 0 veya daha büyük olmalıdır.", 400);
+        }
+
+        if (request.MemoryMb.HasValue)
+        {
+            if (request.MemoryMb.Value < 0)
+            {
+                return new DockerActionResult(false, "Bellek değeri 0 veya daha büyük olmalıdır.", 400);
+            }
+            if (request.MemoryMb.Value > 0 && request.MemoryMb.Value < 6)
+            {
+                return new DockerActionResult(false, "Minimum bellek sınırı 6 MB olmalıdır (veya sınırsız için 0).", 400);
+            }
+        }
+
+        string? restartPolicyName = null;
+        int maxRetries = request.MaximumRetryCount ?? 0;
+        if (!string.IsNullOrWhiteSpace(request.RestartPolicy))
+        {
+            restartPolicyName = request.RestartPolicy.Trim().ToLowerInvariant();
+            var validPolicies = new[] { "no", "always", "unless-stopped", "on-failure" };
+            if (!validPolicies.Contains(restartPolicyName))
+            {
+                return new DockerActionResult(false, "Geçersiz yeniden başlatma politikası. Geçerli değerler: no, always, unless-stopped, on-failure", 400);
+            }
+
+            if (restartPolicyName == "on-failure" && maxRetries < 0)
+            {
+                return new DockerActionResult(false, "Maksimum yeniden deneme sayısı 0 veya daha büyük olmalıdır.", 400);
+            }
+        }
+
+        var dockerReq = new DockerContainerUpdateRequest();
+
+        if (request.CpuCores.HasValue)
+        {
+            dockerReq.NanoCpus = request.CpuCores.Value <= 0 ? 0 : (long)Math.Round(request.CpuCores.Value * 1_000_000_000);
+        }
+
+        if (request.MemoryMb.HasValue)
+        {
+            if (request.MemoryMb.Value <= 0)
+            {
+                dockerReq.Memory = 0;
+                dockerReq.MemorySwap = 0;
+            }
+            else
+            {
+                long memoryBytes = request.MemoryMb.Value * 1024L * 1024L;
+                dockerReq.Memory = memoryBytes;
+                dockerReq.MemorySwap = request.MemorySwapMb.HasValue
+                    ? (request.MemorySwapMb.Value <= 0 ? -1 : request.MemorySwapMb.Value * 1024L * 1024L)
+                    : -1;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(restartPolicyName))
+        {
+            dockerReq.RestartPolicy = new DockerRestartPolicy
+            {
+                Name = restartPolicyName,
+                MaximumRetryCount = restartPolicyName == "on-failure" ? maxRetries : 0
+            };
+        }
+
+        var result = await UpdateContainerAsync(containerId, dockerReq, cancellationToken);
+        if (!result.Success && dockerReq.Memory.HasValue && dockerReq.Memory.Value > 0)
+        {
+            if (dockerReq.MemorySwap == -1)
+            {
+                dockerReq.MemorySwap = dockerReq.Memory.Value * 2;
+                var retryResult = await UpdateContainerAsync(containerId, dockerReq, cancellationToken);
+                if (retryResult.Success)
+                {
+                    return retryResult;
+                }
+            }
+
+            // Fallback: If kernel lacks swap accounting or host cgroup rejects swap, attempt without MemorySwap
+            dockerReq.MemorySwap = null;
+            var noSwapResult = await UpdateContainerAsync(containerId, dockerReq, cancellationToken);
+            if (noSwapResult.Success)
+            {
+                return noSwapResult;
+            }
+        }
+
+        return result;
+    }
+
     public async Task<DockerContainersPruneResponse?> PruneContainersAsync(CancellationToken cancellationToken = default)
     {
         try

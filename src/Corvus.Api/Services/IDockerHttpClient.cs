@@ -28,6 +28,7 @@ public interface IDockerHttpClient
     Task<DockerActionResult> DeleteImageAsync(string imageId, bool force = false, CancellationToken cancellationToken = default);
     Task<DockerActionResult> DeleteVolumeAsync(string volumeName, bool force = false, CancellationToken cancellationToken = default);
     Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> UpdateContainerConfigAsync(string containerId, ContainerResourceUpdateRequest request, CancellationToken cancellationToken = default);
     Task<DockerImageInspectInfo?> InspectImageAsync(string imageIdOrName, CancellationToken cancellationToken = default);
     Task<bool> PullImageAsync(string imageName, CancellationToken cancellationToken = default);
     Task<bool> PullImageProgressAsync(string imageName, Func<string, Task>? onLogChunk = null, CancellationToken cancellationToken = default);

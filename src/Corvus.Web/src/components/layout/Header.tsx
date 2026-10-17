@@ -4,6 +4,7 @@ import { StatusDot } from '../ui/StatusDot';
 import { LanguageSwitch } from '../LanguageSwitch';
 import { useI18n } from '../../i18n';
 import { getThemeMode, toggleThemeMode } from '../../lib/motion';
+import { getPageTitle } from '../../utils/pageTitle';
 import type { PageId } from '../Sidebar';
 
 export interface HeaderProps {
@@ -51,20 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
     setThemeState(next);
   };
 
-  const pageTitleMap: Record<PageId, string> = {
-    dashboard: t('nav.dashboard'),
-    services: t('nav.services'),
-    containers: t('nav.containers'),
-    deployments: t('deployments.title'),
-    systems: t('nav.systems'),
-    metrics: t('nav.metrics'),
-    uptime: t('nav.uptime'),
-    activity: t('nav.activity'),
-    settings: t('nav.settings'),
-    profile: t('nav.profile'),
-  };
-
-  const currentTitle = pageTitleMap[currentPage] || 'Corvus';
+  const currentTitle = getPageTitle(currentPage, t) || 'Corvus';
   const displayHost = activeSystemName || 'Host';
   const displayContext = activeSystemIp ? `${displayHost} (${activeSystemIp})` : displayHost;
 

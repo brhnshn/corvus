@@ -74,8 +74,11 @@ export const translateKey = (
   });
 };
 
-export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
+export const I18nProvider: React.FC<{ children: ReactNode; initialLanguage?: Language }> = ({
+  children,
+  initialLanguage,
+}) => {
+  const [language, setLanguageState] = useState<Language>(() => initialLanguage ?? getInitialLanguage());
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

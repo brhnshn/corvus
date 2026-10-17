@@ -353,6 +353,10 @@ export interface DockerHostConfig {
   memory?: number;
   nanoCpus?: number;
   cpuShares?: number;
+  memorySwap?: number;
+  memoryReservation?: number;
+  cpuLimitCores?: number;
+  memoryLimitMb?: number;
   networkMode?: string;
   binds?: string[];
   portBindings?: Record<string, DockerPortBindingHost[] | null>;
@@ -383,8 +387,25 @@ export interface DockerContainerInspectInfo {
 export interface DockerContainerUpdateRequest {
   nanoCpus?: number;
   memory?: number;
+  memorySwap?: number;
   memoryReservation?: number;
   restartPolicy?: DockerRestartPolicy;
+}
+
+export interface ContainerResourceUpdateRequest {
+  cpuCores?: number;
+  memoryMb?: number;
+  memorySwapMb?: number;
+  restartPolicy?: string;
+  maximumRetryCount?: number;
+}
+
+export interface ContainerResourcesUpdatedEventPayload {
+  containerId: string;
+  cpuCores?: number;
+  memoryMb?: number;
+  restartPolicy?: string;
+  maximumRetryCount?: number;
 }
 
 export interface ContainerImageUpdateInfo {

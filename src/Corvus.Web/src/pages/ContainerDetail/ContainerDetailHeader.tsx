@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Play, Pause, Square, RotateCw, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Square, RotateCw, Loader2, Sparkles, Trash2, Sliders } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
 import type { DockerContainer } from '../../types';
@@ -16,6 +16,7 @@ interface ContainerDetailHeaderProps {
   onSelectTab: (tab: ContainerDetailTab) => void;
   isAdmin?: boolean;
   onOpenUpdateModal?: () => void;
+  onOpenResourceLimitsModal?: () => void;
 }
 
 export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
@@ -27,6 +28,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
   actionInProgress,
   isAdmin = false,
   onOpenUpdateModal,
+  onOpenResourceLimitsModal,
 }) => {
   const { t } = useI18n();
 
@@ -108,6 +110,18 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t('containers.checkUpdate')}</span>
+            </button>
+          )}
+
+          {isAdmin && onOpenResourceLimitsModal && (
+            <button
+              type="button"
+              onClick={onOpenResourceLimitsModal}
+              title={t('containers.editResourceLimits')}
+              className="btn btn-sm btn-ghost inline-flex items-center gap-1.5 text-sky-400"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>{t('containers.editResourceLimitsBtn')}</span>
             </button>
           )}
 

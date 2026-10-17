@@ -9,34 +9,39 @@ import {
   CheckCircle2, 
   Loader2, 
   ArrowDownUp, 
-  Layers 
+  Layers,
+  Sliders
 } from 'lucide-react';
 import { containersApi } from '../../../api/containers';
 import { formatBytes } from '../../../utils/format';
 import type { 
   DockerContainerInspectInfo, 
-  DockerContainerUpdateRequest, 
   ContainerStats 
 } from '../../../types';
 import { getInspectHostConfig, getInspectState } from './inspectHelpers';
+import { ContainerResourceLimitsModal } from './ContainerResourceLimitsModal';
 
 interface ContainerResourcesTabProps {
   inspect: DockerContainerInspectInfo;
   isAdmin: boolean;
   initialStats?: ContainerStats;
   onUpdated: () => void;
+  onOpenResourceLimitsModal?: () => void;
 }
 
 export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
   inspect,
   isAdmin,
   initialStats,
-  onUpdated
+  onUpdated,
+  onOpenResourceLimitsModal
 }) => {
   const { t } = useI18n();
 
   const hostConfig = getInspectHostConfig(inspect);
   const state = getInspectState(inspect);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Canlı Stats State'i & Polling
   const [stats, setStats] = useState<ContainerStats | null>(initialStats || null);
@@ -56,6 +61,13 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
   const [cpuCores, setCpuCores] = useState<string>(initialCores);
   const [memoryMb, setMemoryMb] = useState<string>(initialMemoryMb);
   const [restartPolicy, setRestartPolicy] = useState<string>(initialRestartPolicy);
+
+  // Sync state whenever inspect/hostConfig updates
+  useEffect(() => {
+    setCpuCores(initialCores);
+    setMemoryMb(initialMemoryMb);
+    setRestartPolicy(initialRestartPolicy);
+  }, [initialCores, initialMemoryMb, initialRestartPolicy]);
 
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -102,36 +114,47 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
 
     try {
       const parsedCores = parseFloat(cpuCores);
-      const nanoCpus = !isNaN(parsedCores) && parsedCores > 0 ? Math.round(parsedCores * 1_000_000_000) : 0;
+      if (!isNaN(parsedCores) && parsedCores < 0) {
+        setStatusMessage({
+          type: 'error',
+          text: t('containers.validationCpuNegative')
+        });
+        setSaving(false);
+        return;
+      }
 
       const parsedMemory = parseInt(memoryMb, 10);
-      const memoryBytes = !isNaN(parsedMemory) && parsedMemory > 0 ? parsedMemory * 1024 * 1024 : 0;
+      if (!isNaN(parsedMemory) && ((parsedMemory > 0 && parsedMemory < 6) || parsedMemory < 0)) {
+        setStatusMessage({
+          type: 'error',
+          text: t('containers.validationMemoryMin')
+        });
+        setSaving(false);
+        return;
+      }
 
-      const updateReq: DockerContainerUpdateRequest = {
-        nanoCpus: nanoCpus > 0 ? nanoCpus : undefined,
-        memory: memoryBytes > 0 ? memoryBytes : undefined,
-        restartPolicy: {
-          name: restartPolicy
-        }
-      };
-
-      const res = await containersApi.updateContainer(inspect.id, updateReq);
+      const res = await containersApi.updateContainerResources(inspect.id, {
+        cpuCores: !isNaN(parsedCores) ? parsedCores : 0,
+        memoryMb: !isNaN(parsedMemory) ? parsedMemory : 0,
+        restartPolicy
+      });
       if (res.success) {
         setStatusMessage({
           type: 'success',
-          text: res.message || t('containers.updateResourcesSuccess')
+          text: res.message ?? t('containers.updateResourcesSuccess')
         });
         onUpdated();
       } else {
         setStatusMessage({
           type: 'error',
-          text: res.message || t('containers.updateResourcesError')
+          text: res.message ?? t('containers.updateResourcesError')
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t('containers.updateResourcesError');
       setStatusMessage({
         type: 'error',
-        text: err.message || t('containers.updateResourcesError')
+        text: msg
       });
     } finally {
       setSaving(false);
@@ -176,17 +199,36 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
           </p>
         </div>
 
-        {/* Canlı Trafik Özet Rozeti */}
-        {isRunning && stats && (
-          <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-[var(--border-hairline)] text-[11px] font-mono shrink-0">
-            <div className="flex items-center gap-1 text-[var(--text-muted)]">
-              <ArrowDownUp className="w-3.5 h-3.5 text-sky-400" />
-              <span>{t('containers.networkBadge')}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Canlı Trafik Özet Rozeti */}
+          {isRunning && stats && (
+            <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-[var(--border-hairline)] text-[11px] font-mono shrink-0">
+              <div className="flex items-center gap-1 text-[var(--text-muted)]">
+                <ArrowDownUp className="w-3.5 h-3.5 text-sky-400" />
+                <span>{t('containers.networkBadge')}</span>
+              </div>
+              <span className="text-emerald-400 font-medium">↓ {formatBytes(stats.networkRxBytes)}</span>
+              <span className="text-sky-400 font-medium">↑ {formatBytes(stats.networkTxBytes)}</span>
             </div>
-            <span className="text-emerald-400 font-medium">↓ {formatBytes(stats.networkRxBytes)}</span>
-            <span className="text-sky-400 font-medium">↑ {formatBytes(stats.networkTxBytes)}</span>
-          </div>
-        )}
+          )}
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenResourceLimitsModal) {
+                  onOpenResourceLimitsModal();
+                } else {
+                  setIsModalOpen(true);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-[var(--border-hairline)] text-[var(--text-primary)] transition-colors cursor-pointer shrink-0"
+            >
+              <Sliders className="w-3.5 h-3.5 text-sky-400" />
+              <span>{t('containers.editResourceLimitsBtn')}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* CANLI PERFORMANS KARTLARI (GERÇEK VERİLER) */}
@@ -409,10 +451,10 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           {[
-            { id: 'no', label: 'No', desc: t('containers.restartPolicyNo') },
-            { id: 'always', label: 'Always', desc: t('containers.restartPolicyAlways') },
-            { id: 'unless-stopped', label: 'Unless Stopped', desc: t('containers.restartPolicyUnlessStopped') },
-            { id: 'on-failure', label: 'On Failure', desc: t('containers.restartPolicyOnFailure') }
+            { id: 'no', label: t('containers.restartPolicyNo'), desc: t('containers.restartPolicyNoDesc') },
+            { id: 'always', label: t('containers.restartPolicyAlways'), desc: t('containers.restartPolicyAlwaysDesc') },
+            { id: 'unless-stopped', label: t('containers.restartPolicyUnlessStopped'), desc: t('containers.restartPolicyUnlessStoppedDesc') },
+            { id: 'on-failure', label: t('containers.restartPolicyOnFailure'), desc: t('containers.restartPolicyOnFailureDesc') }
           ].map((item) => (
             <label
               key={item.id}
@@ -459,6 +501,17 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
             )}
           </button>
         </div>
+      )}
+
+      {isAdmin && (
+        <ContainerResourceLimitsModal
+          isOpen={isModalOpen}
+          containerId={inspect.id}
+          containerName={inspect.name}
+          inspect={inspect}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={onUpdated}
+        />
       )}
     </form>
   );

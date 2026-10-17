@@ -54,7 +54,7 @@ export const DeploymentsPage: React.FC = () => {
               onClick={refresh}
               disabled={isRefreshing}
               icon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[var(--cloud-400)]' : ''}`} />}
-              aria-label="Yenile"
+              aria-label={t('common.refresh')}
             />
             <Button
               variant="cloud"

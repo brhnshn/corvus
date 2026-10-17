@@ -31,7 +31,74 @@ export function getInspectEnv(inspect?: DockerContainerInspectInfo | null): stri
 export function getInspectHostConfig(inspect?: DockerContainerInspectInfo | null): DockerHostConfig {
   if (!inspect) return {};
   const raw = inspect as unknown as Record<string, unknown>;
-  return (inspect.hostConfig || raw.HostConfig || {}) as DockerHostConfig;
+  const host = (inspect.hostConfig || raw.HostConfig || {}) as Record<string, unknown>;
+  const rawPolicy = (host.restartPolicy || host.RestartPolicy || {}) as Record<string, unknown>;
+
+  const nanoCpus = typeof host.nanoCpus === 'number'
+    ? host.nanoCpus
+    : typeof host.NanoCpus === 'number'
+      ? (host.NanoCpus as number)
+      : undefined;
+
+  const memory = typeof host.memory === 'number'
+    ? host.memory
+    : typeof host.Memory === 'number'
+      ? (host.Memory as number)
+      : undefined;
+
+  const memorySwap = typeof host.memorySwap === 'number'
+    ? host.memorySwap
+    : typeof host.MemorySwap === 'number'
+      ? (host.MemorySwap as number)
+      : undefined;
+
+  const memoryReservation = typeof host.memoryReservation === 'number'
+    ? host.memoryReservation
+    : typeof host.MemoryReservation === 'number'
+      ? (host.MemoryReservation as number)
+      : undefined;
+
+  const cpuShares = typeof host.cpuShares === 'number'
+    ? host.cpuShares
+    : typeof host.CpuShares === 'number'
+      ? (host.CpuShares as number)
+      : undefined;
+
+  const cpuLimitCores = typeof host.cpuLimitCores === 'number'
+    ? host.cpuLimitCores
+    : typeof host.CpuLimitCores === 'number'
+      ? (host.CpuLimitCores as number)
+      : (typeof nanoCpus === 'number' && nanoCpus > 0 ? nanoCpus / 1_000_000_000 : undefined);
+
+  const memoryLimitMb = typeof host.memoryLimitMb === 'number'
+    ? host.memoryLimitMb
+    : typeof host.MemoryLimitMb === 'number'
+      ? (host.MemoryLimitMb as number)
+      : (typeof memory === 'number' && memory > 0 ? Math.round(memory / (1024 * 1024)) : undefined);
+
+  const policyName = (rawPolicy.name || rawPolicy.Name || 'no') as string;
+  const maxRetries = typeof rawPolicy.maximumRetryCount === 'number'
+    ? rawPolicy.maximumRetryCount
+    : typeof rawPolicy.MaximumRetryCount === 'number'
+      ? (rawPolicy.MaximumRetryCount as number)
+      : 0;
+
+  return {
+    nanoCpus,
+    memory,
+    memorySwap,
+    memoryReservation,
+    cpuShares,
+    cpuLimitCores,
+    memoryLimitMb,
+    networkMode: (host.networkMode || host.NetworkMode || '') as string,
+    restartPolicy: {
+      name: policyName,
+      maximumRetryCount: maxRetries
+    },
+    binds: Array.isArray(host.binds || host.Binds) ? ((host.binds || host.Binds) as string[]) : undefined,
+    portBindings: (host.portBindings || host.PortBindings) as Record<string, DockerPortBindingHost[] | null> | undefined
+  };
 }
 
 export function getInspectNetworkSettings(inspect?: DockerContainerInspectInfo | null): DockerNetworkSettings {

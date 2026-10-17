@@ -158,6 +158,14 @@ public record ContainerDeletedEventPayload(
     [property: JsonPropertyName("containerId")] string ContainerId
 );
 
+public record ContainerResourcesUpdatedEventPayload(
+    [property: JsonPropertyName("containerId")] string ContainerId,
+    [property: JsonPropertyName("cpuCores")] double? CpuCores,
+    [property: JsonPropertyName("memoryMb")] long? MemoryMb,
+    [property: JsonPropertyName("restartPolicy")] string? RestartPolicy,
+    [property: JsonPropertyName("maximumRetryCount")] int? MaximumRetryCount
+);
+
 public record AuthRegisterRequest(
     string Username,
     string Password
@@ -389,6 +397,8 @@ public record NotificationResult(
 [JsonSerializable(typeof(Corvus.Api.Models.Deployments.ScratchDeploymentRequest))]
 [JsonSerializable(typeof(Corvus.Api.Models.Deployments.ContainerConnectionTestResult))]
 [JsonSerializable(typeof(Corvus.Api.Models.Deployments.DeployWebhookInfoResponse))]
+[JsonSerializable(typeof(ContainerResourceUpdateRequest))]
+[JsonSerializable(typeof(ContainerResourcesUpdatedEventPayload))]
 public partial class CorvusJsonSerializerContext : JsonSerializerContext
 {
 }

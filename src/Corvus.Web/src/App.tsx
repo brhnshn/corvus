@@ -1,7 +1,6 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { api, type AuthStatus, invalidateCache } from './api/client';
 import { AppLayout } from './components/layout/AppLayout';
-import type { PageId } from './components/Sidebar';
 import { RegistrationPromptModal } from './components/RegistrationPromptModal';
 import { RefreshCw } from 'lucide-react';
 import { useI18n } from './i18n';
@@ -14,6 +13,7 @@ import {
 import { PageTransition } from './components/common/PageTransition';
 import { useToast } from './components/ui/Toast';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { getPageTitle, formatDocumentTitle } from './utils/pageTitle';
 import { ChunkErrorBoundary } from './components/common/ChunkErrorBoundary';
 
 // Code-splitting via lazyWithRetry for bundle optimization (Roadmap 3.1)
@@ -113,6 +113,10 @@ export const App: React.FC = () => {
             if (eventType?.includes('container')) {
               invalidateCache('/containers');
               invalidateCache('/dashboard');
+              const containerId = parsed.containerId || parsed.id || parsed.ContainerId;
+              if (containerId) {
+                invalidateCache(`/containers/${containerId}/inspect`);
+              }
             } else if (eventType?.includes('service')) {
               invalidateCache('/services');
               invalidateCache('/dashboard');
@@ -175,31 +179,18 @@ export const App: React.FC = () => {
     };
   }, [isStatusPath, authLoading, authStatus?.isAuthenticated, authStatus?.authEnabled]);
 
-  const getPageTitle = (page: PageId) => {
-    switch (page) {
-      case 'dashboard': return t('nav.dashboard');
-      case 'services': return t('nav.services');
-      case 'containers': return t('nav.containers');
-      case 'systems': return t('nav.systems');
-      case 'metrics': return t('nav.metrics');
-      case 'uptime': return t('nav.uptime');
-      case 'activity': return t('nav.activity');
-      case 'settings': return t('nav.settings');
-      case 'profile': return t('nav.profile');
-    }
-  };
-
   // Sayfa ve dil değişimlerine göre dinamik tarayıcı sekme başlığı (document.title)
   // Kurallar gereği tüm hook'lar erken dönüşlerden (return) önce çağrılmalıdır
   useEffect(() => {
     if (isStatusPath) {
-      document.title = `${t('publicStatus.badge')} - Corvus`;
+      const statusTitle = t('publicStatus.badge') || 'Status';
+      document.title = formatDocumentTitle(statusTitle);
     } else if (authStatus && authStatus.authEnabled && !authStatus.isAuthenticated) {
-      document.title = `${t('auth.tabLogin')} - Corvus`;
-    } else if (currentPage === 'containers' && selectedContainerId) {
-      document.title = `${t('containers.detailTitle')} - Corvus`;
+      const loginTitle = t('auth.tabLogin') || 'Login';
+      document.title = formatDocumentTitle(loginTitle);
     } else {
-      document.title = `${getPageTitle(currentPage)} - Corvus`;
+      const pageTitle = getPageTitle(currentPage, t, { selectedContainerId });
+      document.title = formatDocumentTitle(pageTitle);
     }
   }, [currentPage, selectedContainerId, isStatusPath, authStatus, t]);
 

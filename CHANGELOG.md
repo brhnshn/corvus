@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.16] - 2026-10-18 — Live Container Resource Limits Quota & Restart Policy Dynamic Editor
+
+### Added
+- **Dynamic Container Resource Limits & Restart Policy Live Editor**:
+  - `Corvus.Api/Models/DockerModels.cs`: Extended `DockerHostConfig` with `MemorySwap`, `MemoryReservation`, `CpuLimitCores`, and `MemoryLimitMb`. Extended `DockerContainerUpdateRequest` with `MemorySwap`. Added strongly-typed `ContainerResourceUpdateRequest` (`cpuCores`, `memoryMb`, `memorySwapMb`, `restartPolicy`, `maximumRetryCount`).
+  - `Corvus.Api/Models/CorvusJsonSerializerContext.cs`: Added `ContainerResourcesUpdatedEventPayload` record and registered it along with `ContainerResourceUpdateRequest` in `[JsonSerializable]` for Native AOT reflection-free serialization.
+  - `Corvus.Api/Services/Docker/DockerContainerClient.cs` & `DockerService.cs`: Implemented `UpdateContainerConfigAsync` utilizing the Docker Engine API `POST /containers/{id}/update`. Added input validation (non-negative CPU, minimum 6 MB memory if non-zero, valid restart policies `no`/`always`/`unless-stopped`/`on-failure`, non-negative retry count), automatic unit conversion (cores -> NanoCPUs, MB -> bytes, automatic `MemorySwap = -1` handling to prevent Docker's "MemorySwap limit should be greater or equal to Memory limit" error), multi-tier fallback retry mechanism (retrying `Memory * 2` and omitting swap on kernels lacking swap accounting), container cache invalidation, and `_statsCache` eviction.
+  - `Corvus.Api/Endpoints/ContainersEndpoints.cs`: Exposed `PATCH /api/containers/{id}/resources` (`.RequireAdmin()`), plus aliases `POST /{id}/resources` and `POST /{id}/update-config`. Integrated structured audit logging (`container.update_resources`), cache invalidation, and real-time Server-Sent Events (SSE) broadcast (`container_resources_updated`).
+  - `Corvus.Web/src/types/index.ts` & `src/api/containers.ts`: Added frontend interfaces and `updateContainerResources(id, req)` API method with automatic inspect and container list cache invalidation.
+  - `Corvus.Web/src/pages/Containers/detail/inspectHelpers.ts`: Hardened `getInspectHostConfig` to normalize properties across both PascalCase (returned by Docker Engine API) and camelCase, ensuring `nanoCpus`, `memory`, `restartPolicy`, `cpuLimitCores`, and `memoryLimitMb` are always correctly parsed.
+  - `Corvus.Web/src/pages/Containers/detail/ContainerResourceLimitsModal.tsx`: Created standalone, modular modal component allowing live adjustment of CPU quotas and RAM limits with quick preset chips (`0.5c`, `1.0c`, `2.0c`, `4.0c`, `256MB`, `512MB`, `1GB`, `2GB`, `4GB`, `8GB`), restart policy radio selection, on-failure retry counts, dynamic validation, and active configuration cards.
+  - `Corvus.Web/src/pages/ContainerDetail/` & `Containers/detail/`: Integrated the limits modal across `ContainerDetailHeader`, `ContainerOverviewTab`, `ContainerResourcesTab`, and `ContainerDetailModal`, with reactive SSE inspect cache invalidation in `App.tsx`.
+  - `i18n/en.ts` & `i18n/tr.ts`: Synchronized all bilingual keys with zero hardcoded strings.
+  - `tests`: Added 21 comprehensive backend tests (`ContainerResourceLimitsTests.cs`) and 9 frontend unit tests (`ContainerResourceLimitsModal.test.tsx`), verifying all conversions, Docker API boundary conditions, swap fallbacks, PascalCase normalization, AOT serialization, UI presets, and validations.
+
+## [1.6.15] - 2026-10-18 — Deployment Center Document Title & Navigation i18n Resolution
+
+### Fixed
+- **Browser Tab Document Title Resolution for Deployments Page & Architecture Modularization**:
+  - `utils/pageTitle.ts`: Created centralized, strongly-typed `getPageTitle` and `formatDocumentTitle` utilities to serve as the single source of truth across `App.tsx` and `Header.tsx`, conforming to GEMINI.md modular separation rules. Hardened `formatDocumentTitle` against `"Corvus - Corvus"`, `"undefined - Corvus"`, and empty fallbacks.
+  - `App.tsx`: Refactored `useEffect` dynamic `document.title` resolution to use `formatDocumentTitle(getPageTitle(...))`, removing duplicate switch-cases and preventing title regressions.
+  - `Header.tsx`: Replaced duplicated `pageTitleMap` dictionary with `getPageTitle(currentPage, t) || 'Corvus'`.
+  - `i18n/en.ts` & `i18n/tr.ts`: Added symmetrical `deployments` key under `nav` (`'Deployments'` and `'Dağıtımlar'`).
+  - `Sidebar.tsx` & `BottomNav.tsx`: Standardized deployments item label to `t('nav.deployments')`.
+  - `Deployments/index.tsx`: Replaced hardcoded `aria-label="Yenile"` with `{t('common.refresh')}`.
+  - `commandItems.ts`: Added `page-deployments` item with Rocket icon to the global Command Palette.
+  - `i18n/index.tsx`: Added optional `initialLanguage` prop support to `I18nProvider` for deterministic localized unit tests.
+  - `pageTitles.test.tsx`: Expanded test suite to 7 comprehensive tests asserting `getPageTitle`, `formatDocumentTitle`, `Header` rendering for all `VALID_PAGES`, and Command Palette integration.
+
 ## [1.6.14] - 2026-10-17 — Manual Stop Auto-Heal Guard, End-to-End Container Deletion & Container UI / i18n Hardening
 
 ### Added

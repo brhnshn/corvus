@@ -28,6 +28,7 @@ public interface IDockerService
     Task<DockerSelectivePruneResult> ExecuteSelectivePruneAsync(DockerSelectivePruneRequest request, CancellationToken cancellationToken = default);
     Task<DockerContainerInspectInfo?> InspectContainerAsync(string containerId, CancellationToken cancellationToken = default);
     Task<DockerActionResult> UpdateContainerAsync(string containerId, DockerContainerUpdateRequest request, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> UpdateContainerConfigAsync(string containerId, ContainerResourceUpdateRequest request, CancellationToken cancellationToken = default);
     Task<ContainerImageUpdateInfo> CheckContainerUpdateAsync(string containerId, CancellationToken cancellationToken = default);
     Task<List<ContainerImageUpdateInfo>> CheckAllContainersUpdateAsync(CancellationToken cancellationToken = default);
     Task<DockerActionResult> RecreateContainerAsync(string containerId, bool pullLatest = true, CancellationToken cancellationToken = default);
@@ -804,6 +805,17 @@ public class DockerService : IDockerService
         var result = await _client.UpdateContainerAsync(containerId, request, cancellationToken);
         if (result.Success)
         {
+            InvalidateContainersCache();
+        }
+        return result;
+    }
+
+    public async Task<DockerActionResult> UpdateContainerConfigAsync(string containerId, ContainerResourceUpdateRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await _client.UpdateContainerConfigAsync(containerId, request, cancellationToken);
+        if (result.Success)
+        {
+            _statsCache.TryRemove(containerId, out _);
             InvalidateContainersCache();
         }
         return result;
