@@ -49,11 +49,11 @@ export const UsersTab: React.FC<UsersTabProps> = ({
       const data = await api.getUsers();
       setUsers(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Kullanıcılar yüklenemedi');
+      setError(err instanceof Error ? err.message : t('userManagement.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadUsers();
@@ -69,14 +69,14 @@ export const UsersTab: React.FC<UsersTabProps> = ({
       await loadUsers();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Rol güncellenemedi');
+      setError(err instanceof Error ? err.message : t('userManagement.roleUpdateFailed'));
     }
   };
 
   const handleDeleteUser = async (user: UserDto) => {
     if (!isAdmin) return;
     if (user.username === currentUsername) {
-      setError('Kendi hesabınızı silemezsiniz.');
+      setError(t('userManagement.cannotDeleteSelf'));
       return;
     }
     if (!window.confirm(t('settings.deleteUserConfirm'))) {
@@ -91,7 +91,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
       await loadUsers();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Kullanıcı silinemedi');
+      setError(err instanceof Error ? err.message : t('userManagement.deleteFailed'));
     }
   };
 
@@ -123,7 +123,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
       await loadUsers();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
-      setModalError(err instanceof Error ? err.message : 'Kullanıcı oluşturulamadı');
+      setModalError(err instanceof Error ? err.message : t('userManagement.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -223,7 +223,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
             ) : users.length === 0 ? (
               <tr>
                 <td colSpan={4} className="py-8 text-center text-[var(--text-muted)] font-mono text-xs">
-                  Kayıtlı kullanıcı bulunamadı.
+                  {t('userManagement.noUsers')}
                 </td>
               </tr>
             ) : (
@@ -240,7 +240,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                         <span className="text-[var(--cloud-100)] font-semibold">{u.username}</span>
                         {isSelf && (
                           <span className="px-1.5 py-0.2 rounded text-[10px] bg-[var(--bg-active)] text-[var(--text-secondary)] font-mono">
-                            Sen
+                            {t('userManagement.you')}
                           </span>
                         )}
                       </div>
@@ -280,7 +280,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                               ? 'text-[var(--text-muted)] opacity-30 cursor-not-allowed'
                               : 'text-[var(--text-muted)] hover:text-[var(--status-down)] hover:bg-[var(--status-down-bg)] cursor-pointer'
                           }`}
-                          title={isSelf ? 'Kendi hesabınızı silemezsiniz' : 'Kullanıcıyı Sil'}
+                          title={isSelf ? t('userManagement.cannotDeleteSelf') : t('userManagement.deleteUser')}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -354,7 +354,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                 required
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
-                placeholder="örn: operator1"
+                placeholder={t('userManagement.usernameExample')}
                 className="w-full bg-[var(--bg-canvas)] border border-[var(--border-hairline)] rounded-[var(--radius-sm)] pl-9 pr-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--cloud-300)] font-mono"
               />
             </div>

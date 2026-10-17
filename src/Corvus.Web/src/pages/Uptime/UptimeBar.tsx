@@ -2,6 +2,7 @@ import React from 'react';
 import type { UptimeCheckItem } from '../../api/client';
 import { Card } from '../../components/ui/Card';
 import { UptimeStrip, type UptimeSegment } from '../../components/ui/UptimeStrip';
+import { useI18n } from '../../i18n';
 
 interface UptimeBarProps {
   checks: UptimeCheckItem[];
@@ -17,13 +18,15 @@ interface BucketData {
 }
 
 export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) => {
+  const { t } = useI18n();
+
   if (checks.length === 0) {
     return (
       <Card className="space-y-2">
         <UptimeStrip count={maxBlocks} />
         <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono px-0.5">
-          <span>Veri toplanıyor...</span>
-          <span>Şimdi</span>
+          <span>{t('uptime.collectingData')}</span>
+          <span>{t('uptime.now')}</span>
         </div>
       </Card>
     );
@@ -52,7 +55,7 @@ export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) 
 
     const firstTime = new Date(chunk[0].checkedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const lastTime = new Date(chunk[chunk.length - 1].checkedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const label = `${firstTime} - ${lastTime} (${upCount}/${chunk.length} Başarılı, ${avgMs}ms)`;
+    const label = `${firstTime} - ${lastTime} (${t('uptime.successSummary', { count: upCount, total: chunk.length, latency: avgMs })})`;
 
     buckets.push({
       status,
@@ -70,7 +73,7 @@ export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) 
       count: 0,
       upCount: 0,
       avgResponseMs: 0,
-      label: 'Önceki dönem'
+      label: t('uptime.previousPeriod')
     });
   }
 
@@ -86,16 +89,16 @@ export const UptimeBar: React.FC<UptimeBarProps> = ({ checks, maxBlocks = 45 }) 
   return (
     <Card className="space-y-2.5">
       <div className="flex items-center justify-between text-xs text-[var(--cloud-100)] font-semibold mb-1">
-        <span>Erişilebilirlik ve Yanıt Süresi Geçmişi</span>
-        <span className="font-mono text-[11px] text-[var(--text-muted)]">Son 45 Kontrol</span>
+        <span>{t('uptime.historyHeader')}</span>
+        <span className="font-mono text-[11px] text-[var(--text-muted)]">{t('uptime.lastChecksCount', { count: maxBlocks })}</span>
       </div>
 
       <UptimeStrip segments={segments} count={maxBlocks} height={24} />
 
       <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono px-0.5 pt-1">
         <span>{firstDate}</span>
-        <span className="text-[var(--text-muted)] opacity-60">Kronolojik Telemetri</span>
-        <span>{lastDate} (Şimdi)</span>
+        <span className="text-[var(--text-muted)] opacity-60">{t('uptime.chronologicalTelemetry')}</span>
+        <span>{lastDate} ({t('uptime.now')})</span>
       </div>
     </Card>
   );

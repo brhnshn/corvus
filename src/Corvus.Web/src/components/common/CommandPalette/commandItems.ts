@@ -80,7 +80,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'page-activity',
-      title: 'Olay Geçmişi (Audit Log)',
+      title: t('commandPalette.activityLog'),
       category: 'pages',
       icon: History,
       shortcut: 'G A',
@@ -88,7 +88,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'page-settings',
-      title: t('nav.settings') || 'Ayarlar',
+      title: t('nav.settings'),
       category: 'pages',
       icon: Settings,
       shortcut: 'G ,',
@@ -96,7 +96,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'page-profile',
-      title: t('nav.profile') || 'Profil & Kullanıcılar',
+      title: t('nav.profile'),
       category: 'pages',
       icon: UserIcon,
       shortcut: 'G P',
@@ -106,7 +106,7 @@ export async function fetchCommandItems({
     // Global Aksiyonlar
     {
       id: 'action-refresh',
-      title: t('common.refresh') || 'Tüm Verileri Yenile',
+      title: t('commandPalette.refreshAll'),
       category: 'actions',
       icon: RotateCw,
       shortcut: 'R',
@@ -116,7 +116,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'action-prune',
-      title: 'Docker Temizliği & Hijyen (System Prune)',
+      title: t('commandPalette.dockerPrune'),
       category: 'actions',
       icon: Trash2,
       onSelect: () => {
@@ -125,7 +125,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'action-status',
-      title: t('nav.liveStatus') || 'Canlı Durum Sayfasını Aç (/status)',
+      title: t('commandPalette.openStatusPage'),
       category: 'actions',
       icon: ExternalLink,
       onSelect: () => {
@@ -178,7 +178,7 @@ export async function fetchCommandItems({
             );
           } catch (err: unknown) {
             console.error('Failed to restart container', err);
-            toast?.error(`Hata: ${err instanceof Error ? err.message : String(err)}`);
+            toast?.error(t('commandPalette.restartFailed', { error: err instanceof Error ? err.message : String(err) }));
           }
         },
       });
@@ -254,7 +254,7 @@ export async function fetchCommandItems({
               } else {
                 toast?.warn(t('commandPalette.serviceCheckFailed', { 
                   name: s.name, 
-                  message: res.message || 'Yanıt alınamadı' 
+                  message: res.message || t('commandPalette.noResponse') 
                 }));
               }
             } catch (err: unknown) {

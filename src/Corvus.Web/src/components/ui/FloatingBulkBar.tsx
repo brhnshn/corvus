@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
+import { useI18n } from '../../i18n';
 
 export interface FloatingBulkBarProps {
   selectedCount: number;
@@ -19,8 +20,10 @@ export const FloatingBulkBar: React.FC<FloatingBulkBarProps> = ({
   onClear,
   children,
   className = '',
-  countLabel = 'seçildi',
+  countLabel,
 }) => {
+  const { t } = useI18n();
+  const effectiveCountLabel = countLabel ?? t('common.selected');
   const isVisible = selectedCount > 0;
 
   return (
@@ -31,7 +34,7 @@ export const FloatingBulkBar: React.FC<FloatingBulkBarProps> = ({
     >
       <div className="flex items-center gap-2 pr-2 border-r border-[var(--border-hairline)] text-xs font-mono">
         <span className="font-semibold text-[var(--cloud-200)]">{selectedCount}</span>
-        <span className="text-[var(--text-muted)]">{countLabel}</span>
+        <span className="text-[var(--text-muted)]">{effectiveCountLabel}</span>
       </div>
 
       <div className="flex items-center gap-1.5">{children}</div>
@@ -41,7 +44,7 @@ export const FloatingBulkBar: React.FC<FloatingBulkBarProps> = ({
         size="sm"
         onClick={onClear}
         className="!text-[var(--text-muted)] hover:!text-[var(--text-primary)]"
-        title="Seçimi Temizle"
+        title={t('common.clearSelection')}
       >
         <X className="w-3.5 h-3.5" />
       </Button>

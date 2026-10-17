@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DockerContainer, ContainerStats } from '../../api/client';
 import { ContainerRow } from './ContainerRow';
+import { useI18n } from '../../i18n';
 
 export interface ContainerListProps {
   items: DockerContainer[];
@@ -14,6 +15,7 @@ export interface ContainerListProps {
   isAdmin?: boolean;
   onOpenImageUpdate?: (container: DockerContainer) => void;
   onDeploy?: (container: DockerContainer) => void;
+  onDelete?: (container: DockerContainer) => void;
   updatesMap?: Record<string, boolean>;
 }
 
@@ -28,17 +30,20 @@ export const ContainerList: React.FC<ContainerListProps> = ({
   isAdmin = true,
   onOpenImageUpdate,
   onDeploy,
+  onDelete,
   updatesMap = {},
 }) => {
+  const { t } = useI18n();
+
   return (
     <div className="space-y-2">
       {/* Masaüstü Sütun Başlıkları (Midnight v2 .th şeridi) */}
-      <div className="hidden lg:grid grid-cols-[2.1fr_1.5fr_1.8fr_1fr_190px] items-center px-4.5 pb-2 text-[11px] font-mono font-semibold uppercase tracking-[0.8px] text-[#9ba0b5]">
-        <span>İsim &amp; Hızlı Eylemler</span>
-        <span>Kaynak (CPU / RAM)</span>
-        <span>İmaj &amp; Portlar</span>
-        <span>Durum</span>
-        <span className="text-right">Aksiyon</span>
+      <div className="hidden lg:grid grid-cols-[2.1fr_1.5fr_1.8fr_1fr_210px] items-center px-4.5 pb-2 text-[11px] font-mono font-semibold uppercase tracking-[0.8px] text-[#9ba0b5]">
+        <span>{t('containers.colNameAndQuickActions')}</span>
+        <span>{t('containers.colResources')}</span>
+        <span>{t('containers.colImageAndPorts')}</span>
+        <span>{t('containers.colStatus')}</span>
+        <span className="text-right">{t('containers.colAction')}</span>
       </div>
 
       {/* Konteyner Satırları */}
@@ -56,6 +61,7 @@ export const ContainerList: React.FC<ContainerListProps> = ({
             isAdmin={isAdmin}
             onOpenImageUpdate={onOpenImageUpdate}
             onDeploy={onDeploy}
+            onDelete={onDelete}
             hasUpdate={updatesMap[container.Id]}
           />
         ))}

@@ -13,6 +13,10 @@ public interface IDockerService
     Task<DockerActionResult> StopContainerAsync(string containerId, CancellationToken cancellationToken = default);
     Task<DockerActionResult> PauseContainerAsync(string containerId, CancellationToken cancellationToken = default);
     Task<DockerActionResult> UnpauseContainerAsync(string containerId, CancellationToken cancellationToken = default);
+    Task<DockerActionResult> DeleteContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken cancellationToken = default);
+    void MarkContainerManuallyStopped(string containerId);
+    void ClearContainerManualStop(string containerId);
+    bool IsContainerManuallyStopped(string containerId);
     Task<ContainerStatsDto?> GetContainerStatsAsync(string containerId, CancellationToken cancellationToken = default);
     Task<Dictionary<string, ContainerStatsDto>> GetActiveContainersStatsSummaryAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetContainerLogsAsync(string containerId, int tail = 100, CancellationToken cancellationToken = default);
@@ -39,6 +43,7 @@ public class DockerService : IDockerService
     private readonly ILogger<DockerService> _logger;
     private readonly IServiceScopeFactory? _scopeFactory;
     private readonly ConcurrentDictionary<string, (DateTime Expiry, ContainerStatsDto Stats)> _statsCache = new();
+    private readonly ConcurrentDictionary<string, DateTime> _manuallyStoppedContainers = new(StringComparer.OrdinalIgnoreCase);
     private (DateTime Expiry, List<DockerContainerInfo> Items) _cachedContainers;
     private readonly object _containersLock = new();
 
@@ -139,24 +144,102 @@ public class DockerService : IDockerService
         }
     }
 
+    public void MarkContainerManuallyStopped(string containerId)
+    {
+        if (string.IsNullOrWhiteSpace(containerId)) return;
+        string clean = containerId.Trim();
+        var now = DateTime.UtcNow;
+        _manuallyStoppedContainers[clean] = now;
+        if (clean.Length >= 12)
+        {
+            _manuallyStoppedContainers[clean[..12]] = now;
+        }
+    }
+
+    public void ClearContainerManualStop(string containerId)
+    {
+        if (string.IsNullOrWhiteSpace(containerId)) return;
+        string clean = containerId.Trim();
+        _manuallyStoppedContainers.TryRemove(clean, out _);
+        if (clean.Length >= 12)
+        {
+            string prefix = clean[..12];
+            _manuallyStoppedContainers.TryRemove(prefix, out _);
+            foreach (var key in _manuallyStoppedContainers.Keys)
+            {
+                if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    _manuallyStoppedContainers.TryRemove(key, out _);
+                }
+            }
+        }
+        else
+        {
+            foreach (var key in _manuallyStoppedContainers.Keys)
+            {
+                if (key.StartsWith(clean, StringComparison.OrdinalIgnoreCase))
+                {
+                    _manuallyStoppedContainers.TryRemove(key, out _);
+                }
+            }
+        }
+    }
+
+    public bool IsContainerManuallyStopped(string containerId)
+    {
+        if (string.IsNullOrWhiteSpace(containerId)) return false;
+        string clean = containerId.Trim();
+        if (_manuallyStoppedContainers.ContainsKey(clean))
+        {
+            return true;
+        }
+        if (clean.Length >= 12 && _manuallyStoppedContainers.ContainsKey(clean[..12]))
+        {
+            return true;
+        }
+        foreach (var key in _manuallyStoppedContainers.Keys)
+        {
+            if (clean.StartsWith(key, StringComparison.OrdinalIgnoreCase) || key.StartsWith(clean, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public async Task<DockerActionResult> RestartContainerAsync(string containerId, CancellationToken cancellationToken = default)
     {
+        ClearContainerManualStop(containerId);
         var res = await _client.RestartContainerAsync(containerId, cancellationToken);
-        if (res.Success) InvalidateContainersCache();
+        if (res.Success)
+        {
+            ClearContainerManualStop(containerId);
+            InvalidateContainersCache();
+        }
         return res;
     }
 
     public async Task<DockerActionResult> StartContainerAsync(string containerId, CancellationToken cancellationToken = default)
     {
+        ClearContainerManualStop(containerId);
         var res = await _client.StartContainerAsync(containerId, cancellationToken);
-        if (res.Success) InvalidateContainersCache();
+        if (res.Success)
+        {
+            ClearContainerManualStop(containerId);
+            InvalidateContainersCache();
+        }
         return res;
     }
 
     public async Task<DockerActionResult> StopContainerAsync(string containerId, CancellationToken cancellationToken = default)
     {
+        MarkContainerManuallyStopped(containerId);
         var res = await _client.StopContainerAsync(containerId, cancellationToken);
-        if (res.Success) InvalidateContainersCache();
+        if (res.Success)
+        {
+            MarkContainerManuallyStopped(containerId);
+            InvalidateContainersCache();
+        }
         return res;
     }
 
@@ -171,6 +254,24 @@ public class DockerService : IDockerService
     {
         var res = await _client.UnpauseContainerAsync(containerId, cancellationToken);
         if (res.Success) InvalidateContainersCache();
+        return res;
+    }
+
+    public async Task<DockerActionResult> DeleteContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(containerId))
+        {
+            return new DockerActionResult(false, "Container ID boş olamaz.", 400);
+        }
+
+        MarkContainerManuallyStopped(containerId);
+        var res = await _client.DeleteContainerAsync(containerId, force, removeVolumes, cancellationToken);
+        if (res.Success)
+        {
+            ClearContainerManualStop(containerId);
+            _statsCache.TryRemove(containerId, out _);
+            InvalidateContainersCache();
+        }
         return res;
     }
 

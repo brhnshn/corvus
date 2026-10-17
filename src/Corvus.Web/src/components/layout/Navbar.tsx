@@ -55,8 +55,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onToggleSidebar}
-            title={isSidebarCollapsed ? "Menüyü Göster" : "Menüyü Gizle"}
-            aria-label={isSidebarCollapsed ? "Menüyü Göster" : "Menüyü Gizle"}
+            title={isSidebarCollapsed ? t('nav.showSidebar') : t('nav.hideSidebar')}
+            aria-label={isSidebarCollapsed ? t('nav.showSidebar') : t('nav.hideSidebar')}
             className="p-1.5 rounded-xl text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
           >
             {isSidebarCollapsed ? (
@@ -103,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Server className="w-3 h-3 shrink-0" />
               <span className="truncate max-w-[120px] sm:max-w-[180px]">
-                {activeSystemName || 'Yerel Sunucu'}
+                {activeSystemName || t('nav.localServer')}
               </span>
             </button>
           )}

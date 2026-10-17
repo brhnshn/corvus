@@ -53,12 +53,12 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
         setErrorMessage(data.error);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Güncelleme kontrolü başarısız oldu.';
+      const msg = err instanceof Error ? err.message : t('containers.actionFailedToast');
       setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
-  }, [containerId]);
+  }, [containerId, t]);
 
   useEffect(() => {
     if (isOpen && containerId) {
@@ -77,20 +77,20 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
     if (!isAdmin) return;
     setRecreating(true);
     setErrorMessage(null);
-    toast.info(t('containers.imagePullingAndRecreating') || 'İmaj çekiliyor ve konteyner yeniden oluşturuluyor...');
+    toast.info(t('containers.imagePullingAndRecreating'));
     try {
       const res = await containersApi.recreateContainer(containerId, true);
       if (res.success) {
-        toast.success(res.message || 'Konteyner güncellendi ve başarıyla yeniden başlatıldı.');
+        toast.success(res.message || t('containers.imageUpdatedAndRestartedToast'));
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        const err = res.message || 'Yeniden başlatma başarısız oldu.';
+        const err = res.message || t('containers.actionFailedToast');
         setErrorMessage(err);
         toast.error(err);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Konteyner yeniden başlatılırken hata oluştu.';
+      const msg = err instanceof Error ? err.message : t('containers.actionFailedToast');
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -126,7 +126,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold tracking-tight text-[var(--text-primary)]">
-                {t('containers.imageUpdateTitle') || 'Konteyner İmaj Güncellemesi'}
+                {t('containers.imageUpdateTitle')}
               </h3>
               <p className="text-xs font-mono text-[var(--text-secondary)] mt-0.5">{containerName}</p>
             </div>
@@ -145,7 +145,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3 text-[var(--text-muted)]">
               <RotateCw className="w-7 h-7 animate-spin text-[var(--cloud-200)]" />
-              <p className="text-xs font-mono">{t('containers.checkingUpdate') || 'Kontrol ediliyor...'}</p>
+              <p className="text-xs font-mono">{t('containers.checkingUpdate')}</p>
             </div>
           ) : (
             <>
@@ -155,10 +155,10 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                   <Sparkles className="w-4 h-4 text-[var(--status-warn)] shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <h4 className="text-xs font-semibold text-[var(--status-warn)]">
-                      {t('containers.updateAvailable') || 'Güncelleme Mevcut'}
+                      {t('containers.updateAvailable')}
                     </h4>
                     <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                      {t('containers.updateFoundDesc') || 'Uzak depoda bu imaj etiketi için yeni bir sürüm tespit edildi.'}
+                      {t('containers.updateFoundDesc')}
                     </p>
                   </div>
                 </div>
@@ -167,10 +167,10 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                   <CheckCircle2 className="w-4 h-4 text-[var(--status-up)] shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <h4 className="text-xs font-semibold text-[var(--status-up)]">
-                      {t('containers.upToDate') || 'İmaj Güncel'}
+                      {t('containers.upToDate')}
                     </h4>
                     <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                      {t('containers.noUpdateFound') || 'Konteyner en son imaj digest sürümünü kullanıyor.'}
+                      {t('containers.noUpdateFound')}
                     </p>
                   </div>
                 </div>
@@ -189,7 +189,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-[var(--text-secondary)] flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-[var(--cloud-400)]" />
-                    {t('containers.image') || 'İmaj'}
+                    {t('containers.image')}
                   </span>
                   <span className="font-mono text-[var(--text-primary)] truncate max-w-[260px] font-semibold" title={imageName}>
                     {imageName}
@@ -197,14 +197,14 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                 </div>
 
                 <div className="border-t border-[var(--border-hairline)] pt-2 flex items-center justify-between">
-                  <span className="text-[var(--text-secondary)]">{t('containers.registrySource') || 'Kayıt Defteri'}</span>
+                  <span className="text-[var(--text-secondary)]">{t('containers.registrySource')}</span>
                   <span className="font-medium font-mono text-[var(--text-primary)]">
                     {updateInfo?.registry || 'registry-1.docker.io'}
                   </span>
                 </div>
 
                 <div className="border-t border-[var(--border-hairline)] pt-2 flex items-center justify-between">
-                  <span className="text-[var(--text-secondary)]">{t('containers.localDigest') || 'Yerel Digest'}</span>
+                  <span className="text-[var(--text-secondary)]">{t('containers.localDigest')}</span>
                   <div className="flex items-center gap-1.5 font-mono">
                     <span className="text-[var(--text-muted)]" title={updateInfo?.localDigest || ''}>
                       {truncateDigest(updateInfo?.localDigest)}
@@ -213,7 +213,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                       <button
                         onClick={() => handleCopy(updateInfo.localDigest!, 'local')}
                         className="p-1 hover:text-[var(--text-primary)] text-[var(--text-muted)] transition-colors rounded cursor-pointer"
-                        title="Digest'ı Kopyala"
+                        title={t('containers.copyDigestTooltip')}
                       >
                         {copiedDigest === 'local' ? <Check className="w-3 h-3 text-[var(--status-up)]" /> : <Copy className="w-3 h-3" />}
                       </button>
@@ -222,7 +222,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                 </div>
 
                 <div className="border-t border-[var(--border-hairline)] pt-2 flex items-center justify-between">
-                  <span className="text-[var(--text-secondary)]">{t('containers.remoteDigest') || 'Uzak Registry Digest'}</span>
+                  <span className="text-[var(--text-secondary)]">{t('containers.remoteDigest')}</span>
                   <div className="flex items-center gap-1.5 font-mono">
                     <span className={updateInfo?.hasUpdate ? "text-[var(--status-warn)] font-semibold" : "text-[var(--text-muted)]"} title={updateInfo?.remoteDigest || ''}>
                       {truncateDigest(updateInfo?.remoteDigest)}
@@ -231,7 +231,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                       <button
                         onClick={() => handleCopy(updateInfo.remoteDigest!, 'remote')}
                         className="p-1 hover:text-[var(--text-primary)] text-[var(--text-muted)] transition-colors rounded cursor-pointer"
-                        title="Digest'ı Kopyala"
+                        title={t('containers.copyDigestTooltip')}
                       >
                         {copiedDigest === 'remote' ? <Check className="w-3 h-3 text-[var(--status-up)]" /> : <Copy className="w-3 h-3" />}
                       </button>
@@ -274,7 +274,7 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
                 isLoading={recreating}
                 icon={<RotateCw className="w-3.5 h-3.5" />}
               >
-                <span>{recreating ? (t('containers.recreating') || 'Yeniden başlatılıyor...') : (t('containers.imagePullAndRecreate') || 'Pull & Recreate')}</span>
+                <span>{recreating ? t('containers.recreating') : t('containers.imagePullAndRecreate')}</span>
               </Button>
             )}
           </div>

@@ -9,7 +9,8 @@ import {
   Square, 
   RotateCw, 
   Pause,
-  Rocket
+  Rocket,
+  Trash2
 } from 'lucide-react';
 import type { DockerContainer } from '../../types';
 
@@ -24,6 +25,7 @@ export interface ContainerActionSheetProps {
   onInspect?: (container: DockerContainer) => void;
   onDeploy?: (container: DockerContainer) => void;
   onOpenWebhookWizard?: (container: DockerContainer) => void;
+  onDelete?: (container: DockerContainer) => void;
   isAdmin?: boolean;
 }
 
@@ -38,6 +40,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
   onInspect,
   onDeploy,
   onOpenWebhookWizard,
+  onDelete,
   isAdmin = true,
 }) => {
   const { t } = useI18n();
@@ -64,7 +67,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
               isRunning ? 'bg-emerald-500/15 text-emerald-400' : isPaused ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400'
             }`}>
-              {isRunning ? 'Çalışıyor' : isPaused ? 'Duraklatıldı' : 'Durdu'}
+              {isRunning ? t('containers.stateRunning') : isPaused ? t('containers.statePaused') : t('containers.stateStopped')}
             </span>
           </div>
           <small className="block text-[11px] text-[#9ba0b5] font-mono font-normal mt-0.5">
@@ -85,7 +88,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
             className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-semibold text-white bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/25 border border-indigo-500/20 transition-colors cursor-pointer text-left mb-1"
           >
             <FileText className="w-[18px] h-[18px] text-indigo-400 shrink-0" />
-            <span>Konteyner Detay Sayfası</span>
+            <span>{t('containers.detailTitle')}</span>
           </button>
         )}
 
@@ -129,7 +132,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
           className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#eceef6] hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors cursor-pointer text-left"
         >
           <FileText className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
-          <span>Loglar</span>
+          <span>{t('containers.viewLogs')}</span>
         </button>
 
         {/* Terminal */}
@@ -142,7 +145,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
           className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#eceef6] hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors cursor-pointer text-left"
         >
           <Terminal className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
-          <span>Terminal</span>
+          <span>{t('containers.openTerminal')}</span>
         </button>
 
 
@@ -156,7 +159,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
           className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#eceef6] hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors cursor-pointer text-left"
         >
           <Tag className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
-          <span>Etiket ekle</span>
+          <span>{t('containers.manageTags')}</span>
         </button>
 
         {/* Yeniden Başlat */}
@@ -170,7 +173,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
             className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#eceef6] hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors cursor-pointer text-left"
           >
             <RotateCw className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
-            <span>Yeniden Başlat</span>
+            <span>{t('containers.restart')}</span>
           </button>
         )}
 
@@ -187,12 +190,12 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
             {isPaused ? (
               <>
                 <Play className="w-[18px] h-[18px] text-amber-400 shrink-0" />
-                <span>Devam ettir</span>
+                <span>{t('containers.resume')}</span>
               </>
             ) : (
               <>
                 <Pause className="w-[18px] h-[18px] text-[#9ba0b5] shrink-0" />
-                <span>Duraklat</span>
+                <span>{t('containers.pause')}</span>
               </>
             )}
           </button>
@@ -210,7 +213,7 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
               className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#f87171] hover:bg-rose-500/10 active:bg-rose-500/15 transition-colors cursor-pointer text-left"
             >
               <Square className="w-[18px] h-[18px] text-[#f87171] shrink-0" />
-              <span>Durdur</span>
+              <span>{t('containers.stop')}</span>
             </button>
           ) : (
             <button
@@ -222,9 +225,24 @@ export const ContainerActionSheet: React.FC<ContainerActionSheetProps> = ({
               className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-emerald-400 hover:bg-emerald-500/10 active:bg-emerald-500/15 transition-colors cursor-pointer text-left"
             >
               <Play className="w-[18px] h-[18px] text-emerald-400 shrink-0" />
-              <span>Başlat</span>
+              <span>{t('containers.start')}</span>
             </button>
           )
+        )}
+
+        {/* Konteyneri Sil */}
+        {isAdmin && onDelete && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onDelete(container);
+            }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[15px] font-medium text-[#f87171] hover:bg-rose-500/10 active:bg-rose-500/15 transition-colors cursor-pointer text-left mt-1 border-t border-white/5 pt-3.5"
+          >
+            <Trash2 className="w-[18px] h-[18px] text-[#f87171] shrink-0" />
+            <span>{t('containers.delete')}</span>
+          </button>
         )}
       </div>
     </Sheet>

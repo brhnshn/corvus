@@ -36,7 +36,7 @@ export const DeploymentsOverview: React.FC<DeploymentsOverviewProps> = ({
         label={t('deployments.statTotalDeployments')}
         value={stats.total}
         decimals={0}
-        subtext={`${stats.total - stats.active} tamamlandı, ${stats.active} aktif`}
+        subtext={t('deployments.deploymentsProgressSubtext', { completed: stats.total - stats.active, active: stats.active })}
         onClick={() => onFilterStatus?.('all')}
         className={statusFilter === 'all' ? 'border-[var(--cloud-400)]' : ''}
       />
@@ -56,7 +56,7 @@ export const DeploymentsOverview: React.FC<DeploymentsOverviewProps> = ({
           />
         }
         value={stats.total > 0 ? `${stats.successRate.toFixed(1)}%` : '-'}
-        subtext="Kararlı dağıtımlar"
+        subtext={t('deployments.stableDeployments')}
         onClick={() => onFilterStatus?.('success')}
         className={statusFilter === 'success' ? 'border-[var(--status-up)]' : ''}
       />
@@ -67,7 +67,7 @@ export const DeploymentsOverview: React.FC<DeploymentsOverviewProps> = ({
         meta={<StatusDot status={stats.active > 0 ? 'warn' : 'muted'} />}
         value={stats.active}
         decimals={0}
-        subtext={stats.active > 0 ? 'İşleniyor...' : 'Bekleyen görev yok'}
+        subtext={stats.active > 0 ? t('deployments.processing') : t('deployments.noPendingTasks')}
         onClick={() => onFilterStatus?.('pending')}
         className={statusFilter === 'pending' ? 'border-[var(--status-warn)]' : ''}
       />
@@ -76,7 +76,7 @@ export const DeploymentsOverview: React.FC<DeploymentsOverviewProps> = ({
       <KpiCard
         label={t('deployments.statAvgDuration')}
         value={formatDuration(stats.avgDurationMs)}
-        subtext="Tamamlanma hızı"
+        subtext={t('deployments.completionSpeed')}
       />
     </KpiRow>
   );

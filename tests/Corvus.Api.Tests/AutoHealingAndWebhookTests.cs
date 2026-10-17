@@ -135,4 +135,60 @@ public class AutoHealingAndWebhookTests
         Assert.False(healed);
         Assert.Equal(0, fakeHttp.StartCallCount);
     }
+
+    [Fact]
+    public async Task TryAutoHealAsync_WhenManuallyStopped_SkipsAutoHeal()
+    {
+        var fakeHttp = new AutoHealCountingHttpClient();
+        var dockerService = new DockerService(fakeHttp, NullLogger<DockerService>.Instance);
+        var mockNotif = new MockNotificationService();
+        var autoHeal = new AutoHealingService(dockerService, mockNotif, NullLogger<AutoHealingService>.Instance);
+
+        var container = new DockerContainerInfo { Id = "abcdef1234567890", State = "exited" };
+
+        // Kullanıcı manuel olarak durdurur (kısa ID ile durdursa bile tam ID eşleşmeli)
+        await dockerService.StopContainerAsync("abcdef123456");
+        Assert.True(dockerService.IsContainerManuallyStopped("abcdef1234567890"));
+        Assert.True(dockerService.IsContainerManuallyStopped("abcdef123456"));
+
+        bool healed = await autoHeal.TryAutoHealAsync(container, 137);
+
+        Assert.False(healed);
+        Assert.Equal(0, fakeHttp.StartCallCount);
+        Assert.Equal(0, mockNotif.AutoHealAlertCount);
+
+        // Kullanıcı tekrar başlatırsa manuel durdurma kilidi kalkmalı
+        await dockerService.StartContainerAsync("abcdef123456");
+        Assert.False(dockerService.IsContainerManuallyStopped("abcdef1234567890"));
+    }
+
+    [Fact]
+    public async Task TryAutoHealAsync_WhenExitCode143_SkipsAutoHeal()
+    {
+        var fakeHttp = new AutoHealCountingHttpClient();
+        var dockerService = new DockerService(fakeHttp, NullLogger<DockerService>.Instance);
+        var mockNotif = new MockNotificationService();
+        var autoHeal = new AutoHealingService(dockerService, mockNotif, NullLogger<AutoHealingService>.Instance);
+
+        var container = new DockerContainerInfo { Id = "c_sigterm", State = "exited" };
+        bool healed = await autoHeal.TryAutoHealAsync(container, 143);
+
+        Assert.False(healed);
+        Assert.Equal(0, fakeHttp.StartCallCount);
+        Assert.Equal(0, mockNotif.AutoHealAlertCount);
+    }
+
+    [Fact]
+    public async Task DeleteContainerAsync_RemovesContainerAndClearsManualStop()
+    {
+        var fakeHttp = new AutoHealCountingHttpClient();
+        var dockerService = new DockerService(fakeHttp, NullLogger<DockerService>.Instance);
+
+        dockerService.MarkContainerManuallyStopped("del1234567890");
+        Assert.True(dockerService.IsContainerManuallyStopped("del1234567890"));
+
+        var res = await dockerService.DeleteContainerAsync("del1234567890", force: true, removeVolumes: false);
+        Assert.True(res.Success);
+        Assert.False(dockerService.IsContainerManuallyStopped("del1234567890"));
+    }
 }

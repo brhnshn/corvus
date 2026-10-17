@@ -42,14 +42,14 @@ export const SystemBanner: React.FC<SystemBannerProps> = ({
               variant="default"
               onClick={() => onNavigate(isHealthy ? 'metrics' : 'services')}
             >
-              {isHealthy ? (t('dashboard.systemMetrics') || 'Sistem Metrikleri →') : (t('dashboard.viewServices') || 'Servisleri İncele →')}
+              {isHealthy ? t('dashboard.systemMetrics') : t('dashboard.viewServices')}
             </Button>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onNavigate('containers')}
             >
-              {t('nav.containers') || 'Konteynerler'}
+              {t('nav.containers')}
             </Button>
           </div>
         )

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../../i18n';
 import { KpiRow } from '../../components/ui/KpiRow';
 import { KpiCard } from '../../components/ui/KpiCard';
 import { StatusDot } from '../../components/ui/StatusDot';
@@ -15,6 +16,7 @@ export const ServicesStats: React.FC<ServicesStatsProps> = ({
   onFilterStatus,
   selectedStatus,
 }) => {
+  const { t } = useI18n();
   const total = services.length;
   const healthy = services.filter((s) => s.status === 'healthy').length;
   const degraded = services.filter((s) => s.status === 'degraded').length;
@@ -23,36 +25,36 @@ export const ServicesStats: React.FC<ServicesStatsProps> = ({
   return (
     <KpiRow className="mb-4">
       <KpiCard
-        label="Toplam Servis"
+        label={t('services.statTotalServices')}
         value={total}
-        subtext={`${healthy} aktif, ${down} kesinti`}
+        subtext={t('services.statActiveOutage', { active: healthy, outage: down })}
         onClick={() => onFilterStatus?.(null)}
         className={selectedStatus === null ? 'border-[var(--cloud-400)]' : ''}
       />
 
       <KpiCard
-        label="Çevrimiçi (Up)"
+        label={t('services.statOnline')}
         meta={<StatusDot status="up" />}
         value={healthy}
-        subtext="HTTP & TCP port aktif"
+        subtext={t('services.statOnlineSubtext')}
         onClick={() => onFilterStatus?.('healthy')}
         className={selectedStatus === 'healthy' ? 'border-[var(--status-up)]' : ''}
       />
 
       <KpiCard
-        label="Performans Düşüşü"
+        label={t('services.statDegraded')}
         meta={<StatusDot status="warn" />}
         value={degraded}
-        subtext="Yüksek yanıt süresi"
+        subtext={t('services.statDegradedSubtext')}
         onClick={() => onFilterStatus?.('degraded')}
         className={selectedStatus === 'degraded' ? 'border-[var(--status-warn)]' : ''}
       />
 
       <KpiCard
-        label="Erişilemiyor (Down)"
+        label={t('services.statDown')}
         meta={<StatusDot status="down" />}
         value={down}
-        subtext="Acil müdahale bekliyor"
+        subtext={t('services.statDownSubtext')}
         onClick={() => onFilterStatus?.('down')}
         className={selectedStatus === 'down' ? 'border-[var(--status-down)]' : ''}
       />

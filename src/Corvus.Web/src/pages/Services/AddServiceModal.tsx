@@ -200,12 +200,12 @@ export const AddServiceModal: React.FC<AddServiceModalProps> = ({ isOpen, onClos
 
         <div>
           <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
-            {t('services.formTags') || 'Etiketler (Ortam / Grup)'}
+            {t('services.formTags')}
           </label>
           <TagInput
             tags={formTags}
             onChange={setFormTags}
-            placeholder={t('services.tagPlaceholder') || 'Etiket ekle (Prod, DB, API)...'}
+            placeholder={t('services.tagPlaceholder')}
           />
         </div>
 

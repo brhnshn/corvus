@@ -122,7 +122,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       await onSuccess();
     } catch (err: unknown) {
       console.error('Servis güncellenemedi:', err);
-      setErrorMsg(err instanceof Error ? err.message : 'Güncelleme sırasında bir hata oluştu');
+      setErrorMsg(err instanceof Error ? err.message : t('services.updateError'));
     } finally {
       setSaving(false);
     }
@@ -133,7 +133,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={t('services.editModalTitle')}
-      subtitle={service.source === 'docker' ? `${service.name} (Docker Konteyneri)` : service.name}
+      subtitle={service.source === 'docker' ? `${service.name} (${t('services.dockerContainerTag')})` : service.name}
       maxWidth="max-w-lg"
     >
       {errorMsg && (
@@ -225,7 +225,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   onChange={() => setFormCheckType('docker')}
                   className="sr-only"
                 />
-                <span>Docker Durumu</span>
+                <span>{t('services.checkTypeDocker')}</span>
               </label>
 
               <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
@@ -241,7 +241,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                   onChange={() => setFormCheckType('none')}
                   className="sr-only"
                 />
-                <span>Devre Dışı</span>
+                <span>{t('services.checkTypeNone')}</span>
               </label>
             </div>
           </div>
@@ -251,17 +251,17 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-white/60 mb-1">
-                  {t('services.formUrl')} (Reverse Proxy Alan Adı veya URL)
+                  {t('services.formUrlReverseProxy', { url: t('services.formUrl') })}
                 </label>
                 <input
                   type="text"
-                  placeholder="https://app.example.com veya http://localhost:5010"
+                  placeholder={t('services.formUrlPlaceholder')}
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
                 />
                 <p className="text-[11px] text-white/40 mt-1">
-                  Nginx veya ters proxy yapılandırmanızdaki gerçek domain adresini girin (örn: https://burhanlife.com).
+                  {t('services.reverseProxyHint')}
                 </p>
               </div>
 
@@ -271,7 +271,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="https://app.example.com/health veya /api/health"
+                  placeholder={t('services.formHealthPlaceholder')}
                   value={formHealth}
                   onChange={(e) => setFormHealth(e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
@@ -289,7 +289,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="localhost veya IP"
+                  placeholder={t('services.formHostPlaceholder')}
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
                   className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
@@ -325,14 +325,14 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
               />
               <p className="text-[11px] text-white/40 mt-1">
-                Hedef IP adresi veya hostname girin (örn: 1.1.1.1 veya router.local). Port ve HTTP gerektirmez.
+                {t('services.formPingHint')}
               </p>
             </div>
           )}
 
           {formCheckType === 'docker' && (
             <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-white/70">
-              Bu servis doğrudan Docker daemon üzerinden izlenecektir. Konteyner çalışma durumu (running / exited) üzerinden otomatik Uptime kontrolü kaydedilir.
+              {t('services.dockerDaemonHint')}
             </div>
           )}
 
@@ -352,12 +352,12 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             </div>
             <div>
               <label className="block text-xs font-medium text-white/60 mb-1">
-                {t('services.formIcon')} (Emoji / Metin)
+                {t('services.formIcon')} ({t('services.formIconHint')})
               </label>
               <input
                 type="text"
                 maxLength={4}
-                placeholder="🌐 veya 🚀"
+                placeholder={t('services.formIconPlaceholder')}
                 value={formIcon}
                 onChange={(e) => setFormIcon(e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
@@ -368,12 +368,12 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           {/* Etiketler (Ortam / Grup) */}
           <div>
             <label className="block text-xs font-medium text-white/60 mb-1">
-              {t('services.formTags') || 'Etiketler (Ortam / Grup)'}
+              {t('services.formTags')}
             </label>
             <TagInput
               tags={formTags}
               onChange={setFormTags}
-              placeholder={t('services.tagPlaceholder') || 'Etiket ekle (Prod, DB, API)...'}
+              placeholder={t('services.tagPlaceholder')}
             />
           </div>
 
@@ -384,7 +384,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             </label>
             <textarea
               rows={2}
-              placeholder="Servis açıklaması..."
+              placeholder={t('services.formDescriptionPlaceholder')}
               value={formDesc}
               onChange={(e) => setFormDesc(e.target.value)}
               className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs resize-none"

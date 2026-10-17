@@ -9,7 +9,7 @@ interface LanguageSwitchProps {
 }
 
 export const LanguageSwitch: React.FC<LanguageSwitchProps> = ({ variant = 'compact', className = '' }) => {
-  const { language, setLanguage } = useI18n();
+  const { language, setLanguage, t } = useI18n();
 
   const handleToggle = (lang: Language) => {
     if (language !== lang) {
@@ -61,7 +61,7 @@ export const LanguageSwitch: React.FC<LanguageSwitchProps> = ({ variant = 'compa
             ? 'bg-white text-black shadow-xs'
             : 'text-white/60 hover:text-white'
         }`}
-        title="Switch to English"
+        title={t('common.switchToEn')}
       >
         EN
       </button>
@@ -74,7 +74,7 @@ export const LanguageSwitch: React.FC<LanguageSwitchProps> = ({ variant = 'compa
             ? 'bg-white text-black shadow-xs'
             : 'text-white/60 hover:text-white'
         }`}
-        title="Türkçe'ye Geç"
+        title={t('common.switchToTr')}
       >
         TR
       </button>

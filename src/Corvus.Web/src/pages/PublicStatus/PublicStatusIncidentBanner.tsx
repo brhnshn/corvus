@@ -47,13 +47,13 @@ export const PublicStatusIncidentBanner: React.FC<PublicStatusIncidentBannerProp
   const getStatusText = (status: string) => {
     switch (status) {
       case 'investigating':
-        return t('incidents.statuses.investigating') || 'Araştırılıyor';
+        return t('incidents.statuses.investigating');
       case 'identified':
-        return t('incidents.statuses.identified') || 'Tespit Edildi';
+        return t('incidents.statuses.identified');
       case 'monitoring':
-        return t('incidents.statuses.monitoring') || 'İzleniyor';
+        return t('incidents.statuses.monitoring');
       case 'resolved':
-        return t('incidents.statuses.resolved') || 'Çözüldü';
+        return t('incidents.statuses.resolved');
       default:
         return status;
     }
@@ -79,7 +79,7 @@ export const PublicStatusIncidentBanner: React.FC<PublicStatusIncidentBannerProp
                   {incident.isPinned && (
                     <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-[8px] bg-white/[0.08] text-[#d5d5dc] font-medium border border-white/15">
                       <Pin className="w-3 h-3" />
-                      <span>Sabitlendi</span>
+                      <span>{t('incidents.pinnedBadge')}</span>
                     </span>
                   )}
                   <span
@@ -109,11 +109,11 @@ export const PublicStatusIncidentBanner: React.FC<PublicStatusIncidentBannerProp
 
                 <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#9ba0b5] font-mono mt-3 pt-2.5 border-t border-white/10">
                   <span>
-                    Başlangıç: {new Date(incident.createdAt).toLocaleString()}
+                    {t('incidents.startedAt')}: {new Date(incident.createdAt).toLocaleString()}
                   </span>
                   {incident.resolvedAt && (
                     <span className="text-[#34d399]">
-                      Çözüldü: {new Date(incident.resolvedAt).toLocaleString()}
+                      {t('incidents.statuses.resolved')}: {new Date(incident.resolvedAt).toLocaleString()}
                     </span>
                   )}
                 </div>

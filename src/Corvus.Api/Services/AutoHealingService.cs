@@ -34,8 +34,14 @@ public class AutoHealingService : IAutoHealingService
 
     public async Task<bool> TryAutoHealAsync(DockerContainerInfo container, int exitCode, CancellationToken cancellationToken = default)
     {
-        // 1. Sıfır çıkış kodu normal durdurmadır; auto-heal yapılmaz
-        if (exitCode == 0)
+        // 1. Sıfır çıkış kodu veya SIGTERM (143) normal durdurmadır; auto-heal yapılmaz
+        if (exitCode == 0 || exitCode == 143)
+        {
+            return false;
+        }
+
+        // 1b. Kullanıcı tarafından manuel durdurulmuş konteynerler otomatik başlatılmaz
+        if (_dockerService.IsContainerManuallyStopped(container.Id))
         {
             return false;
         }

@@ -63,7 +63,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
       if (isMountedRef.current) setServices(data);
     } catch (err: unknown) {
       if (isMountedRef.current) {
-        toast.error('Servisler yüklenemedi');
+        toast.error(t('services.loadFailed'));
         console.error('Servisler yüklenemedi', err);
       }
     } finally {
@@ -123,11 +123,11 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
     setDeleteLoading(true);
     try {
       await api.deleteService(deletingService.id);
-      toast.success(`"${deletingService.name}" servisi kaldırıldı`);
+      toast.success(t('services.serviceDeleted', { name: deletingService.name }));
       setDeletingService(null);
       await loadServices();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Servis silinemedi');
+      toast.error(err instanceof Error ? err.message : t('services.deleteFailed'));
     } finally {
       setDeleteLoading(false);
     }
@@ -212,12 +212,12 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
     onUpdateCategory: async (id, newCat) => {
       setServices((prev) => prev.map((s) => (s.id === id ? { ...s, category: newCat } : s)));
       await api.updateService(id, { category: newCat });
-      toast.success('Kategori güncellendi');
+      toast.success(t('services.categoryUpdated'));
     },
     onBatchUpdateCategory: async (ids, newCat) => {
       setServices((prev) => prev.map((s) => (ids.includes(s.id) ? { ...s, category: newCat } : s)));
       await Promise.allSettled(ids.map((id) => api.updateService(id, { category: newCat })));
-      toast.success('Kategoriler güncellendi');
+      toast.success(t('services.categoriesUpdated'));
     },
   });
 
@@ -268,7 +268,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
         <MotionItem staggerIndex={2}>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             <FilterChip
-              label="Tümü"
+              label={t('common.all')}
               count={services.length}
               selected={!selectedTag && !selectedStatus}
               onClick={() => {
@@ -325,8 +325,8 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
       {/* Filtre Sonucu Boş Durumu */}
       {!loading && services.length > 0 && filtered.length === 0 && (
         <EmptyState
-          title="Eşleşen servis bulunamadı"
-          description="Arama kriterlerinize veya seçilen filtrelere uyan bir servis kaydı yok."
+          title={t('services.noMatchingServices')}
+          description={t('services.noMatchingServicesDesc')}
           action={
             <Button
               variant="secondary"
@@ -336,7 +336,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
                 setSelectedStatus(null);
               }}
             >
-              Filtreleri Temizle
+              {t('services.clearFilters')}
             </Button>
           }
         />
@@ -393,7 +393,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
         onSuccess={async () => {
           await loadServices();
           setShowAddModal(false);
-          toast.success('Yeni servis başarıyla eklendi');
+          toast.success(t('services.serviceAdded'));
         }}
       />
 
@@ -405,7 +405,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
         onSuccess={async () => {
           await loadServices();
           setEditingService(null);
-          toast.success('Servis güncellendi');
+          toast.success(t('services.serviceUpdated'));
         }}
       />
 

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Cpu, HardDrive } from 'lucide-react';
 import { formatBytes } from '../../utils/format';
 import { ObsidianAreaChart, type ChartDataPoint } from '../../components/ui/ObsidianAreaChart';
+import { useI18n } from '../../i18n';
 
 export interface ContainerTelemetryPoint {
   time: string;
@@ -24,6 +25,8 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
   isRunning,
   memoryLimitBytes = 0
 }) => {
+  const { t } = useI18n();
+
   const cpuChartData: ChartDataPoint[] = useMemo(() => {
     return data.map((d) => ({
       time: d.time,
@@ -63,8 +66,8 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
               <Cpu className="w-4 h-4 text-indigo-400" />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-[#eceef6]">CPU Kullanım Trendi</h3>
-              <p className="text-[11px] text-[#9ba0b5]">Son periyottaki çekirdek yükü</p>
+              <h3 className="text-sm font-bold text-[#eceef6]">{t('containers.chartCpuTrendTitle')}</h3>
+              <p className="text-[11px] text-[#9ba0b5]">{t('containers.chartCpuTrendSubtitle')}</p>
             </div>
           </div>
           <span className="font-mono font-semibold text-xs px-2.5 py-1 rounded-xl bg-white/[0.04] border border-white/10 text-[#eceef6]">
@@ -80,7 +83,7 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
             min={0}
             unit="%"
             valueFormatter={(val) => `CPU: %${val.toFixed(1)}`}
-            ariaLabel="Konteyner CPU Grafiği"
+            ariaLabel={t('containers.chartCpuAriaLabel')}
           />
         </div>
       </section>
@@ -93,9 +96,11 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
               <HardDrive className="w-4 h-4 text-emerald-400" />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-[#eceef6]">Bellek (RAM) Trendi</h3>
+              <h3 className="text-sm font-bold text-[#eceef6]">{t('containers.chartRamTrendTitle')}</h3>
               <p className="text-[11px] text-[#9ba0b5]">
-                {memoryLimitBytes > 0 ? `Limit: ${formatBytes(memoryLimitBytes)}` : 'Limitsiz bellek alanı'}
+                {memoryLimitBytes > 0
+                  ? t('containers.chartRamLimitSubtitle', { limit: formatBytes(memoryLimitBytes) })
+                  : t('containers.chartRamUnlimitedSubtitle')}
               </p>
             </div>
           </div>
@@ -115,7 +120,7 @@ export const ContainerHistoricalCharts: React.FC<ContainerHistoricalChartsProps>
               const pct = memoryLimitBytes > 0 ? Math.round((val / memoryLimitBytes) * 100) : null;
               return pct !== null ? `${formatBytes(val)} (%${pct})` : formatBytes(val);
             }}
-            ariaLabel="Konteyner Bellek Grafiği"
+            ariaLabel={t('containers.chartRamAriaLabel')}
           />
         </div>
       </section>

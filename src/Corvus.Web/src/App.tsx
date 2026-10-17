@@ -197,7 +197,7 @@ export const App: React.FC = () => {
     } else if (authStatus && authStatus.authEnabled && !authStatus.isAuthenticated) {
       document.title = `${t('auth.tabLogin')} - Corvus`;
     } else if (currentPage === 'containers' && selectedContainerId) {
-      document.title = `${t('containers.detailTitle') || 'Konteyner Detayı'} - Corvus`;
+      document.title = `${t('containers.detailTitle')} - Corvus`;
     } else {
       document.title = `${getPageTitle(currentPage)} - Corvus`;
     }
@@ -290,7 +290,7 @@ export const App: React.FC = () => {
       onOpenCommandPalette={openCmd}
       onRefresh={() => {
         invalidateCache();
-        toast.success(t('common.refreshed') || 'Sistem verileri güncellendi');
+        toast.success(t('common.refreshed'));
       }}
     >
       <ChunkErrorBoundary>

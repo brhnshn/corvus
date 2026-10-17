@@ -60,7 +60,7 @@ export const systemsApi = {
   getSystemContainers: (id: string) =>
     fetchJson<SystemContainerCacheEntity[]>(`/v1/systems/${id}/containers`),
 
-  sendContainerAction: async (id: string, cid: string, action: 'start' | 'stop' | 'restart') => {
+  sendContainerAction: async (id: string, cid: string, action: 'start' | 'stop' | 'restart' | 'delete') => {
     return fetchJson<DockerRpcResponse>(`/v1/systems/${id}/containers/${cid}/${action}`, {
       method: 'POST'
     });

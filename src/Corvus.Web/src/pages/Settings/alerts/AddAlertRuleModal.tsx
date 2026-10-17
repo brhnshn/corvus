@@ -58,7 +58,7 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
       setName('');
       setThresholdValue(85);
     } catch (err: any) {
-      setError(err?.message || (t('alerts.saveFailed') || 'Kural kaydedilemedi.'));
+      setError(err?.message || t('alerts.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -68,8 +68,8 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('alerts.addRuleTitle') || 'Yeni Eşik Alarmı Ekle'}
-      subtitle={t('alerts.addRuleSubtitle') || 'Metrik sınırları aşıldığında bildirim tetikleyin'}
+      title={t('alerts.addRuleTitle')}
+      subtitle={t('alerts.addRuleSubtitle')}
       icon={<Bell className="w-5 h-5 text-[var(--text-primary)]" />}
       maxWidth="max-w-lg"
     >
@@ -83,13 +83,13 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-            {t('alerts.ruleName') || 'Kural Adı'}
+            {t('alerts.ruleName')}
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="örn: Kritik Sunucu CPU Yükü"
+            placeholder={t('alerts.ruleNamePlaceholder')}
             required
             className="input w-full"
           />
@@ -98,30 +98,30 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-              {t('alerts.metricType') || 'Metrik Tipi'}
+              {t('alerts.metricType')}
             </label>
             <select
               value={metric}
               onChange={(e) => setMetric(e.target.value as any)}
               className="input w-full cursor-pointer"
             >
-              <option value="cpu">CPU Kullanımı (%)</option>
-              <option value="memory">Bellek / RAM (%)</option>
-              <option value="disk">Disk Doluluğu (%)</option>
+              <option value="cpu">{t('alerts.metricCpu')}</option>
+              <option value="memory">{t('alerts.metricMemory')}</option>
+              <option value="disk">{t('alerts.metricDisk')}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-              {t('alerts.condition') || 'Koşul'}
+              {t('alerts.condition')}
             </label>
             <select
               value={operator}
               onChange={(e) => setOperator(e.target.value as any)}
               className="input w-full cursor-pointer"
             >
-              <option value="gt">Büyüktür (&gt;)</option>
-              <option value="lt">Küçüktür (&lt;)</option>
+              <option value="gt">{t('alerts.opGt')}</option>
+              <option value="lt">{t('alerts.opLt')}</option>
             </select>
           </div>
         </div>
@@ -129,7 +129,7 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <label className="text-xs font-semibold text-[var(--text-secondary)]">
-              {t('alerts.threshold') || 'Eşik Değeri'}: %{thresholdValue}
+              {t('alerts.threshold')}: %{thresholdValue}
             </label>
           </div>
           <input
@@ -145,7 +145,7 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-              {t('alerts.durationSeconds') || 'İhlal Süresi (Saniye)'}
+              {t('alerts.durationSeconds')}
             </label>
             <input
               type="number"
@@ -156,13 +156,13 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
               className="input w-full"
             />
             <span className="text-[10px] text-[var(--text-muted)] mt-1 block">
-              {t('alerts.durationHint') || 'Eşik bu kadar süre aşılırsa alarm verilir.'}
+              {t('alerts.durationHint')}
             </span>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-              {t('alerts.cooldownMinutes') || 'Susturma (Dakika)'}
+              {t('alerts.cooldownMinutes')}
             </label>
             <input
               type="number"
@@ -173,7 +173,7 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
               className="input w-full"
             />
             <span className="text-[10px] text-[var(--text-muted)] mt-1 block">
-              {t('alerts.cooldownHint') || 'Aynı alarmın tekrarı arasındaki süre.'}
+              {t('alerts.cooldownHint')}
             </span>
           </div>
         </div>
@@ -185,10 +185,10 @@ export const AddAlertRuleModal: React.FC<AddAlertRuleModalProps> = ({
             onClick={onClose}
             disabled={loading}
           >
-            {t('common.cancel') || 'İptal'}
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? (t('common.saving') || 'Kaydediliyor...') : (t('alerts.createRule') || 'Kuralı Oluştur')}
+            {loading ? t('common.saving') : t('alerts.createRule')}
           </Button>
         </div>
       </form>

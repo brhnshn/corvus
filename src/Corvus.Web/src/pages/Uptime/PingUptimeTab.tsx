@@ -108,9 +108,9 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
       {monitoredServices.length === 0 ? (
         <div className="p-8 rounded-2xl surface border border-white/10 text-center max-w-lg mx-auto space-y-3">
           <Server className="w-10 h-10 text-white/40 mx-auto" />
-          <h3 className="text-base font-semibold text-white">Aktif Uptime İzlemesi Yok</h3>
+          <h3 className="text-base font-semibold text-white">{t('uptime.noActivePingMonitors')}</h3>
           <p className="text-xs text-white/50 leading-relaxed">
-            Şu anda Uptime takibi açık bir servis bulunmuyor. Aşağıdaki keşfedilen konteynerleri izlemeye alabilir veya manuel servis ekleyebilirsiniz.
+            {t('uptime.noActivePingMonitorsDesc')}
           </p>
         </div>
       ) : (
@@ -149,14 +149,14 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
                     </h2>
                     <span className="text-xs text-white/50 font-mono">
                       {selectedService.checkType === 'docker' || (selectedService.source === 'docker' && !selectedService.url && !selectedService.healthCheckUrl)
-                        ? 'Docker Daemon Kontrolü'
+                        ? t('uptime.dockerDaemonCheck')
                         : selectedService.checkType === 'tcp'
-                        ? 'TCP Kontrolü'
+                        ? t('uptime.tcpCheck')
                         : selectedService.checkType === 'ping'
-                        ? 'ICMP Ping Kontrolü'
+                        ? t('uptime.icmpPingCheck')
                         : selectedService.checkType === 'none'
-                        ? 'Kontrol Devre Dışı'
-                        : 'HTTP/S Kontrolü'}
+                        ? t('uptime.checkDisabled')
+                        : t('uptime.httpCheck')}
                     </span>
                   </div>
                 </div>

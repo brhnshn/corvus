@@ -85,30 +85,30 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
               onClick={() => onNavigate('activity')}
               className="text-xs text-[var(--text-muted)] hover:text-[var(--cloud-100)] transition-colors cursor-pointer"
             >
-              {t('common.viewAll') || 'Tümünü Gör'} →
+              {t('common.viewAll')} →
             </button>
           )
         }
       >
-        <CardTitle>{t('dashboard.recentEvents') || 'Son Gerçekleşen Olaylar'}</CardTitle>
+        <CardTitle>{t('dashboard.recentEvents')}</CardTitle>
       </CardHeader>
       <CardContent className="!p-0">
         {loading && allEvents.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--text-muted)] font-mono">
-            {t('common.loading') || 'Yükleniyor...'}
+            {t('common.loading')}
           </div>
         ) : allEvents.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--text-muted)]">
-            {t('dashboard.noRecentEvents') || 'Kayıtlı sistem olayı bulunmuyor'}
+            {t('dashboard.noRecentEvents')}
           </div>
         ) : (
           <TableWrap>
             <table className="table">
               <thead>
                 <tr>
-                  <th style={{ width: 80 }}>{t('common.time') || 'Zaman'}</th>
-                  <th>{t('dashboard.eventDescription') || 'Olay Tanımı'}</th>
-                  <th style={{ textAlign: 'right' }}>{t('common.category') || 'Kategori'}</th>
+                  <th style={{ width: 80 }}>{t('common.time')}</th>
+                  <th>{t('dashboard.eventDescription')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('common.category')}</th>
                 </tr>
               </thead>
               <tbody>

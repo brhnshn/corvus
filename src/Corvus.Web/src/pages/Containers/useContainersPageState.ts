@@ -54,6 +54,10 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [showPruneModal, setShowPruneModal] = useState(initialAction === 'prune');
   const [viewMode, setViewMode] = useState<'flat' | 'compose'>('flat');
+  const [deletingContainer, setDeletingContainer] = useState<DockerContainer | null>(null);
+  const [deleteForce, setDeleteForce] = useState(false);
+  const [deleteVolumes, setDeleteVolumes] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isMountedRef = useRef(true);
 
   const fetchStatsBackground = useCallback(async (runningContainers: DockerContainer[]) => {
@@ -81,7 +85,7 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     } catch (err) {
       if (isMountedRef.current) {
         console.error('Container listesi alınamadı', err);
-        toast.error('Konteyner listesi alınamadı');
+        toast.error(t('containers.loadContainersError'));
       }
     } finally {
       if (isMountedRef.current) {
@@ -89,7 +93,7 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
         if (isManual) setRefreshing(false);
       }
     }
-  }, [fetchStatsBackground, toast]);
+  }, [fetchStatsBackground, toast, t]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -137,11 +141,11 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     name: string
   ) => {
     const actionLabels: Record<string, string> = {
-      start: 'başlatılıyor',
-      stop: 'durduruluyor',
-      pause: 'duraklatılıyor',
-      unpause: 'devam ettiriliyor',
-      restart: 'yeniden başlatılıyor',
+      start: t('containers.actionInProgressStart'),
+      stop: t('containers.actionInProgressStop'),
+      pause: t('containers.actionInProgressPause'),
+      unpause: t('containers.actionInProgressUnpause'),
+      restart: t('containers.actionInProgressRestart'),
     };
 
     setActionInProgress({ id, action });
@@ -178,12 +182,34 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
         })
       );
 
-      toast.success(`"${name}" işlemi tamamlandı`);
+      toast.success(t('containers.actionCompletedToast', { name }));
       await loadContainers();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'İşlem gerçekleştirilemedi');
+      toast.error(err instanceof Error ? err.message : t('containers.actionFailedToast'));
     } finally {
       setActionInProgress(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingContainer) return;
+    const rawName = deletingContainer.Names?.[0] || deletingContainer.Id.slice(0, 12);
+    const cleanName = rawName.replace(/^\//, '');
+    const isRunning = (deletingContainer.State || '').toLowerCase() === 'running';
+
+    setIsDeleting(true);
+    try {
+      await api.deleteContainer(deletingContainer.Id, isRunning ? true : deleteForce, deleteVolumes);
+      setContainers((prev) => prev.filter((c) => c.Id !== deletingContainer.Id));
+      toast.success(t('containers.deleteSuccess', { name: cleanName }));
+      setDeletingContainer(null);
+      setDeleteForce(false);
+      setDeleteVolumes(false);
+      await loadContainers();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('containers.deleteError', { name: cleanName }));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -241,7 +267,7 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     setContainers((prev) =>
       prev.map((c) => (c.Id === containerId ? { ...c, tags: updatedTags } : c))
     );
-    toast.success('Etiketler güncellendi');
+    toast.success(t('containers.tagsUpdatedToast'));
   };
 
   const handleTriggerDeploy = useCallback(async (container: DockerContainer) => {
@@ -294,6 +320,14 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     setShowPruneModal,
     viewMode,
     setViewMode,
+    deletingContainer,
+    setDeletingContainer,
+    deleteForce,
+    setDeleteForce,
+    deleteVolumes,
+    setDeleteVolumes,
+    isDeleting,
+    handleConfirmDelete,
     loadContainers,
     handleAction,
     tagsWithCounts,

@@ -190,11 +190,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const isViewer = role === 'viewer' || !isAdmin;
 
   const tabs = [
-    { id: 'general' as const, label: t('settings.tabGeneral') || 'Genel & Güvenlik', icon: Shield },
-    { id: 'users' as const, label: t('settings.tabUsers') || 'Kullanıcılar & Roller', icon: UserCheck },
-    { id: 'notifications' as const, label: t('settings.tabNotifications') || 'Bildirim Kanalları', icon: Bell },
-    { id: 'alerts' as const, label: 'Eşik Alarmları', icon: Activity },
-    { id: 'backup' as const, label: t('settings.tabBackup') || 'Yedekleme & SQLite', icon: Database }
+    { id: 'general' as const, label: t('settings.tabGeneral'), icon: Shield },
+    { id: 'users' as const, label: t('settings.tabUsers'), icon: UserCheck },
+    { id: 'notifications' as const, label: t('settings.tabNotifications'), icon: Bell },
+    { id: 'alerts' as const, label: t('alerts.sectionTitle'), icon: Activity },
+    { id: 'backup' as const, label: t('settings.tabBackup'), icon: Database }
   ];
 
   return (
@@ -204,7 +204,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-              {t('settings.title') || 'Sistem Ayarları'}
+              {t('settings.title')}
             </h1>
             {versionInfo && (
               <div className="flex items-center gap-2">
@@ -217,7 +217,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded bg-[var(--status-up-bg)] border border-[var(--status-up)]/30 text-[var(--status-up)] hover:brightness-110 transition-colors font-medium cursor-pointer"
-                    title={t('settings.versionUpdateAvailable', { version: `v${versionInfo.latestVersion}` }) || `v${versionInfo.latestVersion} hazır`}
+                    title={t('settings.versionUpdateAvailable', { version: `v${versionInfo.latestVersion}` })}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--status-up)]" />
                     <span>v{versionInfo.latestVersion}</span>
@@ -226,14 +226,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                     <Check className="w-3 h-3 text-[var(--status-up)]" />
-                    <span>{t('settings.versionUpToDate') || 'Güncel'}</span>
+                    <span>{t('settings.versionUpToDate')}</span>
                   </span>
                 )}
               </div>
             )}
           </div>
           <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">
-            {t('settings.subtitle') || 'Sistem parametreleri, güvenlik tercihleri ve entegrasyonlar'}
+            {t('settings.subtitle')}
           </p>
         </div>
 
@@ -242,7 +242,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             {saved && (
               <span className="flex items-center gap-1.5 text-xs text-[var(--status-up)] font-medium bg-[var(--status-up-bg)] border border-[var(--status-up)]/30 px-3 py-1.5 rounded-[var(--radius-sm)]">
                 <Check className="w-3.5 h-3.5" />
-                {t('settings.savedToast') || 'Kaydedildi'}
+                {t('settings.savedToast')}
               </span>
             )}
             <Button
@@ -252,7 +252,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               title={isViewer ? t('settings.viewerRestricted') : undefined}
               icon={saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             >
-              {saving ? (t('common.saving') || 'Kaydediliyor...') : (t('settings.saveBtn') || 'Ayarları Kaydet')}
+              {saving ? t('common.saving') : t('settings.saveBtn')}
             </Button>
           </div>
         )}

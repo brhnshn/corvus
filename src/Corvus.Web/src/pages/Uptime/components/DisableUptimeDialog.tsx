@@ -33,7 +33,7 @@ export const DisableUptimeDialog: React.FC<DisableUptimeDialogProps> = ({
       await onSuccess();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (t('uptime.disableError') || 'Uptime takibi kapatılırken bir hata oluştu.'));
+      setError(err instanceof Error ? err.message : t('uptime.disableError'));
     } finally {
       setLoading(false);
     }
@@ -43,14 +43,14 @@ export const DisableUptimeDialog: React.FC<DisableUptimeDialogProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('uptime.disableTitle') || 'Uptime Takibini Kapat'}
+      title={t('uptime.disableTitle')}
       subtitle={service.name}
       icon={<AlertTriangle className="w-5 h-5 text-[var(--status-warn)]" />}
       maxWidth="max-w-md"
     >
       <div className="space-y-4">
         <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-          <strong className="text-[var(--text-primary)] font-semibold">{service.name}</strong> {t('uptime.disableDesc') || 'servisinin Uptime sağlık kontrolleri durdurulacaktır. Konteyner silinmez, yalnızca keşfedilen servisler havuzuna taşınır.'}
+          <strong className="text-[var(--text-primary)] font-semibold">{service.name}</strong> {t('uptime.disableDesc')}
         </p>
 
         {error && (
@@ -74,7 +74,7 @@ export const DisableUptimeDialog: React.FC<DisableUptimeDialogProps> = ({
             disabled={loading}
             icon={loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : undefined}
           >
-            {t('uptime.disableConfirmBtn') || 'Takibi Durdur'}
+            {t('uptime.disableConfirmBtn')}
           </Button>
         </div>
       </div>

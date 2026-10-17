@@ -20,6 +20,7 @@ import { Segment } from '../../components/ui/Segment';
 import { FilterChip } from '../../components/ui/FilterChip';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { useToast } from '../../components/ui/Toast';
 import { useI18n } from '../../i18n';
 import { tagHue } from '../../utils/tagHue';
@@ -94,6 +95,14 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
     setShowPruneModal,
     viewMode,
     setViewMode,
+    deletingContainer,
+    setDeletingContainer,
+    deleteForce,
+    setDeleteForce,
+    deleteVolumes,
+    setDeleteVolumes,
+    isDeleting,
+    handleConfirmDelete,
     loadContainers,
     handleAction,
     tagsWithCounts,
@@ -140,6 +149,11 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
     }
   };
 
+  const deletingContainerName = deletingContainer
+    ? (deletingContainer.Names?.[0] || deletingContainer.Id.slice(0, 12)).replace(/^\//, '')
+    : '';
+  const isDeletingContainerRunning = (deletingContainer?.State || '').toLowerCase() === 'running';
+
   return (
     <PageStage className="space-y-4">
       {/* 1. Başlık & Hızlı İşlemler */}
@@ -169,7 +183,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="İsim, imaj veya port ara…"
+              placeholder={t('containers.searchPlaceholder')}
             />
           </div>
 
@@ -179,12 +193,12 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
             options={[
               {
                 value: 'flat',
-                label: 'Liste',
+                label: t('containers.viewFlat'),
                 icon: <List className="w-3.5 h-3.5" />,
               },
               {
                 value: 'compose',
-                label: 'Gruplar',
+                label: t('containers.viewGroups'),
                 icon: <Layers className="w-3.5 h-3.5" />,
               },
             ]}
@@ -197,7 +211,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
         <MotionItem staggerIndex={2}>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <FilterChip
-            label="Tümü"
+            label={t('common.all')}
             count={containers.length}
             selected={!selectedTag && !selectedState}
             onClick={() => {
@@ -241,7 +255,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           description={t('containers.noContainersDesc')}
           action={
             <Button variant="secondary" onClick={() => loadContainers(true)}>
-              Listeyi Yenile
+              {t('containers.refreshList')}
             </Button>
           }
         />
@@ -250,8 +264,8 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
       {/* Filtre Sonucu Boş Durumu */}
       {!loading && containers.length > 0 && filteredContainers.length === 0 && (
         <EmptyState
-          title="Eşleşen konteyner bulunamadı"
-          description="Arama kriterlerinize veya seçilen filtrelere uyan bir konteyner bulunmuyor."
+          title={t('containers.noMatchingTitle')}
+          description={t('containers.noMatchingDesc')}
           action={
             <Button
               variant="secondary"
@@ -261,7 +275,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
                 setSelectedState(null);
               }}
             >
-              Filtreleri Temizle
+              {t('containers.clearFilters')}
             </Button>
           }
         />
@@ -286,6 +300,11 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
               image: c.Image
             })}
             onDeploy={handleTriggerDeploy}
+            onDelete={(c) => {
+              setDeleteForce(false);
+              setDeleteVolumes(false);
+              setDeletingContainer(c);
+            }}
           />
         )}
 
@@ -316,6 +335,11 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
               image: c.Image
             })}
             onDeploy={handleTriggerDeploy}
+            onDelete={(c) => {
+              setDeleteForce(false);
+              setDeleteVolumes(false);
+              setDeletingContainer(c);
+            }}
           />
         )}
       </MotionItem>
@@ -332,8 +356,62 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
         onEditTags={(c) => setEditingTagsContainer(c)}
         onDeploy={handleTriggerDeploy}
         onOpenWebhookWizard={(c) => setWebhookWizardContainer(c)}
+        onDelete={(c) => {
+          setDeleteForce(false);
+          setDeleteVolumes(false);
+          setDeletingContainer(c);
+        }}
         isAdmin={effectiveIsAdmin}
       />
+
+      {/* Konteyner Silme Onay Modalı */}
+      <ConfirmModal
+        isOpen={!!deletingContainer}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeletingContainer(null);
+            setDeleteForce(false);
+            setDeleteVolumes(false);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+        title={t('containers.deleteTitle')}
+        description={
+          <div className="space-y-2">
+            <p>{t('containers.deleteConfirm', { name: deletingContainerName })}</p>
+            {isDeletingContainerRunning && (
+              <p className="text-amber-400 font-medium">{t('containers.deleteRunningWarning')}</p>
+            )}
+          </div>
+        }
+        confirmLabel={isDeleting ? t('containers.deleting') : t('containers.deleteShort')}
+        cancelLabel={t('common.cancel')}
+        loading={isDeleting}
+        variant="danger"
+      >
+        <div className="space-y-2.5">
+          {!isDeletingContainerRunning && (
+            <label className="flex items-center gap-2.5 text-xs text-[var(--text-secondary)] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={deleteForce}
+                onChange={(e) => setDeleteForce(e.target.checked)}
+                className="rounded border-white/20 bg-white/5 text-rose-500 focus:ring-rose-500/30"
+              />
+              <span>{t('containers.deleteForceLabel')}</span>
+            </label>
+          )}
+          <label className="flex items-center gap-2.5 text-xs text-[var(--text-secondary)] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={deleteVolumes}
+              onChange={(e) => setDeleteVolumes(e.target.checked)}
+              className="rounded border-white/20 bg-white/5 text-rose-500 focus:ring-rose-500/30"
+            />
+            <span>{t('containers.deleteVolumesLabel')}</span>
+          </label>
+        </div>
+      </ConfirmModal>
 
       {/* Konteyner Detay & Canlı Yapılandırma Modalı */}
       {selectedInspectContainer && (
@@ -448,7 +526,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           onClose={() => setImageUpdateContainer(null)}
           onSuccess={() => {
             loadContainers(true);
-            toast.success('Konteyner güncellendi ve yeniden başlatıldı.');
+            toast.success(t('containers.imageUpdatedAndRestartedToast'));
           }}
         />
       )}
@@ -462,7 +540,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
           onClose={() => setComposeConfigProject(null)}
           onSuccess={() => {
             loadContainers(true);
-            toast.success('Compose stack güncellendi.');
+            toast.success(t('containers.composeStackUpdatedToast'));
           }}
         />
       )}

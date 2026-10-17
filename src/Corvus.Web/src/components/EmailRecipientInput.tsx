@@ -59,12 +59,12 @@ export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
     if (!trimmed) return;
 
     if (!EMAIL_REGEX.test(trimmed)) {
-      setInputError(t('settings.invalidEmailFormat') || 'Geçerli bir e-posta formatı girin');
+      setInputError(t('settings.invalidEmailFormat'));
       return;
     }
 
     if (emails.includes(trimmed)) {
-      setInputError(t('settings.emailAlreadyAdded') || 'Bu e-posta zaten eklenmiş');
+      setInputError(t('settings.emailAlreadyAdded'));
       return;
     }
 
@@ -107,7 +107,7 @@ export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
       setInputValue('');
       setInputError(null);
     } else {
-      setInputError(t('settings.invalidEmailFormat') || 'Geçerli bir e-posta formatı bulunamadı');
+      setInputError(t('settings.invalidEmailFormat'));
     }
   };
 
@@ -136,7 +136,7 @@ export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
                   removeEmail(idx);
                 }}
                 className="text-white/40 hover:text-rose-400 transition-colors p-0.5 rounded cursor-pointer"
-                title={t('common.delete') || 'Sil'}
+                title={t('common.delete')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -173,7 +173,7 @@ export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
       )}
 
       <p className="text-[10px] text-[#9ca3af]/70">
-        {t('settings.emailPillsHelp') || 'E-posta adresini yazıp Enter veya virgül tuşuna basın. Birden fazla adresi doğrudan yapıştırabilirsiniz.'}
+        {t('settings.emailPillsHelp')}
       </p>
     </div>
   );

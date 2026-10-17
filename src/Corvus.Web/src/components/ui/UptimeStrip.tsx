@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../../i18n';
 
 export interface UptimeSegment {
   status: 'up' | 'warn' | 'down' | 'muted';
@@ -23,6 +24,7 @@ export const UptimeStrip: React.FC<UptimeStripProps> = ({
   height = 20,
   className = '',
 }) => {
+  const { t } = useI18n();
   const displaySegments: UptimeSegment[] =
     segments && segments.length > 0
       ? segments
@@ -33,7 +35,7 @@ export const UptimeStrip: React.FC<UptimeStripProps> = ({
       className={`uptime-strip ${className}`}
       style={{ height: `${height}px` }}
       role="meter"
-      aria-label="Uptime geçmişi"
+      aria-label={t('uptime.uptimeHistory')}
     >
       {displaySegments.slice(0, count).map((seg, idx) => {
         const statusClass =
@@ -47,7 +49,7 @@ export const UptimeStrip: React.FC<UptimeStripProps> = ({
           <div
             key={idx}
             className={`uptime-seg ${statusClass}`}
-            title={seg.tooltip || (seg.latency ? `${seg.latency} ms` : '100% Aktif')}
+            title={seg.tooltip || (seg.latency ? `${seg.latency} ms` : t('uptime.fullyOperational'))}
           />
         );
       })}

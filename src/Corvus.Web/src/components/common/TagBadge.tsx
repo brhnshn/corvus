@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { getTagColor } from '../../utils/tagColor';
+import { useI18n } from '../../i18n';
 
 interface TagBadgeProps {
   tag: string;
@@ -23,6 +24,7 @@ export const TagBadge: React.FC<TagBadgeProps> = ({
   showDot = true,
   className = '',
 }) => {
+  const { t } = useI18n();
   const color = getTagColor(tag);
   const isClickable = Boolean(onClick);
 
@@ -68,8 +70,8 @@ export const TagBadge: React.FC<TagBadgeProps> = ({
             onRemove();
           }}
           className="p-0.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer"
-          title={`Kaldır: ${tag}`}
-          aria-label={`Kaldır: ${tag}`}
+          title={`${t('common.remove')}: ${tag}`}
+          aria-label={`${t('common.remove')}: ${tag}`}
         >
           <X className="w-3 h-3 text-current" />
         </button>

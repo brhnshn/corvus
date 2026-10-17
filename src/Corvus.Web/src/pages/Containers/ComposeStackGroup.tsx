@@ -3,6 +3,7 @@ import { RotateCw, Play, Square, Loader2, FileCode2 } from 'lucide-react';
 import type { DockerContainer, ContainerStats } from '../../api/client';
 import { ContainerList } from './ContainerList';
 import { GroupSection } from '../../components/GroupSection';
+import { useI18n } from '../../i18n';
 
 export interface ComposeStackGroupProps {
   groups: { name: string; items: DockerContainer[] }[];
@@ -27,6 +28,7 @@ export interface ComposeStackGroupProps {
   onOpenComposeConfig?: (projectName: string) => void;
   onOpenImageUpdate?: (container: DockerContainer) => void;
   onDeploy?: (container: DockerContainer) => void;
+  onDelete?: (container: DockerContainer) => void;
   updatesMap?: Record<string, boolean>;
 }
 
@@ -52,8 +54,10 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
   onOpenComposeConfig,
   onOpenImageUpdate,
   onDeploy,
+  onDelete,
   updatesMap,
 }) => {
+  const { t } = useI18n();
   const [stackBusy, setStackBusy] = useState<string | null>(null);
 
   const handleStackAction = async (action: 'start' | 'stop' | 'restart', groupName: string, items: DockerContainer[]) => {
@@ -96,7 +100,7 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
                     disabled={isGroupBusy}
                     onClick={() => handleStackAction('restart', group.name, group.items)}
                     className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-amber-500/20 text-[#9ba0b5] hover:text-amber-300 border border-white/5 hover:border-amber-500/30 transition-all cursor-pointer disabled:opacity-50"
-                    title={`${group.name} Stack'ini Yeniden Başlat`}
+                    title={t('containers.stackRestartTitle', { name: group.name })}
                   >
                     {isGroupBusy ? (
                       <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
@@ -111,7 +115,7 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
                     disabled={isGroupBusy}
                     onClick={() => handleStackAction('start', group.name, group.items)}
                     className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-emerald-500/20 text-[#9ba0b5] hover:text-emerald-300 border border-white/5 hover:border-emerald-500/30 transition-all cursor-pointer disabled:opacity-50"
-                    title={`${group.name} Stack'ini Başlat`}
+                    title={t('containers.stackStartTitle', { name: group.name })}
                   >
                     <Play className="w-3 h-3" />
                   </button>
@@ -122,7 +126,7 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
                       type="button"
                       onClick={() => onOpenComposeConfig(group.name)}
                       className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-indigo-500/20 text-[#9ba0b5] hover:text-indigo-300 border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer"
-                      title={`${group.name} Stack YAML Yapılandırması`}
+                      title={t('containers.stackYamlTitle', { name: group.name })}
                     >
                       <FileCode2 className="w-3 h-3" />
                     </button>
@@ -134,7 +138,7 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
                     disabled={isGroupBusy}
                     onClick={() => handleStackAction('stop', group.name, group.items)}
                     className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-red-500/20 text-[#9ba0b5] hover:text-red-300 border border-white/5 hover:border-red-500/30 transition-all cursor-pointer disabled:opacity-50"
-                    title={`${group.name} Stack'ini Durdur`}
+                    title={t('containers.stackStopTitle', { name: group.name })}
                   >
                     <Square className="w-3 h-3" />
                   </button>
@@ -153,6 +157,7 @@ export const ComposeStackGroup: React.FC<ComposeStackGroupProps> = ({
               isAdmin={isAdmin}
               onOpenImageUpdate={onOpenImageUpdate}
               onDeploy={onDeploy}
+              onDelete={onDelete}
               updatesMap={updatesMap}
             />
           </GroupSection>

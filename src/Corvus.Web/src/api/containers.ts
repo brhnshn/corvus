@@ -59,6 +59,19 @@ export const containersApi = {
     return res;
   },
 
+  deleteContainer: async (id: string, force = false, removeVolumes = false) => {
+    const res = await fetchJson<{ success: boolean; message?: string }>(
+      `/containers/${id}?force=${force}&removeVolumes=${removeVolumes}`,
+      {
+        method: 'DELETE'
+      }
+    );
+    invalidateCache('/containers');
+    invalidateCache('/services');
+    invalidateCache('/dashboard');
+    return res;
+  },
+
   getContainerLogs: (id: string, tail = 100) => 
     fetchJson<{ containerId: string; lines: string[] }>(`/containers/${id}/logs?tail=${tail}`),
 

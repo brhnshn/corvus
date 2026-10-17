@@ -52,36 +52,36 @@ export const SystemKpiCards: React.FC<SystemKpiCardsProps> = ({ metrics, latestM
   return (
     <KpiRow className="mb-4">
       <KpiCard
-        label={t('metrics.cpuUsage') || 'İşlemci (CPU)'}
+        label={t('metrics.cpuUsage')}
         meta={<StatusDot status={cpuStatus} />}
         value={current.cpuPercent}
         prefix="%"
         decimals={1}
         barPercentage={current.cpuPercent}
         barColor={cpuStatus === 'down' ? 'var(--status-down)' : cpuStatus === 'warn' ? 'var(--status-warn)' : 'var(--cloud-200)'}
-        subtext={`Ort: %${avgCpu} · Min: %${minCpu.toFixed(1)} · Max: %${maxCpu.toFixed(1)}`}
+        subtext={`${t('metrics.avgUsage', { value: avgCpu })} · ${t('metrics.minUsage', { value: minCpu.toFixed(1) })} · ${t('metrics.maxUsage', { value: maxCpu.toFixed(1) })}`}
       />
 
       <KpiCard
-        label={t('metrics.ramUsage') || 'Bellek (RAM)'}
+        label={t('metrics.ramUsage')}
         meta={<StatusDot status={ramStatus} />}
         value={ramUsedGb}
         decimals={1}
         suffix={` / ${ramTotalGb} GB`}
         barPercentage={ramPercent}
         barColor={ramStatus === 'down' ? 'var(--status-down)' : ramStatus === 'warn' ? 'var(--status-warn)' : 'var(--cloud-200)'}
-        subtext={`Boş: ${ramFreeGb} GB (%${100 - ramPercent})`}
+        subtext={t('metrics.freeSpaceSubtext', { free: ramFreeGb, percent: 100 - ramPercent })}
       />
 
       <KpiCard
-        label={t('metrics.diskChartTitle') || 'Disk Depolama'}
+        label={t('metrics.diskChartTitle')}
         meta={<StatusDot status={diskStatus} />}
         value={current.diskUsedGb}
         decimals={1}
         suffix={` / ${current.diskTotalGb} GB`}
         barPercentage={diskPercent}
         barColor={diskStatus === 'down' ? 'var(--status-down)' : diskStatus === 'warn' ? 'var(--status-warn)' : 'var(--cloud-200)'}
-        subtext={`Boş: ${diskFreeGb} GB (%${100 - diskPercent})`}
+        subtext={t('metrics.freeSpaceSubtext', { free: diskFreeGb, percent: 100 - diskPercent })}
       />
     </KpiRow>
   );

@@ -30,15 +30,15 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
     setSuccess(null);
 
     if (!currentPassword) {
-      setError(t('userManagement.currentPasswordPlaceholder') || 'Mevcut şifrenizi girin');
+      setError(t('userManagement.currentPasswordPlaceholder'));
       return;
     }
     if (newPassword.length < 4) {
-      setError(t('userManagement.newPasswordPlaceholder') || 'Yeni şifre en az 4 karakter olmalıdır');
+      setError(t('userManagement.newPasswordPlaceholder'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError(t('userManagement.passwordMismatch') || 'Yeni şifreler birbiriyle uyuşmuyor');
+      setError(t('userManagement.passwordMismatch'));
       return;
     }
 
@@ -46,15 +46,15 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
     try {
       const res = await api.changePassword({ currentPassword, newPassword });
       if (res.success) {
-        setSuccess(t('userManagement.passwordChanged') || 'Şifreniz başarıyla değiştirildi.');
+        setSuccess(t('userManagement.passwordChanged'));
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        setError(res.message || 'Şifre değiştirilemedi.');
+        setError(res.message || t('userManagement.passwordChangeFailed'));
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'İşlem sırasında bir hata oluştu.');
+      setError(err instanceof Error ? err.message : t('userManagement.passwordChangeFailed'));
     } finally {
       setLoading(false);
     }
@@ -71,13 +71,13 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">{currentUsername}</h3>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              {isAdmin ? (t('userManagement.roleAdminDescription') || 'Yönetici ayrıcalıkları devrede') : (t('userManagement.roleViewerDescription') || 'Salt okunur erişim')}
+              {isAdmin ? t('userManagement.roleAdminDescription') : t('userManagement.roleViewerDescription')}
             </p>
           </div>
         </div>
 
         <span className={isAdmin ? 'badge badge-up' : 'badge'}>
-          {isAdmin ? (t('userManagement.roleAdmin') || 'Yönetici') : (t('userManagement.roleViewer') || 'İzleyici')}
+          {isAdmin ? t('userManagement.roleAdmin') : t('userManagement.roleViewer')}
         </span>
       </div>
 
@@ -86,7 +86,7 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
         <div className="flex items-center gap-2.5 pb-3 border-b border-[var(--border-hairline)]">
           <KeyRound className="w-4 h-4 text-[var(--text-secondary)]" />
           <h4 className="text-sm font-semibold text-[var(--text-primary)]">
-            {t('userManagement.changePassword') || 'Şifre Değiştir'}
+            {t('userManagement.changePassword')}
           </h4>
         </div>
 
@@ -107,7 +107,7 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-              {t('userManagement.currentPassword') || 'Mevcut Şifre'}
+              {t('userManagement.currentPassword')}
             </label>
             <div className="relative">
               <input
@@ -115,7 +115,7 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder={t('userManagement.currentPasswordPlaceholder') || 'Mevcut şifrenizi girin'}
+                placeholder={t('userManagement.currentPasswordPlaceholder')}
                 className="input w-full pr-10"
               />
               <button
@@ -131,28 +131,28 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-                {t('userManagement.newPassword') || 'Yeni Şifre'}
+                {t('userManagement.newPassword')}
               </label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t('userManagement.newPasswordPlaceholder') || 'En az 4 karakter'}
+                placeholder={t('userManagement.newPasswordPlaceholder')}
                 className="input w-full"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-                {t('userManagement.confirmPassword') || 'Yeni Şifre (Tekrar)'}
+                {t('userManagement.confirmPassword')}
               </label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t('userManagement.confirmPasswordPlaceholder') || 'Yeni şifrenizi doğrulayın'}
+                placeholder={t('userManagement.confirmPasswordPlaceholder')}
                 className="input w-full"
               />
             </div>
@@ -164,7 +164,7 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
               variant="primary"
               disabled={loading}
             >
-              {loading ? (t('userManagement.updatingPassword') || 'Güncelleniyor...') : (t('userManagement.changePassword') || 'Şifreyi Güncelle')}
+              {loading ? t('userManagement.updatingPassword') : t('userManagement.changePassword')}
             </Button>
           </div>
         </form>

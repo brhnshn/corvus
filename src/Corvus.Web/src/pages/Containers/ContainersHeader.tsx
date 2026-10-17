@@ -38,8 +38,8 @@ export const ContainersHeader: React.FC<ContainersHeaderProps> = ({
               onClick={onPruneClick}
               icon={<Trash2 className="w-4 h-4" />}
             >
-              <span className="hidden sm:inline">Sistem Temizliği</span>
-              <span className="sm:hidden">Temizlik</span>
+              <span className="hidden sm:inline">{t('containers.systemPrune')}</span>
+              <span className="sm:hidden">{t('containers.pruneShort')}</span>
             </Button>
           )}
 

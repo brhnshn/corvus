@@ -346,7 +346,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
                   ? 'border-[#d5d5dc]/40 bg-white/10 text-white' 
                   : 'border-white/10 bg-white/[0.04] text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08]'
               }`}
-              title="Bilgi"
+              title={t('containers.terminalInfoTooltip')}
             >
               <HelpCircle className="w-4 h-4" />
             </button>
@@ -364,7 +364,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
             <button
               onClick={onClose}
               className="p-2 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors cursor-pointer ml-1"
-              title="Kapat"
+              title={t('common.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -379,7 +379,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
               onClick={() => setShowHelp(false)} 
               className="text-[#eceef6] hover:underline text-[11px] ml-4 cursor-pointer font-medium"
             >
-              Gizle
+              {t('containers.terminalHideHelp')}
             </button>
           </div>
         )}
@@ -394,8 +394,8 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
         {/* Alt Bilgi Çubuğu */}
         <div className="flex items-center justify-between px-5 py-2 bg-white/[0.02] border-t border-white/10 text-[11px] text-[#9ba0b5] select-none shrink-0">
           <div className="flex items-center gap-3">
-            <span>Konteyner: <strong className="text-[#eceef6] font-mono">{containerName}</strong></span>
-            <span>Kabuk: <strong className="text-[#d5d5dc] font-mono">{shell}</strong></span>
+            <span>{t('containers.terminalFooterContainer')}: <strong className="text-[#eceef6] font-mono">{containerName}</strong></span>
+            <span>{t('containers.terminalFooterShell')}: <strong className="text-[#d5d5dc] font-mono">{shell}</strong></span>
           </div>
           <div className="flex items-center gap-3 font-mono text-[10px]">
             <span>VT100 / xterm-256color</span>

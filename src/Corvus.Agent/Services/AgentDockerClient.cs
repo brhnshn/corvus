@@ -121,6 +121,10 @@ public class AgentDockerClient : IAgentDockerClient
                     await SendDockerHttpAsync("POST", $"/containers/{escapedCid}/restart", ct);
                     return new DockerRpcResponse(Success: true, Message: $"Container {cid} restarted.");
 
+                case "delete":
+                    await SendDockerHttpAsync("DELETE", $"/containers/{escapedCid}?force=true&v=false", ct);
+                    return new DockerRpcResponse(Success: true, Message: $"Container {cid} deleted.");
+
                 case "logs":
                     int tail = request.TailLines ?? 100;
                     byte[] logBytes = await SendDockerHttpRawAsync("GET", $"/containers/{escapedCid}/logs?stdout=1&stderr=1&tail={tail}", ct);

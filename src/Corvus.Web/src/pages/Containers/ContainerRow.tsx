@@ -8,7 +8,8 @@ import {
   ArrowUpRight,
   Sparkles,
   ExternalLink,
-  Rocket
+  Rocket,
+  Trash2
 } from 'lucide-react';
 import type { DockerContainer, ContainerStats } from '../../types';
 import { Pill, type StatusType } from '../../components/ui/Pill';
@@ -30,6 +31,7 @@ export interface ContainerRowProps {
   isAdmin?: boolean;
   onOpenImageUpdate?: (container: DockerContainer) => void;
   onDeploy?: (container: DockerContainer) => void;
+  onDelete?: (container: DockerContainer) => void;
   hasUpdate?: boolean;
 }
 
@@ -56,6 +58,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   isAdmin = true,
   onOpenImageUpdate,
   onDeploy,
+  onDelete,
   hasUpdate = false,
 }) => {
   const { t } = useI18n();
@@ -69,7 +72,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
   const isPaused = state === 'paused';
 
   const statusType: StatusType = isRunning ? 'ok' : isPaused ? 'warn' : 'err';
-  const statusLabel = isRunning ? (t('containers.stateRunning') || 'Running') : isPaused ? (t('containers.statePaused') || 'Paused') : (t('containers.stateStopped') || 'Stopped');
+  const statusLabel = isRunning ? t('containers.stateRunning') : isPaused ? t('containers.statePaused') : t('containers.stateStopped');
 
   const containerTags = container.tags && container.tags.length > 0
     ? container.tags
@@ -90,7 +93,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
         bg-[var(--bg-card)] border border-[var(--border-hairline)] rounded-[var(--radius-sm)] p-3.5 select-none
         cursor-pointer hover:border-[var(--cloud-400)] transition-all duration-150
         flex flex-col gap-3
-        lg:grid lg:grid-cols-[2.1fr_1.5fr_1.8fr_1fr_190px] lg:items-center lg:gap-4 lg:py-2.5 lg:px-4
+        lg:grid lg:grid-cols-[2.1fr_1.5fr_1.8fr_1fr_210px] lg:items-center lg:gap-4 lg:py-2.5 lg:px-4
       "
     >
       {/* 1. İsim & ID & Hızlı Eylemler & Etiketler */}
@@ -196,7 +199,7 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
           </>
         ) : (
           <div className="font-mono text-[11px] text-[var(--text-muted)]">
-            {isRunning ? (t('containers.scanningDiskUsage') ? '...' : '-') : (t('containers.stateStopped') || '-')}
+            {isRunning ? '-' : t('containers.stateStopped')}
           </div>
         )}
       </div>
@@ -210,7 +213,10 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
           {onOpenImageUpdate && (
             <button
               type="button"
-              onClick={() => onOpenImageUpdate(container)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenImageUpdate(container);
+              }}
               title={t('containers.checkUpdate')}
               className="p-1 rounded text-[var(--text-muted)] hover:text-emerald-400 hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
             >
@@ -325,6 +331,21 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({
                 icon={<Rocket className="w-3.5 h-3.5 text-indigo-400" />}
                 title={t('containers.deployTooltip')}
                 aria-label={t('containers.deploy')}
+              />
+            )}
+
+            {onDelete && (
+              <Button
+                variant="icon"
+                size="sm"
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  onDelete(container);
+                }}
+                disabled={actionInProgress}
+                icon={<Trash2 className="w-3.5 h-3.5 text-rose-400" />}
+                title={t('containers.delete')}
+                aria-label={t('containers.delete')}
               />
             )}
           </>

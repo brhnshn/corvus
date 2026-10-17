@@ -91,7 +91,8 @@ export const GroupSection: React.FC<GroupSectionProps> = ({
           <button
             type="button"
             className="p-1 rounded text-[#9ca3af] hover:text-[#e5e7eb] transition-transform duration-200"
-            title={isCollapsed ? 'Genişlet' : 'Daralt'}
+            title={isCollapsed ? t('common.expand') : t('common.collapse')}
+            aria-label={isCollapsed ? t('common.expand') : t('common.collapse')}
           >
             <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
           </button>

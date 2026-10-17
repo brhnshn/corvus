@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.14] - 2026-10-17 — Manual Stop Auto-Heal Guard, End-to-End Container Deletion & Container UI / i18n Hardening
+
+### Added
+- **End-to-End Container Deletion (Host & Remote Agent)**:
+  - `IDockerService.cs` & `DockerService.cs`: Added `RemoveContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken ct = default)` with manual-stop registry cleanup and Docker API `ContainerRemoveParameters` support.
+  - `ContainersEndpoints.cs`: Added `DELETE /api/containers/{id}` (`.RequireAdmin()`) supporting `force` and `removeVolumes` query parameters, audit logging (`container.delete`), and real-time event broadcasting.
+  - `SystemsEndpoints.cs` & `AgentDockerClient.cs`: Added `"delete"` action support for remote agent container management (`docker rm -f`).
+  - `ConfirmModal.tsx`: Created a reusable confirmation modal component with customizable danger/primary variants, loading state, and optional child controls.
+  - `Containers` & `ContainerDetail` UI: Integrated container deletion across row actions, mobile action sheet, and container detail header with confirmation dialog and options for force removal and anonymous volume cleanup.
+
+### Fixed
+- **Prevent Unintended Auto-Restart After Manual Container Stop**:
+  - `DockerService.cs`: Added thread-safe manual stop tracking (`MarkContainerManuallyStopped`, `ClearContainerManualStop`, `IsContainerManuallyStopped`) matching both full 64-character and 12-character short container IDs. `StopContainerAsync` and `RestartContainerAsync` mark the container before stopping so in-flight discovery cycles cannot misclassify intentional stops as crashes, while `StartContainerAsync` and `RestartContainerAsync` clear the flag upon completion.
+  - `ContainerDiscoveryService.cs` & `AutoHealingService.cs`: Guarded crash alerts and auto-healing restarts against manually stopped containers, graceful `SIGTERM` exits (`ExitCode == 143`), and `SIGKILL` stops (`ExitCode == 137`) where `OOMKilled == false` and `Error` is empty. Also added stale container ID pruning for `_previousStates`.
+- **Duplicate Action Buttons & Inconsistent Labels in Container Detail**:
+  - `ContainerOverviewTab.tsx` & `ContainerDetail/index.tsx`: Added `showActionsToolbar` prop (default `true` for standalone modal usage, `false` on `ContainerDetail` page) to eliminate duplicate Start/Stop/Restart/Pause/Terminal/Logs buttons when `ContainerDetailHeader` is already rendered.
+  - `ContainerDetailHeader.tsx`: Standardized action button labels to imperative translation keys (`containers.stop`, `containers.start`, `containers.restart`, `containers.pause`, `containers.resume`).
+- **Comprehensive i18n Localization Across Frontend Modules**:
+  - `en.ts` & `tr.ts`: Added and synchronized translation keys across `Containers`, `ContainerDetail`, `Dashboard`, `Services`, `Settings`, `Uptime`, `Deployments`, `SystemMetrics`, `Profile`, `PublicStatus`, and shared UI components, eliminating hardcoded Turkish strings and fallback literals.
+
 ## [1.6.13] - 2026-10-16 — Strict React Rules of Hooks Compliance & Linter Hardening
 
 ### Fixed

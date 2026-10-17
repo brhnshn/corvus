@@ -154,6 +154,10 @@ public record ContainerTagsUpdatedEventPayload(
     [property: JsonPropertyName("tags")] List<string> Tags
 );
 
+public record ContainerDeletedEventPayload(
+    [property: JsonPropertyName("containerId")] string ContainerId
+);
+
 public record AuthRegisterRequest(
     string Username,
     string Password
@@ -277,6 +281,7 @@ public record NotificationResult(
 [JsonSerializable(typeof(ServerEventDto))]
 [JsonSerializable(typeof(PushReceivedEventPayload))]
 [JsonSerializable(typeof(ContainerTagsUpdatedEventPayload))]
+[JsonSerializable(typeof(ContainerDeletedEventPayload))]
 [JsonSerializable(typeof(VersionInfoDto))]
 [JsonSerializable(typeof(GitHubReleaseDto))]
 [JsonSerializable(typeof(DbStatsResponse))]

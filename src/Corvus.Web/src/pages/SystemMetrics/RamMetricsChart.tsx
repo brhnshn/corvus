@@ -45,12 +45,12 @@ export const RamMetricsChart: React.FC<RamMetricsChartProps> = ({
         </span>
         <div>
           <h2 className="text-[15px] font-semibold text-[#eceef6] leading-tight">
-            {t('metrics.ramChartTitle') || 'RAM Kullanımı (GB)'}
+            {t('metrics.ramChartTitle')}
           </h2>
-          <small className="font-mono text-[11px] text-[#9ba0b5]">Fiziksel RAM &amp; Bellek Tüketimi</small>
+          <small className="font-mono text-[11px] text-[#9ba0b5]">{t('metrics.ramSubtitle')}</small>
         </div>
         <span className="ml-auto font-mono font-semibold text-[11px] px-2.5 py-1.5 rounded-[11px] border border-white/10 bg-white/[0.06] text-[#eceef6] whitespace-nowrap">
-          {t('metrics.lastValue', { value: `${currentRamGb} GB / ${totalRamGb} GB` }) || `Son Değer: ${currentRamGb} GB / ${totalRamGb} GB`}
+          {t('metrics.lastValue', { value: `${currentRamGb} GB / ${totalRamGb} GB` })}
         </span>
       </div>
 
@@ -67,7 +67,7 @@ export const RamMetricsChart: React.FC<RamMetricsChartProps> = ({
             const pct = totalRamGb > 0 ? Math.round((val / totalRamGb) * 100) : 0;
             return `${val.toFixed(1)} GB / ${totalRamGb} GB (%${pct})`;
           }}
-          ariaLabel="RAM Kullanım Grafiği"
+          ariaLabel={t('metrics.ramAriaLabel')}
         />
       </div>
     </section>

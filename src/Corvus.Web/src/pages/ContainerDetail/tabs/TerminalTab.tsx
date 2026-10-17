@@ -126,7 +126,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
       wsRef.current = ws;
     } catch {
       setConnectionState('error');
-      setErrorMessage('WebSocket bağlantısı başlatılamadı.');
+      setErrorMessage(t('containers.terminalWsInitError'));
       return;
     }
 
@@ -145,7 +145,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
     ws.onerror = () => {
       setConnectionState('error');
-      setErrorMessage('Bağlantı hatası oluştu.');
+      setErrorMessage(t('containers.terminalError'));
     };
 
     ws.onclose = () => {
@@ -161,7 +161,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
     return () => {
       dataDisposable.dispose();
     };
-  }, [containerId, shell, sendResize]);
+  }, [containerId, shell, sendResize, t]);
 
   useEffect(() => {
     const cleanup = connectTerminal();
@@ -211,7 +211,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         <div className="flex items-center gap-2.5">
           <SquareTerminal className="w-5 h-5 text-indigo-400" />
           <h2 className="text-base font-bold text-[#eceef6]">
-            {t('containers.terminalTitle') || 'Web Terminali'}
+            {t('containers.terminalTitle')}
           </h2>
           <span className="text-xs font-mono text-indigo-300 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
             {containerName}
@@ -230,17 +230,17 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             {connectionState === 'connected' ? (
               <>
                 <CheckCircle2 className="w-3 h-3" />
-                <span>Bağlandı</span>
+                <span>{t('containers.terminalConnected')}</span>
               </>
             ) : connectionState === 'connecting' ? (
               <>
                 <RefreshCw className="w-3 h-3 animate-spin" />
-                <span>Bağlanıyor</span>
+                <span>{t('containers.terminalConnecting')}</span>
               </>
             ) : (
               <>
                 <AlertCircle className="w-3 h-3" />
-                <span>Bağlantı Kesildi</span>
+                <span>{t('containers.terminalDisconnected')}</span>
               </>
             )}
           </span>
@@ -255,7 +255,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           >
             {SHELL_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.defaultLabel}
+                {opt.value === 'auto' ? t('containers.terminalShellAuto') : opt.defaultLabel}
               </option>
             ))}
           </select>
@@ -265,7 +265,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             type="button"
             onClick={connectTerminal}
             className="p-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 transition-colors cursor-pointer"
-            title="Yeniden Bağlan"
+            title={t('containers.terminalReconnect')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -275,7 +275,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             type="button"
             onClick={() => xtermRef.current?.clear()}
             className="p-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 transition-colors cursor-pointer"
-            title="Terminali Temizle"
+            title={t('containers.terminalClear')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -285,7 +285,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             type="button"
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#eceef6] border border-white/10 transition-colors cursor-pointer"
-            title={isFullscreen ? 'Tam Ekrandan Çık' : 'Tam Ekran'}
+            title={isFullscreen ? t('containers.terminalExitFullscreen') : t('containers.terminalFullscreen')}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>

@@ -37,12 +37,12 @@ export const CpuMetricsChart: React.FC<CpuMetricsChartProps> = ({ data, currentC
         </span>
         <div>
           <h2 className="text-[15px] font-semibold text-[#eceef6] leading-tight">
-            {t('metrics.cpuChartTitle') || 'CPU Kullanımı (%)'}
+            {t('metrics.cpuChartTitle')}
           </h2>
-          <small className="font-mono text-[11px] text-[#9ba0b5]">Çekirdek Yükü &amp; İşlemci Kullanımı</small>
+          <small className="font-mono text-[11px] text-[#9ba0b5]">{t('metrics.cpuSubtitle')}</small>
         </div>
         <span className="ml-auto font-mono font-semibold text-[11px] px-2.5 py-1.5 rounded-[11px] border border-white/10 bg-white/[0.06] text-[#eceef6] whitespace-nowrap">
-          {t('metrics.lastValue', { value: `%${currentCpu.toFixed(1)}` }) || `Son Değer: %${currentCpu.toFixed(1)}`}
+          {t('metrics.lastValue', { value: `%${currentCpu.toFixed(1)}` })}
         </span>
       </div>
 
@@ -56,7 +56,7 @@ export const CpuMetricsChart: React.FC<CpuMetricsChartProps> = ({ data, currentC
           max={100}
           unit="%"
           valueFormatter={(val) => `%${val.toFixed(1)}`}
-          ariaLabel="CPU Kullanım Grafiği"
+          ariaLabel={t('metrics.cpuAriaLabel')}
         />
       </div>
     </section>

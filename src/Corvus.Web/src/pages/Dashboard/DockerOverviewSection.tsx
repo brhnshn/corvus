@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { StatusDot } from '../../components/ui/StatusDot';
 import { Button } from '../../components/ui/Button';
+import { useI18n } from '../../i18n';
 import type { DockerContainer } from '../../types';
 
 export interface DockerOverviewSectionProps {
@@ -13,6 +14,7 @@ export const DockerOverviewSection: React.FC<DockerOverviewSectionProps> = ({
   containers,
   onNavigate,
 }) => {
+  const { t } = useI18n();
   const running = containers.filter((c) => c.State.toLowerCase() === 'running').length;
   const stopped = containers.length - running;
 
@@ -29,15 +31,17 @@ export const DockerOverviewSection: React.FC<DockerOverviewSectionProps> = ({
               onClick={() => onNavigate('containers')}
               className="text-xs text-[var(--text-muted)] hover:text-[var(--cloud-100)] transition-colors cursor-pointer"
             >
-              Tümünü Gör ({containers.length}) →
+              {t('dashboard.viewAllCount', { count: containers.length })}
             </button>
           )
         }
       >
         <div>
-          <CardTitle>Docker Konteynerleri</CardTitle>
+          <CardTitle>{t('dashboard.dockerContainers')}</CardTitle>
           <span className="text-xs font-mono tabular-nums text-[var(--text-muted)] block mt-0.5">
-            {running} çalışan{stopped > 0 ? `, ${stopped} durmuş` : ''}
+            {stopped > 0
+              ? t('dashboard.runningAndStopped', { running, stopped })
+              : t('dashboard.runningOnly', { running })}
           </span>
         </div>
       </CardHeader>
@@ -45,7 +49,7 @@ export const DockerOverviewSection: React.FC<DockerOverviewSectionProps> = ({
       <CardContent>
         {containers.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--text-muted)]">
-            Aktif Docker konteyneri bulunamadı
+            {t('dashboard.noContainersFound')}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
@@ -95,7 +99,7 @@ export const DockerOverviewSection: React.FC<DockerOverviewSectionProps> = ({
               size="sm"
               onClick={() => onNavigate('containers')}
             >
-              Tüm Konteynerleri Gör ({containers.length})
+              {t('dashboard.viewAllContainersCount', { count: containers.length })}
             </Button>
           </div>
         )}

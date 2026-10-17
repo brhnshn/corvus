@@ -75,14 +75,14 @@ export const SystemMetricsPage: React.FC = () => {
   }, [loadData, isLiveStream]);
 
   const ranges = [
-    { id: '1h', label: t('metrics.range1h') || '1 Saat' },
-    { id: '6h', label: t('metrics.range6h') || '6 Saat' },
-    { id: '12h', label: t('metrics.range12h') || '12 Saat' },
-    { id: '24h', label: t('metrics.range24h') || '24 Saat' },
-    { id: '7d', label: t('metrics.range7d') || '7 Gün' },
-    { id: '30d', label: t('metrics.range30d') || '30 Gün' },
-    { id: '90d', label: t('metrics.range90d') || '90 Gün' },
-    { id: '1y', label: t('metrics.range1y') || '1 Yıl' }
+    { id: '1h', label: t('metrics.range1h') },
+    { id: '6h', label: t('metrics.range6h') },
+    { id: '12h', label: t('metrics.range12h') },
+    { id: '24h', label: t('metrics.range24h') },
+    { id: '7d', label: t('metrics.range7d') },
+    { id: '30d', label: t('metrics.range30d') },
+    { id: '90d', label: t('metrics.range90d') },
+    { id: '1y', label: t('metrics.range1y') }
   ];
 
   const isMultiDay = range === '24h' || range === '7d' || range === '30d' || range === '90d' || range === '1y';
@@ -115,7 +115,7 @@ export const SystemMetricsPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--cloud-100)] flex items-center gap-2">
-                <span>{t('metrics.title') || 'Sistem Metrikleri'}</span>
+                <span>{t('metrics.title')}</span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
                   {activeSystemName}
@@ -129,7 +129,7 @@ export const SystemMetricsPage: React.FC = () => {
               </span>
             </div>
             <p className="text-xs sm:text-[13px] text-[var(--text-secondary)] mt-0.5">
-              {t('metrics.subtitle') || 'Zaman serisi sistem kaynağı tüketim grafikleri'}
+              {t('metrics.subtitle')}
             </p>
           </div>
 
@@ -154,7 +154,7 @@ export const SystemMetricsPage: React.FC = () => {
       {loading && metrics.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-[var(--text-muted)] gap-3">
           <RefreshCw className="w-6 h-6 animate-spin text-[var(--cloud-200)]" />
-          <span className="text-xs font-mono">{t('common.loading') || 'Veriler yükleniyor...'}</span>
+          <span className="text-xs font-mono">{t('common.loading')}</span>
         </div>
       )}
 

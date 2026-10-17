@@ -222,10 +222,10 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--border-subtle)] text-xs">
               <div className="flex items-center gap-2">
-                <span className="text-[var(--text-muted)] font-medium">Hedef:</span>
+                <span className="text-[var(--text-muted)] font-medium">{t('deployments.targetLabel')}</span>
                 <span className="font-bold text-[var(--text-primary)] font-sans">{selectedLogRecord.targetName}</span>
                 <span className="text-[var(--text-muted)]">|</span>
-                <span className="text-[var(--text-muted)] font-medium">İmaj:</span>
+                <span className="text-[var(--text-muted)] font-medium">{t('deployments.imageColon')}</span>
                 <span className="font-mono text-[var(--text-secondary)]">{selectedLogRecord.imageName}</span>
               </div>
               <div>
@@ -244,7 +244,7 @@ export const DeploymentsHistoryTable: React.FC<DeploymentsHistoryTableProps> = (
               <div>
                 {selectedLogRecord.errorMessage && (
                   <span className="text-[var(--status-down)] font-semibold">
-                    Hata: {selectedLogRecord.errorMessage}
+                    {t('common.error')}: {selectedLogRecord.errorMessage}
                   </span>
                 )}
               </div>

@@ -77,7 +77,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       setError(null);
     } catch (err: unknown) {
       if (isMountedRef.current) {
-        setError(err instanceof Error ? err.message : 'Veriler yüklenemedi');
+        setError(err instanceof Error ? err.message : t('dashboard.loadFailed'));
       }
     } finally {
       if (isMountedRef.current) {
@@ -87,7 +87,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
     // 2. CPU/RAM yoğun konteyner istatistiklerini ana render'ı bekletmeden paralel getir
     loadStats();
-  }, [loadStats]);
+  }, [loadStats, t]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -110,8 +110,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         const newEvent: EventItem = {
           id: String(Date.now()),
           status: detail.type?.includes('error') || detail.type?.includes('down') ? 'err' : 'ok',
-          title: detail.message || detail.title || 'Sistem olayı algılandı',
-          timeAgo: 'şimdi',
+          title: detail.message || detail.title || t('dashboard.systemEventDetected'),
+          timeAgo: t('dashboard.justNow'),
         };
         setLiveEvents((prev) => [newEvent, ...prev].slice(0, 5));
       }
@@ -188,12 +188,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const totalServices = summary?.totalServices ?? 0;
 
   const bannerMessage = isOverallHealthy
-    ? `Tüm servisler sağlıklı · ${healthyServices}/${totalServices} aktif`
-    : `${totalIssues} öğe dikkat gerektiriyor`;
+    ? t('dashboard.allServicesHealthy', { count: healthyServices, total: totalServices })
+    : t('dashboard.itemsNeedAttention', { count: totalIssues });
 
   const bannerSubtext = isOverallHealthy
-    ? 'Tüm sistemler normal operasyonel sınırda'
-    : `${downServices} kesinti, ${stoppedContainers.length} durmuş konteyner, ${sslWarningCount} SSL uyarısı`;
+    ? t('dashboard.allSystemsNormal')
+    : t('dashboard.issuesSummary', { down: downServices, stopped: stoppedContainers.length, ssl: sslWarningCount });
 
   return (
     <PageStage className="space-y-4">
@@ -202,8 +202,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <DashboardHeader
           subtitle={
             isOverallHealthy
-              ? (t('dashboard.allOperationalDesc') || 'Sistem telemetrisi ve anlık operasyonel durum')
-              : `${totalIssues} ${t('dashboard.attentionIssues') || 'servis veya konteyner dikkat gerektiriyor'}`
+              ? t('dashboard.allOperationalDesc')
+              : `${totalIssues} ${t('dashboard.attentionIssues')}`
           }
           systemName={activeSystemName}
           onNavigate={onNavigate}

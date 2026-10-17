@@ -120,9 +120,9 @@ export const UptimePage: React.FC = () => {
   }, [activeTab, fetchServices, fetchSnitches]);
 
   const tabs = [
-    { id: 'uptime' as const, label: t('uptime.tabPing') || 'Uptime & SSL', icon: Activity },
-    { id: 'snitch' as const, label: t('uptime.tabPush') || 'Push İzleme', icon: Radio },
-    { id: 'incidents' as const, label: t('uptime.tabIncidents') || 'Olay Kayıtları', icon: Megaphone }
+    { id: 'uptime' as const, label: t('uptime.tabPing'), icon: Activity },
+    { id: 'snitch' as const, label: t('uptime.tabPush'), icon: Radio },
+    { id: 'incidents' as const, label: t('uptime.tabIncidents'), icon: Megaphone }
   ];
 
   return (
@@ -132,7 +132,7 @@ export const UptimePage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-              {t('uptime.title') || 'Gelişmiş Uptime & SSL Takibi'}
+              {t('uptime.title')}
             </h1>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
@@ -140,7 +140,7 @@ export const UptimePage: React.FC = () => {
             </span>
           </div>
           <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">
-            {t('uptime.subtitle') || 'Yüksek hassasiyetli erişilebilirlik ve güvenlik sertifikası izleme'}
+            {t('uptime.subtitle')}
           </p>
         </div>
 

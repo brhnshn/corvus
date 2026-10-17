@@ -64,7 +64,7 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
                 ? 'bg-white text-black border-transparent shadow-sm'
                 : 'bg-white/[0.04] text-[#9ba0b5] border-white/10 hover:text-[#eceef6]'
             }`}
-            title="Yalnızca domain/web bağlantısı olanları göster"
+            title={t('uptime.onlyWithDomain')}
           >
             <Globe className="w-3.5 h-3.5" />
             <span>{t('uptime.domainOnlyWeb')}</span>
@@ -86,7 +86,7 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
             onClick={() => setIsOpen(!isOpen)}
             className="px-3 py-1.5 rounded-xl text-xs text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.06] transition-colors cursor-pointer"
           >
-            {isOpen ? 'Gizle' : 'Göster'}
+            {isOpen ? t('common.hide') : t('common.show')}
           </button>
         </div>
       </div>
@@ -99,7 +99,7 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
               <p>
                 {onlyWithDomain && domainServices.length === 0
                   ? t('uptime.noDiscoveredWithDomain')
-                  : 'Aramanızla eşleşen keşfedilmiş servis bulunamadı.'}
+                  : t('uptime.noDiscoveredServicesMatched')}
               </p>
               {onlyWithDomain && (
                 <button
@@ -144,7 +144,7 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
 
                   {/* Target Details */}
                   <div className="text-[11px] font-mono text-[#9ba0b5] bg-white/[0.02] px-3 py-1.5 rounded-xl border border-white/10 truncate">
-                    {service.url || (service.port ? `Port: ${service.port}` : 'İç Ağ Konteyneri')}
+                    {service.url || (service.port ? `Port: ${service.port}` : t('uptime.internalNetworkContainer'))}
                   </div>
 
                   {/* Action Button */}
@@ -154,7 +154,7 @@ export const DiscoveredServicesSection: React.FC<DiscoveredServicesSectionProps>
                     className="w-full py-2 px-3 rounded-xl bg-white text-black hover:bg-[#eceef6] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
                   >
                     <Zap className="w-3.5 h-3.5" />
-                    <span>İzlemeye Al</span>
+                    <span>{t('uptime.enableConfirmBtn')}</span>
                   </button>
                 </div>
               ))}

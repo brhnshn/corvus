@@ -36,8 +36,8 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
             <Globe className="w-4 h-4 text-[var(--text-primary)]" />
           </span>
           <div>
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('settings.languageSectionTitle') || 'Sistem Dili'}</h2>
-            <p className="text-xs text-[var(--text-secondary)]">{t('settings.languageSectionDesc') || 'Arayüzün varsayılan dilini belirleyin'}</p>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('settings.languageSectionTitle')}</h2>
+            <p className="text-xs text-[var(--text-secondary)]">{t('settings.languageSectionDesc')}</p>
           </div>
         </div>
         <LanguageSwitch variant="full" />
@@ -51,9 +51,9 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
               <Lock className="w-4 h-4 text-[var(--text-primary)]" />
             </span>
             <div>
-              <h2>{t('settings.userRegistration') || 'Kullanıcı Kayıtları'}</h2>
+              <h2>{t('settings.userRegistration')}</h2>
               <p className="text-xs text-[var(--text-secondary)] font-normal max-w-lg leading-relaxed mt-0.5">
-                {t('settings.regDesc') || 'Giriş ekranında yeni kullanıcı oluşturma formunu açın veya kapatın'}
+                {t('settings.regDesc')}
               </p>
             </div>
           </div>
@@ -70,7 +70,7 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
           }`}
         >
           <span className={`w-2 h-2 rounded-full ${isRegistrationOpen ? 'bg-[var(--status-up)]' : 'bg-[var(--status-down)]'}`} />
-          <span>{isRegistrationOpen ? (t('settings.registrationOpen') || 'Kayıtlar Açık') : (t('settings.registrationClosed') || 'Kayıtlar Kapalı')}</span>
+          <span>{isRegistrationOpen ? t('settings.registrationOpen') : t('settings.registrationClosed')}</span>
         </button>
       </div>
 
@@ -81,9 +81,9 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
             <Database className="w-4 h-4 text-[var(--text-primary)]" />
           </span>
           <div>
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('settings.retentionPeriod') || 'Veri Saklama Süresi'}</h2>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('settings.retentionPeriod')}</h2>
             <p className="text-xs text-[var(--text-secondary)]">
-              {t('settings.retentionDesc') || 'Geçmiş metrik ve logların veritabanında saklanacağı süre'}
+              {t('settings.retentionDesc')}
             </p>
           </div>
         </div>
@@ -103,7 +103,7 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
                   : 'bg-[var(--bg-subtle)] border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
-              {days} {t('common.days') || 'Gün'}
+              {days} {t('common.days')}
             </button>
           ))}
         </div>
@@ -111,7 +111,7 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
         {dbStats && (
           <div className="flex items-center gap-2 text-xs font-mono text-[var(--text-secondary)] pt-1">
             <AlertCircle className="w-3.5 h-3.5 text-[var(--status-up)]" />
-            <span>{t('settings.currentDbSize') || 'Mevcut Veritabanı Boyutu:'} <strong className="text-[var(--text-primary)] tabular-nums">{dbStats.formattedSize}</strong></span>
+            <span>{t('settings.currentDbSize')} <strong className="text-[var(--text-primary)] tabular-nums">{dbStats.formattedSize}</strong></span>
           </div>
         )}
       </div>
@@ -124,9 +124,9 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
               <Database className="w-4 h-4 text-[var(--text-primary)]" />
             </span>
             <div>
-              <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('settings.deployWebhookTitle') || 'Inbound Deploy Webhook (CI/CD)'}</h2>
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('settings.deployWebhookTitle')}</h2>
               <p className="text-xs text-[var(--text-secondary)]">
-                {t('settings.deployWebhookDesc') || 'GitHub Actions veya CI/CD boru hatlarından otomatik konteyner dağıtımını tetikleyin'}
+                {t('settings.deployWebhookDesc')}
               </p>
             </div>
           </div>
@@ -142,23 +142,23 @@ export const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
               setSettings(prev => ({ ...prev, deploy_webhook_token: generated }));
             }}
           >
-            {t('settings.generateNewToken') || 'Yeni Belirteç Üret'}
+            {t('settings.generateNewToken')}
           </Button>
         </div>
 
         <div className="space-y-2">
           <label className="text-xs font-mono text-[var(--text-secondary)] block">
-            {t('settings.webhookTokenLabel') || 'Gizli Webhook Belirteci (Token)'}
+            {t('settings.webhookTokenLabel')}
           </label>
           <input
             type="text"
             value={settings['deploy_webhook_token'] || ''}
             onChange={(e) => setSettings(prev => ({ ...prev, deploy_webhook_token: e.target.value }))}
-            placeholder="Örn: 9f8a7b6c5d4e3f2a1b0c..."
+            placeholder={t('settings.deployTokenPlaceholder')}
             className="input w-full font-mono text-xs"
           />
           <p className="text-[11px] text-[var(--text-muted)] font-mono leading-relaxed">
-            {t('common.usage') || 'Kullanım:'} <code className="text-[var(--cloud-200)]">POST /api/hooks/deploy/{'{token}'}?projectName=stack-adi</code>
+            {t('common.usage')} <code className="text-[var(--cloud-200)]">POST /api/hooks/deploy/{'{token}'}?projectName=stack-adi</code>
           </p>
         </div>
       </div>

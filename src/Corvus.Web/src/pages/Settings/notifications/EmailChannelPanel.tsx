@@ -161,7 +161,7 @@ export const EmailChannelPanel: React.FC<EmailChannelPanelProps> = ({
         <EmailRecipientInput
           value={settings['smtp_to'] || ''}
           onChange={(newVal) => setSettings({ ...settings, smtp_to: newVal })}
-          placeholder="devops@company.com (Enter tuşuna basın)"
+          placeholder={t('settings.emailPlaceholder')}
         />
       </div>
 
@@ -174,7 +174,7 @@ export const EmailChannelPanel: React.FC<EmailChannelPanelProps> = ({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
         >
           <Send className={`w-3 h-3 ${testingChannel === 'email' ? 'animate-spin' : ''}`} />
-          <span>{testingChannel === 'email' ? t('settings.testingBtn') : t('settings.testBtn', { channel: 'SMTP E-Posta' })}</span>
+          <span>{testingChannel === 'email' ? t('settings.testingBtn') : t('settings.testBtn', { channel: t('settings.smtpEmailTitle') })}</span>
         </button>
       </div>
     </div>

@@ -83,7 +83,7 @@ export const AddIncidentModal: React.FC<AddIncidentModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={incident ? t('incidents.editIncident') : t('incidents.newIncident')}
-      subtitle={t('incidents.modalSubtitle') || 'Olay bildirimi ve durum güncellemesi yayınlayın'}
+      subtitle={t('incidents.modalSubtitle')}
       icon={<AlertTriangle className="w-5 h-5 text-[var(--status-warn)]" />}
       maxWidth="max-w-lg"
     >

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertStrip } from '../../components/ui/AlertStrip';
 import { Button } from '../../components/ui/Button';
+import { useI18n } from '../../i18n';
 import type { Service, DockerContainer, PushMonitor } from '../../types';
 
 export interface AttentionAlertsProps {
@@ -16,6 +17,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
   failedPushMonitors,
   onNavigate,
 }) => {
+  const { t } = useI18n();
   const downServices = services.filter((s) => s.status === 'down');
   const degradedServices = services.filter((s) => s.status === 'degraded');
   const sslWarnings = services.filter(
@@ -40,9 +42,9 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
           type="danger"
           message={
             <span>
-              <strong>{service.name}</strong> erişilemiyor{' '}
+              <strong>{service.name}</strong> {t('dashboard.serviceUnreachable')}{' '}
               <span className="opacity-75 font-mono text-[11px]">
-                ({service.url || `${service.checkType?.toUpperCase()} servisi`} yanıt vermiyor)
+                {t('dashboard.serviceNoResponse', { url: service.url || `${service.checkType?.toUpperCase()} servisi` })}
               </span>
             </span>
           }
@@ -53,7 +55,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
                 variant="ghost"
                 onClick={() => onNavigate('services')}
               >
-                Servise Git →
+                {t('dashboard.goToService')}
               </Button>
             )
           }
@@ -67,7 +69,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
           type="warn"
           message={
             <span>
-              <strong>{service.name}</strong> performans düşüşü tespit edildi (yanıt süresi yüksek)
+              <strong>{service.name}</strong> {t('dashboard.serviceDegraded')}
             </span>
           }
           action={
@@ -77,7 +79,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
                 variant="ghost"
                 onClick={() => onNavigate('services')}
               >
-                İncele →
+                {t('dashboard.inspectBtn')}
               </Button>
             )
           }
@@ -91,7 +93,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
           type="warn"
           message={
             <span>
-              <strong>{service.name}</strong> SSL sertifikası yakında dolacak (kalan: {service.sslExpiryDays} gün)
+              <strong>{service.name}</strong> {t('dashboard.sslExpiringSoon', { days: service.sslExpiryDays ?? 0 })}
             </span>
           }
           action={
@@ -101,7 +103,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
                 variant="ghost"
                 onClick={() => onNavigate('services')}
               >
-                Görüntüle →
+                {t('dashboard.viewBtn')}
               </Button>
             )
           }
@@ -117,7 +119,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
             type="danger"
             message={
               <span>
-                <strong>{cleanName}</strong> konteyneri durdu{' '}
+                <strong>{cleanName}</strong> {t('dashboard.containerStopped')}{' '}
                 <span className="opacity-75 font-mono text-[11px]">({container.Status || 'Exited'})</span>
               </span>
             }
@@ -128,7 +130,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
                   variant="ghost"
                   onClick={() => onNavigate('containers')}
                 >
-                  Konteynerlere Git →
+                  {t('dashboard.goToContainers')}
                 </Button>
               )
             }
@@ -143,7 +145,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
           type="danger"
           message={
             <span>
-              <strong>{pm.name}</strong> cron kalp atışı (heartbeat) kesildi
+              <strong>{pm.name}</strong> {t('dashboard.cronHeartbeatLost')}
             </span>
           }
           action={
@@ -153,7 +155,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
                 variant="ghost"
                 onClick={() => onNavigate('uptime')}
               >
-                Uptime Takibi →
+                {t('dashboard.goToUptime')}
               </Button>
             )
           }

@@ -53,11 +53,15 @@ public class ContainerDiscoveryService : BackgroundService
 
                         // Konteyner durum geçişini kontrol et (Crash / Exit Code tespiti)
                         string currentState = c.State?.ToLowerInvariant() ?? "unknown";
-                        if (_previousStates.TryGetValue(c.Id, out var prevState))
+                        if (currentState == "running")
+                        {
+                            _docker.ClearContainerManualStop(c.Id);
+                        }
+                        else if (_previousStates.TryGetValue(c.Id, out var prevState))
                         {
                             if (prevState == "running" && (currentState == "exited" || currentState == "dead"))
                             {
-                                // Konteyner çalışırken aniden kapandı; Inspect ile çıkış kodunu doğrula
+                                // Konteyner çalışırken kapandı; manuel durdurma değilse Inspect ile çıkış kodunu doğrula
                                 await CheckAndAlertCrashAsync(c, stoppingToken);
                             }
                         }
@@ -86,8 +90,8 @@ public class ContainerDiscoveryService : BackgroundService
                         batchServices.Add(_docker.MapContainerToService(c, env));
                     }
 
-                    // Artık mevcut olmayan container'ları önbellekten temizle
-                    if (_inspectCache.Count > 0)
+                    // Artık mevcut olmayan container'ları önbellekten ve durum geçmişinden temizle
+                    if (_inspectCache.Count > 0 || _previousStates.Count > 0)
                     {
                         var activeSet = new HashSet<string>(activeIds);
                         foreach (var key in _inspectCache.Keys)
@@ -95,6 +99,13 @@ public class ContainerDiscoveryService : BackgroundService
                             if (!activeSet.Contains(key))
                             {
                                 _inspectCache.TryRemove(key, out _);
+                            }
+                        }
+                        foreach (var key in _previousStates.Keys)
+                        {
+                            if (!activeSet.Contains(key))
+                            {
+                                _previousStates.TryRemove(key, out _);
                             }
                         }
                     }
@@ -173,29 +184,43 @@ public class ContainerDiscoveryService : BackgroundService
     {
         try
         {
+            if (_docker.IsContainerManuallyStopped(container.Id))
+            {
+                _logger.LogInformation("Konteyner kullanıcı tarafından manuel durdurulduğu için çökme alarmı ve auto-heal atlandı: {ContainerId}", container.Id);
+                return;
+            }
+
             if (_dockerClient == null) return;
 
             var inspect = await _dockerClient.InspectContainerAsync(container.Id, ct);
             if (inspect?.State == null) return;
 
             int exitCode = inspect.State.ExitCode;
-            // Sıfır olmayan çıkış kodu (Crash / OOM / Hata) durumunda alarm gönder
-            if (exitCode != 0)
+            // 0 = Normal çıkış, 143 = SIGTERM (standart zarif docker stop)
+            if (exitCode == 0 || exitCode == 143)
             {
-                string containerName = container.Names?.FirstOrDefault()?.TrimStart('/') ?? container.Id.Substring(0, Math.Min(12, container.Id.Length));
-                string? error = !string.IsNullOrWhiteSpace(inspect.State.Error) ? inspect.State.Error : null;
+                return;
+            }
 
-                _logger.LogWarning("Konteyner beklenmedik şekilde durdu: {ContainerName} (ID: {ContainerId}, ExitCode: {ExitCode})", containerName, container.Id, exitCode);
+            // 137 = SIGKILL; eğer OOMKilled değilse ve hata mesajı yoksa standart docker stop grace-period sonlandırmasıdır
+            if (exitCode == 137 && !inspect.State.OOMKilled && string.IsNullOrWhiteSpace(inspect.State.Error))
+            {
+                return;
+            }
 
-                using var scope = _services.CreateScope();
-                var notif = scope.ServiceProvider.GetRequiredService<INotificationService>();
-                await notif.DispatchContainerCrashAlertAsync(containerName, container.Id, exitCode, error, ct);
+            string containerName = container.Names?.FirstOrDefault()?.TrimStart('/') ?? container.Id.Substring(0, Math.Min(12, container.Id.Length));
+            string? error = !string.IsNullOrWhiteSpace(inspect.State.Error) ? inspect.State.Error : null;
 
-                var autoHeal = scope.ServiceProvider.GetService<IAutoHealingService>();
-                if (autoHeal != null)
-                {
-                    await autoHeal.TryAutoHealAsync(container, exitCode, ct);
-                }
+            _logger.LogWarning("Konteyner beklenmedik şekilde durdu: {ContainerName} (ID: {ContainerId}, ExitCode: {ExitCode})", containerName, container.Id, exitCode);
+
+            using var scope = _services.CreateScope();
+            var notif = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            await notif.DispatchContainerCrashAlertAsync(containerName, container.Id, exitCode, error, ct);
+
+            var autoHeal = scope.ServiceProvider.GetService<IAutoHealingService>();
+            if (autoHeal != null)
+            {
+                await autoHeal.TryAutoHealAsync(container, exitCode, ct);
             }
         }
         catch (Exception ex)

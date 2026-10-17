@@ -28,6 +28,7 @@ import { ContainerStorageTab } from '../Containers/detail/ContainerStorageTab';
 import { LogsTab } from './tabs/LogsTab';
 import { TerminalTab } from './tabs/TerminalTab';
 import { ImageUpdateModal } from '../Containers/ImageUpdateModal';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 
 export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   containerId,
@@ -50,6 +51,10 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteForce, setDeleteForce] = useState(true);
+  const [deleteVolumes, setDeleteVolumes] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isMountedRef = useRef(true);
 
@@ -75,12 +80,12 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
     } catch (err: unknown) {
       if (isMountedRef.current) {
         console.error('Konteyner detayları alınamadı:', err);
-        setError(err instanceof Error ? err.message : 'Konteyner bilgileri yüklenemedi');
+        setError(err instanceof Error ? err.message : t('containers.notFoundTitle'));
       }
     } finally {
       if (isMountedRef.current) setLoading(false);
     }
-  }, [containerId]);
+  }, [containerId, t]);
 
   // 2. Canlı Telemetriyi (CPU/RAM/Net) Arka Planda Güncelle ve Tarihsel Seriye Ekle
   const fetchLiveStats = useCallback(async () => {
@@ -131,11 +136,11 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   const handleAction = async (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart') => {
     const cleanName = container?.Names?.[0]?.replace(/^\//, '') || containerId.slice(0, 12);
     const actionLabels: Record<string, string> = {
-      start: 'başlatılıyor',
-      stop: 'durduruluyor',
-      pause: 'duraklatılıyor',
-      unpause: 'devam ettiriliyor',
-      restart: 'yeniden başlatılıyor'
+      start: t('containers.actionInProgressStart'),
+      stop: t('containers.actionInProgressStop'),
+      pause: t('containers.actionInProgressPause'),
+      unpause: t('containers.actionInProgressUnpause'),
+      restart: t('containers.actionInProgressRestart')
     };
 
     setActionInProgress(action);
@@ -148,26 +153,41 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
       else if (action === 'unpause') await api.unpauseContainer(containerId);
       else if (action === 'restart') await api.restartContainer(containerId);
 
-      toast.success(`"${cleanName}" işlemi başarıyla tamamlandı`);
+      toast.success(t('containers.actionCompletedToast', { name: cleanName }));
       await loadContainerData();
       await fetchLiveStats();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'İşlem başarısız oldu');
+      toast.error(err instanceof Error ? err.message : t('containers.actionFailedToast'));
     } finally {
       if (isMountedRef.current) setActionInProgress(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    const cleanName = container?.Names?.[0]?.replace(/^\//, '') || containerId.slice(0, 12);
+    setDeleting(true);
+    try {
+      await api.deleteContainer(containerId, deleteForce, deleteVolumes);
+      toast.success(t('containers.deleteSuccess', { name: cleanName }));
+      setShowDeleteModal(false);
+      onBack();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('containers.deleteError'));
+    } finally {
+      if (isMountedRef.current) setDeleting(false);
     }
   };
 
   const isRunning = container?.State?.toLowerCase() === 'running';
 
   const tabs = [
-    { id: 'overview' as const, label: t('containers.tabOverview') || 'Genel Bakış', icon: Layers },
-    { id: 'resources' as const, label: t('containers.tabResources') || 'Kaynaklar & Limitler', icon: Cpu },
-    { id: 'env' as const, label: t('containers.tabEnv') || 'Ortam Değişkenleri', icon: Key },
-    { id: 'networking' as const, label: t('containers.tabNetworking') || 'Ağ & Portlar', icon: Network },
-    { id: 'storage' as const, label: t('containers.tabStorage') || 'Depolama', icon: HardDrive },
-    { id: 'logs' as const, label: t('containers.tabLogs') || 'Canlı Loglar', icon: FileText },
-    ...(isAdmin ? [{ id: 'terminal' as const, label: t('containers.tabTerminal') || 'Web Terminali', icon: TerminalIcon }] : [])
+    { id: 'overview' as const, label: t('containers.tabOverview'), icon: Layers },
+    { id: 'resources' as const, label: t('containers.tabResources'), icon: Cpu },
+    { id: 'env' as const, label: t('containers.tabEnv'), icon: Key },
+    { id: 'networking' as const, label: t('containers.tabNetworking'), icon: Network },
+    { id: 'storage' as const, label: t('containers.tabStorage'), icon: HardDrive },
+    { id: 'logs' as const, label: t('containers.tabLogs'), icon: FileText },
+    ...(isAdmin ? [{ id: 'terminal' as const, label: t('containers.tabTerminal'), icon: TerminalIcon }] : [])
   ];
 
   if (loading && !inspect) {
@@ -209,6 +229,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
         onBack={onBack}
         actionInProgress={actionInProgress}
         onAction={handleAction}
+        onDelete={() => setShowDeleteModal(true)}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         isAdmin={isAdmin}
@@ -256,6 +277,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
             containerSummary={container || undefined}
             isAdmin={isAdmin}
             actionLoading={!!actionInProgress}
+            showActionsToolbar={false}
             onStart={() => handleAction('start')}
             onStop={() => handleAction('stop')}
             onRestart={() => handleAction('restart')}
@@ -309,6 +331,44 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
           }}
         />
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title={t('containers.deleteTitle')}
+        description={t('containers.deleteConfirm', { name: containerName })}
+        confirmLabel={deleting ? t('containers.deleting') : t('containers.delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        loading={deleting}
+      >
+        <div className="space-y-2 pt-1 text-xs">
+          {isRunning && (
+            <div className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--status-warn-bg)] border border-[var(--status-warn)]/30 text-[var(--status-warn)]">
+              {t('containers.deleteRunningWarning')}
+            </div>
+          )}
+          <label className="flex items-center gap-2 text-[var(--text-secondary)] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={deleteForce}
+              onChange={(e) => setDeleteForce(e.target.checked)}
+              className="rounded border-white/20 bg-white/5 text-rose-500 focus:ring-0 cursor-pointer"
+            />
+            <span>{t('containers.deleteForceLabel')}</span>
+          </label>
+          <label className="flex items-center gap-2 text-[var(--text-secondary)] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={deleteVolumes}
+              onChange={(e) => setDeleteVolumes(e.target.checked)}
+              className="rounded border-white/20 bg-white/5 text-rose-500 focus:ring-0 cursor-pointer"
+            />
+            <span>{t('containers.deleteVolumesLabel')}</span>
+          </label>
+        </div>
+      </ConfirmModal>
     </div>
   );
 };

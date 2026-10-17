@@ -45,12 +45,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
   const statusLabel =
     service.status === 'healthy'
-      ? (t('services.statusHealthy') || 'Çalışıyor')
+      ? t('services.statusHealthy')
       : service.status === 'degraded'
-      ? (t('services.statusDegraded') || 'Yavaş')
+      ? t('services.statusDegraded')
       : service.status === 'down'
-      ? (t('services.statusDown') || 'Erişilemiyor')
-      : (t('services.statusUnknown') || 'Bilinmiyor');
+      ? t('services.statusDown')
+      : t('services.statusUnknown');
 
   return (
     <div
@@ -135,7 +135,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
               rel="noopener noreferrer"
               className="btn btn-sm btn-ghost inline-flex items-center gap-1.5"
             >
-              <span>{t('common.open') || 'Aç'}</span>
+              <span>{t('common.open')}</span>
               <ExternalLink className="w-3 h-3 text-[var(--text-muted)]" />
             </a>
           ) : (
@@ -153,7 +153,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 onClick={() => onMove(globalIndex, 'up')}
                 disabled={globalIndex === 0 || reordering}
                 className="btn btn-sm btn-ghost p-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
-                title={t('services.moveUp') || 'Yukarı Taşı'}
+                title={t('services.moveUp')}
               >
                 <ArrowUp className="w-3 h-3" />
               </button>
@@ -162,7 +162,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 onClick={() => onMove(globalIndex, 'down')}
                 disabled={globalIndex === totalServices - 1 || reordering}
                 className="btn btn-sm btn-ghost p-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
-                title={t('services.moveDown') || 'Aşağı Taşı'}
+                title={t('services.moveDown')}
               >
                 <ArrowDown className="w-3 h-3" />
               </button>

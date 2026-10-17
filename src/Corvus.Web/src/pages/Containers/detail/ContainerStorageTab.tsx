@@ -50,12 +50,12 @@ export const ContainerStorageTab: React.FC<ContainerStorageTabProps> = ({ inspec
                     {isRw ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#34d399] bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 rounded-full">
                         <ShieldCheck className="w-3 h-3" />
-                        Okuma / Yazma
+                        {t('containers.readWriteBadge')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#fbbf24] bg-amber-500/10 border border-amber-500/25 px-2.5 py-0.5 rounded-full">
                         <Lock className="w-3 h-3" />
-                        Salt Okunur
+                        {t('containers.readOnlyBadge')}
                       </span>
                     )}
                   </div>
@@ -83,7 +83,7 @@ export const ContainerStorageTab: React.FC<ContainerStorageTabProps> = ({ inspec
 
                 {mount.propagation && (
                   <div className="text-[11px] text-[#9ba0b5] font-mono">
-                    Yayılım (Propagation): <span className="text-[#eceef6]">{mount.propagation}</span>
+                    {t('containers.propagationLabel')} <span className="text-[#eceef6]">{mount.propagation}</span>
                   </div>
                 )}
               </div>

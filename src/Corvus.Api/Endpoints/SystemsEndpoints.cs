@@ -348,7 +348,7 @@ public static class SystemsEndpoints
             return Results.Json(containers, CorvusJsonSerializerContext.Default.ListSystemContainerCacheEntity);
         });
 
-        // 9. Docker Container Actions: start | stop | restart
+        // 9. Docker Container Actions: start | stop | restart | delete
         group.MapPost("/{id}/containers/{cid}/{action}", async (
             string id,
             string cid,
@@ -356,9 +356,18 @@ public static class SystemsEndpoints
             ISystemTunnelManager tunnelManager,
             IDockerService dockerService) =>
         {
-            if (action is not ("start" or "stop" or "restart"))
+            if (action is not ("start" or "stop" or "restart" or "delete"))
             {
                 return Results.BadRequest(new GenericApiResponse(false, "Geçersiz konteyner eylemi."));
+            }
+
+            if (action is "stop" or "delete")
+            {
+                dockerService.MarkContainerManuallyStopped(cid);
+            }
+            else if (action is "start" or "restart")
+            {
+                dockerService.ClearContainerManualStop(cid);
             }
 
             if (id == "local-host")
@@ -368,6 +377,7 @@ public static class SystemsEndpoints
                     "start" => await dockerService.StartContainerAsync(cid),
                     "stop" => await dockerService.StopContainerAsync(cid),
                     "restart" => await dockerService.RestartContainerAsync(cid),
+                    "delete" => await dockerService.DeleteContainerAsync(cid, force: true, removeVolumes: false),
                     _ => new DockerActionResult(false, "Bilinmeyen eylem")
                 };
 

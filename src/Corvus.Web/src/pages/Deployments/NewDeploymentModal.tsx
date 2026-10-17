@@ -77,7 +77,7 @@ export const NewDeploymentModal: React.FC<NewDeploymentModalProps> = ({
     const lowerName = containerName.trim().toLowerCase();
     const lowerImg = image.trim().toLowerCase();
     if (lowerName.includes('corvus') || lowerImg.includes('corvus')) {
-      setErrorMsg('Corvus bileşenleri panel üzerinden dağıtılamaz (Corvus Self-Preservation Guard).');
+      setErrorMsg(t('deployments.selfPreservationGuard'));
       return;
     }
 

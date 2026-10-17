@@ -31,10 +31,10 @@ export const AlertRulesTab: React.FC<AlertRulesTabProps> = ({ rules, onRefresh }
   const handleCreateRule = async (data: CreateAlertRuleRequest) => {
     try {
       await api.createAlertRule(data);
-      showToast(t('alerts.ruleCreated') || 'Alarm kuralı başarıyla oluşturuldu.', 'success');
+      showToast(t('alerts.ruleCreated'), 'success');
       onRefresh();
     } catch {
-      showToast(t('alerts.createFailed') || 'Kural oluşturulurken hata meydana geldi.', 'error');
+      showToast(t('alerts.createFailed'), 'error');
     }
   };
 
@@ -42,25 +42,25 @@ export const AlertRulesTab: React.FC<AlertRulesTabProps> = ({ rules, onRefresh }
     try {
       setActionLoadingId(rule.id);
       await api.updateAlertRule(rule.id, { isEnabled: !rule.isEnabled });
-      showToast(`Kural ${!rule.isEnabled ? 'aktif edildi' : 'devre dışı bırakıldı'}.`, 'info');
+      showToast(!rule.isEnabled ? t('alerts.ruleEnabled') : t('alerts.ruleDisabled'), 'info');
       onRefresh();
     } catch {
-      showToast(t('alerts.updateFailed') || 'Kural güncellenemedi.', 'error');
+      showToast(t('alerts.updateFailed'), 'error');
     } finally {
       setActionLoadingId(null);
     }
   };
 
   const handleDeleteRule = async (id: string) => {
-    if (!window.confirm(t('alerts.deleteConfirm') || 'Bu alarm kuralını silmek istediğinize emin misiniz?')) return;
+    if (!window.confirm(t('alerts.deleteConfirm'))) return;
 
     try {
       setActionLoadingId(id);
       await api.deleteAlertRule(id);
-      showToast(t('alerts.ruleDeleted') || 'Alarm kuralı silindi.', 'success');
+      showToast(t('alerts.ruleDeleted'), 'success');
       onRefresh();
     } catch {
-      showToast(t('alerts.deleteFailed') || 'Kural silinirken hata oluştu.', 'error');
+      showToast(t('alerts.deleteFailed'), 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -85,15 +85,15 @@ export const AlertRulesTab: React.FC<AlertRulesTabProps> = ({ rules, onRefresh }
       <div className="card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-            {t('alerts.sectionTitle') || 'Metrik Eşik Alarmları'}
+            {t('alerts.sectionTitle')}
           </h3>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            {t('alerts.sectionDesc') || 'CPU, Bellek ve Disk kullanım eşikleri aşıldığında aktif bildirim kanallarına proaktif uyarılar gönderin.'}
+            {t('alerts.sectionDesc')}
           </p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} variant="primary" size="sm" className="gap-2 shrink-0">
           <Plus className="w-4 h-4" />
-          <span>{t('alerts.addRule') || 'Kural Ekle'}</span>
+          <span>{t('alerts.addRule')}</span>
         </Button>
       </div>
 
@@ -101,10 +101,10 @@ export const AlertRulesTab: React.FC<AlertRulesTabProps> = ({ rules, onRefresh }
         <div className="card p-12 text-center border-dashed bg-[var(--bg-subtle)]">
           <Bell className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2 opacity-50" />
           <p className="text-xs font-semibold text-[var(--text-primary)]">
-            {t('alerts.noRules') || 'Henüz tanımlı alarm kuralı yok'}
+            {t('alerts.noRules')}
           </p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
-            {t('alerts.noRulesDesc') || 'Sistem metriklerinizi 7/24 izlemek ve kritik darboğazlarda erken uyarı almak için yeni bir kural ekleyin.'}
+            {t('alerts.noRulesDesc')}
           </p>
         </div>
       ) : (
@@ -129,28 +129,28 @@ export const AlertRulesTab: React.FC<AlertRulesTabProps> = ({ rules, onRefresh }
                       {rule.isFiring ? (
                         <span className="badge badge-down">
                           <AlertTriangle className="w-3 h-3" />
-                          <span>{t('alerts.firing') || 'ALARMDA'}</span>
+                          <span>{t('alerts.firing')}</span>
                         </span>
                       ) : rule.isEnabled ? (
                         <span className="badge badge-up">
                           <CheckCircle2 className="w-3 h-3" />
-                          <span>{t('alerts.normal') || 'Normal'}</span>
+                          <span>{t('alerts.normal')}</span>
                         </span>
                       ) : (
                         <span className="badge">
-                          <span>{t('alerts.disabled') || 'Devre Dışı'}</span>
+                          <span>{t('alerts.disabled')}</span>
                         </span>
                       )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-secondary)]">
                       <span>
-                        {t('alerts.conditionLabel') || 'Koşul'}: <strong className="text-[var(--text-primary)] font-mono">{rule.metric.toUpperCase()} {rule.operator === 'gt' ? '>' : '<'} %{rule.thresholdValue}</strong>
+                        {t('alerts.conditionLabel')}: <strong className="text-[var(--text-primary)] font-mono">{rule.metric.toUpperCase()} {rule.operator === 'gt' ? '>' : '<'} %{rule.thresholdValue}</strong>
                       </span>
                       <span>•</span>
-                      <span>{t('alerts.durationLabel') || 'İhlal Süresi'}: {rule.durationSeconds} sn</span>
+                      <span>{t('alerts.durationLabel')}: {t('alerts.durationValue', { seconds: rule.durationSeconds })}</span>
                       <span>•</span>
-                      <span>{t('alerts.cooldownLabel') || 'Susturma'}: {rule.cooldownMinutes} dk</span>
+                      <span>{t('alerts.cooldownLabel')}: {t('alerts.cooldownValue', { minutes: rule.cooldownMinutes })}</span>
                     </div>
                   </div>
                 </div>
@@ -160,7 +160,7 @@ export const AlertRulesTab: React.FC<AlertRulesTabProps> = ({ rules, onRefresh }
                     type="button"
                     onClick={() => handleToggleRule(rule)}
                     disabled={isLoading}
-                    title={rule.isEnabled ? (t('alerts.disableRule') || 'Devre Dışı Bırak') : (t('alerts.enableRule') || 'Aktif Et')}
+                    title={rule.isEnabled ? t('alerts.disableRule') : t('alerts.enableRule')}
                     className={`btn btn-sm ${rule.isEnabled ? 'text-[var(--status-up)] hover:bg-[var(--status-up-bg)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                   >
                     <Power className="w-3.5 h-3.5" />
@@ -169,7 +169,7 @@ export const AlertRulesTab: React.FC<AlertRulesTabProps> = ({ rules, onRefresh }
                     type="button"
                     onClick={() => handleDeleteRule(rule.id)}
                     disabled={isLoading}
-                    title={t('alerts.deleteRule') || 'Kuralı Sil'}
+                    title={t('alerts.deleteRule')}
                     className="btn btn-sm text-[var(--status-down)] hover:bg-[var(--status-down-bg)]"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

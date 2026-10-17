@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Play, Pause, Square, RotateCw, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Square, RotateCw, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
 import type { DockerContainer } from '../../types';
@@ -11,6 +11,7 @@ interface ContainerDetailHeaderProps {
   onBack: () => void;
   actionInProgress: string | null;
   onAction: (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart') => void;
+  onDelete?: () => void;
   activeTab: ContainerDetailTab;
   onSelectTab: (tab: ContainerDetailTab) => void;
   isAdmin?: boolean;
@@ -22,6 +23,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
   containerId,
   onBack,
   onAction,
+  onDelete,
   actionInProgress,
   isAdmin = false,
   onOpenUpdateModal,
@@ -46,7 +48,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
           className="inline-flex items-center gap-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer py-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{t('containers.backToContainers') || 'Konteynerlere Dön'}</span>
+          <span>{t('containers.backToContainers')}</span>
         </button>
       </div>
 
@@ -73,10 +75,10 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
               }`}
             >
               {isRunning
-                ? (t('containers.stateRunning') || 'Çalışıyor')
+                ? t('containers.stateRunning')
                 : isPaused
-                ? (t('containers.statePaused') || 'Duraklatıldı')
-                : (t('containers.stateStopped') || 'Durdu')}
+                ? t('containers.statePaused')
+                : t('containers.stateStopped')}
             </span>
           </div>
 
@@ -101,11 +103,11 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenUpdateModal}
-              title={t('containers.checkUpdate') || 'İmaj Güncellemesini Denetle'}
+              title={t('containers.checkUpdate')}
               className="btn btn-sm btn-ghost inline-flex items-center gap-1.5 text-[var(--status-up)]"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{t('containers.checkUpdate') || 'İmajı Denetle'}</span>
+              <span>{t('containers.checkUpdate')}</span>
             </button>
           )}
 
@@ -117,7 +119,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                     type="button"
                     disabled={!!actionInProgress}
                     onClick={() => onAction('restart')}
-                    title={t('containers.actionRestart') || 'Yeniden Başlat'}
+                    title={t('containers.restart')}
                     className="btn btn-sm btn-ghost p-2 disabled:opacity-50"
                   >
                     {actionInProgress === 'restart' ? (
@@ -131,7 +133,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                     type="button"
                     disabled={!!actionInProgress}
                     onClick={() => onAction('pause')}
-                    title={t('containers.actionPause') || 'Duraklat'}
+                    title={t('containers.pause')}
                     className="btn btn-sm btn-ghost p-2 text-[var(--status-warn)] disabled:opacity-50"
                   >
                     {actionInProgress === 'pause' ? (
@@ -145,7 +147,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                     type="button"
                     disabled={!!actionInProgress}
                     onClick={() => onAction('stop')}
-                    title={t('containers.actionStop') || 'Durdur'}
+                    title={t('containers.stop')}
                     className="btn btn-sm inline-flex items-center gap-1.5 text-[var(--status-down)] hover:bg-[var(--status-down-bg)] disabled:opacity-50"
                   >
                     {actionInProgress === 'stop' ? (
@@ -153,7 +155,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                     ) : (
                       <Square className="w-3.5 h-3.5" />
                     )}
-                    <span>{t('containers.actionStop') || 'Durdur'}</span>
+                    <span>{t('containers.stop')}</span>
                   </button>
                 </>
               )}
@@ -170,7 +172,7 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                   ) : (
                     <Play className="w-3.5 h-3.5" />
                   )}
-                  <span>{t('containers.actionUnpause') || 'Devam Ettir'}</span>
+                  <span>{t('containers.resume')}</span>
                 </button>
               )}
 
@@ -186,7 +188,20 @@ export const ContainerDetailHeader: React.FC<ContainerDetailHeaderProps> = ({
                   ) : (
                     <Play className="w-3.5 h-3.5" />
                   )}
-                  <span>{t('containers.actionStart') || 'Başlat'}</span>
+                  <span>{t('containers.start')}</span>
+                </button>
+              )}
+
+              {onDelete && (
+                <button
+                  type="button"
+                  disabled={!!actionInProgress}
+                  onClick={onDelete}
+                  title={t('containers.delete')}
+                  aria-label={t('containers.delete')}
+                  className="btn btn-sm btn-ghost p-2 text-[var(--status-down)] hover:bg-[var(--status-down-bg)] disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>

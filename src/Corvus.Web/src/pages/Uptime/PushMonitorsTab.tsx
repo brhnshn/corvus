@@ -25,7 +25,7 @@ export const PushMonitorsTab: React.FC<PushMonitorsTabProps> = ({
       await api.deletePushMonitor(id);
       onRefresh();
     } catch (err: unknown) {
-      alert(`Hata: ${err instanceof Error ? err.message : 'Silinemedi.'}`);
+      alert(`${t('uptime.deletePushError')}${err instanceof Error ? err.message : ''}`);
     }
   };
 

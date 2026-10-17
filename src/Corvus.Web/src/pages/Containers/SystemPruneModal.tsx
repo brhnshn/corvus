@@ -73,11 +73,11 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
       setSelectedVolumes(new Set());
       setSelectedBuildCache(false);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Docker disk kullanımı analiz edilemedi.');
+      setError(err instanceof Error ? err.message : t('containers.actionFailedToast'));
     } finally {
       setIsLoadingDf(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadDiskUsage();
@@ -202,7 +202,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
       });
       setResult(res);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Temizlik yürütülürken hata oluştu.');
+      setError(err instanceof Error ? err.message : t('containers.actionFailedToast'));
     } finally {
       setIsExecuting(false);
     }
@@ -217,8 +217,8 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('containers.pruneTitle') || 'Güvenli Sistem Analizi & Temizliği'}
-      subtitle={t('containers.pruneSubtitle') || 'Disk kullanımını inceleyin ve silinecek öğeleri seçerek güvenle temizleyin'}
+      title={t('containers.pruneTitle')}
+      subtitle={t('containers.pruneSubtitle')}
       icon={<Trash2 className="w-5 h-5 text-[var(--status-down)]" />}
       maxWidth="max-w-2xl"
     >
@@ -235,10 +235,10 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
             <div className="py-14 text-center space-y-3">
               <Loader2 className="w-8 h-8 text-[#d5d5dc] animate-spin mx-auto" />
               <div className="text-sm font-semibold text-[#eceef6]">
-                {t('containers.scanningDiskUsage') || 'Docker sistemi ve disk kullanımı taranıyor...'}
+                {t('containers.scanningDiskUsage')}
               </div>
               <p className="text-xs text-[#9ba0b5]">
-                {t('containers.scanningDiskUsageDesc') || 'Durdurulmuş konteynerler, kullanılmayan imajlar ve sahipsiz hacimler analiz ediliyor.'}
+                {t('containers.scanningDiskUsageDesc')}
               </p>
             </div>
           )}
@@ -252,10 +252,10 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
 
               <div>
                 <h3 className="text-lg font-bold text-[#eceef6]">
-                  {t('containers.pruneSuccessTitle') || 'Temizlik Başarıyla Tamamlandı'}
+                  {t('containers.pruneSuccessTitle')}
                 </h3>
                 <p className="text-xs text-[#9ba0b5] mt-1">
-                  {t('containers.pruneTotalReclaimed') || 'Sistemden geri kazanılan disk alanı:'}
+                  {t('containers.pruneTotalReclaimed')}
                 </p>
                 <div className="text-3xl font-extrabold text-[#34d399] font-mono mt-2">
                   {formatBytes(result.totalSpaceReclaimed)}
@@ -266,40 +266,40 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                 <div className="p-3.5 surface rounded-2xl border border-white/10">
                   <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
                     <Boxes className="w-3.5 h-3.5 text-[#d5d5dc]" />
-                    <span>Konteyner</span>
+                    <span>{t('containers.pruneBreakdownContainers')}</span>
                   </div>
                   <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
-                    {result.deletedContainers.length} adet
+                    {t('containers.pruneCountUnit', { count: result.deletedContainers.length })}
                   </div>
                 </div>
 
                 <div className="p-3.5 surface rounded-2xl border border-white/10">
                   <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
                     <Layers className="w-3.5 h-3.5 text-[#d5d5dc]" />
-                    <span>İmaj</span>
+                    <span>{t('containers.pruneBreakdownImages')}</span>
                   </div>
                   <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
-                    {result.deletedImages.length} adet
+                    {t('containers.pruneCountUnit', { count: result.deletedImages.length })}
                   </div>
                 </div>
 
                 <div className="p-3.5 surface rounded-2xl border border-white/10">
                   <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
                     <HardDrive className="w-3.5 h-3.5 text-[#d5d5dc]" />
-                    <span>Hacim</span>
+                    <span>{t('containers.pruneBreakdownVolumes')}</span>
                   </div>
                   <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
-                    {result.deletedVolumes.length} adet
+                    {t('containers.pruneCountUnit', { count: result.deletedVolumes.length })}
                   </div>
                 </div>
 
                 <div className="p-3.5 surface rounded-2xl border border-white/10">
                   <div className="text-[11px] text-[#9ba0b5] flex items-center gap-1">
                     <Cpu className="w-3.5 h-3.5 text-[#d5d5dc]" />
-                    <span>Önbellek</span>
+                    <span>{t('containers.pruneCacheLabel')}</span>
                   </div>
                   <div className="text-sm font-bold text-[#eceef6] mt-1 font-mono">
-                    {result.buildCachePruned ? 'Temizlendi' : '—'}
+                    {result.buildCachePruned ? t('containers.pruneCacheCleaned') : '—'}
                   </div>
                 </div>
               </div>
@@ -308,7 +308,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left space-y-1">
                   <div className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Bazı öğeler silinemedi (Bağımlılık veya kilitli kaynak):</span>
+                    <span>{t('containers.prunePartialErrorsTitle')}</span>
                   </div>
                   <ul className="text-[11px] text-amber-200/80 list-disc list-inside space-y-0.5">
                     {result.errors.map((err, idx) => (
@@ -335,7 +335,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   }`}
                 >
                   <Boxes className="w-3.5 h-3.5" />
-                  <span>Durdurulmuş Konteynerler</span>
+                  <span>{t('containers.pruneContainersOption')}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
                     activeTab === 'containers' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>
@@ -353,7 +353,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>Kullanılmayan İmajlar</span>
+                  <span>{t('containers.pruneImagesOption')}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
                     activeTab === 'images' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>
@@ -371,7 +371,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   }`}
                 >
                   <HardDrive className="w-3.5 h-3.5" />
-                  <span>Sahipsiz Hacimler</span>
+                  <span>{t('containers.pruneOrphanedVolumesTab')}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
                     activeTab === 'volumes' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>
@@ -389,7 +389,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
                   }`}
                 >
                   <Cpu className="w-3.5 h-3.5" />
-                  <span>Derleme Önbelleği</span>
+                  <span>{t('containers.pruneBuildCacheOption')}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
                     activeTab === 'buildCache' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-[#9ba0b5]'
                   }`}>

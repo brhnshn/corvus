@@ -1,5 +1,6 @@
 import React from 'react';
 import { getTagStyle } from '../../utils/tagHue';
+import { useI18n } from '../../i18n';
 
 export interface TagChipProps {
   name: string;
@@ -14,6 +15,7 @@ export const TagChip: React.FC<TagChipProps> = ({
   onRemove,
   className = '',
 }) => {
+  const { t } = useI18n();
   const style = getTagStyle(name);
 
   return (
@@ -40,7 +42,7 @@ export const TagChip: React.FC<TagChipProps> = ({
             onRemove();
           }}
           className="hover:opacity-75 cursor-pointer ml-0.5 text-xs font-bold leading-none"
-          aria-label={`Etiketi kaldır: ${name}`}
+          aria-label={`${t('common.remove')}: ${name}`}
         >
           ×
         </button>

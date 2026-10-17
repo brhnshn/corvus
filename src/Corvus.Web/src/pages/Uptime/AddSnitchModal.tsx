@@ -35,7 +35,7 @@ export const AddSnitchModal: React.FC<AddSnitchModalProps> = ({ isOpen, onClose,
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      alert(`Hata: ${err instanceof Error ? err.message : 'Push izleme oluşturulamadı.'}`);
+      alert(`${t('uptime.pushCreateError')}${err instanceof Error ? err.message : ''}`);
     } finally {
       setSavingSnitch(false);
     }
@@ -45,8 +45,8 @@ export const AddSnitchModal: React.FC<AddSnitchModalProps> = ({ isOpen, onClose,
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('uptime.newPushModalTitle') || 'Yeni Push / Heartbeat İzleme'}
-      subtitle={t('uptime.newPushModalSubtitle') || 'Cron veya harici işler için periyodik ping bekleyin'}
+      title={t('uptime.newPushModalTitle')}
+      subtitle={t('uptime.newPushModalSubtitle')}
       icon={<Radio className="w-5 h-5 text-[var(--text-primary)]" />}
       maxWidth="max-w-md"
     >

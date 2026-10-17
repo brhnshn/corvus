@@ -69,7 +69,7 @@ export const ContainerEnvTab: React.FC<ContainerEnvTabProps> = ({ envList = [] }
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Ortam değişkenlerinde ara..."
+            placeholder={t('containers.envSearchPlaceholder')}
             className="w-full pl-9 pr-4 py-2 text-xs bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl text-[#eceef6] placeholder-[#9ba0b5] focus:outline-none focus:border-[#d5d5dc] transition-colors"
           />
         </div>
@@ -114,7 +114,7 @@ export const ContainerEnvTab: React.FC<ContainerEnvTabProps> = ({ envList = [] }
                   {masked ? (
                     <span className="text-[#9ba0b5]/40 select-none tracking-widest font-sans">••••••••••••••••</span>
                   ) : (
-                    <span className="text-[#34d399]">{item.value || <span className="text-[#9ba0b5]/40 italic">boş</span>}</span>
+                    <span className="text-[#34d399]">{item.value || <span className="text-[#9ba0b5]/40 italic">{t('containers.envEmptyValue')}</span>}</span>
                   )}
                 </div>
 
@@ -123,7 +123,7 @@ export const ContainerEnvTab: React.FC<ContainerEnvTabProps> = ({ envList = [] }
                     type="button"
                     onClick={() => handleCopySingle(item.value, item.key)}
                     className="p-1.5 text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors rounded-lg cursor-pointer"
-                    title="Değeri kopyala"
+                    title={t('containers.envCopyValue')}
                   >
                     {copiedKey === item.key ? (
                       <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -138,7 +138,7 @@ export const ContainerEnvTab: React.FC<ContainerEnvTabProps> = ({ envList = [] }
         </div>
       </div>
       <div className="text-right text-[11px] text-[#9ba0b5] font-mono">
-        Toplam: {filteredEnv.length} değişken
+        {t('containers.envTotalCount', { count: filteredEnv.length })}
       </div>
     </div>
   );

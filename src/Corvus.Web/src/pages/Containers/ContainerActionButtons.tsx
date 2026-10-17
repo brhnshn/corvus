@@ -9,7 +9,8 @@ import {
   RotateCw, 
   Loader2,
   Tag,
-  Sliders
+  Sliders,
+  Trash2
 } from 'lucide-react';
 import type { DockerContainer } from '../../api/client';
 import { useI18n } from '../../i18n';
@@ -25,6 +26,7 @@ interface ContainerActionButtonsProps {
   onOpenTerminal?: (id: string, name: string) => void;
   onEditTags?: (container: DockerContainer) => void;
   onInspect?: (container: DockerContainer) => void;
+  onDelete?: (container: DockerContainer) => void;
   isAdmin?: boolean;
 }
 
@@ -39,6 +41,7 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
   onOpenTerminal,
   onEditTags,
   onInspect,
+  onDelete,
   isAdmin = true
 }) => {
   const { t } = useI18n();
@@ -53,7 +56,7 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
           onClick={() => onInspect(container)}
           disabled={isCurrentBusy}
           className="p-1.5 rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
-          title={t('containers.detailModalTitle') || 'Konteyner Detayları'}
+          title={t('containers.detailModalTitle')}
         >
           <Sliders className="w-3.5 h-3.5" />
         </button>
@@ -65,7 +68,7 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
           onClick={() => onEditTags(container)}
           disabled={isCurrentBusy}
           className="p-1.5 rounded-lg border border-white/10 bg-white/[0.04] text-white/70 hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-colors disabled:opacity-50 cursor-pointer"
-          title={t('containers.manageTags') || 'Etiketleri Düzenle'}
+          title={t('containers.manageTags')}
         >
           <Tag className="w-3.5 h-3.5" />
         </button>
@@ -165,6 +168,18 @@ export const ContainerActionButtons: React.FC<ContainerActionButtonsProps> = ({
       >
         <RotateCw className={`w-3.5 h-3.5 ${currentAction === 'restart' ? 'animate-spin' : ''}`} />
       </button>
+
+      {/* Delete button */}
+      {isAdmin && onDelete && (
+        <button
+          onClick={() => onDelete(container)}
+          disabled={isCurrentBusy}
+          className="p-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 cursor-pointer"
+          title={t('containers.delete')}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 };

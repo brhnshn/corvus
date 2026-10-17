@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 export interface SslBadgeProps {
   daysRemaining?: number | null;
@@ -12,6 +13,8 @@ export const SslBadge: React.FC<SslBadgeProps> = ({
   isValid = true,
   className = '',
 }) => {
+  const { t } = useI18n();
+
   if (daysRemaining === undefined || daysRemaining === null) {
     return null;
   }
@@ -33,8 +36,8 @@ export const SslBadge: React.FC<SslBadgeProps> = ({
       <Icon className="w-3.5 h-3.5 shrink-0" />
       <span>
         {daysRemaining <= 0
-          ? 'SSL Süresi Doldu'
-          : `SSL: ${daysRemaining} gün kaldı`}
+          ? t('ssl.expired')
+          : t('ssl.daysRemaining', { days: daysRemaining })}
       </span>
     </span>
   );

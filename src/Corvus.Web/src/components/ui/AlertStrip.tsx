@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, AlertCircle, X } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 export interface AlertStripProps {
   type?: 'warn' | 'danger';
@@ -22,6 +23,7 @@ export const AlertStrip: React.FC<AlertStripProps> = ({
   onClose,
   className = '',
 }) => {
+  const { t } = useI18n();
   const isDanger = type === 'danger';
   const DefaultIcon = isDanger ? AlertCircle : AlertTriangle;
 
@@ -48,7 +50,7 @@ export const AlertStrip: React.FC<AlertStripProps> = ({
             type="button"
             onClick={onClose}
             className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Kapat"
+            aria-label={t('common.close')}
           >
             <X className="w-3.5 h-3.5" />
           </button>

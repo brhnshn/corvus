@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className={`sidebar-resizer ${isResizing ? 'active' : ''}`}
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClickResizer}
-        title="Kenar çubuğunu sürükle (Çift tıkla: Sıfırla)"
+        title={t('nav.dragSidebar')}
       />
 
       {/* Top: Brand & Command Search */}
@@ -300,7 +300,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           target="_blank"
           rel="noopener noreferrer"
           className="version-row hover:bg-[var(--bg-hover)] transition-all cursor-pointer rounded-[var(--radius-sm)] py-1.5 px-2 flex items-center justify-between group no-underline"
-          title="GitHub Deposu ve Sürüm Notları (Changelog)"
+          title={t('nav.githubAndChangelog')}
         >
           <span className="flex items-center gap-1.5 min-w-0">
             <svg className="w-3.5 h-3.5 fill-current text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors shrink-0" viewBox="0 0 24 24">

@@ -80,7 +80,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
       await onSuccess();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : (t('uptime.enableError') || 'İzleme aktif edilirken bir hata oluştu.'));
+      setError(err instanceof Error ? err.message : t('uptime.enableError'));
     } finally {
       setSaving(false);
     }
@@ -90,7 +90,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('uptime.enableTitle') || 'Uptime Takibine Al'}
+      title={t('uptime.enableTitle')}
       subtitle={service.name}
       icon={<Zap className="w-5 h-5 text-[var(--status-up)]" />}
       maxWidth="max-w-lg"
@@ -122,15 +122,15 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
               onChange={(e) => setCheckType(e.target.value as 'http' | 'tcp' | 'ping')}
               className="input w-full cursor-pointer"
             >
-              <option value="http">HTTP / HTTPS</option>
-              <option value="tcp">TCP Port</option>
-              <option value="ping">ICMP Ping</option>
+              <option value="http">{t('services.checkTypeHttp')}</option>
+              <option value="tcp">{t('services.checkTypeTcp')}</option>
+              <option value="ping">{t('services.checkTypePing')}</option>
             </select>
           </div>
           {checkType !== 'ping' ? (
             <div>
               <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-                {checkType === 'http' ? (t('uptime.targetUrl') || 'Hedef URL') : (t('uptime.targetHost') || 'Hedef Host / IP')}
+                {checkType === 'http' ? t('uptime.targetUrl') : t('uptime.targetHost')}
               </label>
               <input
                 type={checkType === 'http' ? 'url' : 'text'}
@@ -143,12 +143,12 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.pingHost') || 'Host / IP'}</label>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.pingHost')}</label>
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="1.1.1.1 veya example.com"
+                placeholder={t('uptime.hostOrIpPlaceholder')}
                 required
                 className="input w-full"
               />
@@ -172,7 +172,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.intervalSeconds') || 'Denetim Aralığı (sn)'}</label>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.intervalSeconds')}</label>
             <input
               type="number"
               min={10}
@@ -183,7 +183,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.timeoutSeconds') || 'Zaman Aşımı (sn)'}</label>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.timeoutSeconds')}</label>
             <input
               type="number"
               min={1}
@@ -197,7 +197,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.maxRetries') || 'Yeniden Deneme'}</label>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.maxRetries')}</label>
             <input
               type="number"
               min={0}
@@ -208,7 +208,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.retryInterval') || 'Deneme Aralığı (sn)'}</label>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.retryInterval')}</label>
             <input
               type="number"
               min={5}
@@ -223,7 +223,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
         {checkType === 'http' && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.httpMethod') || 'HTTP Metodu'}</label>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.httpMethod')}</label>
               <select
                 value={httpMethod}
                 onChange={(e) => setHttpMethod(e.target.value as 'GET' | 'HEAD' | 'POST')}
@@ -235,7 +235,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.acceptedCodes') || 'Geçerli Durum Kodları'}</label>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">{t('uptime.acceptedCodes')}</label>
               <input
                 type="text"
                 value={acceptedStatusCodes}
@@ -255,7 +255,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
               onChange={(e) => setIgnoreTls(e.target.checked)}
               className="accent-[var(--cloud-200)] rounded"
             />
-            <span className="text-xs text-[var(--text-secondary)]">{t('uptime.ignoreTls') || 'Kendinden İmzalı SSL/TLS Hatalarını Yoksay'}</span>
+            <span className="text-xs text-[var(--text-secondary)]">{t('uptime.ignoreTls')}</span>
           </label>
         </div>
 
@@ -273,7 +273,7 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
             disabled={saving}
             icon={saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : undefined}
           >
-            {t('uptime.enableConfirmBtn') || 'İzlemeye Al'}
+            {t('uptime.enableConfirmBtn')}
           </Button>
         </div>
       </form>

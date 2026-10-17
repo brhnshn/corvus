@@ -38,15 +38,15 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
     selectedService.status === 'down' ? 'err' : 'warn';
 
   const serviceStatusLabel =
-    selectedService.status === 'healthy' ? 'Çalışıyor' :
-    selectedService.status === 'down' ? 'Kesinti' : 'Aksaklık';
+    selectedService.status === 'healthy' ? t('uptime.statusHealthy') :
+    selectedService.status === 'down' ? t('uptime.statusDown') : t('uptime.statusDegraded');
 
   return (
     <div className="space-y-2.5">
       {/* İstatistik Kartları */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
         <div className="surface rounded-[20px] p-4 flex flex-col justify-between gap-2">
-          <span className="text-xs text-[#9ba0b5] block font-medium">{t('uptime.statusCard') || 'Mevcut Durum'}</span>
+          <span className="text-xs text-[#9ba0b5] block font-medium">{t('uptime.statusCard')}</span>
           <div className="flex items-center gap-2">
             <Pill status={serviceStatusType} label={serviceStatusLabel} />
           </div>
@@ -54,7 +54,7 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
 
         <div className="surface rounded-[20px] p-4 flex flex-col justify-between gap-2">
           <span className="text-xs text-[#9ba0b5] block font-medium">
-            {t('uptime.uptimeRatio', { range: rangeLabel }) || `Erişilebilirlik (${rangeLabel})`}
+            {t('uptime.uptimeRatio', { range: rangeLabel })}
           </span>
           <div className="flex items-baseline gap-2">
             {uptimePercent !== null ? (
@@ -80,7 +80,7 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
                   —
                 </span>
                 <span className="text-[11px] text-[#9ba0b5]">
-                  ({t('uptime.noChecksYet') || 'Henüz veri yok'})
+                  ({t('uptime.noChecksYet')})
                 </span>
               </>
             )}
@@ -88,7 +88,7 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
         </div>
 
         <div className="surface rounded-[20px] p-4 flex flex-col justify-between gap-2">
-          <span className="text-xs text-[#9ba0b5] block font-medium">{t('uptime.avgLatency') || 'Ort. Yanıt Süresi'}</span>
+          <span className="text-xs text-[#9ba0b5] block font-medium">{t('uptime.avgLatency')}</span>
           <div className="text-2xl font-bold font-mono tracking-tight text-[#eceef6]">
             {isDockerCheck ? (
               <span className="text-sm font-sans font-medium text-[#d5d5dc] flex items-center gap-1.5">
@@ -109,16 +109,16 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
         <div className="min-w-0">
           <span className="text-xs text-[#9ba0b5] block mb-0.5 font-medium">
             {isDockerCheck
-              ? 'Kontrol Edilen Hedef'
+              ? t('uptime.monitoredTarget')
               : selectedService.checkType === 'tcp'
-              ? t('uptime.targetTcp') || 'TCP Soket'
+              ? t('uptime.targetTcp')
               : selectedService.checkType === 'ping'
-              ? t('uptime.targetPing') || 'ICMP Ping'
-              : t('uptime.targetUrl') || 'HTTP(S) Uç Noktası'}
+              ? t('uptime.targetPing')
+              : t('uptime.targetUrl')}
           </span>
           <span className="text-sm font-mono text-[#eceef6] break-all">
             {isDockerCheck
-              ? `Docker Daemon (${selectedService.name}) — Konteyner Durum Takibi`
+              ? t('uptime.dockerDaemonTracking', { name: selectedService.name })
               : selectedService.checkType === 'tcp'
               ? `${selectedService.url || 'localhost'}:${selectedService.port || 80}`
               : selectedService.checkType === 'ping'
@@ -139,7 +139,7 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
               onClick={() => onEditService(selectedService)}
               icon={<Pencil className="w-3.5 h-3.5" />}
             >
-              {t('uptime.editEndpoint') || 'Hedefi Düzenle'}
+              {t('uptime.editEndpoint')}
             </Button>
           )}
 
@@ -151,7 +151,7 @@ export const UptimeStatsCards: React.FC<UptimeStatsCardsProps> = ({
               icon={<PowerOff className="w-3.5 h-3.5 text-[#fbbf24]" />}
               className="text-[#fbbf24] hover:text-[#fbbf24] hover:bg-[#fbbf24]/10"
             >
-              <span className="hidden sm:inline">Takibi Kapat</span>
+              <span className="hidden sm:inline">{t('uptime.stopTracking')}</span>
             </Button>
           )}
         </div>

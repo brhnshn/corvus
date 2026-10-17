@@ -35,7 +35,7 @@ export const UptimeServiceSelector: React.FC<UptimeServiceSelectorProps> = ({
           <SearchInput
             value={search}
             onChange={onSearchChange}
-            placeholder={t('uptime.searchPlaceholder') || 'İzlenen servislerde ara...'}
+            placeholder={t('uptime.searchPlaceholder')}
           />
         </div>
 
@@ -44,19 +44,19 @@ export const UptimeServiceSelector: React.FC<UptimeServiceSelectorProps> = ({
           <FilterChip
             selected={statusFilter === 'all'}
             onClick={() => onStatusFilterChange('all')}
-            label={t('common.all') || 'Tümü'}
+            label={t('common.all')}
             count={services.length}
           />
           <FilterChip
             selected={statusFilter === 'healthy'}
             onClick={() => onStatusFilterChange('healthy')}
-            label="Sağlıklı"
+            label={t('uptime.healthy')}
             dotColor="#34d399"
           />
           <FilterChip
             selected={statusFilter === 'down'}
             onClick={() => onStatusFilterChange('down')}
-            label="Kesintide"
+            label={t('uptime.down')}
             dotColor="#f87171"
           />
         </div>

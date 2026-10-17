@@ -33,10 +33,10 @@ export const ContainerTelemetryHero: React.FC<ContainerTelemetryHeroProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-[#9ba0b5]">
             <Cpu className="w-4 h-4 text-indigo-400" />
-            <span className="font-medium">{t('containers.cpuUsage') || 'CPU Kullanımı'}</span>
+            <span className="font-medium">{t('containers.cpuUsage')}</span>
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60">
-            vCPU Live
+            {t('containers.telemetryVcpuLive')}
           </span>
         </div>
         <div className="flex items-baseline justify-between gap-2">
@@ -44,7 +44,7 @@ export const ContainerTelemetryHero: React.FC<ContainerTelemetryHeroProps> = ({
             %{cpuPercent}
           </div>
           <div className="text-xs text-[#9ba0b5] font-mono">
-            {cpuPercent > 80 ? '⚠️ Yüksek Yük' : 'Nominal'}
+            {cpuPercent > 80 ? t('containers.telemetryHighLoad') : t('containers.telemetryNominal')}
           </div>
         </div>
         <div className="w-full bg-white/[0.08] rounded-full h-1.5 overflow-hidden">
@@ -62,7 +62,7 @@ export const ContainerTelemetryHero: React.FC<ContainerTelemetryHeroProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-[#9ba0b5]">
             <HardDrive className="w-4 h-4 text-emerald-400" />
-            <span className="font-medium">Bellek (RAM)</span>
+            <span className="font-medium">{t('containers.memoryUsage')}</span>
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60">
             %{memPercent}
@@ -73,7 +73,7 @@ export const ContainerTelemetryHero: React.FC<ContainerTelemetryHeroProps> = ({
             {formatBytes(memUsedBytes)}
           </div>
           <div className="text-xs text-[#9ba0b5] font-mono">
-            {memLimitBytes > 0 ? `/ ${formatBytes(memLimitBytes)}` : 'Limitsiz'}
+            {memLimitBytes > 0 ? `/ ${formatBytes(memLimitBytes)}` : t('containers.unlimited')}
           </div>
         </div>
         <div className="w-full bg-white/[0.08] rounded-full h-1.5 overflow-hidden">
@@ -91,7 +91,7 @@ export const ContainerTelemetryHero: React.FC<ContainerTelemetryHeroProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-[#9ba0b5]">
             <Activity className="w-4 h-4 text-cyan-400" />
-            <span className="font-medium">Ağ Trafiği</span>
+            <span className="font-medium">{t('containers.telemetryNetworkTraffic')}</span>
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60">
             cgroup Net
@@ -103,7 +103,7 @@ export const ContainerTelemetryHero: React.FC<ContainerTelemetryHeroProps> = ({
               <ArrowDownRight className="w-3.5 h-3.5" />
             </span>
             <div>
-              <div className="text-[10px] text-[#9ba0b5] uppercase tracking-wider font-medium">Gelen (Rx)</div>
+              <div className="text-[10px] text-[#9ba0b5] uppercase tracking-wider font-medium">{t('containers.telemetryRxLabel')}</div>
               <div className="text-sm font-semibold font-mono text-[#eceef6]">{formatBytes(netRx)}</div>
             </div>
           </div>
@@ -112,7 +112,7 @@ export const ContainerTelemetryHero: React.FC<ContainerTelemetryHeroProps> = ({
               <ArrowUpRight className="w-3.5 h-3.5" />
             </span>
             <div>
-              <div className="text-[10px] text-[#9ba0b5] uppercase tracking-wider font-medium">Giden (Tx)</div>
+              <div className="text-[10px] text-[#9ba0b5] uppercase tracking-wider font-medium">{t('containers.telemetryTxLabel')}</div>
               <div className="text-sm font-semibold font-mono text-[#eceef6]">{formatBytes(netTx)}</div>
             </div>
           </div>

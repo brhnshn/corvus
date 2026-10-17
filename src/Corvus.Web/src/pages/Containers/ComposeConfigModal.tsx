@@ -244,7 +244,7 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
               <FileCode2 className="w-3.5 h-3.5" />
               <span>{t('containers.composeTabYaml')}</span>
               {hasTabWarning && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--status-warn)]" title="TAB Sözdizimi Uyarısı" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--status-warn)]" title={t('containers.composeYamlTabWarning')} />
               )}
             </button>
 
@@ -325,10 +325,10 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
                     onClick={handleCopy}
                     disabled={!activeContent}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-sm)] text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                    title={t('common.copy') || 'Kopyala'}
+                    title={t('common.copy')}
                   >
                     {copied ? <Check className="w-3 h-3 text-[var(--status-up)]" /> : <Copy className="w-3 h-3" />}
-                    <span>{copied ? (t('common.copied') || 'Kopyalandı') : (t('common.copy') || 'Kopyala')}</span>
+                    <span>{copied ? t('common.copied') : t('common.copy')}</span>
                   </button>
                 </div>
 
@@ -377,7 +377,7 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
                     </span>
                   </div>
                   <pre className="p-3 text-[11px] text-[var(--text-secondary)] overflow-x-auto max-h-40 leading-snug whitespace-pre-wrap">
-                    {deployResult.output || deployResult.error || 'İşlem tamamlandı.'}
+                    {deployResult.output || deployResult.error || t('common.completed')}
                   </pre>
                 </div>
               )}

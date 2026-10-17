@@ -45,7 +45,7 @@ export const ContainerNetworkingTab: React.FC<ContainerNetworkingTabProps> = ({ 
                     className="p-3.5 flex flex-wrap items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="text-[#9ba0b5]">Konteyner:</span>
+                      <span className="text-[#9ba0b5]">{t('containers.containerPortPrefix')}</span>
                       <span className="font-semibold text-[#eceef6]">
                         {cPort}
                       </span>
@@ -75,7 +75,7 @@ export const ContainerNetworkingTab: React.FC<ContainerNetworkingTabProps> = ({ 
                           );
                         })
                       ) : (
-                        <span className="text-[#9ba0b5]/50 italic">Ana makine portu bağlı değil</span>
+                        <span className="text-[#9ba0b5]/50 italic">{t('containers.hostPortNotBound')}</span>
                       )}
                     </div>
                   </div>
@@ -115,15 +115,15 @@ export const ContainerNetworkingTab: React.FC<ContainerNetworkingTabProps> = ({ 
 
                 <div className="space-y-1.5 font-mono text-[11px] text-[#eceef6]">
                   <div className="flex justify-between">
-                    <span className="text-[#9ba0b5]">IP Adresi:</span>
+                    <span className="text-[#9ba0b5]">{t('containers.ipAddressLabel')}</span>
                     <span>{netDetails.ipAddress || inspect.networkSettings?.ipAddress || '—'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#9ba0b5]">Ağ Geçidi:</span>
+                    <span className="text-[#9ba0b5]">{t('containers.gatewayLabel')}</span>
                     <span>{netDetails.gateway || inspect.networkSettings?.gateway || '—'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#9ba0b5]">MAC:</span>
+                    <span className="text-[#9ba0b5]">{t('containers.macAddressLabel')}</span>
                     <span>{netDetails.macAddress || inspect.networkSettings?.macAddress || '—'}</span>
                   </div>
                 </div>

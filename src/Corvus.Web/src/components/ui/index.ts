@@ -12,6 +12,7 @@ export * from './ExpandableTable';
 export * from './FloatingBulkBar';
 export * from './UptimeStrip';
 export * from './Modal';
+export * from './ConfirmModal';
 export * from './Toast';
 export * from './MotionStage';
 export * from './AnimatedNumber';

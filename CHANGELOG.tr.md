@@ -3,6 +3,26 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.14] - 2026-10-17 — Manuel Durdurma Sonrası Otomatik Başlatma Koruması, Uçtan Uca Konteyner Silme & Arayüz / i18n İyileştirmeleri
+
+### Eklenenler (Added)
+- **Uçtan Uca Konteyner Silme Desteği (Ana Sunucu & Uzak Ajan)**:
+  - `IDockerService.cs` & `DockerService.cs`: `RemoveContainerAsync(string containerId, bool force = false, bool removeVolumes = false, CancellationToken ct = default)` metodu eklendi; manuel durdurma kaydı temizliği ve Docker API `ContainerRemoveParameters` entegrasyonu sağlandı.
+  - `ContainersEndpoints.cs`: `force` ve `removeVolumes` sorgu parametrelerini destekleyen, denetim kaydı (`container.delete`) ve gerçek zamanlı olay yayını üreten `DELETE /api/containers/{id}` (`.RequireAdmin()`) uç noktası eklendi.
+  - `SystemsEndpoints.cs` & `AgentDockerClient.cs`: Uzak ajan konteyner yönetimi için `"delete"` eylemi (`docker rm -f`) eklendi.
+  - `ConfirmModal.tsx`: Tehlikeli/birincil varyantları, yükleniyor durumunu ve ek onay seçeneklerini destekleyen yeniden kullanılabilir onay modalı bileşeni oluşturuldu.
+  - `Containers` & `ContainerDetail` Arayüzü: Konteyner listesi satır aksiyonlarına, mobil işlem çekmecesine ve konteyner detay başlığına zorla silme ve anonim hacimleri temizleme seçenekleri içeren silme onay akışı eklendi.
+
+### Düzeltilenler (Fixed)
+- **Manuel Durdurulan Konteynerlerin Otomatik Yeniden Başlatılmasının Önlenmesi**:
+  - `DockerService.cs`: Hem tam (64 karakter) hem kısa (12 karakter) konteyner ID'lerini eşleştiren iş parçacığı güvenli (thread-safe) manuel durdurma takibi (`MarkContainerManuallyStopped`, `ClearContainerManualStop`, `IsContainerManuallyStopped`) eklendi. `StopContainerAsync` ve `RestartContainerAsync` durdurma işlemi başlamadan önce konteyneri işaretleyerek eşzamanlı keşif döngülerinin işlemi çökme olarak algılamasını önler; `StartContainerAsync` ve `RestartContainerAsync` tamamlandığında ise işaret temizlenir.
+  - `ContainerDiscoveryService.cs` & `AutoHealingService.cs`: Manuel olarak durdurulan konteynerler, `SIGTERM` (`ExitCode == 143`) ile normal kapananlar ve `OOMKilled == false` olup hata mesajı bulunmayan `SIGKILL` (`ExitCode == 137`) durdurmaları için sahte çökme bildirimleri ve otomatik iyileştirme (auto-healing) tetiklemeleri engellendi. Ayrıca `_previousStates` sözlüğünden silinen konteynerlerin temizlenmesi sağlandı.
+- **Konteyner Detay Sayfasındaki Çift Durdurma/Aksiyon Butonları ve Etiket Tutarsızlığı**:
+  - `ContainerOverviewTab.tsx` & `ContainerDetail/index.tsx`: `ContainerOverviewTab` bileşenine `showActionsToolbar` özelliği eklendi (modal görünümünde varsayılan `true`, tam sayfa detay görünümünde `false`). Böylece üst başlıkta (`ContainerDetailHeader`) zaten yer alan Başlat/Durdur/Yeniden Başlat/Duraklat butonlarının genel bakış sekmesinde ikinci kez tekrarlanması giderildi.
+  - `ContainerDetailHeader.tsx`: Aksiyon butonlarındaki mastar eki kullanan çeviri anahtarları (`containers.actionStop` vb.) emir kipi anahtarlarıyla (`containers.stop`, `containers.start`, `containers.restart`, `containers.pause`, `containers.resume`) standartlaştırıldı.
+- **Arayüz Genelinde Kapsamlı Çoklu Dil (i18n) Uyumluluğu**:
+  - `en.ts` & `tr.ts`: `Containers`, `ContainerDetail`, `Dashboard`, `Services`, `Settings`, `Uptime`, `Deployments`, `SystemMetrics`, `Profile`, `PublicStatus` ve ortak UI bileşenlerindeki sabit Türkçe metinler kaldırılarak çift dilli çeviri sözlükleriyle senkronize edildi.
+
 ## [1.6.13] - 2026-10-16 — React Kancaları Kuralı (Rules of Hooks) Uyumluluğu & Linter İyileştirmeleri
 
 ### Düzeltilenler (Fixed)

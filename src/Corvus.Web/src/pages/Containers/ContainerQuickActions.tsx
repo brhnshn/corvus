@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Info, Activity, Terminal } from 'lucide-react';
 import type { DockerContainer } from '../../types';
+import { useI18n } from '../../i18n';
 
 export interface ContainerQuickActionsProps {
   container: DockerContainer;
@@ -13,6 +14,7 @@ export const ContainerQuickActions: React.FC<ContainerQuickActionsProps> = ({
   onInspect,
   isAdmin = true
 }) => {
+  const { t } = useI18n();
   const isRunning = container.State?.toLowerCase() === 'running';
 
   const handleClick = (e: React.MouseEvent, tab: string) => {
@@ -29,8 +31,8 @@ export const ContainerQuickActions: React.FC<ContainerQuickActionsProps> = ({
       <button
         type="button"
         onClick={(e) => handleClick(e, 'logs')}
-        title="Canlı Loglar"
-        aria-label="Canlı Loglar"
+        title={t('containers.tabLogs')}
+        aria-label={t('containers.tabLogs')}
         className="p-1.5 rounded-lg text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
       >
         <FileText className="w-3.5 h-3.5" />
@@ -40,8 +42,8 @@ export const ContainerQuickActions: React.FC<ContainerQuickActionsProps> = ({
       <button
         type="button"
         onClick={(e) => handleClick(e, 'overview')}
-        title="Genel Bakış & Yapılandırma"
-        aria-label="Genel Bakış"
+        title={t('containers.quickOverviewTitle')}
+        aria-label={t('containers.tabOverview')}
         className="p-1.5 rounded-lg text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
       >
         <Info className="w-3.5 h-3.5" />
@@ -51,8 +53,8 @@ export const ContainerQuickActions: React.FC<ContainerQuickActionsProps> = ({
       <button
         type="button"
         onClick={(e) => handleClick(e, 'resources')}
-        title="Kaynaklar & Limitler"
-        aria-label="Kaynaklar & Limitler"
+        title={t('containers.tabResources')}
+        aria-label={t('containers.tabResources')}
         className="p-1.5 rounded-lg text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.08] transition-colors cursor-pointer"
       >
         <Activity className="w-3.5 h-3.5" />
@@ -63,8 +65,8 @@ export const ContainerQuickActions: React.FC<ContainerQuickActionsProps> = ({
         <button
           type="button"
           onClick={(e) => handleClick(e, 'terminal')}
-          title="Web Terminali (Exec Console)"
-          aria-label="Web Terminali"
+          title={t('containers.quickTerminalTitle')}
+          aria-label={t('containers.terminalTitle')}
           className="p-1.5 rounded-lg text-[#9ba0b5] hover:text-emerald-400 hover:bg-white/[0.08] transition-colors cursor-pointer"
         >
           <Terminal className="w-3.5 h-3.5" />

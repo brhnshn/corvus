@@ -54,7 +54,7 @@ export const BackupSettingsTab: React.FC<BackupSettingsTabProps> = ({
           onClick={onDownloadBackup}
           icon={downloadingBackup ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
         >
-          {downloadingBackup ? (t('settings.downloadingBackup') || 'İndiriliyor...') : (t('settings.downloadBackupBtn') || 'Yedeği İndir')}
+          {downloadingBackup ? t('settings.downloadingBackup') : t('settings.downloadBackupBtn')}
         </Button>
       </div>
 
@@ -77,7 +77,7 @@ export const BackupSettingsTab: React.FC<BackupSettingsTabProps> = ({
             <input
               type="text"
               value={settings['backup_push_token'] || ''}
-              placeholder="örn. a8f1c390e4b1"
+              placeholder={t('settings.backupPasswordPlaceholder')}
               onChange={(e) => setSettings({ ...settings, backup_push_token: e.target.value })}
               className="input flex-1 font-mono text-xs"
             />

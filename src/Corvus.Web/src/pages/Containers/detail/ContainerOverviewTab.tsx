@@ -9,6 +9,7 @@ interface ContainerOverviewTabProps {
   containerSummary?: DockerContainer;
   isAdmin: boolean;
   actionLoading: boolean;
+  showActionsToolbar?: boolean;
   onStart: () => void;
   onStop: () => void;
   onRestart: () => void;
@@ -22,6 +23,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
   inspect,
   isAdmin,
   actionLoading,
+  showActionsToolbar = true,
   onStart,
   onStop,
   onRestart,
@@ -62,7 +64,8 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
   return (
     <div className="space-y-4">
       {/* Quick Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 surface rounded-2xl border border-white/10">
+      {showActionsToolbar && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 surface rounded-2xl border border-white/10">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-[#9ba0b5] uppercase tracking-wider">
             {t('containers.quickActions')}:
@@ -149,7 +152,8 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
             {t('containers.viewLogs')}
           </button>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Grid of details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -161,7 +165,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
               type="button"
               onClick={handleCopyId}
               className="text-[#9ba0b5] hover:text-[#eceef6] transition-colors cursor-pointer"
-              title="Kopyala"
+              title={t('common.copy')}
             >
               {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
@@ -190,19 +194,19 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
                   : 'bg-rose-500/10 text-rose-400 border-rose-500/25'
               }`}
             >
-              <span className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+              <span className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-400' : 'bg-rose-400'}`} />
               {statusStr}
             </span>
 
             {state.health?.status && (
               <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-                Sağlık: {state.health.status}
+                {t('containers.healthBadge', { status: state.health.status })}
               </span>
             )}
 
             {state.exitCode !== undefined && state.exitCode !== 0 && (
               <span className="text-xs font-mono text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
-                Exit: {state.exitCode}
+                {t('containers.exitCodeBadge', { code: state.exitCode })}
               </span>
             )}
           </div>
@@ -220,7 +224,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
       {/* Execution Environment */}
       <div className="p-5 surface rounded-2xl border border-white/10 space-y-3">
         <h4 className="text-xs font-bold text-[#eceef6] uppercase tracking-wider">
-          Çalışma Zamanı Yapılandırması
+          {t('containers.runtimeConfigTitle')}
         </h4>
         <div className="space-y-2.5 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4 border-b border-white/10 pb-2">
@@ -237,7 +241,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-1 md:gap-4">
             <span className="text-[#9ba0b5]">{t('containers.user')}</span>
-            <span className="md:col-span-3 font-mono text-[#eceef6]">{config.user || 'root (varsayılan)'}</span>
+            <span className="md:col-span-3 font-mono text-[#eceef6]">{config.user || t('containers.defaultRootUser')}</span>
           </div>
         </div>
       </div>
@@ -245,7 +249,7 @@ export const ContainerOverviewTab: React.FC<ContainerOverviewTabProps> = ({
       {/* Timestamps */}
       <div className="p-5 surface rounded-2xl border border-white/10 space-y-3 text-xs">
         <h4 className="font-bold text-[#eceef6] uppercase tracking-wider">
-          Zaman Damgaları
+          {t('containers.timestampsTitle')}
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
