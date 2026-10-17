@@ -20,8 +20,10 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Konteyner Detay Sayfasındaki Çift Durdurma/Aksiyon Butonları ve Etiket Tutarsızlığı**:
   - `ContainerOverviewTab.tsx` & `ContainerDetail/index.tsx`: `ContainerOverviewTab` bileşenine `showActionsToolbar` özelliği eklendi (modal görünümünde varsayılan `true`, tam sayfa detay görünümünde `false`). Böylece üst başlıkta (`ContainerDetailHeader`) zaten yer alan Başlat/Durdur/Yeniden Başlat/Duraklat butonlarının genel bakış sekmesinde ikinci kez tekrarlanması giderildi.
   - `ContainerDetailHeader.tsx`: Aksiyon butonlarındaki mastar eki kullanan çeviri anahtarları (`containers.actionStop` vb.) emir kipi anahtarlarıyla (`containers.stop`, `containers.start`, `containers.restart`, `containers.pause`, `containers.resume`) standartlaştırıldı.
-- **Arayüz Genelinde Kapsamlı Çoklu Dil (i18n) Uyumluluğu**:
-  - `en.ts` & `tr.ts`: `Containers`, `ContainerDetail`, `Dashboard`, `Services`, `Settings`, `Uptime`, `Deployments`, `SystemMetrics`, `Profile`, `PublicStatus` ve ortak UI bileşenlerindeki sabit Türkçe metinler kaldırılarak çift dilli çeviri sözlükleriyle senkronize edildi.
+- **Arayüz Genelinde Kapsamlı Çoklu Dil (i18n) & Fallback Temizliği**:
+  - `en.ts` & `tr.ts`: `Komut Paleti (CommandPalette)`, `ActivityTimeline`, `AuthPage`, `Containers`, `ContainerDetail`, `Dashboard`, `Services`, `Settings`, `Systems`, `Profile`, `PublicStatus`, `ObsidianAreaChart` ve ortak arayüz bileşenlerindeki (`Sheet` kapat butonu, `AttentionAlerts` servis kontrol tipi ve yedekleme curl snippet mesajı dahil) çeviri anahtarları eksiksiz senkronize edildi.
+  - JSX/TSX kodlarındaki tüm hardcoded Türkçe fallback kalıntıları (`t('...') || '...'`), `PublicStatusServiceCard` şablon ifadeleri dahil olmak üzere tamamen temizlenerek doğrudan tip güvenli çeviri anahtarlarına bağlandı.
+  - `useI18n` kancası, `I18nProvider` kapsamı dışındaki bağımsız bileşen ve birim test renderlarında çökme yaşanmaması için güvenli varsayılan bağlam (defaultContext) ile zırhlandı.
 
 ## [1.6.13] - 2026-10-16 — React Kancaları Kuralı (Rules of Hooks) Uyumluluğu & Linter İyileştirmeleri
 

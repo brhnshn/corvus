@@ -24,12 +24,12 @@ export const ActivityTimelineFilter: React.FC<ActivityTimelineFilterProps> = ({
   const { t } = useI18n();
 
   const categories = [
-    { id: 'all', label: t('activity.categories.all') || 'Tüm Olaylar' },
-    { id: 'container', label: t('activity.categories.container') || 'Konteyner' },
-    { id: 'service', label: t('activity.categories.service') || 'Servis' },
-    { id: 'alert', label: t('activity.categories.alert') || 'Alarmlar' },
-    { id: 'security', label: t('activity.categories.security') || 'Güvenlik & Giriş' },
-    { id: 'system', label: t('activity.categories.system') || 'Sistem' },
+    { id: 'all', label: t('activity.categories.all') },
+    { id: 'container', label: t('activity.categories.container') },
+    { id: 'service', label: t('activity.categories.service') },
+    { id: 'alert', label: t('activity.categories.alert') },
+    { id: 'security', label: t('activity.categories.security') },
+    { id: 'system', label: t('activity.categories.system') },
   ];
 
   return (
@@ -44,7 +44,7 @@ export const ActivityTimelineFilter: React.FC<ActivityTimelineFilterProps> = ({
               ? 'bg-[var(--bg-card)] text-[var(--cloud-100)] shadow-sm border border-[var(--border-hairline)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
-          title={`${activeSystemName} (${t('activity.thisNode') || 'Bu Düğüm'})`}
+          title={`${activeSystemName} (${t('activity.thisNode')})`}
         >
           <Server className="w-3 h-3 text-[var(--cloud-300)]" />
           <span className="truncate max-w-[120px]">{activeSystemName}</span>
@@ -59,7 +59,7 @@ export const ActivityTimelineFilter: React.FC<ActivityTimelineFilterProps> = ({
           }`}
         >
           <Globe className="w-3 h-3 text-[var(--cloud-300)]" />
-          <span>{t('activity.allFleet') || 'Tüm Filo'}</span>
+          <span>{t('activity.allFleet')}</span>
         </button>
       </div>
 
@@ -84,7 +84,7 @@ export const ActivityTimelineFilter: React.FC<ActivityTimelineFilterProps> = ({
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={t('activity.searchPlaceholder') || 'Olay veya kaynak ara...'}
+          placeholder={t('activity.searchPlaceholder')}
           className="input pl-8 w-full text-xs"
         />
       </div>

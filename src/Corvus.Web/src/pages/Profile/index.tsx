@@ -21,8 +21,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [activeTab, setActiveTab] = useState<'security' | 'users'>('security');
 
   const tabs = [
-    { id: 'security' as const, label: t('userManagement.profileTab') || 'Güvenlik & Profil', icon: KeyRound },
-    ...(isAdmin ? [{ id: 'users' as const, label: t('userManagement.usersTab') || 'Kullanıcı Yönetimi', icon: Users }] : [])
+    { id: 'security' as const, label: t('userManagement.profileTab'), icon: KeyRound },
+    ...(isAdmin ? [{ id: 'users' as const, label: t('userManagement.usersTab'), icon: Users }] : [])
   ];
 
   return (
@@ -36,7 +36,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             className="inline-flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer py-1"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{t('nav.dashboard') || 'Kontrol Paneli'}</span>
+            <span>{t('nav.dashboard')}</span>
           </button>
         </div>
       )}
@@ -45,10 +45,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-hairline)]">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            {t('userManagement.title') || 'Profil & Kullanıcı Yönetimi'}
+            {t('userManagement.title')}
           </h1>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            {t('userManagement.subtitle') || 'Kullanıcı profilinizi, güvenlik ayarlarınızı ve ekip rollerini yönetin'}
+            {t('userManagement.subtitle')}
           </p>
         </div>
 

@@ -109,7 +109,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={modalTitle}
-      subtitle={t('containers.detailModalTitle') || 'Konteyner Konfigürasyonu & İnceleme'}
+      subtitle={t('containers.detailModalTitle')}
       icon={<Layers className="w-5 h-5 text-[var(--text-primary)]" />}
       maxWidth="max-w-4xl"
     >
@@ -122,7 +122,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
             className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>{t('containers.tabOverview') || 'Genel Bakış'}</span>
+            <span>{t('containers.tabOverview')}</span>
           </button>
 
           <button
@@ -131,7 +131,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
             className={`tab ${activeTab === 'env' ? 'active' : ''}`}
           >
             <Key className="w-3.5 h-3.5" />
-            <span>{t('containers.tabEnv') || 'Ortam Değişkenleri'}</span>
+            <span>{t('containers.tabEnv')}</span>
             {envCount > 0 && (
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                 {envCount}
@@ -145,7 +145,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
             className={`tab ${activeTab === 'networking' ? 'active' : ''}`}
           >
             <Network className="w-3.5 h-3.5" />
-            <span>{t('containers.tabNetworking') || 'Ağ & Portlar'}</span>
+            <span>{t('containers.tabNetworking')}</span>
             {portsCount > 0 && (
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                 {portsCount}
@@ -159,7 +159,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
             className={`tab ${activeTab === 'storage' ? 'active' : ''}`}
           >
             <HardDrive className="w-3.5 h-3.5" />
-            <span>{t('containers.tabStorage') || 'Depolama'}</span>
+            <span>{t('containers.tabStorage')}</span>
             {mountsCount > 0 && (
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                 {mountsCount}
@@ -173,7 +173,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
             className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
           >
             <Cpu className="w-3.5 h-3.5" />
-            <span>{t('containers.tabResources') || 'Kaynak Limitleri'}</span>
+            <span>{t('containers.tabResources')}</span>
           </button>
 
           <button
@@ -182,7 +182,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
             className={`tab ${activeTab === 'deployments' ? 'active' : ''}`}
           >
             <Rocket className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{t('containers.deployHistoryTab') || 'Dağıtımlar'}</span>
+            <span>{t('containers.deployHistoryTab')}</span>
           </button>
         </div>
 
@@ -191,7 +191,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
           {loading ? (
             <div className="py-16 flex flex-col items-center justify-center gap-3 text-[var(--text-secondary)]">
               <Loader2 className="w-7 h-7 text-[var(--text-primary)] animate-spin" />
-              <span className="text-xs">{t('common.loading') || 'Yükleniyor…'}</span>
+              <span className="text-xs">{t('common.loading')}</span>
             </div>
           ) : error ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3 text-[var(--status-down)] text-center">
@@ -203,7 +203,7 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
                 onClick={loadInspectData}
                 className="mt-2"
               >
-                {t('common.retry') || 'Tekrar Dene'}
+                {t('common.retry')}
               </Button>
             </div>
           ) : inspectData ? (

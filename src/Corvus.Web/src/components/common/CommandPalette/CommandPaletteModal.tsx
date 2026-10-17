@@ -97,7 +97,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Komut Paleti"
+      aria-label={t('commandPalette.modalAriaLabel')}
       className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-xs animate-modal-backdrop"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -111,7 +111,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           value={query}
           onChange={setQuery}
           onClear={() => setQuery('')}
-          placeholder={t('common.search') || 'Komut veya sayfa ara... (Ctrl+K)'}
+          placeholder={t('commandPalette.searchPlaceholder')}
         />
 
         <CommandPaletteResults

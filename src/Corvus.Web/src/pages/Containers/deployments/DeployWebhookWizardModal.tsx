@@ -194,7 +194,7 @@ jobs:
                     type="button"
                     onClick={() => setShowToken(!showToken)}
                     className="p-1 hover:text-white text-zinc-400 rounded transition-colors"
-                    title={showToken ? 'Gizle' : 'Göster'}
+                    title={showToken ? t('common.hide') : t('common.show')}
                   >
                     {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>

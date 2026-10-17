@@ -44,7 +44,7 @@ export const AttentionAlerts: React.FC<AttentionAlertsProps> = ({
             <span>
               <strong>{service.name}</strong> {t('dashboard.serviceUnreachable')}{' '}
               <span className="opacity-75 font-mono text-[11px]">
-                {t('dashboard.serviceNoResponse', { url: service.url || `${service.checkType?.toUpperCase()} servisi` })}
+                {t('dashboard.serviceNoResponse', { url: service.url || t('dashboard.serviceCheckType', { type: service.checkType?.toUpperCase() ?? 'HTTP' }) })}
               </span>
             </span>
           }

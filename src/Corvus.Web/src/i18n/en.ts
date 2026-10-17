@@ -186,6 +186,7 @@ export const en = {
     issuesSummary: '{down} down, {stopped} stopped containers, {ssl} SSL alerts',
     serviceUnreachable: 'is unreachable',
     serviceNoResponse: '({url} is not responding)',
+    serviceCheckType: '{type} service',
     serviceDegraded: 'performance degradation detected (high response time)',
     inspectBtn: 'Inspect →',
     sslExpiringSoon: 'SSL certificate expiring soon ({days} days left)',
@@ -518,7 +519,9 @@ export const en = {
     pruneCacheCleaned: 'Cleaned',
     prunePartialErrorsTitle: 'Some items could not be deleted (Dependency or locked resource):',
     pruneOrphanedVolumesTab: 'Orphaned Volumes',
-    copyDigestTooltip: 'Copy Digest'
+    copyDigestTooltip: 'Copy Digest',
+    connectionTerminated: 'Connection terminated (Code: {code}).',
+    operationError: 'An error occurred during operation.'
   },
   deployments: {
     title: 'Deployment Center',
@@ -825,7 +828,11 @@ export const en = {
     ramAriaLabel: 'RAM Utilization Chart',
     primaryDisk: 'Primary Disk Drive / Partition',
     freeSpaceSubtext: 'Free: {free} GB ({percent}%)',
-    percentUsed: '{percent}% Used'
+    percentUsed: '{percent}% Used',
+    chartAriaLabel: 'Metric Chart',
+    pollingError: 'Failed to fetch telemetry polling',
+    peakValue: 'Peak: {value}',
+    emptyData: 'No telemetry data'
   },
   uptime: {
     title: 'Uptime & Health Monitoring',
@@ -952,7 +959,10 @@ export const en = {
       alert: 'Alerts',
       security: 'Security & Auth',
       system: 'System'
-    }
+    },
+    actor: 'Actor',
+    categoryLabel: 'Category',
+    ip: 'IP'
   },
   settings: {
     title: 'Settings',
@@ -1072,12 +1082,14 @@ export const en = {
     backupDocsTitle: 'Backup Push Integration',
     backupDocsDesc: 'To report backup execution status from your scripts (e.g. restic, borg, custom backup.sh), make an HTTP request to:',
     backupDocSuccessComment: '# Successful backup report',
+    backupSuccessMessage: 'Backup completed',
     versionCardTitle: 'Version & Update Status',
     versionUpdateAvailable: 'New version available: {version}',
     versionUpToDate: 'Your system is up to date. You are running the latest version.',
     githubReleasesBtn: 'GitHub Releases',
     saveBtn: 'Save Settings',
     savedToast: 'Settings saved',
+    saveError: 'Save failed: {error}',
     tabUsers: 'Users & Roles',
     usersSectionTitle: 'User & Role Management (RBAC)',
     usersSectionDesc: 'Manage system users, access roles, and permissions',
@@ -1122,7 +1134,8 @@ export const en = {
     showPassword: 'Show Password',
     hidePassword: 'Hide Password',
     envLoginSwitch: 'Sign in with preconfigured environment (ENV) account',
-    envRegisterSwitch: 'Switch back to initial admin registration'
+    envRegisterSwitch: 'Switch back to initial admin registration',
+    actionFailed: 'Operation failed.'
   },
   publicStatus: {
     title: 'Corvus',
@@ -1154,7 +1167,8 @@ export const en = {
     allOperationalInGroup: 'All Operational',
     issuesInGroup: '{count} services affected',
     noData: 'No data',
-    footerText: 'This status page is automatically updated by Corvus Monitoring every 30 seconds.'
+    footerText: 'This status page is automatically updated by Corvus Monitoring every 30 seconds.',
+    errorLoading: 'Failed to load status information.'
   },
   logsModal: {
     title: 'Live Container Logs',
@@ -1283,6 +1297,7 @@ export const en = {
     searchPlaceholder: 'Search systems...',
     filterPlaceholder: 'Filter…',
     viewColumns: 'View',
+    activeCount: '{online}/{total} active',
     footerNote: 'Corvus · Systems',
     noSystemsFound: 'No systems found',
     noSystemsDesc: 'No servers match your current search filters.',
@@ -1561,7 +1576,14 @@ export const en = {
     dockerPrune: 'Docker System Prune & Hygiene',
     openStatusPage: 'Open Public Status Page (/status)',
     restartFailed: 'Restart failed: {error}',
-    noResponse: 'No response received'
+    noResponse: 'No response received',
+    modalAriaLabel: 'Command Palette',
+    searchPlaceholder: 'Search command or page... (Ctrl+K)',
+    noResults: 'No results found',
+    catPages: 'Pages',
+    catActions: 'Quick Actions',
+    catContainers: 'Containers',
+    catServices: 'Services'
   },
   errorBoundary: {
     newVersionDetected: 'New Version Detected',

@@ -68,10 +68,10 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
         onSuccess(tags);
         onClose();
       } else {
-        setError(t('containers.tagsSaveError') || 'Etiketler kaydedilemedi.');
+        setError(t('containers.tagsSaveError'));
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'İşlem sırasında hata oluştu.');
+      setError(err instanceof Error ? err.message : t('containers.operationError'));
     } finally {
       setSaving(false);
     }
@@ -89,14 +89,13 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={modalTitle}
-      subtitle={t('containers.tagsModalTitle') || 'Konteyner Etiketleri'}
+      subtitle={t('containers.tagsModalTitle')}
       icon={<Tag className="w-5 h-5 text-[var(--text-primary)]" />}
       maxWidth="max-w-md"
     >
       <form onSubmit={handleSave} className="space-y-4">
         <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-          {t('containers.tagsModalDesc') ||
-            'Bu konteyner için filtreleme ve gruplamada kullanılacak özel etiketleri belirleyin.'}
+          {t('containers.tagsModalDesc')}
         </p>
 
         {error && (
@@ -107,13 +106,13 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
 
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-[var(--text-primary)]">
-            {t('services.formTags') || 'Etiketler'}
+            {t('services.formTags')}
           </label>
           <TagInput
             tags={tags}
             onChange={setTags}
             suggestions={suggestions}
-            placeholder={t('services.tagPlaceholder') || 'Etiket ekle (Prod, DB, API)...'}
+            placeholder={t('services.tagPlaceholder')}
             disabled={saving}
           />
         </div>
@@ -125,7 +124,7 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
             onClick={onClose}
             disabled={saving}
           >
-            {t('common.cancel') || 'İptal'}
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
@@ -133,7 +132,7 @@ export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({
             disabled={saving}
             icon={saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
           >
-            {saving ? (t('common.saving') || 'Kaydediliyor...') : (t('common.save') || 'Kaydet')}
+            {saving ? t('common.saving') : t('common.save')}
           </Button>
         </div>
       </form>

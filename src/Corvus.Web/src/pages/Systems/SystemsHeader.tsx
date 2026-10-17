@@ -33,7 +33,7 @@ export const SystemsHeader: React.FC<SystemsHeaderProps> = ({
               {t('systems.title')}
             </h1>
             <p className="text-xs text-[#9ba0b5]">
-              {t('systems.subtitle')} · {onlineCount}/{totalCount} aktif
+              {t('systems.subtitle')} · {t('systems.activeCount', { online: onlineCount, total: totalCount })}
             </p>
           </div>
         </div>

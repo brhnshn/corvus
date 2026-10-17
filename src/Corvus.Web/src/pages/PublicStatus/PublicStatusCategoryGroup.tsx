@@ -45,9 +45,9 @@ export function PublicStatusCategoryGroup({
         <div className="flex items-center gap-2.5 shrink-0">
           {/* Group health status badge */}
           {isAllOperational ? (
-            <Pill status="ok" label={t('publicStatus.allOperationalInGroup') || 'Tümü Operasyonel'} />
+            <Pill status="ok" label={t('publicStatus.allOperationalInGroup')} />
           ) : (
-            <Pill status="err" label={t('publicStatus.issuesInGroup', { count: issuesCount }) || `${issuesCount} Sorun`} />
+            <Pill status="err" label={t('publicStatus.issuesInGroup', { count: issuesCount })} />
           )}
 
           <ChevronDown

@@ -164,7 +164,7 @@ export const ContainerTerminalModal: React.FC<ContainerTerminalModalProps> = ({
     ws.onclose = (event) => {
       setConnectionState('disconnected');
       if (event.code !== 1000 && event.code !== 1001) {
-        term.write(`\r\n\x1b[33m[Corvus] Bağlantı sonlandırıldı (Kod: ${event.code}).\x1b[0m\r\n`);
+        term.write(`\r\n\x1b[33m[Corvus] ${t('containers.connectionTerminated', { code: event.code })}\x1b[0m\r\n`);
       }
     };
 

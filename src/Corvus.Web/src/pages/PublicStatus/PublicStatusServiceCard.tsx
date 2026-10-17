@@ -18,10 +18,10 @@ export function PublicStatusServiceCard({ service }: PublicStatusServiceCardProp
 
   const statusType: StatusType = isHealthy ? 'ok' : isDegraded ? 'warn' : 'err';
   const statusLabel = isHealthy
-    ? (t('publicStatus.statusHealthy') || 'Çalışıyor')
+    ? t('publicStatus.statusHealthy')
     : isDegraded
-    ? (t('publicStatus.statusDegraded') || 'Aksaklık')
-    : (t('publicStatus.statusDown') || 'Kesinti');
+    ? t('publicStatus.statusDegraded')
+    : t('publicStatus.statusDown');
 
   return (
     <div className="surface rounded-[20px] p-4 flex flex-col gap-3 transition-colors hover:bg-white/[0.04]">
@@ -65,7 +65,7 @@ export function PublicStatusServiceCard({ service }: PublicStatusServiceCardProp
 
           {/* Uptime % */}
           <span className="text-xs font-semibold text-[#eceef6] bg-white/[0.06] border border-white/10 px-2.5 py-1 rounded-[10px] font-mono">
-            {t('publicStatus.uptimeRate', { rate: service.uptimePercentage }) || `%${service.uptimePercentage}`}
+            {t('publicStatus.uptimeRate', { rate: service.uptimePercentage })}
           </span>
 
           {/* Status indicator */}

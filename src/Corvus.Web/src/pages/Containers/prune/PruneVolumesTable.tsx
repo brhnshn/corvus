@@ -24,9 +24,9 @@ export const PruneVolumesTable: React.FC<PruneVolumesTableProps> = ({
     return (
       <div className="p-8 text-center surface border border-white/10 rounded-2xl text-xs text-[#9ba0b5]">
         <HardDrive className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60" />
-        <p className="font-medium text-[#eceef6]">{t('containers.noPrunableVolumesTitle') || 'Bağlantısız Hacim Yok'}</p>
+        <p className="font-medium text-[#eceef6]">{t('containers.noPrunableVolumesTitle')}</p>
         <p className="mt-1 text-[11px] text-[#9ba0b5]/80">
-          {t('containers.noPrunableVolumesDesc') || 'Sistemde herhangi bir konteynere bağlı olmayan sahipsiz Docker hacmi bulunmuyor.'}
+          {t('containers.noPrunableVolumesDesc')}
         </p>
       </div>
     );
@@ -39,18 +39,17 @@ export const PruneVolumesTable: React.FC<PruneVolumesTableProps> = ({
         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
         <div className="space-y-1">
           <p className="font-semibold text-amber-200">
-            {t('containers.volumeWarningTitle') || 'DİKKAT: Hacimler Kalıcı Veri İçerebilir!'}
+            {t('containers.volumeWarningTitle')}
           </p>
           <p className="text-[11px] text-amber-300/80 leading-relaxed">
-            {t('containers.volumeWarningDesc') || 
-              'Bir konteynere bağlı olmayan hacimler veritabanı tabloları, yüklenen dosyalar veya yedekler barındırıyor olabilir. Yalnızca içeriğine artık ihtiyaç duymadığınızdan kesinlikle emin olduğunuz hacimleri işaretleyin.'}
+            {t('containers.volumeWarningDesc')}
           </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between text-xs text-[#9ba0b5]">
         <span className="text-[11px]">
-          {volumes.length} {t('containers.volumesFound') || 'bağlantısız hacim'} ({selectedNames.size} {t('containers.selected') || 'seçili'})
+          {volumes.length} {t('containers.volumesFound')} ({selectedNames.size} {t('containers.selected')})
         </span>
         <button
           type="button"
@@ -60,12 +59,12 @@ export const PruneVolumesTable: React.FC<PruneVolumesTableProps> = ({
           {allSelected ? (
             <>
               <CheckSquare className="w-3.5 h-3.5 text-rose-400" />
-              <span>{t('containers.deselectAll') || 'Seçimi Kaldır'}</span>
+              <span>{t('containers.deselectAll')}</span>
             </>
           ) : (
             <>
               <Square className="w-3.5 h-3.5 text-[#9ba0b5]" />
-              <span>{t('containers.selectAll') || 'Tümünü Seç'}</span>
+              <span>{t('containers.selectAll')}</span>
             </>
           )}
         </button>

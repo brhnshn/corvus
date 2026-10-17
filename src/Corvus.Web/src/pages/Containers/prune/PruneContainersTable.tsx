@@ -24,9 +24,9 @@ export const PruneContainersTable: React.FC<PruneContainersTableProps> = ({
     return (
       <div className="p-8 text-center surface border border-white/10 rounded-2xl text-xs text-[#9ba0b5]">
         <Boxes className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60" />
-        <p className="font-medium text-[#eceef6]">{t('containers.noPrunableContainersTitle') || 'Durdurulmuş Konteyner Yok'}</p>
+        <p className="font-medium text-[#eceef6]">{t('containers.noPrunableContainersTitle')}</p>
         <p className="mt-1 text-[11px] text-[#9ba0b5]/80">
-          {t('containers.noPrunableContainersDesc') || 'Sistemde temizlenebilecek durdurulmuş veya artık bir konteyner bulunmuyor.'}
+          {t('containers.noPrunableContainersDesc')}
         </p>
       </div>
     );
@@ -36,7 +36,7 @@ export const PruneContainersTable: React.FC<PruneContainersTableProps> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs text-[#9ba0b5]">
         <span className="text-[11px]">
-          {containers.length} {t('containers.containersFound') || 'durdurulmuş konteyner bulundu'} ({selectedIds.size} {t('containers.selected') || 'seçili'})
+          {containers.length} {t('containers.containersFound')} ({selectedIds.size} {t('containers.selected')})
         </span>
         <button
           type="button"
@@ -46,12 +46,12 @@ export const PruneContainersTable: React.FC<PruneContainersTableProps> = ({
           {allSelected ? (
             <>
               <CheckSquare className="w-3.5 h-3.5 text-[#d5d5dc]" />
-              <span>{t('containers.deselectAll') || 'Seçimi Kaldır'}</span>
+              <span>{t('containers.deselectAll')}</span>
             </>
           ) : (
             <>
               <Square className="w-3.5 h-3.5 text-[#9ba0b5]" />
-              <span>{t('containers.selectAll') || 'Tümünü Seç'}</span>
+              <span>{t('containers.selectAll')}</span>
             </>
           )}
         </button>

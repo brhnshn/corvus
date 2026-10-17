@@ -11,12 +11,14 @@ import {
   Terminal
 } from 'lucide-react';
 import type { ActivityLogEntry } from '../../types';
+import { useI18n } from '../../i18n';
 
 interface ActivityTimelineItemProps {
   entry: ActivityLogEntry;
 }
 
 export const ActivityTimelineItem: React.FC<ActivityTimelineItemProps> = ({ entry }) => {
+  const { t } = useI18n();
   const getIcon = () => {
     switch (entry.category) {
       case 'container':
@@ -77,14 +79,14 @@ export const ActivityTimelineItem: React.FC<ActivityTimelineItemProps> = ({ entr
 
         <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-secondary)]">
           <span>
-            Aktör: <strong className="text-[var(--cloud-100)] font-mono">{entry.actorUsername}</strong>
+            {t('activity.actor')}: <strong className="text-[var(--cloud-100)] font-mono">{entry.actorUsername}</strong>
           </span>
           <span>•</span>
-          <span>Kategori: {entry.category}</span>
+          <span>{t('activity.categoryLabel')}: {entry.category}</span>
           {entry.ipAddress && (
             <>
               <span>•</span>
-              <span className="font-mono">IP: {entry.ipAddress}</span>
+              <span className="font-mono">{t('activity.ip')}: {entry.ipAddress}</span>
             </>
           )}
         </div>

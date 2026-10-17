@@ -35,7 +35,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
       <div className="flex items-center gap-1.5 text-xs text-white/60 shrink-0 mr-1">
         <Layers className="w-3.5 h-3.5 text-white/50" />
         <span className="font-medium text-[11px] uppercase tracking-wider text-white/40">
-          {label || t('services.filterByTag') || t('containers.filterByTag') || 'Etiket'}:
+          {label ?? t('services.filterByTag')}:
         </span>
       </div>
 
@@ -49,7 +49,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
             : 'bg-white/[0.03] border-white/10 text-white/60 hover:text-white hover:border-white/20'
         }`}
       >
-        <span>{t('common.all') || 'Tümü'}</span>
+        <span>{t('common.all')}</span>
         {typeof effectiveTotalCount === 'number' && (
           <span
             className={`text-[9px] px-1.5 py-0.2 rounded-full ${

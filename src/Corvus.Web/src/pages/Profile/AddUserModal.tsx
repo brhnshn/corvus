@@ -28,11 +28,11 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     setError(null);
 
     if (username.trim().length < 3) {
-      setError(t('userManagement.usernamePlaceholder') || 'Kullanıcı adı en az 3 karakter olmalıdır');
+      setError(t('userManagement.usernamePlaceholder'));
       return;
     }
     if (password.length < 4) {
-      setError(t('userManagement.passwordPlaceholder') || 'Şifre en az 4 karakter olmalıdır');
+      setError(t('userManagement.passwordPlaceholder'));
       return;
     }
 
@@ -50,10 +50,10 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
         await onSuccess();
         onClose();
       } else {
-        setError(res.message || 'Kullanıcı oluşturulamadı.');
+        setError(res.message || t('userManagement.createFailed'));
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Kullanıcı eklenirken hata oluştu.');
+      setError(err instanceof Error ? err.message : t('userManagement.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -63,8 +63,8 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('userManagement.addUser') || 'Kullanıcı Ekle'}
-      subtitle={t('userManagement.usersListSubtitle') || 'Yeni ekip hesabı tanımlayın'}
+      title={t('userManagement.addUser')}
+      subtitle={t('userManagement.usersListSubtitle')}
       icon={<UserPlus className="w-5 h-5 text-[var(--text-primary)]" />}
       maxWidth="max-w-md"
     >
@@ -78,35 +78,35 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-            {t('userManagement.username') || 'Kullanıcı Adı'} *
+            {t('userManagement.username')} *
           </label>
           <input
             type="text"
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder={t('userManagement.usernamePlaceholder') || 'Kullanıcı adı'}
+            placeholder={t('userManagement.usernamePlaceholder')}
             className="input w-full"
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-            {t('userManagement.password') || 'Şifre'} *
+            {t('userManagement.password')} *
           </label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('userManagement.passwordPlaceholder') || 'En az 4 karakter'}
+            placeholder={t('userManagement.passwordPlaceholder')}
             className="input w-full"
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-            {t('userManagement.role') || 'Rol ve Yetki'}
+            {t('userManagement.role')}
           </label>
           <div className="grid grid-cols-2 gap-2.5">
             <label className={`flex flex-col p-3 rounded-[var(--radius-sm)] border cursor-pointer text-xs transition-all ${
@@ -122,9 +122,9 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                 onChange={() => setRole('viewer')}
                 className="sr-only"
               />
-              <span className="font-semibold">{t('userManagement.roleViewer') || 'İzleyici'}</span>
+              <span className="font-semibold">{t('userManagement.roleViewer')}</span>
               <span className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2">
-                {t('userManagement.roleViewerDescription') || 'Salt okunur görünüm'}
+                {t('userManagement.roleViewerDescription')}
               </span>
             </label>
 
@@ -143,10 +143,10 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
               />
               <span className="font-semibold flex items-center gap-1">
                 <Shield className="w-3.5 h-3.5 text-[var(--status-up)]" />
-                <span>{t('userManagement.roleAdmin') || 'Yönetici'}</span>
+                <span>{t('userManagement.roleAdmin')}</span>
               </span>
               <span className="text-[10px] text-[var(--text-muted)] mt-1 line-clamp-2">
-                {t('userManagement.roleAdminDescription') || 'Tam yönetim yetkisi'}
+                {t('userManagement.roleAdminDescription')}
               </span>
             </label>
           </div>
@@ -158,14 +158,14 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
             variant="secondary"
             onClick={onClose}
           >
-            {t('common.cancel') || 'İptal'}
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
             variant="primary"
             disabled={loading}
           >
-            {loading ? (t('userManagement.creatingUser') || 'Ekleniyor...') : (t('userManagement.addUser') || 'Kullanıcı Ekle')}
+            {loading ? t('userManagement.creatingUser') : t('userManagement.addUser')}
           </Button>
         </div>
       </form>

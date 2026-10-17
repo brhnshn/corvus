@@ -140,7 +140,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
-      alert(`Kaydetme hatası: ${err instanceof Error ? err.message : 'Error'}`);
+      alert(t('settings.saveError', { error: err instanceof Error ? err.message : t('common.error') }));
     } finally {
       setSaving(false);
     }
@@ -179,7 +179,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const currentBackupToken = settings['backup_push_token'] || 'corvus_backup_token';
   const backupCurlSnippet = `curl -X POST "${origin}/api/push/${currentBackupToken}" \\
   -H "Content-Type: application/json" \\
-  -d '{"status":"success","sizeBytes":1073741824,"message":"Yedek tamamlandı"}'`;
+  -d '{"status":"success","sizeBytes":1073741824,"message":"${t('settings.backupSuccessMessage')}"}'`;
 
   const handleCopyBackupCmd = () => {
     navigator.clipboard.writeText(backupCurlSnippet);

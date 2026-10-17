@@ -76,7 +76,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-indigo-400" />
           <h2 className="text-base font-bold text-[#eceef6]">
-            {t('containers.logsTitle') || 'Konteyner Logları'}
+            {t('containers.logsTitle')}
           </h2>
           <span className="text-xs font-mono text-indigo-300 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
             {containerName}

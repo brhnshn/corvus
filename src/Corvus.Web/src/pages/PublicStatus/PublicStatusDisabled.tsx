@@ -24,17 +24,17 @@ export const PublicStatusDisabled: React.FC<PublicStatusDisabledProps> = ({ mess
 
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-[#eceef6]">
-            {t('publicStatus.disabledTitle') || 'Durum Sayfası Devre Dışı'}
+            {t('publicStatus.disabledTitle')}
           </h2>
           <p className="text-xs sm:text-sm text-[#9ba0b5] leading-relaxed">
-            {message || (t('publicStatus.disabledDesc') || 'Herkese açık durum sayfası yönetici tarafından kapatılmıştır.')}
+            {message || t('publicStatus.disabledDesc')}
           </p>
         </div>
 
         <div className="pt-2">
           <a href="/">
             <Button variant="primary" icon={<ArrowLeft className="w-4 h-4" />}>
-              {t('publicStatus.adminPanelBtn') || 'Yönetim Paneline Dön'}
+              {t('publicStatus.adminPanelBtn')}
             </Button>
           </a>
         </div>

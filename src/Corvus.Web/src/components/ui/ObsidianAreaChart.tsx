@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { useI18n } from '../../i18n';
 
 export interface ChartDataPoint {
   time: string;
@@ -26,9 +27,12 @@ export const ObsidianAreaChart: React.FC<ObsidianAreaChartProps> = ({
   max,
   unit = '',
   valueFormatter,
-  emptyMessage = 'Veri bulunmuyor',
-  ariaLabel = 'Metrik Grafiği',
+  emptyMessage,
+  ariaLabel,
 }) => {
+  const { t } = useI18n();
+  const effectiveEmptyMessage = emptyMessage ?? t('metrics.emptyData');
+  const effectiveAriaLabel = ariaLabel ?? t('metrics.chartAriaLabel');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -144,7 +148,7 @@ export const ObsidianAreaChart: React.FC<ObsidianAreaChartProps> = ({
         className="w-full flex items-center justify-center border border-dashed border-[var(--border-hairline)] rounded-xl text-xs text-[var(--text-muted)]"
         style={{ height }}
       >
-        {emptyMessage}
+        {effectiveEmptyMessage}
       </div>
     );
   }
@@ -175,7 +179,7 @@ export const ObsidianAreaChart: React.FC<ObsidianAreaChartProps> = ({
               {data.length > 0 ? `${data[0].time} — ${data[data.length - 1].time}` : ''}
             </span>
             <span className="text-[var(--text-muted)] text-[11px]">
-              Zirve: {formatDisplay(computedMax)}
+              {t('metrics.peakValue', { value: formatDisplay(computedMax) })}
             </span>
           </>
         )}
@@ -190,7 +194,7 @@ export const ObsidianAreaChart: React.FC<ObsidianAreaChartProps> = ({
           className="w-full h-full cursor-crosshair overflow-visible"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          aria-label={ariaLabel}
+          aria-label={effectiveAriaLabel}
         >
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

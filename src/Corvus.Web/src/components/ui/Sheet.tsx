@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 export interface SheetProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const Sheet: React.FC<SheetProps> = ({
   className = '',
   showCloseButton = false,
 }) => {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(isOpen);
   const [visible, setVisible] = useState(false);
 
@@ -126,7 +128,7 @@ export const Sheet: React.FC<SheetProps> = ({
                 type="button"
                 onClick={onClose}
                 className="p-1 rounded-full text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/10 transition-colors cursor-pointer shrink-0"
-                aria-label="Kapat"
+                aria-label={t('common.close')}
               >
                 <X className="w-4 h-4" />
               </button>

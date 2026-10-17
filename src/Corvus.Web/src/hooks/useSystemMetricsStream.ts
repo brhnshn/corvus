@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import type { SystemTelemetryStreamDto, SystemMetric } from '../types';
 import { api } from '../api/client';
+import { useI18n } from '../i18n';
 
 export interface UseSystemMetricsStreamResult {
   livePoint: SystemTelemetryStreamDto | null;
@@ -31,6 +32,7 @@ export function telemetryPointToSystemMetric(point: SystemTelemetryStreamDto): S
  * olarak HTTP polling fallback moduna geçer.
  */
 export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetricsStreamResult {
+  const { t } = useI18n();
   const [livePoint, setLivePoint] = useState<SystemTelemetryStreamDto | null>(null);
   const [latestMetric, setLatestMetric] = useState<SystemMetric | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -80,7 +82,7 @@ export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetric
         setError(null);
       } catch (err: unknown) {
         if (!isMountedRef.current) return;
-        setError(err instanceof Error ? err.message : 'Polling telemetri alınamadı');
+        setError(err instanceof Error ? err.message : t('metrics.pollingError'));
       }
     };
 

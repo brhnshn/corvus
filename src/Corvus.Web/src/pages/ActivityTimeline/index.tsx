@@ -81,14 +81,14 @@ export const ActivityTimelinePage: React.FC = () => {
     <PageStage className="space-y-4">
       <MotionItem staggerIndex={0}>
         <PageHeader
-          title={t('activity.title') || 'Olay ve Denetim Günlüğü'}
+          title={t('activity.title')}
           badge={
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-[var(--bg-card)] border border-[var(--border-hairline)] text-[var(--cloud-200)] shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--cloud-400)]" />
-              {scope === 'all' ? (t('activity.allFleet') || 'Tüm Filo') : activeSystemName}
+              {scope === 'all' ? t('activity.allFleet') : activeSystemName}
             </span>
           }
-          subtitle={t('activity.subtitle') || 'Konteyner yaşam döngüsü, otomatik kurtarma, alarmlar ve sistem eylemlerinin kronolojik geçmişi'}
+          subtitle={t('activity.subtitle')}
           actions={
             <Button
               variant="default"
@@ -97,7 +97,7 @@ export const ActivityTimelinePage: React.FC = () => {
               disabled={refreshing}
               icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
             >
-              <span>{t('activity.refresh') || 'Yenile'}</span>
+              <span>{t('activity.refresh')}</span>
             </Button>
           }
         />
@@ -118,14 +118,14 @@ export const ActivityTimelinePage: React.FC = () => {
       {loading ? (
         <div className="py-20 text-center text-xs text-[var(--text-muted)]">
           <RefreshCw className="w-6 h-6 animate-spin text-[var(--cloud-200)] mx-auto mb-2" />
-          <span>{t('activity.loading') || 'Olay geçmişi yükleniyor...'}</span>
+          <span>{t('activity.loading')}</span>
         </div>
       ) : logs.length === 0 ? (
         <div className="py-16 text-center border border-dashed border-[var(--border-hairline)] rounded-[var(--radius-sm)] p-6">
           <History className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2 opacity-50" />
-          <p className="text-xs font-semibold text-[var(--cloud-100)]">{t('activity.emptyTitle') || 'Henüz kayıtlı olay bulunmuyor'}</p>
+          <p className="text-xs font-semibold text-[var(--cloud-100)]">{t('activity.emptyTitle')}</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
-            {t('activity.emptyDesc') || 'Sistemde gerçekleşen konteyner işlemleri, eşik alarmları ve kullanıcı aksiyonları burada listelenecektir.'}
+            {t('activity.emptyDesc')}
           </p>
         </div>
       ) : (
@@ -139,7 +139,7 @@ export const ActivityTimelinePage: React.FC = () => {
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t border-[var(--border-hairline)] text-xs text-[var(--text-secondary)]">
                 <span className="font-mono text-[11px]">
-                  {(t('activity.totalEvents') || 'Toplam {count} olay').replace('{count}', String(totalCount))}
+                  {t('activity.totalEvents', { count: totalCount })}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -149,7 +149,7 @@ export const ActivityTimelinePage: React.FC = () => {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     icon={<ChevronLeft className="w-3.5 h-3.5" />}
                   >
-                    {t('activity.previous') || 'Önceki'}
+                    {t('activity.previous')}
                   </Button>
                   <span className="font-mono px-2 tabular-nums">
                     {page} / {totalPages}
@@ -161,7 +161,7 @@ export const ActivityTimelinePage: React.FC = () => {
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     icon={<ChevronRight className="w-3.5 h-3.5" />}
                   >
-                    {t('activity.next') || 'Sonraki'}
+                    {t('activity.next')}
                   </Button>
                 </div>
               </div>

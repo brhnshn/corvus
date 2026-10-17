@@ -24,9 +24,9 @@ export const PruneImagesTable: React.FC<PruneImagesTableProps> = ({
     return (
       <div className="p-8 text-center surface border border-white/10 rounded-2xl text-xs text-[#9ba0b5]">
         <Layers className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60" />
-        <p className="font-medium text-[#eceef6]">{t('containers.noPrunableImagesTitle') || 'Kullanılmayan İmaj Yok'}</p>
+        <p className="font-medium text-[#eceef6]">{t('containers.noPrunableImagesTitle')}</p>
         <p className="mt-1 text-[11px] text-[#9ba0b5]/80">
-          {t('containers.noPrunableImagesDesc') || 'Sistemde silinebilecek askıda veya boşta bir Docker imajı bulunmuyor.'}
+          {t('containers.noPrunableImagesDesc')}
         </p>
       </div>
     );
@@ -36,7 +36,7 @@ export const PruneImagesTable: React.FC<PruneImagesTableProps> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs text-[#9ba0b5]">
         <span className="text-[11px]">
-          {images.length} {t('containers.imagesFound') || 'kullanılmayan imaj'} ({selectedIds.size} {t('containers.selected') || 'seçili'})
+          {images.length} {t('containers.imagesFound')} ({selectedIds.size} {t('containers.selected')})
         </span>
         <button
           type="button"
@@ -46,12 +46,12 @@ export const PruneImagesTable: React.FC<PruneImagesTableProps> = ({
           {allSelected ? (
             <>
               <CheckSquare className="w-3.5 h-3.5 text-[#d5d5dc]" />
-              <span>{t('containers.deselectAll') || 'Seçimi Kaldır'}</span>
+              <span>{t('containers.deselectAll')}</span>
             </>
           ) : (
             <>
               <Square className="w-3.5 h-3.5 text-[#9ba0b5]" />
-              <span>{t('containers.selectAll') || 'Tümünü Seç'}</span>
+              <span>{t('containers.selectAll')}</span>
             </>
           )}
         </button>
@@ -95,11 +95,11 @@ export const PruneImagesTable: React.FC<PruneImagesTableProps> = ({
                   <td className="py-2.5 px-3">
                     {isDangling ? (
                       <span className="inline-block px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] font-medium">
-                        {t('containers.danglingBadge') || 'Askıda (Dangling)'}
+                        {t('containers.danglingBadge')}
                       </span>
                     ) : (
                       <span className="inline-block px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-[#9ba0b5] text-[10px]">
-                        {t('containers.unusedBadge') || 'Boşta (Unused)'}
+                        {t('containers.unusedBadge')}
                       </span>
                     )}
                   </td>

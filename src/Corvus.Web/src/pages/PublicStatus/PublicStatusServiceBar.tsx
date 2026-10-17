@@ -24,10 +24,10 @@ export function PublicStatusServiceBar({ checks = [], totalSlots = 30 }: PublicS
   };
 
   const getStatusText = (status?: string | null) => {
-    if (!status) return t('publicStatus.noData') || 'Veri yok';
-    if (status === 'up' || status === 'healthy') return t('publicStatus.statusHealthy') || 'Çalışıyor';
-    if (status === 'degraded') return t('publicStatus.statusDegraded') || 'Aksaklık';
-    return t('publicStatus.statusDown') || 'Kesinti';
+    if (!status) return t('publicStatus.noData');
+    if (status === 'up' || status === 'healthy') return t('publicStatus.statusHealthy');
+    if (status === 'degraded') return t('publicStatus.statusDegraded');
+    return t('publicStatus.statusDown');
   };
 
   return (
@@ -78,7 +78,7 @@ export function PublicStatusServiceBar({ checks = [], totalSlots = 30 }: PublicS
                       {new Date(check.checkedAt).toLocaleString()}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-[#9ba0b5]">{t('publicStatus.noData') || 'Veri yok'}</span>
+                    <span className="text-[10px] text-[#9ba0b5]">{t('publicStatus.noData')}</span>
                   )}
                 </div>
               </div>
@@ -89,9 +89,9 @@ export function PublicStatusServiceBar({ checks = [], totalSlots = 30 }: PublicS
 
       {/* Legend / Timeline labels */}
       <div className="flex items-center justify-between text-[11px] text-[#9ba0b5] font-mono px-0.5">
-        <span>{t('publicStatus.checksAgo', { count: totalSlots }) || `${totalSlots} kontrol önce`}</span>
+        <span>{t('publicStatus.checksAgo', { count: totalSlots })}</span>
         <div className="h-px bg-white/10 flex-1 mx-3" />
-        <span>{t('publicStatus.now') || 'Şimdi'}</span>
+        <span>{t('publicStatus.now')}</span>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ export const CommandPaletteResults: React.FC<CommandPaletteResultsProps> = ({
   if (items.length === 0) {
     return (
       <div className="py-12 text-center text-xs text-[#9ba0b5]">
-        {t('common.unknown') || 'Sonuç bulunamadı'}
+        {t('commandPalette.noResults')}
       </div>
     );
   }
@@ -33,11 +33,11 @@ export const CommandPaletteResults: React.FC<CommandPaletteResultsProps> = ({
   });
 
   const categoryTitles: Record<string, string> = {
-    commands: t('commandPalette.commands') || 'Hızlı Komutlar',
-    pages: t('nav.dashboard') ? 'Sayfalar' : 'Pages',
-    actions: t('common.actions') ? 'Aksiyonlar' : 'Actions',
-    containers: t('nav.containers') ? 'Konteynerler' : 'Containers',
-    services: t('nav.services') ? 'Servisler' : 'Services',
+    commands: t('commandPalette.commands'),
+    pages: t('commandPalette.catPages'),
+    actions: t('commandPalette.catActions'),
+    containers: t('commandPalette.catContainers'),
+    services: t('commandPalette.catServices'),
   };
 
   let globalIndex = 0;

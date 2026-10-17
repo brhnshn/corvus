@@ -52,16 +52,16 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const pageTitleMap: Record<PageId, string> = {
-    dashboard: t('nav.dashboard') || 'Kontrol Paneli',
-    services: t('nav.services') || 'Servisler',
-    containers: t('nav.containers') || 'Konteynerler',
-    deployments: t('deployments.title') || 'Dağıtım Merkezi',
-    systems: t('nav.systems') || 'Sistemler',
-    metrics: t('nav.metrics') || 'Sistem Metrikleri',
-    uptime: t('nav.uptime') || 'Uptime',
-    activity: t('nav.activity') || 'Olay Geçmişi',
-    settings: t('nav.settings') || 'Ayarlar',
-    profile: t('nav.profile') || 'Profil ve Kullanıcılar',
+    dashboard: t('nav.dashboard'),
+    services: t('nav.services'),
+    containers: t('nav.containers'),
+    deployments: t('deployments.title'),
+    systems: t('nav.systems'),
+    metrics: t('nav.metrics'),
+    uptime: t('nav.uptime'),
+    activity: t('nav.activity'),
+    settings: t('nav.settings'),
+    profile: t('nav.profile'),
   };
 
   const currentTitle = pageTitleMap[currentPage] || 'Corvus';

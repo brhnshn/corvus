@@ -89,7 +89,7 @@ export const TagInput: React.FC<TagInputProps> = ({
             onBlur={() => {
               if (inputValue.trim()) addTag(inputValue);
             }}
-            placeholder={tags.length === 0 ? (placeholder || t('services.tagPlaceholder') || 'Etiket ekle (Prod, DB, API)...') : ''}
+            placeholder={tags.length === 0 ? (placeholder ?? t('services.tagPlaceholder')) : ''}
             disabled={disabled}
             className="flex-1 min-w-[120px] bg-transparent text-sm text-white placeholder-white/30 focus:outline-none py-0.5 px-1 font-mono"
           />
@@ -101,7 +101,7 @@ export const TagInput: React.FC<TagInputProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 text-xs text-white/60 pt-0.5">
           <span className="text-[11px] text-white/40 flex items-center gap-1">
             <Plus className="w-3 h-3" />
-            {t('services.quickTags') || 'Önerilenler'}:
+            {t('services.quickTags')}:
           </span>
           {availableSuggestions.map((suggestion) => (
             <button

@@ -23,14 +23,14 @@ export default function PublicStatus() {
       setLastUpdated(new Date());
       setError(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Durum bilgisi yüklenemedi.');
+      setError(err instanceof Error ? err.message : t('publicStatus.errorLoading'));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    document.title = `${t('publicStatus.badge') || 'Durum'} - Corvus`;
+    document.title = `${t('publicStatus.badge')} - Corvus`;
     loadData();
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
@@ -40,7 +40,7 @@ export default function PublicStatus() {
     if (!data || !data.services) return [];
     const groups = new Map<string, PublicService[]>();
     for (const svc of data.services) {
-      const cat = svc.category?.trim() || t('publicStatus.generalCategory') || 'Genel';
+      const cat = svc.category?.trim() || t('publicStatus.generalCategory');
       if (!groups.has(cat)) {
         groups.set(cat, []);
       }
@@ -56,8 +56,8 @@ export default function PublicStatus() {
     if (!data) return null;
     if (data.systemStatus === 'no_services' || data.services.length === 0) {
       return {
-        title: t('publicStatus.noServicesTitle') || 'İzlenen Servis Yok',
-        desc: t('publicStatus.noServicesDesc') || 'Şu anda sistemde izlenen aktif servis bulunmuyor.',
+        title: t('publicStatus.noServicesTitle'),
+        desc: t('publicStatus.noServicesDesc'),
         borderColor: 'border-[#f87171]/30',
         textColor: 'text-[#f87171]',
         icon: <AlertTriangle className="w-7 h-7 text-[#f87171]" />
@@ -65,8 +65,8 @@ export default function PublicStatus() {
     }
     if (data.systemStatus === 'all_operational') {
       return {
-        title: t('publicStatus.allOperationalTitle') || 'Tüm Sistemler Sorunsuz Çalışıyor',
-        desc: t('publicStatus.allOperationalDesc') || 'Tüm servisler beklenen operasyonel standartlarda aktiftir.',
+        title: t('publicStatus.allOperationalTitle'),
+        desc: t('publicStatus.allOperationalDesc'),
         borderColor: 'border-[#34d399]/30',
         textColor: 'text-[#34d399]',
         icon: <CheckCircle2 className="w-7 h-7 text-[#34d399]" />
@@ -74,16 +74,16 @@ export default function PublicStatus() {
     }
     if (data.systemStatus === 'some_degraded') {
       return {
-        title: t('publicStatus.degradedTitle') || 'Bazı Sistemlerde Aksaklık Var',
-        desc: t('publicStatus.degradedDesc') || 'Belirli servislerde gecikme veya performans düşüklüğü gözlemleniyor.',
+        title: t('publicStatus.degradedTitle'),
+        desc: t('publicStatus.degradedDesc'),
         borderColor: 'border-[#fbbf24]/30',
         textColor: 'text-[#fbbf24]',
         icon: <AlertTriangle className="w-7 h-7 text-[#fbbf24]" />
       };
     }
     return {
-      title: t('publicStatus.outageTitle') || 'Sistem Kesintisi Tespit Edildi',
-      desc: t('publicStatus.outageDesc') || 'Bazı kritik servisler şu anda yanıt vermiyor.',
+      title: t('publicStatus.outageTitle'),
+      desc: t('publicStatus.outageDesc'),
       borderColor: 'border-[#f87171]/30',
       textColor: 'text-[#f87171]',
       icon: <XCircle className="w-7 h-7 text-[#f87171]" />
@@ -112,13 +112,13 @@ export default function PublicStatus() {
             />
             <div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#eceef6] flex items-center gap-2">
-                <span>{t('publicStatus.title') || 'Sistem Durumu'}</span>
+                <span>{t('publicStatus.title')}</span>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded-[10px] bg-white/[0.07] border border-white/10 text-[#d5d5dc] font-semibold">
-                  {t('publicStatus.badge') || 'Canlı'}
+                  {t('publicStatus.badge')}
                 </span>
               </h1>
               <p className="text-xs text-[#9ba0b5] mt-0.5">
-                {t('publicStatus.subtitle') || 'Gerçek zamanlı servis erişilebilirlik ve altyapı raporu'}
+                {t('publicStatus.subtitle')}
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function PublicStatus() {
             <LanguageSwitch variant="compact" />
             <span className="flex items-center gap-1.5 font-mono text-[11px]">
               <Clock className="w-3.5 h-3.5 text-[#9ba0b5]" />
-              {t('publicStatus.lastUpdate', { time: lastUpdated.toLocaleTimeString() }) || lastUpdated.toLocaleTimeString()}
+              {t('publicStatus.lastUpdate', { time: lastUpdated.toLocaleTimeString() })}
             </span>
             <Button
               variant="secondary"
@@ -135,13 +135,13 @@ export default function PublicStatus() {
               disabled={loading}
               icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
             >
-              <span className="sr-only">Yenile</span>
+              <span className="sr-only">{t('common.refresh')}</span>
             </Button>
             <a
               href="/"
               className="px-3 py-1.5 rounded-[12px] bg-white/[0.07] hover:bg-white/[0.12] border border-white/10 text-[#eceef6] transition-colors text-xs font-semibold"
             >
-              {t('publicStatus.adminPanelBtn') || 'Yönetim Paneli'}
+              {t('publicStatus.adminPanelBtn')}
             </a>
           </div>
         </div>
@@ -170,7 +170,7 @@ export default function PublicStatus() {
         {loading && !data && (
           <div className="text-center py-20 text-[#9ba0b5] flex flex-col items-center gap-3">
             <RefreshCw className="w-7 h-7 animate-spin text-[#d5d5dc]" />
-            <p className="text-xs font-mono">{t('common.loading') || 'Yükleniyor...'}</p>
+            <p className="text-xs font-mono">{t('common.loading')}</p>
           </div>
         )}
 
@@ -186,15 +186,15 @@ export default function PublicStatus() {
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
               <h3 className="text-xs font-mono font-bold tracking-wider text-[#9ba0b5] uppercase">
-                {t('publicStatus.monitoredServices', { count: data.services.length }) || `İzlenen Servisler (${data.services.length})`}
+                {t('publicStatus.monitoredServices', { count: data.services.length })}
               </h3>
             </div>
 
             {data.services.length === 0 ? (
               <div className="p-8 rounded-[20px] border border-[#f87171]/30 surface text-center text-[#f87171] text-sm space-y-2">
                 <AlertTriangle className="w-8 h-8 text-[#f87171] mx-auto" />
-                <p className="font-semibold text-[#eceef6]">{t('publicStatus.noServicesTitle') || 'İzlenen Servis Bulunmuyor'}</p>
-                <p className="text-xs text-[#9ba0b5]">{t('publicStatus.noServicesDesc') || 'Genel erişime açık servis tanımlanmamış.'}</p>
+                <p className="font-semibold text-[#eceef6]">{t('publicStatus.noServicesTitle')}</p>
+                <p className="text-xs text-[#9ba0b5]">{t('publicStatus.noServicesDesc')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -212,7 +212,7 @@ export default function PublicStatus() {
 
         {/* Footer */}
         <div className="pt-6 border-t border-white/10 text-center text-xs text-[#9ba0b5]/80 font-mono">
-          <p>{t('publicStatus.footerText') || 'Corvus Altyapı İzleme Motoru Tarafından Sağlanmaktadır'}</p>
+          <p>{t('publicStatus.footerText')}</p>
         </div>
       </div>
     </div>

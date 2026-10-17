@@ -20,8 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Duplicate Action Buttons & Inconsistent Labels in Container Detail**:
   - `ContainerOverviewTab.tsx` & `ContainerDetail/index.tsx`: Added `showActionsToolbar` prop (default `true` for standalone modal usage, `false` on `ContainerDetail` page) to eliminate duplicate Start/Stop/Restart/Pause/Terminal/Logs buttons when `ContainerDetailHeader` is already rendered.
   - `ContainerDetailHeader.tsx`: Standardized action button labels to imperative translation keys (`containers.stop`, `containers.start`, `containers.restart`, `containers.pause`, `containers.resume`).
-- **Comprehensive i18n Localization Across Frontend Modules**:
-  - `en.ts` & `tr.ts`: Added and synchronized translation keys across `Containers`, `ContainerDetail`, `Dashboard`, `Services`, `Settings`, `Uptime`, `Deployments`, `SystemMetrics`, `Profile`, `PublicStatus`, and shared UI components, eliminating hardcoded Turkish strings and fallback literals.
+- **Comprehensive i18n Localization & Fallback Elimination Across Web UI**:
+  - `en.ts` & `tr.ts`: Synchronized translation keys across `CommandPalette`, `ActivityTimeline`, `AuthPage`, `Containers`, `ContainerDetail`, `Dashboard`, `Services`, `Settings`, `Systems`, `Profile`, `PublicStatus`, `ObsidianAreaChart`, and shared UI components (including `Sheet` close button, `AttentionAlerts` check type, and backup curl snippet message).
+  - Eliminated all remaining hardcoded Turkish fallback literals (`t('...') || '...'`), including `PublicStatusServiceCard` uptime rate template literals, in favor of direct type-safe translation keys.
+  - Hardened `useI18n` with a graceful default context, ensuring isolated component testing and standalone usage resolve translations without provider dependency crashes.
 
 ## [1.6.13] - 2026-10-16 — Strict React Rules of Hooks Compliance & Linter Hardening
 

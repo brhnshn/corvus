@@ -188,6 +188,7 @@ export const tr: TranslationDictionary = {
     issuesSummary: '{down} kesinti, {stopped} durmuş konteyner, {ssl} SSL uyarısı',
     serviceUnreachable: 'erişilemiyor',
     serviceNoResponse: '({url} yanıt vermiyor)',
+    serviceCheckType: '{type} servisi',
     serviceDegraded: 'performans düşüşü tespit edildi (yanıt süresi yüksek)',
     inspectBtn: 'İncele →',
     sslExpiringSoon: 'SSL sertifikası yakında dolacak (kalan: {days} gün)',
@@ -520,7 +521,9 @@ export const tr: TranslationDictionary = {
     pruneCacheCleaned: 'Temizlendi',
     prunePartialErrorsTitle: 'Bazı öğeler silinemedi (Bağımlılık veya kilitli kaynak):',
     pruneOrphanedVolumesTab: 'Sahipsiz Hacimler',
-    copyDigestTooltip: 'Digest\'ı Kopyala'
+    copyDigestTooltip: 'Digest\'ı Kopyala',
+    connectionTerminated: 'Bağlantı sonlandı (Kod: {code}).',
+    operationError: 'İşlem sırasında bir hata oluştu.'
   },
   deployments: {
     title: 'Dağıtım Merkezi',
@@ -827,7 +830,11 @@ export const tr: TranslationDictionary = {
     ramAriaLabel: 'RAM Kullanım Grafiği',
     primaryDisk: 'Birincil Sabit Disk / Bölüm',
     freeSpaceSubtext: 'Boş: {free} GB (%{percent})',
-    percentUsed: '%{percent} Dolu'
+    percentUsed: '%{percent} Dolu',
+    chartAriaLabel: 'Metrik Grafiği',
+    pollingError: 'Telemetri sorgusu alınamadı',
+    peakValue: 'Zirve: {value}',
+    emptyData: 'Veri bulunmuyor'
   },
   uptime: {
     title: 'Uptime & Sağlık Takibi',
@@ -954,7 +961,10 @@ export const tr: TranslationDictionary = {
       alert: 'Alarmlar',
       security: 'Güvenlik & Giriş',
       system: 'Sistem'
-    }
+    },
+    actor: 'Aktör',
+    categoryLabel: 'Kategori',
+    ip: 'IP'
   },
   settings: {
     title: 'Ayarlar',
@@ -1074,12 +1084,14 @@ export const tr: TranslationDictionary = {
     backupDocsTitle: 'Backup Push Entegrasyonu',
     backupDocsDesc: 'Yedekleme scriptlerinizden (örn. restic, borg, backup.sh) Corvus\'a durum bildirmek için şu endpoint\'e istek atabilirsiniz:',
     backupDocSuccessComment: '# Başarılı durum bildirimi',
+    backupSuccessMessage: 'Yedek tamamlandı',
     versionCardTitle: 'Sürüm ve Güncelleme Bilgisi',
     versionUpdateAvailable: 'Yeni bir sürüm yayınlandı: {version}',
     versionUpToDate: 'Sisteminiz güncel. En son sürümü kullanıyorsunuz.',
     githubReleasesBtn: 'GitHub Sürümleri',
     saveBtn: 'Ayarları Kaydet',
     savedToast: 'Ayarlar kaydedildi',
+    saveError: 'Kaydetme hatası: {error}',
     tabUsers: 'Kullanıcılar & Roller',
     usersSectionTitle: 'Kullanıcı ve Rol Yönetimi (RBAC)',
     usersSectionDesc: 'Sistem kullanıcılarını, erişim rollerini ve yetkilerini yönetin',
@@ -1124,7 +1136,8 @@ export const tr: TranslationDictionary = {
     showPassword: 'Şifreyi Göster',
     hidePassword: 'Şifreyi Gizle',
     envLoginSwitch: 'Önceden tanımlı ortam (ENV) hesabıyla giriş yap',
-    envRegisterSwitch: 'Yeni ilk yönetici hesabı oluşturma moduna dön'
+    envRegisterSwitch: 'Yeni ilk yönetici hesabı oluşturma moduna dön',
+    actionFailed: 'İşlem başarısız oldu.'
   },
   publicStatus: {
     title: 'Corvus',
@@ -1156,7 +1169,8 @@ export const tr: TranslationDictionary = {
     allOperationalInGroup: 'Tümü Operasyonel',
     issuesInGroup: '{count} serviste sorun var',
     noData: 'Veri yok',
-    footerText: 'Bu durum sayfası Corvus Monitoring tarafından 30 saniyede bir otomatik güncellenmektedir.'
+    footerText: 'Bu durum sayfası Corvus Monitoring tarafından 30 saniyede bir otomatik güncellenmektedir.',
+    errorLoading: 'Durum bilgileri yüklenemedi.'
   },
   logsModal: {
     title: 'Canlı Konteyner Logları',
@@ -1285,6 +1299,7 @@ export const tr: TranslationDictionary = {
     searchPlaceholder: 'Sistem ara...',
     filterPlaceholder: 'Filtrele…',
     viewColumns: 'Görüntüle',
+    activeCount: '{online}/{total} aktif',
     footerNote: 'Corvus · Sistemler',
     noSystemsFound: 'Kayıtlı sistem bulunamadı',
     noSystemsDesc: 'Arama filtrenize uygun sunucu bulunamadı.',
@@ -1563,7 +1578,14 @@ export const tr: TranslationDictionary = {
     dockerPrune: 'Docker Temizliği & Hijyen (System Prune)',
     openStatusPage: 'Canlı Durum Sayfasını Aç (/status)',
     restartFailed: 'Yeniden başlatma hatası: {error}',
-    noResponse: 'Yanıt alınamadı'
+    noResponse: 'Yanıt alınamadı',
+    modalAriaLabel: 'Komut Paleti',
+    searchPlaceholder: 'Komut veya sayfa ara... (Ctrl+K)',
+    noResults: 'Sonuç bulunamadı',
+    catPages: 'Sayfalar',
+    catActions: 'Aksiyonlar',
+    catContainers: 'Konteynerler',
+    catServices: 'Servisler'
   },
   errorBoundary: {
     newVersionDetected: 'Yeni Sürüm Algılandı',

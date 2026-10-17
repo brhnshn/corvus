@@ -26,7 +26,7 @@ export const ProfileUsersTab: React.FC<ProfileUsersTabProps> = ({ currentUsernam
       const data = await api.getUsers();
       setUsers(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Kullanıcılar alınamadı.');
+      setError(err instanceof Error ? err.message : t('userManagement.loadFailed'));
     } finally {
       setLoading(false);
     }

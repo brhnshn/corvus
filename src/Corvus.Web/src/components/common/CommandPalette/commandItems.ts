@@ -40,7 +40,7 @@ export async function fetchCommandItems({
     // Sayfalar
     {
       id: 'page-dashboard',
-      title: t('nav.dashboard') || 'Genel Bakış',
+      title: t('nav.dashboard'),
       category: 'pages',
       icon: LayoutDashboard,
       shortcut: 'G D',
@@ -48,7 +48,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'page-services',
-      title: t('nav.services') || 'Servisler',
+      title: t('nav.services'),
       category: 'pages',
       icon: Grid,
       shortcut: 'G S',
@@ -56,7 +56,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'page-containers',
-      title: t('nav.containers') || 'Konteynerler',
+      title: t('nav.containers'),
       category: 'pages',
       icon: Boxes,
       shortcut: 'G C',
@@ -64,7 +64,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'page-metrics',
-      title: t('nav.metrics') || 'Sistem Metrikleri',
+      title: t('nav.metrics'),
       category: 'pages',
       icon: Activity,
       shortcut: 'G M',
@@ -72,7 +72,7 @@ export async function fetchCommandItems({
     },
     {
       id: 'page-uptime',
-      title: t('nav.uptime') || 'Uptime & SSL',
+      title: t('nav.uptime'),
       category: 'pages',
       icon: Clock,
       shortcut: 'G U',

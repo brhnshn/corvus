@@ -52,7 +52,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onSelectPage 
 
   return (
     <nav
-      aria-label={t('nav.navigation') || 'Ana gezinme'}
+      aria-label={t('nav.navigation')}
       className="
         fixed inset-x-2.5 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-[520px] lg:hidden
         h-16 rounded-full p-1.5 select-none

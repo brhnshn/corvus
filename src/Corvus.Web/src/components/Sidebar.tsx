@@ -114,20 +114,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const navItems = [
-    { id: 'dashboard', label: t('nav.dashboard') || 'Kontrol Paneli', icon: LayoutDashboard },
-    { id: 'services', label: t('nav.services') || 'Servisler', icon: Grid },
-    { id: 'containers', label: t('nav.containers') || 'Konteynerler', icon: Boxes },
-    { id: 'deployments', label: t('deployments.navItem') || 'Dağıtımlar', icon: Rocket },
-    { id: 'metrics', label: t('nav.metrics') || 'Sistem Metrikleri', icon: Activity },
-    { id: 'uptime', label: t('nav.uptime') || 'Uptime', icon: Clock },
-    { id: 'activity', label: t('nav.activity') || 'Olay Geçmişi', icon: History },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { id: 'services', label: t('nav.services'), icon: Grid },
+    { id: 'containers', label: t('nav.containers'), icon: Boxes },
+    { id: 'deployments', label: t('deployments.navItem'), icon: Rocket },
+    { id: 'metrics', label: t('nav.metrics'), icon: Activity },
+    { id: 'uptime', label: t('nav.uptime'), icon: Clock },
+    { id: 'activity', label: t('nav.activity'), icon: History },
   ] as const;
 
   return (
     <aside
       className={`sidebar ${isCollapsed ? '-translate-x-full lg:translate-x-0' : ''}`}
       style={{ width: `${sidebarWidth}px` }}
-      aria-label={t('nav.navigation') || 'Sol Menü'}
+      aria-label={t('nav.navigation')}
     >
       {/* Sidebar Draggable Resizer */}
       <div
@@ -160,11 +160,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             className="cmd-trigger"
             onClick={onOpenCommandPalette}
-            title={t('nav.openCommandPalette') || 'Komut Paletini Aç (Ctrl K)'}
+            title={t('nav.openCommandPalette')}
           >
             <span className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5" />
-              <span>{t('common.search') || 'Komutlar...'}</span>
+              <span>{t('common.search')}</span>
             </span>
             <span className="kbd">Ctrl K</span>
           </button>
@@ -196,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
 
         {/* Fleet Section */}
-        <div className="nav-section-title">{t('nav.allSystems') || 'Tüm Sistemler'}</div>
+        <div className="nav-section-title">{t('nav.allSystems')}</div>
         <button
           type="button"
           data-nav="systems"
@@ -206,13 +206,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span className="nav-btn-left">
             <Server className="w-4 h-4" />
-            <span>{t('nav.fleet') || 'Tüm Sunucular'}</span>
+            <span>{t('nav.fleet')}</span>
           </span>
         </button>
 
         {/* Node Scope Section Header */}
         <div className="nav-section-title mt-2.5 flex items-center justify-between">
-          <span>{t('nav.nodeScope') || 'Düğüm Kapsamı'}</span>
+          <span>{t('nav.nodeScope')}</span>
           <button
             type="button"
             onClick={() => onSelectPage('systems')}
@@ -220,7 +220,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title={t('nav.switchSystem')}
           >
             <ArrowLeftRight className="w-2.5 h-2.5" />
-            <span>{t('common.actions') || 'Değiştir'}</span>
+            <span>{t('common.actions')}</span>
           </button>
         </div>
 
@@ -264,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
 
         {/* Management / Global Section */}
-        <div className="nav-section-title mt-2.5">{t('nav.management') || 'Yönetim'}</div>
+        <div className="nav-section-title mt-2.5">{t('nav.management')}</div>
         <button
           type="button"
           data-nav="settings"
@@ -274,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span className="nav-btn-left">
             <Settings className="w-4 h-4 text-[var(--text-secondary)]" />
-            <span>{t('nav.settings') || 'Ayarlar'}</span>
+            <span>{t('nav.settings')}</span>
           </span>
         </button>
       </nav>
@@ -286,11 +286,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           target="_blank"
           rel="noopener noreferrer"
           className="footer-link"
-          title={t('nav.publicStatusPage') || 'Herkese Açık Canlı Durum Sayfası'}
+          title={t('nav.publicStatusPage')}
         >
           <span className="flex items-center gap-1.5">
             <Terminal className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-            <span>{t('nav.liveStatus') || 'Canlı Durum Sayfası'}</span>
+            <span>{t('nav.liveStatus')}</span>
           </span>
           <span className="mono text-[11px] text-[var(--text-muted)]">↗</span>
         </a>
@@ -309,11 +309,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="mono text-[11px] text-[var(--cloud-200)] group-hover:text-white truncate font-medium">Corvus {versionInfo?.currentVersion ? `v${versionInfo.currentVersion}` : (typeof __APP_VERSION__ !== 'undefined' && __APP_VERSION__ ? `v${__APP_VERSION__}` : '')}</span>
           </span>
           {versionInfo?.isUpdateAvailable ? (
-            <span className="mono text-[10.5px] text-[var(--status-warn)] font-semibold shrink-0">{t('nav.updateAvailable') || 'Güncelle'}</span>
+            <span className="mono text-[10.5px] text-[var(--status-warn)] font-semibold shrink-0">{t('nav.updateAvailable')}</span>
           ) : (
             <span className="mono text-[10.5px] text-[var(--status-up)] flex items-center gap-1 font-medium shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--status-up)]" />
-              {t('nav.upToDate') || 'güncel'}
+              {t('nav.upToDate')}
             </span>
           )}
         </a>
