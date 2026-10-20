@@ -78,7 +78,7 @@ public static class AuthEndpoints
             string userKey = request.Username?.Trim().ToLowerInvariant() ?? "";
             string attemptKey = $"{clientIp}:{userKey}";
 
-            if (auth.IsAuthEnabled && (auth.IsLoginRateLimited(attemptKey) || auth.IsLoginRateLimited(clientIp)))
+            if (auth.IsAuthEnabled && auth.IsLoginRateLimited(attemptKey))
             {
                 return Results.Json(
                     new GenericApiResponse(false, "Çok fazla başarısız giriş denemesi. Lütfen 1 dakika sonra tekrar deneyin."),
@@ -92,12 +92,12 @@ public static class AuthEndpoints
             if (!valid || username == null)
             {
                 auth.RecordLoginFailure(attemptKey);
-                auth.RecordLoginFailure(clientIp);
+
                 return Results.Unauthorized();
             }
 
             auth.ResetLoginAttempts(attemptKey);
-            auth.ResetLoginAttempts(clientIp);
+
 
             string token = auth.GenerateSessionToken(username);
             bool isLoginSecure = context.Request.IsHttps || string.Equals(context.Request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);

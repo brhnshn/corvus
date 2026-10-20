@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { 
   X, 
   Terminal, 
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { useI18n } from '../../i18n';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 interface ContainerLogsModalProps {
   containerId: string;
@@ -34,7 +35,7 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   // İlk snapshot yüklemesi
-  const fetchInitialLogs = async () => {
+  const fetchInitialLogs = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.getContainerLogs(containerId, tailCount);
@@ -44,11 +45,9 @@ export const ContainerLogsModal: React.FC<ContainerLogsModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchInitialLogs();
   }, [containerId, tailCount]);
+
+  useLoadEffect(fetchInitialLogs);
 
   // Server-Sent Events (SSE) ile canlı akış
   useEffect(() => {

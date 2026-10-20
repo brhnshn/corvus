@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   X, 
   Sparkles, 
@@ -13,7 +13,8 @@ import { containersApi } from '../../api';
 import type { ContainerImageUpdateInfo } from '../../types';
 import { useI18n } from '../../i18n';
 import { Button } from '../../components/ui/Button';
-import { useToast } from '../../components/ui/Toast';
+import { useToast } from '../../components/ui/ToastContext';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 interface ImageUpdateModalProps {
   containerId: string;
@@ -60,11 +61,13 @@ export const ImageUpdateModal: React.FC<ImageUpdateModalProps> = ({
     }
   }, [containerId, t]);
 
-  useEffect(() => {
+  const loadWhenOpen = useCallback(() => {
     if (isOpen && containerId) {
       loadUpdateInfo();
     }
   }, [isOpen, containerId, loadUpdateInfo]);
+
+  useLoadEffect(loadWhenOpen);
 
   const handleCopy = (text: string, type: 'local' | 'remote') => {
     if (!text) return;

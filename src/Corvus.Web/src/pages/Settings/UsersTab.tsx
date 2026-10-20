@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   UserCheck, 
   UserPlus, 
@@ -16,6 +16,7 @@ import type { UserDto } from '../../types';
 import { useI18n } from '../../i18n';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 interface UsersTabProps {
   currentUsername?: string | null;
@@ -55,9 +56,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     }
   }, [t]);
 
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+  useLoadEffect(loadUsers);
 
   const handleRoleChange = async (userId: string, targetRole: string) => {
     if (!isAdmin) return;

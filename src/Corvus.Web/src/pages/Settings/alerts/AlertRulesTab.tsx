@@ -14,7 +14,7 @@ import type { AlertRule, CreateAlertRuleRequest } from '../../../types';
 import { api } from '../../../api/client';
 import { Button } from '../../../components/ui/Button';
 import { AddAlertRuleModal } from './AddAlertRuleModal';
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../../components/ui/ToastContext';
 import { useI18n } from '../../../i18n';
 
 interface AlertRulesTabProps {

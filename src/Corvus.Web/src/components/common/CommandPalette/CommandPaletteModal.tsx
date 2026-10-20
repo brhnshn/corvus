@@ -21,13 +21,20 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Modal kapandığında aramayı sıfırla
-  useEffect(() => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
     if (!isOpen) {
       setQuery('');
       setSelectedIndex(0);
     }
-  }, [isOpen]);
+  }
+
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setSelectedIndex(0);
+  }
 
   // Arama filtreleme
   const filteredItems = useMemo(() => {
@@ -61,11 +68,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       .sort((a, b) => b.score - a.score)
       .map((res) => res.item);
   }, [items, query]);
-
-  // Arama değiştikçe seçili index'i sınırla
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
 
   // Klavye yönlendirmesi
   useEffect(() => {

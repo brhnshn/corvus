@@ -19,6 +19,7 @@ import { Button } from '../../components/ui/Button';
 import { formatBytes } from '../../utils/format';
 import { ContainerQuickActions } from './ContainerQuickActions';
 import { useI18n } from '../../i18n';
+import { extractContainerTags } from './utils/containerTags';
 
 export interface ContainerRowProps {
   container: DockerContainer;
@@ -33,18 +34,6 @@ export interface ContainerRowProps {
   onDeploy?: (container: DockerContainer) => void;
   onDelete?: (container: DockerContainer) => void;
   hasUpdate?: boolean;
-}
-
-export function extractContainerTags(labels?: Record<string, string>): string[] {
-  if (!labels) return [];
-  const tags: string[] = [];
-  if (labels['corvus.tags']) {
-    tags.push(...labels['corvus.tags'].split(',').map((s) => s.trim()).filter(Boolean));
-  }
-  if (labels['environment']) tags.push(labels['environment'].trim());
-  else if (labels['env']) tags.push(labels['env'].trim());
-  if (labels['com.docker.compose.project']) tags.push(labels['com.docker.compose.project'].trim());
-  return Array.from(new Set(tags));
 }
 
 export const ContainerRow: React.FC<ContainerRowProps> = ({

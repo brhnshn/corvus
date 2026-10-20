@@ -26,6 +26,16 @@ export const Sheet: React.FC<SheetProps> = ({
   const { t } = useI18n();
   const [mounted, setMounted] = useState(isOpen);
   const [visible, setVisible] = useState(false);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setMounted(true);
+    } else {
+      setVisible(false);
+    }
+  }
 
   // Açılma ve yumuşak kapanma animasyonu yönetimi (Orijinal HTML transition: transform .5s cubic-bezier(.22,1,.36,1))
   useEffect(() => {
@@ -34,7 +44,6 @@ export const Sheet: React.FC<SheetProps> = ({
     let rAf2: number;
 
     if (isOpen) {
-      setMounted(true);
       rAf1 = requestAnimationFrame(() => {
         rAf2 = requestAnimationFrame(() => {
           setVisible(true);
@@ -42,7 +51,6 @@ export const Sheet: React.FC<SheetProps> = ({
       });
       document.body.style.overflow = 'hidden';
     } else {
-      setVisible(false);
       timer = setTimeout(() => {
         setMounted(false);
       }, 500);

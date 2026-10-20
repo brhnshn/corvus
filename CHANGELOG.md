@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.17] - 2026-10-20 — Comprehensive Security Hardening, Clean Modular Architecture & Full Zero-Warning Oxlint Cleansing
+
+### Security
+- **Strict Role-Based Access Control & Least Privilege Principle**:
+  - `Corvus.Api/Services/AuthService.cs`: Patched `GetUserRoleAsync` where unknown/unregistered users previously defaulted to `"admin"` role (`user?.Role ?? "admin"`). Strictly enforced least privilege: unknown users now safely receive `"viewer"` role, eliminating privilege escalation risks when reverse proxy headers or external SSO are enabled. Added unit test `GetUserRoleAsync_EnforcesLeastPrivilege_ForUnknownUser`.
+  - `Corvus.Api/Endpoints/BackupEndpoints.cs`: Sanitized `/api/backup-events` endpoint to mask sensitive push `Token` values as `"***"` for non-admin callers, preventing secret token leakage to read-only viewers.
+  - `Corvus.Api/Endpoints/SystemsEndpoints.cs`: Added `.RequireAdmin()` authorization to host `journalctl` unit log endpoints (`/api/v1/systems/systemd/{unitName}/logs` and `/{id}/systemd/{unitName}/logs`), ensuring low-privileged users cannot view host system service logs or leaked credentials.
+  - `Corvus.Api/Utils/SsrfGuard.cs`: Hardened SSRF defense engine to explicitly block all loopback addresses (`127.0.0.0/8`, `::1`, `localhost`), and any-addresses (`0.0.0.0`, `::`). Added comprehensive unit test assertions across IPv4, IPv6, and DNS hostname resolutions.
+  - `Corvus.Api/Program.cs` & `Endpoints/AuthEndpoints.cs`: Configured `ForwardedHeadersOptions` (`X-Forwarded-For` and `X-Forwarded-Proto`) and activated `app.UseForwardedHeaders()`. Refined login brute-force rate-limiting to key on combined `clientIp:username` rather than locking down global proxy IPs, preventing reverse proxy Account Lockout Denial-of-Service attacks.
+
+### Changed
+- **Backend Clean Modular Architecture (< 400 Lines per File)**:
+  - `DockerService.cs` (originally 900+ lines): Partitioned without changing public contracts into modular partial classes: `DockerService.cs` (244 lines), `DockerService.Maintenance.cs` (182 lines), `DockerService.Mapping.cs` (285 lines), `DockerService.Stats.cs` (78 lines), `DockerService.Updates.cs` (218 lines), and `IDockerService.cs` (37 lines).
+  - `DeploymentEngine.cs` (originally 832+ lines): Partitioned into `DeploymentEngine.cs` (278 lines), `DeploymentEngine.Pipeline.cs` (308 lines), `DeploymentEngine.Scratch.cs` (377 lines), and `IDeploymentEngine.cs` (24 lines).
+  - `ContainersEndpoints.cs` (originally 796+ lines): Partitioned into `ContainersEndpoints.cs` (353 lines), `ContainersEndpoints.MetricsAndLogs.cs` (219 lines), `ContainersEndpoints.Terminal.cs` (230 lines), and `ContainersEndpoints.Updates.cs` (132 lines).
+- **Frontend Containers Page Modular Decomposition**:
+  - `Corvus.Web/src/pages/Containers/index.tsx`: Extracted 11 embedded modal dialogs and action sheets into a dedicated `ContainersModals.tsx` component, reducing `Containers/index.tsx` from 551 lines down to 240 lines in full compliance with the workspace Clean Architecture rule.
+
+### Fixed
+- **Complete Oxlint Zero-Warning Cleansing**:
+  - Resolved all 61 oxlint warnings across 247 frontend files without adding a single `oxlint-disable` or `eslint-disable` comment.
+  - Decoupled `only-export-components` violations in `ToastContext.ts`, `useToast.ts`, `useAnimatedNumber.ts`, `containerTags.ts`, and split `i18n` into `I18nProvider.tsx`, `context.ts`, and `index.ts`.
+  - Replaced synchronous `set-state-in-effect` patterns with `useLoadEffect` and derived state across 20+ page and modal components.
+  - Resolved all missing hooks dependencies, impure renders, and immutability warnings.
+  - Synchronized test count badges in `README.md` and `README.tr.md` to reflect 435 passing tests (369 backend xUnit + 66 frontend Vitest).
+
 ## [1.6.16] - 2026-10-18 — Live Container Resource Limits Quota & Restart Policy Dynamic Editor
 
 ### Added

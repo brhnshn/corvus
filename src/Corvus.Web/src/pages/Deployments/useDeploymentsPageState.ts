@@ -7,6 +7,7 @@ import type {
   ScratchDeploymentRequest
 } from '../../types/deployments';
 import { getSavedActiveDeployment } from '../Containers/deployments/useDeploymentStream';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 import type { DockerContainer } from '../../types';
 
 export function useDeploymentsPageState() {
@@ -25,7 +26,7 @@ export function useDeploymentsPageState() {
   const [selectedContainerForWebhook, setSelectedContainerForWebhook] = useState<DockerContainer | null>(null);
 
   // Canlı Dağıtım Modalı Durumu
-  const [activeDeployment, setActiveDeployment] = useState<ActiveDeploymentState | null>(null);
+  const [activeDeployment, setActiveDeployment] = useState<ActiveDeploymentState | null>(() => getSavedActiveDeployment());
 
   // Verileri çek
   const fetchData = useCallback(async (silent = false) => {
@@ -47,21 +48,14 @@ export function useDeploymentsPageState() {
     }
   }, []);
 
+  useLoadEffect(fetchData);
+
   useEffect(() => {
-    fetchData();
     const interval = setInterval(() => {
       fetchData(true);
     }, 10000);
     return () => clearInterval(interval);
   }, [fetchData]);
-
-  // Sayfa yenilendiğinde aktif modal kurtarma (Corvus filtreli ve zaman aşımı korumalı)
-  useEffect(() => {
-    const saved = getSavedActiveDeployment();
-    if (saved) {
-      setActiveDeployment(saved);
-    }
-  }, []);
 
   // Metrikler
   const stats = useMemo(() => {

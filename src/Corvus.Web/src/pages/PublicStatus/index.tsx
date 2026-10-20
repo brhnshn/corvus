@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { api, type PublicStatusPage } from '../../api/client';
 import { CheckCircle2, AlertTriangle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { useI18n } from '../../i18n';
@@ -16,7 +17,7 @@ export default function PublicStatus() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const res = await api.getPublicStatusPage();
       setData(res);
@@ -27,14 +28,15 @@ export default function PublicStatus() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useLoadEffect(loadData);
 
   useEffect(() => {
     document.title = `${t('publicStatus.badge')} - Corvus`;
-    loadData();
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
-  }, [t]);
+  }, [loadData, t]);
 
   const groupedServices = useMemo(() => {
     if (!data || !data.services) return [];

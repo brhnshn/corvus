@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { UserPlus, User as UserIcon, Shield, Trash2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { api } from '../../api';
 import type { UserDto } from '../../types';
 import { useI18n } from '../../i18n';
 import { Button } from '../../components/ui/Button';
 import { AddUserModal } from './AddUserModal';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 interface ProfileUsersTabProps {
   currentUsername: string;
@@ -19,7 +20,7 @@ export const ProfileUsersTab: React.FC<ProfileUsersTabProps> = ({ currentUsernam
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -30,11 +31,9 @@ export const ProfileUsersTab: React.FC<ProfileUsersTabProps> = ({ currentUsernam
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  useLoadEffect(loadUsers);
 
   const handleDeleteUser = async (user: UserDto) => {
     if (user.username.toLowerCase() === currentUsername.toLowerCase()) {

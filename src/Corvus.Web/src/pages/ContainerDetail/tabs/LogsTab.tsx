@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw, Copy, Check, ArrowDown, Search, Trash2, FileText } from 'lucide-react';
 import { containersApi } from '../../../api/containers';
 import { useI18n } from '../../../i18n';
+import { useLoadEffect } from '../../../hooks/useLoadEffect';
 
 interface LogsTabProps {
   containerId: string;
@@ -37,9 +38,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ containerId, containerName }) 
     }
   }, [containerId, tail]);
 
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+  useLoadEffect(fetchLogs);
 
   useEffect(() => {
     if (!autoRefresh) return;

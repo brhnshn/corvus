@@ -12,6 +12,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { useI18n } from '../../../i18n';
+import { useLoadEffect } from '../../../hooks/useLoadEffect';
 
 interface TerminalTabProps {
   containerId: string;
@@ -160,13 +161,6 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
     return () => {
       dataDisposable.dispose();
-    };
-  }, [containerId, shell, sendResize, t]);
-
-  useEffect(() => {
-    const cleanup = connectTerminal();
-    return () => {
-      if (cleanup) cleanup();
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -176,7 +170,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         xtermRef.current = null;
       }
     };
-  }, [connectTerminal]);
+  }, [containerId, shell, sendResize, t]);
+
+  useLoadEffect(connectTerminal);
 
   useEffect(() => {
     const handleResize = () => {

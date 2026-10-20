@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Database" />
-  <img src="https://img.shields.io/badge/Tests-374_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-435_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -412,12 +412,12 @@ labels:
    cd ../Corvus.Api
    dotnet run
    ```
-3. **Running Automated Tests (374 Total):**
+3. **Running Automated Tests (435 Total):**
    ```bash
-   # Backend Tests (329 passing xUnit tests)
+   # Backend Tests (369 passing xUnit tests)
    dotnet test tests/Corvus.Api.Tests
 
-   # Frontend Tests (45 passing Vitest tests)
+   # Frontend Tests (66 passing Vitest tests)
    cd src/Corvus.Web && npm test
    ```
 

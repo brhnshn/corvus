@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n';
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { StatusDot } from '../../components/ui/StatusDot';
 import { useSystemMetricsStream } from '../../hooks';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { SystemKpiCards } from './SystemKpiCards';
 import { CpuMetricsChart } from './CpuMetricsChart';
 import { RamMetricsChart } from './RamMetricsChart';
@@ -39,9 +40,10 @@ export const SystemMetricsPage: React.FC = () => {
     }
   }, [range]);
 
+  useLoadEffect(loadData);
+
   useEffect(() => {
     isMountedRef.current = true;
-    loadData();
 
     // SSE bağlıysa periyodik polling aralığını gevşet (60s), bağlı değilse 15s fallback
     const pollIntervalMs = isLiveStream ? 60000 : 15000;

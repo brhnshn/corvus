@@ -601,7 +601,7 @@ public static class SystemsEndpoints
         {
             var logs = await systemdClient.GetUnitLogsAsync(unitName, lines ?? 100, ct);
             return Results.Json(logs, CorvusJsonSerializerContext.Default.SystemdLogsDto);
-        });
+        }).RequireAdmin();
 
         group.MapGet("/{id}/systemd/{unitName}/logs", async (
             string id,
@@ -631,6 +631,6 @@ public static class SystemsEndpoints
             var rpcRes = await tunnelManager.SendDockerRequestAsync(id, rpcReq, TimeSpan.FromSeconds(15));
             var logLines = rpcRes.Logs ?? (rpcRes.Message != null ? [rpcRes.Message] : []);
             return Results.Json(new SystemdLogsDto { Unit = unitName, Logs = logLines }, CorvusJsonSerializerContext.Default.SystemdLogsDto);
-        });
+        }).RequireAdmin();
     }
 }

@@ -12,6 +12,12 @@ public static class SsrfGuard
             ip = ip.MapToIPv4();
         }
 
+        // Loopback ve Any IP koruması (127.0.0.0/8, ::1, 0.0.0.0, ::)
+        if (IPAddress.IsLoopback(ip) || ip.Equals(IPAddress.Any) || ip.Equals(IPAddress.IPv6Any))
+        {
+            return true;
+        }
+
         if (ip.AddressFamily == AddressFamily.InterNetwork)
         {
             byte[] bytes = ip.GetAddressBytes();
@@ -52,13 +58,17 @@ public static class SsrfGuard
 
         string clean = hostOrIp.Trim().Trim('[', ']').ToLowerInvariant();
 
-        // Check common cloud metadata hostnames
-        if (clean == "169.254.169.254" || 
+        // Check common cloud metadata and localhost/loopback hostnames
+        if (clean == "localhost" ||
+            clean == "127.0.0.1" ||
+            clean == "::1" ||
+            clean == "0.0.0.0" ||
+            clean == "169.254.169.254" || 
             clean == "metadata.google.internal" || 
             clean == "metadata" ||
             (clean.StartsWith("metadata.", StringComparison.OrdinalIgnoreCase) && clean.EndsWith(".internal", StringComparison.OrdinalIgnoreCase)))
         {
-            errorMessage = "Güvenlik uyarısı: Hedef adres bulut metadata veya yasaklı link-local servisine işaret ediyor (SSRF Koruması).";
+            errorMessage = "Güvenlik uyarısı: Hedef adres bulut metadata veya yasaklı loopback/link-local servisine işaret ediyor (SSRF Koruması).";
             return true;
         }
 

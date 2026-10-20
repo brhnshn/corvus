@@ -1,5 +1,6 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { api, type AuthStatus, invalidateCache } from './api/client';
+import { useLoadEffect } from './hooks/useLoadEffect';
 import { AppLayout } from './components/layout/AppLayout';
 import { RegistrationPromptModal } from './components/RegistrationPromptModal';
 import { RefreshCw } from 'lucide-react';
@@ -11,7 +12,7 @@ import {
   type CommandItem 
 } from './components/common/CommandPalette';
 import { PageTransition } from './components/common/PageTransition';
-import { useToast } from './components/ui/Toast';
+import { useToast } from './components/ui/ToastContext';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import { getPageTitle, formatDocumentTitle } from './utils/pageTitle';
 import { ChunkErrorBoundary } from './components/common/ChunkErrorBoundary';
@@ -55,7 +56,7 @@ export const App: React.FC = () => {
   const { isOpen: isCmdOpen, open: openCmd, close: closeCmd } = useCommandPalette();
   const [commandItems, setCommandItems] = useState<CommandItem[]>([]);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const status = await api.getAuthStatus();
       setAuthStatus(status);
@@ -64,27 +65,34 @@ export const App: React.FC = () => {
     } finally {
       setAuthLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => {
+  const loadAuth = useCallback(() => {
     if (!isStatusPath) {
       checkAuth();
     }
+  }, [isStatusPath, checkAuth]);
 
+  useLoadEffect(loadAuth);
+
+  useEffect(() => {
     const handleUnauthorized = () => {
       checkAuth();
     };
 
     window.addEventListener('corvus_unauthorized', handleUnauthorized);
     return () => window.removeEventListener('corvus_unauthorized', handleUnauthorized);
-  }, [isStatusPath]);
+  }, [checkAuth]);
+
+  const authEnabled = authStatus?.authEnabled;
+  const isAuthenticated = authStatus?.isAuthenticated;
 
   // Server-Sent Events (SSE) — Canlı Veri Yayını Bağlantısı (Yüksek Dayanıklılık Mimarisi)
   // Ağ kopsa bile asla pes etmez; backoff ile dener, internet geri geldiğinde veya
   useEffect(() => {
     if (isStatusPath) return;
     if (authLoading) return;
-    if (authStatus && authStatus.authEnabled && !authStatus.isAuthenticated) return;
+    if (authEnabled && !isAuthenticated) return;
 
     let eventSource: EventSource | null = null;
     let retryCount = 0;
@@ -177,7 +185,7 @@ export const App: React.FC = () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       eventSource?.close();
     };
-  }, [isStatusPath, authLoading, authStatus?.isAuthenticated, authStatus?.authEnabled]);
+  }, [isStatusPath, authLoading, isAuthenticated, authEnabled]);
 
   // Sayfa ve dil değişimlerine göre dinamik tarayıcı sekme başlığı (document.title)
   // Kurallar gereği tüm hook'lar erken dönüşlerden (return) önce çağrılmalıdır

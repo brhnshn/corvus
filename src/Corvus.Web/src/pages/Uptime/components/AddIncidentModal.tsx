@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AlertCircle, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../../i18n';
 import { api } from '../../../api';
@@ -20,15 +20,17 @@ export const AddIncidentModal: React.FC<AddIncidentModalProps> = ({
   onSuccess
 }) => {
   const { t } = useI18n();
-  const [title, setTitle] = useState('');
-  const [message, setMessage] = useState('');
-  const [severity, setSeverity] = useState<'info' | 'warning' | 'critical' | 'maintenance'>('info');
-  const [status, setStatus] = useState<'investigating' | 'identified' | 'monitoring' | 'resolved'>('investigating');
-  const [isPinned, setIsPinned] = useState(false);
+  const [title, setTitle] = useState(incident?.title || '');
+  const [message, setMessage] = useState(incident?.message || '');
+  const [severity, setSeverity] = useState<'info' | 'warning' | 'critical' | 'maintenance'>(incident?.severity || 'info');
+  const [status, setStatus] = useState<'investigating' | 'identified' | 'monitoring' | 'resolved'>(incident?.status || 'investigating');
+  const [isPinned, setIsPinned] = useState(incident?.isPinned || false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const [prevSync, setPrevSync] = useState({ incidentId: incident?.id, isOpen });
+  if (prevSync.incidentId !== incident?.id || prevSync.isOpen !== isOpen) {
+    setPrevSync({ incidentId: incident?.id, isOpen });
     if (incident) {
       setTitle(incident.title);
       setMessage(incident.message);
@@ -43,7 +45,7 @@ export const AddIncidentModal: React.FC<AddIncidentModalProps> = ({
       setIsPinned(false);
     }
     setError(null);
-  }, [incident, isOpen]);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

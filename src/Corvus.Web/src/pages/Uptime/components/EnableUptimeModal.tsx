@@ -41,18 +41,18 @@ export const EnableUptimeModal: React.FC<EnableUptimeModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (service) {
-      setName(service.name);
-      setUrl(service.url || '');
-      setCheckType(
-        service.checkType && ['http', 'tcp', 'ping'].includes(service.checkType)
-          ? (service.checkType as 'http' | 'tcp' | 'ping')
-          : 'http'
-      );
-      setPort(service.port || (service.url ? extractPort(service.url) : ''));
-    }
-  }, [service]);
+  const [prevServiceId, setPrevServiceId] = useState(service?.id);
+  if (service && service.id !== prevServiceId) {
+    setPrevServiceId(service.id);
+    setName(service.name);
+    setUrl(service.url || '');
+    setCheckType(
+      service.checkType && ['http', 'tcp', 'ping'].includes(service.checkType)
+        ? (service.checkType as 'http' | 'tcp' | 'ping')
+        : 'http'
+    );
+    setPort(service.port || (service.url ? extractPort(service.url) : ''));
+  }
 
   if (!isOpen || !service) return null;
 

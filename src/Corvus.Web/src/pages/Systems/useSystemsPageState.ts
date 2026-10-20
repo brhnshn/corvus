@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../../api';
 import type { SystemSummaryDto, SystemStatusDto } from '../../types';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 export function useSystemsPageState() {
   const [systems, setSystems] = useState<SystemSummaryDto[]>([]);
@@ -28,8 +29,9 @@ export function useSystemsPageState() {
     }
   }, []);
 
+  useLoadEffect(loadData);
+
   useEffect(() => {
-    loadData();
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, [loadData]);

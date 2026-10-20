@@ -7,6 +7,7 @@ import { PushMonitorsTab } from './PushMonitorsTab';
 import { IncidentsTab } from './IncidentsTab';
 
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 export const UptimePage: React.FC = () => {
   const { t } = useI18n();
@@ -58,13 +59,18 @@ export const UptimePage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    isMountedRef.current = true;
+  const loadActiveData = React.useCallback(() => {
     if (activeTab === 'uptime') {
       fetchServices();
     } else if (activeTab === 'snitch') {
       fetchSnitches();
     }
+  }, [activeTab, fetchServices, fetchSnitches]);
+
+  useLoadEffect(loadActiveData);
+
+  useEffect(() => {
+    isMountedRef.current = true;
 
     const interval = setInterval(() => {
       if (!document.hidden && isMountedRef.current) {

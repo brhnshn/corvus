@@ -61,16 +61,26 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
   const [cpuCores, setCpuCores] = useState<string>(initialCores);
   const [memoryMb, setMemoryMb] = useState<string>(initialMemoryMb);
   const [restartPolicy, setRestartPolicy] = useState<string>(initialRestartPolicy);
+  const [prevInitial, setPrevInitial] = useState({ initialCores, initialMemoryMb, initialRestartPolicy });
 
-  // Sync state whenever inspect/hostConfig updates
-  useEffect(() => {
+  if (
+    initialCores !== prevInitial.initialCores ||
+    initialMemoryMb !== prevInitial.initialMemoryMb ||
+    initialRestartPolicy !== prevInitial.initialRestartPolicy
+  ) {
+    setPrevInitial({ initialCores, initialMemoryMb, initialRestartPolicy });
     setCpuCores(initialCores);
     setMemoryMb(initialMemoryMb);
     setRestartPolicy(initialRestartPolicy);
-  }, [initialCores, initialMemoryMb, initialRestartPolicy]);
+  }
 
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const statsRef = useRef(stats);
+  useEffect(() => {
+    statsRef.current = stats;
+  }, [stats]);
 
   // Canlı telemetri verilerini çek
   useEffect(() => {
@@ -93,7 +103,7 @@ export const ContainerResourcesTab: React.FC<ContainerResourcesTabProps> = ({
     };
 
     // İlk stats boşsa hemen çek
-    if (!stats) {
+    if (!statsRef.current) {
       fetchLiveStats();
     }
 

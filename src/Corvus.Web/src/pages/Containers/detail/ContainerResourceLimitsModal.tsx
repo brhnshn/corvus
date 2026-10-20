@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Cpu, HardDrive, RotateCcw, AlertCircle, Loader2, Save, Sliders } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { useI18n } from '../../../i18n';
-import { useToast } from '../../../components/ui/Toast';
+import { useToast } from '../../../components/ui/ToastContext';
 import { containersApi } from '../../../api/containers';
 import { formatBytes } from '../../../utils/format';
 import type { DockerContainerInspectInfo, ContainerResourceUpdateRequest } from '../../../types';
@@ -50,7 +50,15 @@ export const ContainerResourceLimitsModal: React.FC<ContainerResourceLimitsModal
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Sync state whenever modal opens or inspect changes
-  useEffect(() => {
+  const [prevSync, setPrevSync] = useState({ isOpen, activeCores, activeMemoryMb, activePolicy, activeRetries });
+  if (
+    prevSync.isOpen !== isOpen ||
+    prevSync.activeCores !== activeCores ||
+    prevSync.activeMemoryMb !== activeMemoryMb ||
+    prevSync.activePolicy !== activePolicy ||
+    prevSync.activeRetries !== activeRetries
+  ) {
+    setPrevSync({ isOpen, activeCores, activeMemoryMb, activePolicy, activeRetries });
     if (isOpen) {
       setCpuCores(activeCores);
       setMemoryMb(activeMemoryMb);
@@ -58,7 +66,7 @@ export const ContainerResourceLimitsModal: React.FC<ContainerResourceLimitsModal
       setMaxRetries(activeRetries);
       setErrorMessage(null);
     }
-  }, [isOpen, activeCores, activeMemoryMb, activePolicy, activeRetries]);
+  }
 
   const validateForm = (): string | null => {
     const parsedCpu = parseFloat(cpuCores);

@@ -6,24 +6,13 @@ import { TagInput } from '../../components/common/TagInput';
 import { useI18n } from '../../i18n';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
+import { extractContainerTags } from './utils/containerTags';
 
 interface ContainerTagsModalProps {
   container: DockerContainer;
   isOpen?: boolean;
   onClose: () => void;
   onSuccess: (updatedTags: string[]) => void;
-}
-
-export function extractContainerTags(labels?: Record<string, string>): string[] {
-  if (!labels) return [];
-  const tags: string[] = [];
-  if (labels['corvus.tags']) {
-    tags.push(...labels['corvus.tags'].split(',').map((s) => s.trim()).filter(Boolean));
-  }
-  if (labels['environment']) tags.push(labels['environment'].trim());
-  else if (labels['env']) tags.push(labels['env'].trim());
-  if (labels['com.docker.compose.project']) tags.push(labels['com.docker.compose.project'].trim());
-  return Array.from(new Set(tags));
 }
 
 export const ContainerTagsModal: React.FC<ContainerTagsModalProps> = ({

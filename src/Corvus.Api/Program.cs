@@ -3,6 +3,7 @@ using Corvus.Api.Data;
 using Corvus.Api.Endpoints;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 [module: Dapper.DapperAot]
 
@@ -20,6 +21,14 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 // HTTP Client & Bağımlılık Enjeksiyonu
 builder.Services.AddHttpClient();
+
+// Ters Proxy (Docker, Nginx, Traefik, Cloudflare vb.) baslik destegi
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 builder.Services.AddHttpClient("NotificationClient")
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
@@ -120,6 +129,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+app.UseForwardedHeaders();
 
 // Veritabanı otomatik migration çalıştırma
 using (var scope = app.Services.CreateScope())

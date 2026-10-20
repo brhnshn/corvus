@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   Plus, 
   RefreshCw, 
@@ -17,6 +17,7 @@ import { api } from '../../api/client';
 import { useI18n } from '../../i18n';
 import type { ServiceIncident } from '../../types';
 import { AddIncidentModal } from './components/AddIncidentModal';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 export const IncidentsTab: React.FC = () => {
   const { t } = useI18n();
@@ -44,9 +45,7 @@ export const IncidentsTab: React.FC = () => {
     }
   }, [t]);
 
-  useEffect(() => {
-    fetchIncidents();
-  }, [fetchIncidents]);
+  useLoadEffect(fetchIncidents);
 
   const handleResolve = async (id: string) => {
     if (!window.confirm(t('incidents.confirmResolve'))) return;

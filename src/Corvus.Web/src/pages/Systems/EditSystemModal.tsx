@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Pencil, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
@@ -20,18 +20,18 @@ export const EditSystemModal: React.FC<EditSystemModalProps> = ({
   onUpdated
 }) => {
   const { t } = useI18n();
-  const [name, setName] = useState('');
-  const [tagsStr, setTagsStr] = useState('');
+  const [name, setName] = useState(system?.name || '');
+  const [tagsStr, setTagsStr] = useState(system?.tags ? system.tags.join(', ') : '');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prevSystemId, setPrevSystemId] = useState(system?.id);
 
-  useEffect(() => {
-    if (system) {
-      setName(system.name);
-      setTagsStr(system.tags ? system.tags.join(', ') : '');
-      setError(null);
-    }
-  }, [system]);
+  if (system && system.id !== prevSystemId) {
+    setPrevSystemId(system.id);
+    setName(system.name);
+    setTagsStr(system.tags ? system.tags.join(', ') : '');
+    setError(null);
+  }
 
   if (!system) return null;
 

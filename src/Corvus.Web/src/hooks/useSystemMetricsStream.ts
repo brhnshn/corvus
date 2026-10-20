@@ -44,6 +44,7 @@ export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetric
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const failureCountRef = useRef(0);
   const isMountedRef = useRef(true);
+  const connectSSERef = useRef<() => void>(() => {});
 
   // Aktif sistem kimliğini belirle
   const resolvedSystemId = targetSystemId || (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
@@ -88,7 +89,7 @@ export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetric
 
     poll();
     pollingIntervalRef.current = setInterval(poll, 5000);
-  }, [clearTimers, closeEventSource]);
+  }, [clearTimers, closeEventSource, t]);
 
   const connectSSE = useCallback(() => {
     clearTimers();
@@ -147,7 +148,7 @@ export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetric
         const delay = Math.min(1000 * Math.pow(2, failureCountRef.current - 1), 16000);
         reconnectTimeoutRef.current = setTimeout(() => {
           if (isMountedRef.current) {
-            connectSSE();
+            connectSSERef.current();
           }
         }, delay);
       };
@@ -155,6 +156,10 @@ export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetric
       startFallbackPolling();
     }
   }, [clearTimers, closeEventSource, resolvedSystemId, startFallbackPolling]);
+
+  useEffect(() => {
+    connectSSERef.current = connectSSE;
+  }, [connectSSE]);
 
   useEffect(() => {
     isMountedRef.current = true;

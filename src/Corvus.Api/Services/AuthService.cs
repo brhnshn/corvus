@@ -334,7 +334,23 @@ public class AuthService : IAuthService
         }
 
         var user = await _userRepo.GetByUsernameAsync(username);
-        var role = user?.Role ?? "admin";
+        string role;
+        if (user != null)
+        {
+            role = string.IsNullOrWhiteSpace(user.Role) ? "viewer" : user.Role;
+        }
+        else
+        {
+            int userCount = await _userRepo.GetCountAsync();
+            if (userCount == 0 && string.Equals(username, _defaultUser, StringComparison.OrdinalIgnoreCase))
+            {
+                role = "admin";
+            }
+            else
+            {
+                role = "viewer";
+            }
+        }
         RoleCache[username] = new RoleCacheItem(role, now);
         return role;
     }

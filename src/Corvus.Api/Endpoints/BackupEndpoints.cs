@@ -84,9 +84,20 @@ public static class BackupEndpoints
         }).RequireAdmin();
 
         // Backup event listesi
-        group.MapGet("/backup-events", async (int? limit, IBackupRepository repo) =>
+        group.MapGet("/backup-events", async (int? limit, IBackupRepository repo, HttpContext context) =>
         {
             var events = await repo.GetRecentAsync(limit ?? 10);
+            string? role = context.Items["Corvus_Role"] as string;
+            bool isAdmin = string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase);
+
+            foreach (var ev in events)
+            {
+                if (!isAdmin && !string.IsNullOrEmpty(ev.Token))
+                {
+                    ev.Token = "***";
+                }
+            }
+
             return Results.Ok(events);
         });
     }

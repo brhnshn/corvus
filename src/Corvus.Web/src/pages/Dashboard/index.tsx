@@ -10,6 +10,7 @@ import {
 } from '../../api/client';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 // Modüler Alt Bileşenler (ObsidianUI & Clean Architecture)
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
@@ -89,9 +90,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     loadStats();
   }, [loadStats, t]);
 
+  useLoadEffect(loadData);
+
   useEffect(() => {
     isMountedRef.current = true;
-    loadData();
 
     // 30 saniyede bir arka planda güncelle (sekme aktifken)
     const interval = setInterval(() => {
@@ -151,7 +153,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       window.removeEventListener('corvus_event', handleCorvusEvent);
       window.removeEventListener('corvus_active_system_changed', handleSystemChange);
     };
-  }, [loadData]);
+  }, [loadData, t]);
 
   if (loading && !summary) {
     return (

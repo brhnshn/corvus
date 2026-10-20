@@ -1,45 +1,68 @@
 import { useState, useEffect, useRef } from 'react';
+import { getMotionScale } from '../lib/motion';
 
 /**
  * Sayı değişimlerini kademeli yumuşak geçişle (interpolasyon) canlandıran hafif React kancası.
  */
-export function useAnimatedNumber(targetValue: number, durationMs: number = 400): number {
-  const [displayValue, setDisplayValue] = useState(targetValue);
-  const startValueRef = useRef(targetValue);
-  const startTimeRef = useRef<number | null>(null);
-  const frameRef = useRef<number | null>(null);
+export function useAnimatedNumber(
+  targetValue: number,
+  duration: number = 650,
+  decimals: number = 1
+): number {
+  const [currentValue, setCurrentValue] = useState<number>(targetValue);
+  const prevValueRef = useRef<number>(targetValue);
+
+  const isReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
-    // prefers-reduced-motion kontrolü
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setDisplayValue(targetValue);
+    if (typeof window === 'undefined' || isNaN(targetValue) || isReducedMotion) {
+      prevValueRef.current = targetValue;
       return;
     }
 
-    startValueRef.current = displayValue;
-    startTimeRef.current = null;
+    const startValue = prevValueRef.current;
+    const diff = targetValue - startValue;
+    if (Math.abs(diff) < 0.0001) {
+      return;
+    }
 
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current) startTimeRef.current = timestamp;
-      const progress = Math.min((timestamp - startTimeRef.current) / durationMs, 1);
-      
-      // ease-out cubic
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      const current = startValueRef.current + (targetValue - startValueRef.current) * easeProgress;
-      
-      setDisplayValue(current);
+    const scale = getMotionScale();
+    const effectiveDuration = duration * scale;
+    const startTime = performance.now();
+    let animationFrameId: number;
+
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / effectiveDuration);
+      // Cubic-out curve: 1 - (1 - p)^3
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const nextValue = startValue + diff * easedProgress;
+
+      setCurrentValue(nextValue);
 
       if (progress < 1) {
-        frameRef.current = requestAnimationFrame(animate);
+        animationFrameId = requestAnimationFrame(tick);
+      } else {
+        setCurrentValue(targetValue);
+        prevValueRef.current = targetValue;
       }
     };
 
-    frameRef.current = requestAnimationFrame(animate);
+    animationFrameId = requestAnimationFrame(tick);
 
     return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      cancelAnimationFrame(animationFrameId);
+      prevValueRef.current = targetValue;
     };
-  }, [targetValue, durationMs]);
+  }, [targetValue, duration, isReducedMotion]);
 
-  return displayValue;
+  if (isReducedMotion || isNaN(targetValue)) {
+    const factor = Math.pow(10, decimals);
+    return Math.round(targetValue * factor) / factor;
+  }
+
+  const factor = Math.pow(10, decimals);
+  return Math.round(currentValue * factor) / factor;
 }

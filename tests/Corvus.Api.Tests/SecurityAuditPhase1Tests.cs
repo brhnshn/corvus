@@ -15,6 +15,9 @@ public class SecurityAuditPhase1Tests
     [InlineData("169.254.1.1", true)]
     [InlineData("0.0.0.0", true)]
     [InlineData("fe80::1", true)]
+    [InlineData("127.0.0.1", true)]
+    [InlineData("127.0.1.1", true)]
+    [InlineData("::1", true)]
     [InlineData("8.8.8.8", false)]
     [InlineData("1.1.1.1", false)]
     [InlineData("192.168.1.1", false)]
@@ -32,6 +35,10 @@ public class SecurityAuditPhase1Tests
     [InlineData("metadata", true)]
     [InlineData("metadata.internal", true)]
     [InlineData("169.254.1.5", true)]
+    [InlineData("localhost", true)]
+    [InlineData("127.0.0.1", true)]
+    [InlineData("::1", true)]
+    [InlineData("0.0.0.0", true)]
     [InlineData("8.8.8.8", false)]
     public void SsrfGuard_IsBlockedHostOrIp_BlocksMetadataHosts(string host, bool shouldBlock)
     {

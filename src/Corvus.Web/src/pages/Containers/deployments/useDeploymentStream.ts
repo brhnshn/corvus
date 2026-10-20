@@ -32,7 +32,7 @@ export function useDeploymentStream({
   const [isConnected, setIsConnected] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
-  const startTimeRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const onCompletedRef = useRef(onCompleted);
@@ -77,12 +77,13 @@ export function useDeploymentStream({
   // Connect to SSE stream
   useEffect(() => {
     if (!deploymentId) {
-      setIsConnected(false);
       return;
     }
 
-    setIsConnected(true);
-    setIsDone(false);
+    const frameId = requestAnimationFrame(() => {
+      setIsConnected(true);
+      setIsDone(false);
+    });
     startTimeRef.current = Date.now();
 
     // Elapsed timer while not done
@@ -142,7 +143,9 @@ export function useDeploymentStream({
     );
 
     return () => {
+      cancelAnimationFrame(frameId);
       unsubscribe();
+      setIsConnected(false);
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;

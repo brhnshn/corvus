@@ -485,6 +485,20 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task GetUserRoleAsync_EnforcesLeastPrivilege_ForUnknownUser()
+    {
+        var userRepo = new FakeUserRepository();
+        var authService = CreateService(userRepo: userRepo);
+
+        var defaultAdminRole = await authService.GetUserRoleAsync("admin");
+        Assert.Equal("admin", defaultAdminRole);
+
+        await authService.CreateUserAsync("firstadmin", "pass1234", "admin");
+        var unknownRole = await authService.GetUserRoleAsync("stranger");
+        Assert.Equal("viewer", unknownRole);
+    }
+
+    [Fact]
     public async Task CreateUser_Fails_WhenDuplicateUsername()
     {
         var userRepo = new FakeUserRepository();

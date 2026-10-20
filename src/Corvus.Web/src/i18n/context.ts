@@ -1,24 +1,24 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
+import { createContext, useContext } from 'react';
 import { en } from './en';
 import { tr } from './tr';
 import type { Language, TranslationDictionary, TranslationKey } from './types';
 
-interface I18nContextType {
+export interface I18nContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
-const dictionaries: Record<Language, TranslationDictionary> = {
+export const dictionaries: Record<Language, TranslationDictionary> = {
   en,
   tr
 };
 
-const I18nContext = createContext<I18nContextType | null>(null);
+export const I18nContext = createContext<I18nContextType | null>(null);
 
-const STORAGE_KEY = 'corvus_language';
+export const STORAGE_KEY = 'corvus_language';
 
-const getInitialLanguage = (): Language => {
+export const getInitialLanguage = (): Language => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY) as Language | null;
     if (saved === 'en' || saved === 'tr') {
@@ -74,45 +74,6 @@ export const translateKey = (
   });
 };
 
-export const I18nProvider: React.FC<{ children: ReactNode; initialLanguage?: Language }> = ({
-  children,
-  initialLanguage,
-}) => {
-  const [language, setLanguageState] = useState<Language>(() => initialLanguage ?? getInitialLanguage());
-
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-      document.documentElement.lang = lang;
-    } catch {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    try {
-      document.documentElement.lang = language;
-    } catch {
-      // ignore
-    }
-  }, [language]);
-
-  const dict = useMemo(() => dictionaries[language] || dictionaries.en, [language]);
-
-  const t = useMemo(() => {
-    return (key: TranslationKey, params?: Record<string, string | number>): string => {
-      return translateKey(dict, key, params);
-    };
-  }, [dict]);
-
-  return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
-      {children}
-    </I18nContext.Provider>
-  );
-};
-
 const defaultContext: I18nContextType = {
   language: 'tr',
   setLanguage: () => {},
@@ -124,5 +85,3 @@ export const useI18n = (): I18nContextType => {
   const context = useContext(I18nContext);
   return context ?? defaultContext;
 };
-
-export * from './types';

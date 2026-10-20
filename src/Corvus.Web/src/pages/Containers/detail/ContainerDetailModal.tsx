@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useI18n } from '../../../i18n';
 import { Layers, Key, Network, HardDrive, Cpu, Loader2, AlertCircle, Rocket } from 'lucide-react';
 import { containersApi } from '../../../api/containers';
@@ -11,6 +11,7 @@ import { ContainerDeploymentsTab } from './ContainerDeploymentsTab';
 import { ContainerResourceLimitsModal } from './ContainerResourceLimitsModal';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
+import { useLoadEffect } from '../../../hooks/useLoadEffect';
 import type { DockerContainerInspectInfo, DockerContainer, ContainerStats } from '../../../types';
 
 interface ContainerDetailModalProps {
@@ -64,15 +65,28 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
     }
   }, [containerId]);
 
-  useEffect(() => {
+  const [prevOpenState, setPrevOpenState] = useState({ isOpen, containerId, initialTab });
+  if (
+    prevOpenState.isOpen !== isOpen ||
+    prevOpenState.containerId !== containerId ||
+    prevOpenState.initialTab !== initialTab
+  ) {
+    setPrevOpenState({ isOpen, containerId, initialTab });
     if (isOpen && containerId) {
-      loadInspectData();
       setActiveTab(initialTab);
     } else {
       setInspectData(null);
       setError(null);
     }
-  }, [isOpen, containerId, initialTab, loadInspectData]);
+  }
+
+  const loadDataWhenOpen = useCallback(() => {
+    if (isOpen && containerId) {
+      loadInspectData();
+    }
+  }, [isOpen, containerId, loadInspectData]);
+
+  useLoadEffect(loadDataWhenOpen);
 
   if (!isOpen || !containerId) return null;
 

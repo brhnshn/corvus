@@ -3,6 +3,32 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.17] - 2026-10-20 — Kapsamlı Güvenlik Sertleştirmesi, Temiz Modüler Mimari ve Sıfır Uyarılı Oxlint Temizliği
+
+### Güvenlik (Security)
+- **Sıkı Rol Tabanlı Yetkilendirme & En Düşük Yetki Prensibi**:
+  - `Corvus.Api/Services/AuthService.cs`: `GetUserRoleAsync` içinde veritabanında kaydı olmayan kullanıcılar için varsayılan "admin" rolü verilmesi (`user?.Role ?? "admin"`) düzeltildi; en düşük yetki prensibiyle (Least Privilege) kayıtsız kullanıcılar `"viewer"` rolüne çekildi. Ters proxy veya SSO aktifken yetki yükseltme (privilege escalation) riski tamamen ortadan kaldırıldı. Birim testi `GetUserRoleAsync_EnforcesLeastPrivilege_ForUnknownUser` eklendi.
+  - `Corvus.Api/Endpoints/BackupEndpoints.cs`: `/api/backup-events` uç noktasında admin dışındaki kullanıcılar için hassas push `Token` alanı `"***"` olarak maskelendi, salt-okunur kullanıcıların yedek belirteçlerini çalması engellendi.
+  - `Corvus.Api/Endpoints/SystemsEndpoints.cs`: Ana makine systemd `journalctl` günlük okuma uç noktalarına (`/api/v1/systems/systemd/{unitName}/logs` ve `/{id}/systemd/{unitName}/logs`) `.RequireAdmin()` yetki zorunluluğu getirildi; hassas servis loglarının ve parolaların okunması engellendi.
+  - `Corvus.Api/Utils/SsrfGuard.cs`: SSRF motoru sertleştirilerek tüm loopback adresleri (`127.0.0.0/8`, `::1`, `localhost`) ve any-adresleri (`0.0.0.0`, `::`) yasaklı aralığa alındı. IPv4, IPv6 ve DNS çözümleme testleri eklendi.
+  - `Corvus.Api/Program.cs` & `Endpoints/AuthEndpoints.cs`: `ForwardedHeadersOptions` (`X-Forwarded-For` ve `X-Forwarded-Proto`) ve `app.UseForwardedHeaders()` middleware'i entegre edildi. Giriş denemesi kilitlemesi global proxy IP'si yerine `clientIp:username` bileşimine bağlanarak ters proxy arkasında tüm kullanıcıların kilitlenmesi (Account Lockout DoS) riski giderildi.
+
+### Değiştirilenler (Changed)
+- **Backend Temiz Modüler Mimari (Dosya Başına < 400 Satır)**:
+  - `DockerService.cs` (900+ satırdan): Dış sözleşmeler korunarak modüler partial class'lara ayrıştırıldı: `DockerService.cs` (244 satır), `DockerService.Maintenance.cs` (182 satır), `DockerService.Mapping.cs` (285 satır), `DockerService.Stats.cs` (78 satır), `DockerService.Updates.cs` (218 satır) ve `IDockerService.cs` (37 satır).
+  - `DeploymentEngine.cs` (832+ satırdan): `DeploymentEngine.cs` (278 satır), `DeploymentEngine.Pipeline.cs` (308 satır), `DeploymentEngine.Scratch.cs` (377 satır) ve `IDeploymentEngine.cs` (24 satır) olarak modüllere bölündü.
+  - `ContainersEndpoints.cs` (796+ satırdan): `ContainersEndpoints.cs` (353 satır), `ContainersEndpoints.MetricsAndLogs.cs` (219 satır), `ContainersEndpoints.Terminal.cs` (230 satır) ve `ContainersEndpoints.Updates.cs` (132 satır) olarak ayrıştırıldı.
+- **Frontend Konteynerler Sayfası Modülerleşmesi**:
+  - `Corvus.Web/src/pages/Containers/index.tsx`: 11 adet gömülü modal ve işlem paneli bağımsız `ContainersModals.tsx` bileşenine çıkarıldı; `Containers/index.tsx` 551 satırdan 240 satıra indirilerek modüler mimari kuralına tam uyum sağlandı.
+
+### Düzeltilenler (Fixed)
+- **Eksiksiz Oxlint Sıfır Uyarı Temizliği**:
+  - 247 ön yüz dosyasında yer alan 61 oxlint uyarısının tamamı, tek bir `oxlint-disable` veya `eslint-disable` yorumu eklenmeksizin saf reaktif kalıplarla giderildi (0 uyarı, 0 hata).
+  - Vite Fast Refresh için `only-export-components` ayrımı yapıldı (`ToastContext.ts`, `useToast.ts`, `useAnimatedNumber.ts`, `containerTags.ts`, `I18nProvider.tsx`, `context.ts`).
+  - Senkron `set-state-in-effect` kodları `useLoadEffect` ve türetilmiş durum (derived state) kalıplarına geçirildi.
+  - Eksik hooks bağımlılıkları, purity ve immutability ihlalleri düzeltildi.
+  - `README.md` ve `README.tr.md` rozetleri ve rehberleri toplam 435 başarılı test (369 backend + 66 frontend) ile senkronize edildi.
+
 ## [1.6.16] - 2026-10-18 — Canlı Konteyner Kaynak Limitleri & Yeniden Başlatma Politikası Dinamik Düzenleyici
 
 ### Eklenenler (Added)

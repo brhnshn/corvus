@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { api, invalidateCache, type DockerContainer, type ContainerStats } from '../../api/client';
 import { deploymentsApi } from '../../api/deployments';
 import { getSavedActiveDeployment } from './deployments/useDeploymentStream';
-import { useToast } from '../../components/ui/Toast';
+import { useToast } from '../../components/ui/ToastContext';
 import { useI18n } from '../../i18n';
-import { extractContainerTags } from './ContainerRow';
+import { extractContainerTags } from './utils/containerTags';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 export interface UseContainersPageStateProps {
   initialAction?: string | null;
@@ -95,9 +96,10 @@ export function useContainersPageState({ initialAction }: UseContainersPageState
     }
   }, [fetchStatsBackground, toast, t]);
 
+  useLoadEffect(loadContainers);
+
   useEffect(() => {
     isMountedRef.current = true;
-    loadContainers();
 
     const interval = setInterval(() => {
       if (!document.hidden && isMountedRef.current) loadContainers();

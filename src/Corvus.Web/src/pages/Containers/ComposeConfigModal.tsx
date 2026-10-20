@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { 
   X, 
   FileCode2, 
@@ -17,7 +17,8 @@ import { containersApi } from '../../api';
 import type { ComposeFileDto, ComposeDeployResult } from '../../types';
 import { useI18n } from '../../i18n';
 import { Button } from '../../components/ui/Button';
-import { useToast } from '../../components/ui/Toast';
+import { useToast } from '../../components/ui/ToastContext';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 interface ComposeConfigModalProps {
   projectName: string;
@@ -73,13 +74,22 @@ export const ComposeConfigModal: React.FC<ComposeConfigModalProps> = ({
     }
   }, [projectName, t]);
 
-  useEffect(() => {
+  const [prevOpenState, setPrevOpenState] = useState({ isOpen, projectName });
+  if (prevOpenState.isOpen !== isOpen || prevOpenState.projectName !== projectName) {
+    setPrevOpenState({ isOpen, projectName });
     if (isOpen && projectName) {
-      loadComposeFile();
       setActiveTab('yaml');
       setShowDeployOutput(false);
     }
+  }
+
+  const loadWhenOpen = useCallback(() => {
+    if (isOpen && projectName) {
+      loadComposeFile();
+    }
   }, [isOpen, projectName, loadComposeFile]);
+
+  useLoadEffect(loadWhenOpen);
 
   // Sözcüksel (Lexical) TAB kontrolü
   const hasTabWarning = useMemo(() => {

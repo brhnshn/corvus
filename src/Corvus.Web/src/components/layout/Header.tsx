@@ -30,11 +30,9 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout: _onLogout,
 }) => {
   const { t } = useI18n();
-  const [themeMode, setThemeState] = useState<'dark' | 'light'>('dark');
+  const [themeMode, setThemeState] = useState<'dark' | 'light'>(() => getThemeMode());
 
   useEffect(() => {
-    setThemeState(getThemeMode());
-
     const handleThemeChanged = (e: Event) => {
       const custom = e as CustomEvent<'dark' | 'light'>;
       setThemeState(custom.detail);

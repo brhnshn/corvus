@@ -13,7 +13,7 @@ import { systemdApi } from '../../api/systemd';
 import { systemsApi } from '../../api/systems';
 import type { SystemdUnitDto, SystemSummaryDto } from '../../types';
 import { useI18n } from '../../i18n';
-import { useToast } from '../../components/ui/Toast';
+import { useToast } from '../../components/ui/ToastContext';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
 import { Button } from '../../components/ui/Button';
@@ -21,6 +21,7 @@ import { formatBytes } from '../../utils/format';
 import { MotionItem } from '../../components/ui/MotionStage';
 import { SystemdLogsModal } from './SystemdLogsModal';
 import { SystemdConfirmModal } from './SystemdConfirmModal';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 export interface SystemdUnitsTabProps {
   isAdmin?: boolean;
@@ -43,6 +44,11 @@ export const SystemdUnitsTab: React.FC<SystemdUnitsTabProps> = ({
   // Multi-node selection support
   const [systems, setSystems] = useState<SystemSummaryDto[]>([]);
   const [activeSystemId, setActiveSystemId] = useState<string>(selectedSystemId || 'local');
+  const [prevSelectedSystemId, setPrevSelectedSystemId] = useState(selectedSystemId);
+  if (selectedSystemId && selectedSystemId !== prevSelectedSystemId) {
+    setPrevSelectedSystemId(selectedSystemId);
+    setActiveSystemId(selectedSystemId);
+  }
 
   // Logs modal state
   const [logsModalUnit, setLogsModalUnit] = useState<string | null>(null);
@@ -69,14 +75,9 @@ export const SystemdUnitsTab: React.FC<SystemdUnitsTabProps> = ({
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (selectedSystemId) {
-      setActiveSystemId(selectedSystemId);
-    }
-  }, [selectedSystemId]);
-
   const loadUnits = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true);
+    else setLoading(true);
     try {
       const data = await systemdApi.getUnits(activeSystemId);
       setUnits(Array.isArray(data) ? data : []);
@@ -89,10 +90,7 @@ export const SystemdUnitsTab: React.FC<SystemdUnitsTabProps> = ({
     }
   }, [activeSystemId, toast, t]);
 
-  useEffect(() => {
-    setLoading(true);
-    loadUnits();
-  }, [loadUnits]);
+  useLoadEffect(loadUnits);
 
   // Open Logs Modal
   const openLogs = async (unitName: string) => {

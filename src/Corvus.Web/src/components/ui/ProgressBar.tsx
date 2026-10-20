@@ -10,7 +10,7 @@ export interface ProgressBarProps {
   className?: string;
 }
 
-export function getMetricStatus(value: number, metricType: MetricType): 'ok' | 'warn' | 'err' | 'neutral' {
+function getMetricStatus(value: number, metricType: MetricType): 'ok' | 'warn' | 'err' | 'neutral' {
   if (metricType === 'neutral') return 'neutral';
   
   if (metricType === 'cpu') {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Mail, AlertCircle } from 'lucide-react';
 import { useI18n } from '../i18n';
 
@@ -11,6 +11,27 @@ interface EmailRecipientInputProps {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function parseEmails(value: string): string[] {
+  if (!value || !value.trim()) return [];
+
+  const trimmed = value.trim();
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((e): e is string => typeof e === 'string' && EMAIL_REGEX.test(e.trim()));
+      }
+    } catch {}
+  }
+
+  // Virgül veya boşlukla ayrılmış düz metin fallback'i
+  const list = trimmed
+    .split(/[,;\s]+/)
+    .map(e => e.trim())
+    .filter(e => EMAIL_REGEX.test(e));
+  return [...new Set(list)];
+}
+
 export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
   value,
   onChange,
@@ -18,36 +39,17 @@ export const EmailRecipientInput: React.FC<EmailRecipientInputProps> = ({
   disabled = false
 }) => {
   const { t } = useI18n();
-  const [emails, setEmails] = useState<string[]>([]);
+  const [emails, setEmails] = useState<string[]>(() => parseEmails(value));
+  const [prevValue, setPrevValue] = useState(value);
+
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setEmails(parseEmails(value));
+  }
+
   const [inputValue, setInputValue] = useState('');
   const [inputError, setInputError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Gelen string/JSON dizisini yerel state'e dönüştür
-  useEffect(() => {
-    if (!value || !value.trim()) {
-      setEmails([]);
-      return;
-    }
-
-    const trimmed = value.trim();
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) {
-          setEmails(parsed.filter((e): e is string => typeof e === 'string' && EMAIL_REGEX.test(e.trim())));
-          return;
-        }
-      } catch {}
-    }
-
-    // Virgül veya boşlukla ayrılmış düz metin fallback'i
-    const list = trimmed
-      .split(/[,;\s]+/)
-      .map(e => e.trim())
-      .filter(e => EMAIL_REGEX.test(e));
-    setEmails([...new Set(list)]);
-  }, [value]);
 
   const updateParent = (newEmails: string[]) => {
     setEmails(newEmails);

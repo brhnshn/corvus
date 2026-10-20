@@ -10,6 +10,7 @@ import { EditServiceModal } from '../Services/EditServiceModal';
 import { DiscoveredServicesSection } from './components/DiscoveredServicesSection';
 import { EnableUptimeModal } from './components/EnableUptimeModal';
 import { DisableUptimeDialog } from './components/DisableUptimeDialog';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 interface PingUptimeTabProps {
   services: Service[];
@@ -36,10 +37,14 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
   const [disablingService, setDisablingService] = useState<Service | null>(null);
 
   // Opt-in Uptime Ayrımı: Sadece isUptimeEnabled = true olanlar izlenen servislerdir
-  const monitoredServices = services.filter((s) => s.isUptimeEnabled);
-  const unmonitoredServices = services.filter((s) => !s.isUptimeEnabled);
+  const monitoredServices = React.useMemo(() => services.filter((s) => s.isUptimeEnabled), [services]);
+  const unmonitoredServices = React.useMemo(() => services.filter((s) => !s.isUptimeEnabled), [services]);
 
-  const selectedService = monitoredServices.find((s) => s.id === selectedServiceId) || monitoredServices[0];
+  const selectedService = React.useMemo(() => {
+    return monitoredServices.find((s) => s.id === selectedServiceId) || monitoredServices[0];
+  }, [monitoredServices, selectedServiceId]);
+
+  const selectedServiceIdResolved = selectedService?.id;
 
   const isMountedRef = React.useRef(true);
 
@@ -59,16 +64,23 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
     }
   }, []);
 
+  const loadCurrentChecks = React.useCallback(() => {
+    if (selectedServiceIdResolved) {
+      loadChecks(selectedServiceIdResolved, range);
+    }
+  }, [selectedServiceIdResolved, range, loadChecks]);
+
+  useLoadEffect(loadCurrentChecks);
+
   useEffect(() => {
     isMountedRef.current = true;
-    if (selectedService?.id) {
-      loadChecks(selectedService.id, range);
+    if (selectedServiceIdResolved) {
       const interval = setInterval(() => {
-        if (!document.hidden && isMountedRef.current) loadChecks(selectedService.id, range);
+        if (!document.hidden && isMountedRef.current) loadChecks(selectedServiceIdResolved, range);
       }, 30000);
 
       const onVisible = () => {
-        if (!document.hidden && isMountedRef.current) loadChecks(selectedService.id, range);
+        if (!document.hidden && isMountedRef.current) loadChecks(selectedServiceIdResolved, range);
       };
       document.addEventListener('visibilitychange', onVisible);
 
@@ -78,7 +90,7 @@ export const PingUptimeTab: React.FC<PingUptimeTabProps> = ({
         document.removeEventListener('visibilitychange', onVisible);
       };
     }
-  }, [selectedService?.id, range, loadChecks]);
+  }, [selectedServiceIdResolved, range, loadChecks]);
 
   const handleRefreshAll = async () => {
     if (onRefreshServices) await onRefreshServices();

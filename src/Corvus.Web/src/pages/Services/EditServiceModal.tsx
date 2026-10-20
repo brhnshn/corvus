@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { api, type Service } from '../../api/client';
@@ -21,50 +21,52 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   onSuccess
 }) => {
   const { t } = useI18n();
-  const [formName, setFormName] = useState('');
-  const [formUrl, setFormUrl] = useState('');
-  const [formCategory, setFormCategory] = useState('');
-  const [formTags, setFormTags] = useState<string[]>([]);
-  const [formDesc, setFormDesc] = useState('');
-  const [formHealth, setFormHealth] = useState('');
-  const [formIcon, setFormIcon] = useState('');
-  const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'docker' | 'none' | 'ping'>('http');
-  const [formPort, setFormPort] = useState<number | ''>('');
-  const [formIsPublic, setFormIsPublic] = useState(false);
-  const [formCheckInterval, setFormCheckInterval] = useState<number | ''>(60);
-  const [formTimeoutSeconds, setFormTimeoutSeconds] = useState<number | ''>(5);
-  const [formMaxRetries, setFormMaxRetries] = useState<number | ''>(1);
-  const [formRetryInterval, setFormRetryInterval] = useState<number | ''>(30);
-  const [formIgnoreTls, setFormIgnoreTls] = useState(false);
-  const [formAcceptedStatusCodes, setFormAcceptedStatusCodes] = useState('200-299');
-  const [formHttpMethod, setFormHttpMethod] = useState('GET');
-  const [formExpectedBody, setFormExpectedBody] = useState('');
+  const [formName, setFormName] = useState(service?.name || '');
+  const [formUrl, setFormUrl] = useState(service?.url || '');
+  const [formCategory, setFormCategory] = useState(service?.category || '');
+  const [formTags, setFormTags] = useState<string[]>(service?.tags || []);
+  const [formDesc, setFormDesc] = useState(service?.description || '');
+  const [formHealth, setFormHealth] = useState(service?.healthCheckUrl || '');
+  const [formIcon, setFormIcon] = useState(service?.icon || '');
+  const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'docker' | 'none' | 'ping'>(
+    (service?.checkType as 'http' | 'tcp' | 'docker' | 'none' | 'ping') || (service?.source === 'docker' && !service?.url ? 'docker' : 'http')
+  );
+  const [formPort, setFormPort] = useState<number | ''>(service?.port !== undefined && service?.port !== null ? service.port : '');
+  const [formIsPublic, setFormIsPublic] = useState(service?.isPublic === true);
+  const [formCheckInterval, setFormCheckInterval] = useState<number | ''>(service?.checkInterval ?? 60);
+  const [formTimeoutSeconds, setFormTimeoutSeconds] = useState<number | ''>(service?.timeoutSeconds ?? 5);
+  const [formMaxRetries, setFormMaxRetries] = useState<number | ''>(service?.maxRetries ?? 1);
+  const [formRetryInterval, setFormRetryInterval] = useState<number | ''>(service?.retryInterval ?? 30);
+  const [formIgnoreTls, setFormIgnoreTls] = useState(service?.ignoreTls === true);
+  const [formAcceptedStatusCodes, setFormAcceptedStatusCodes] = useState(service?.acceptedStatusCodes || '200-299');
+  const [formHttpMethod, setFormHttpMethod] = useState(service?.httpMethod || 'GET');
+  const [formExpectedBody, setFormExpectedBody] = useState(service?.expectedBody || '');
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (service) {
-      setFormName(service.name || '');
-      setFormUrl(service.url || '');
-      setFormCategory(service.category || '');
-      setFormDesc(service.description || '');
-      setFormHealth(service.healthCheckUrl || '');
-      setFormIcon(service.icon || '');
-      setFormCheckType((service.checkType as 'http' | 'tcp' | 'docker' | 'none' | 'ping') || (service.source === 'docker' && !service.url ? 'docker' : 'http'));
-      setFormPort(service.port !== undefined && service.port !== null ? service.port : '');
-      setFormIsPublic(service.isPublic === true);
-      setFormCheckInterval(service.checkInterval ?? 60);
-      setFormTimeoutSeconds(service.timeoutSeconds ?? 5);
-      setFormMaxRetries(service.maxRetries ?? 1);
-      setFormRetryInterval(service.retryInterval ?? 30);
-      setFormIgnoreTls(service.ignoreTls === true);
-      setFormAcceptedStatusCodes(service.acceptedStatusCodes || '200-299');
-      setFormHttpMethod(service.httpMethod || 'GET');
-      setFormExpectedBody(service.expectedBody || '');
-      setFormTags(service.tags || []);
-      setErrorMsg(null);
-    }
-  }, [service]);
+  const [prevServiceId, setPrevServiceId] = useState(service?.id);
+  if (service && service.id !== prevServiceId) {
+    setPrevServiceId(service.id);
+    setFormName(service.name || '');
+    setFormUrl(service.url || '');
+    setFormCategory(service.category || '');
+    setFormDesc(service.description || '');
+    setFormHealth(service.healthCheckUrl || '');
+    setFormIcon(service.icon || '');
+    setFormCheckType((service.checkType as 'http' | 'tcp' | 'docker' | 'none' | 'ping') || (service.source === 'docker' && !service.url ? 'docker' : 'http'));
+    setFormPort(service.port !== undefined && service.port !== null ? service.port : '');
+    setFormIsPublic(service.isPublic === true);
+    setFormCheckInterval(service.checkInterval ?? 60);
+    setFormTimeoutSeconds(service.timeoutSeconds ?? 5);
+    setFormMaxRetries(service.maxRetries ?? 1);
+    setFormRetryInterval(service.retryInterval ?? 30);
+    setFormIgnoreTls(service.ignoreTls === true);
+    setFormAcceptedStatusCodes(service.acceptedStatusCodes || '200-299');
+    setFormHttpMethod(service.httpMethod || 'GET');
+    setFormExpectedBody(service.expectedBody || '');
+    setFormTags(service.tags || []);
+    setErrorMsg(null);
+  }
 
   if (!isOpen || !service) return null;
 

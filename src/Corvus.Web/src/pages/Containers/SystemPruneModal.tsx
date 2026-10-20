@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Trash2, 
   Layers, 
@@ -18,6 +18,7 @@ import { PruneImagesTable } from './prune/PruneImagesTable';
 import { PruneVolumesTable } from './prune/PruneVolumesTable';
 import { PruneBuildCacheCard } from './prune/PruneBuildCacheCard';
 import { Modal } from '../../components/ui/Modal';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 interface SystemPruneModalProps {
   isOpen?: boolean;
@@ -79,9 +80,7 @@ export const SystemPruneModal: React.FC<SystemPruneModalProps> = ({
     }
   }, [t]);
 
-  useEffect(() => {
-    loadDiskUsage();
-  }, [loadDiskUsage]);
+  useLoadEffect(loadDiskUsage);
 
   // Filtrelenmiş prunable listeleri
   const prunableContainers = useMemo(() => {

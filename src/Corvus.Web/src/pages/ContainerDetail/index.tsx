@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { api, containersApi, type DockerContainer, type DockerContainerInspectInfo, type ContainerStats } from '../../api/client';
 import { useI18n } from '../../i18n';
-import { useToast } from '../../components/ui/Toast';
+import { useToast } from '../../components/ui/ToastContext';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { ContainerDetailHeader } from './ContainerDetailHeader';
 import { ContainerTelemetryHero } from './ContainerTelemetryHero';
 import { ContainerHistoricalCharts, type ContainerTelemetryPoint } from './ContainerHistoricalCharts';
@@ -115,11 +116,16 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
     }
   }, [containerId]);
 
-  useEffect(() => {
-    isMountedRef.current = true;
+  const initLoad = useCallback(() => {
     setLoading(true);
     loadContainerData();
     fetchLiveStats();
+  }, [loadContainerData, fetchLiveStats]);
+
+  useLoadEffect(initLoad);
+
+  useEffect(() => {
+    isMountedRef.current = true;
 
     // 5 saniyede bir canlı telemetriyi güncelle
     const statsInterval = setInterval(() => {
@@ -132,7 +138,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
       isMountedRef.current = false;
       clearInterval(statsInterval);
     };
-  }, [loadContainerData, fetchLiveStats]);
+  }, [fetchLiveStats]);
 
   // 3. Yaşam Döngüsü Eylemleri (Start, Stop, Restart, Pause, Unpause)
   const handleAction = async (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart') => {

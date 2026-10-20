@@ -7,6 +7,7 @@ import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { ActivityTimelineItem } from './ActivityTimelineItem';
 import { ActivityTimelineFilter } from './ActivityTimelineFilter';
 import { useI18n } from '../../i18n';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 export const ActivityTimelinePage: React.FC = () => {
   const { t } = useI18n();
@@ -45,9 +46,7 @@ export const ActivityTimelinePage: React.FC = () => {
     }
   }, [page, category, search, scope, activeSystemId]);
 
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+  useLoadEffect(fetchLogs);
 
   useEffect(() => {
     const handleSystemChange = (e: Event) => {

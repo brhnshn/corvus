@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { api, type Service } from '../../api/client';
 import { useI18n } from '../../i18n';
+import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { RefreshCw, Server, Plus } from 'lucide-react';
 import { AddServiceModal } from './AddServiceModal';
 import { EditServiceModal } from './EditServiceModal';
@@ -13,7 +14,7 @@ import { ServicesStats } from './ServicesStats';
 import { FilterChip } from '../../components/ui/FilterChip';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
-import { useToast } from '../../components/ui/Toast';
+import { useToast } from '../../components/ui/ToastContext';
 import { tagHue } from '../../utils/tagHue';
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
@@ -72,11 +73,12 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
         if (isManual) setRefreshing(false);
       }
     }
-  }, [toast]);
+  }, [toast, t]);
+
+  useLoadEffect(loadServices);
 
   useEffect(() => {
     isMountedRef.current = true;
-    loadServices();
 
     const interval = setInterval(() => {
       if (!document.hidden && isMountedRef.current) loadServices();
