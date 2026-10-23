@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
@@ -15,56 +13,24 @@ public static class DeployWebhookEndpoints
             string token,
             DeployWebhookRequest? request,
             HttpContext context,
-            ISettingsRepository settingsRepo,
             IDockerService docker,
             Corvus.Api.Services.Deployments.IDeploymentEngine deploymentEngine,
             IDeploymentRepository deploymentRepo,
+            Corvus.Api.Services.Deployments.IDeployWebhookTokenValidator tokenValidator,
             ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
             var logger = loggerFactory.CreateLogger("DeployWebhookEndpoints");
 
-            if (string.IsNullOrWhiteSpace(token))
+            string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var tokenCheck = await tokenValidator.ValidateAsync(token, clientIp);
+            if (!tokenCheck.IsValid)
             {
-                return Results.Json(new DeployWebhookResult { Success = false, Message = "Token boş olamaz." },
-                    CorvusJsonSerializerContext.Default.DeployWebhookResult, statusCode: 400);
+                return Results.Json(new DeployWebhookResult { Success = false, Message = tokenCheck.ErrorMessage ?? string.Empty },
+                    CorvusJsonSerializerContext.Default.DeployWebhookResult, statusCode: tokenCheck.StatusCode);
             }
 
-            // 1. Beklenen Token'ı Çöz
-            var settings = await settingsRepo.GetAllAsync();
-            string? expectedToken = null;
-            if (settings.TryGetValue("deploy_webhook_token", out var dbToken) && !string.IsNullOrWhiteSpace(dbToken))
-            {
-                expectedToken = dbToken;
-            }
-            expectedToken ??= Environment.GetEnvironmentVariable("CORVUS_DEPLOY_TOKEN");
-
-            if (string.IsNullOrWhiteSpace(expectedToken))
-            {
-                logger.LogWarning("Inbound deploy webhook çağrıldı ancak sistemde hiçbir token tanımlanmamış.");
-                return Results.Json(new DeployWebhookResult 
-                { 
-                    Success = false, 
-                    Message = "Deploy webhook belirteci yapılandırılmamış (Ayarlardan veya CORVUS_DEPLOY_TOKEN ile tanımlayın)." 
-                }, CorvusJsonSerializerContext.Default.DeployWebhookResult, statusCode: 403);
-            }
-
-            // 2. Sabit Zamanlı Güvenli Token Karşılaştırması (Timing Attack Koruması)
-            byte[] a = Encoding.UTF8.GetBytes(token);
-            byte[] b = Encoding.UTF8.GetBytes(expectedToken);
-            bool isValid = a.Length == b.Length && CryptographicOperations.FixedTimeEquals(a, b);
-
-            if (!isValid)
-            {
-                logger.LogWarning("Geçersiz deploy webhook token denemesi: {Ip}", context.Connection.RemoteIpAddress);
-                return Results.Json(new DeployWebhookResult 
-                { 
-                    Success = false, 
-                    Message = "Yetkilendirme başarısız: Geçersiz webhook belirteci." 
-                }, CorvusJsonSerializerContext.Default.DeployWebhookResult, statusCode: 401);
-            }
-
-            // 3. Dağıtım / Güncelleme Tetikleme
+            // Dağıtım / Güncelleme Tetikleme
             bool pullLatest = request?.PullLatest ?? true;
             string? targetContainerId = request?.ContainerId ?? context.Request.Query["containerId"].ToString();
             string? targetProject = request?.ProjectName ?? context.Request.Query["projectName"].ToString();

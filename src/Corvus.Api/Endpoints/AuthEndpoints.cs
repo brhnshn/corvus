@@ -1,5 +1,6 @@
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Corvus.Api.Services.Auth;
 
 namespace Corvus.Api.Endpoints;
 
@@ -34,10 +35,10 @@ public static class AuthEndpoints
             return Results.Ok(new AuthStatusResponse(true, isAuth, isAuth ? username : null, userRole, hasUsers, regEnabled));
         });
 
-        group.MapPost("/register", async (AuthRegisterRequest request, HttpContext context, IAuthService auth) =>
+        group.MapPost("/register", async (AuthRegisterRequest request, HttpContext context, IAuthService auth, ILoginRateLimiter rateLimiter) =>
         {
             string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            if (auth.IsAuthEnabled && auth.IsLoginRateLimited(clientIp))
+            if (auth.IsAuthEnabled && rateLimiter.IsRateLimited(clientIp))
             {
                 return Results.Json(
                     new GenericApiResponse(false, "Çok fazla istek. Lütfen 1 dakika sonra tekrar deneyin."),
@@ -72,13 +73,13 @@ public static class AuthEndpoints
             return Results.Ok(new GenericApiResponse(true, "Kayıt başarılı."));
         });
 
-        group.MapPost("/login", async (AuthLoginRequest request, HttpContext context, IAuthService auth) =>
+        group.MapPost("/login", async (AuthLoginRequest request, HttpContext context, IAuthService auth, ILoginRateLimiter rateLimiter) =>
         {
             string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             string userKey = request.Username?.Trim().ToLowerInvariant() ?? "";
             string attemptKey = $"{clientIp}:{userKey}";
 
-            if (auth.IsAuthEnabled && auth.IsLoginRateLimited(attemptKey))
+            if (auth.IsAuthEnabled && rateLimiter.IsRateLimited(attemptKey))
             {
                 return Results.Json(
                     new GenericApiResponse(false, "Çok fazla başarısız giriş denemesi. Lütfen 1 dakika sonra tekrar deneyin."),
@@ -91,12 +92,12 @@ public static class AuthEndpoints
             var (valid, username) = await auth.ValidateCredentialsAsync(inputUsername, inputPassword);
             if (!valid || username == null)
             {
-                auth.RecordLoginFailure(attemptKey);
+                rateLimiter.RecordFailure(attemptKey);
 
                 return Results.Unauthorized();
             }
 
-            auth.ResetLoginAttempts(attemptKey);
+            rateLimiter.Reset(attemptKey);
 
 
             string token = auth.GenerateSessionToken(username);

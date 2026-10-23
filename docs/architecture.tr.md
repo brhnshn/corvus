@@ -137,7 +137,7 @@ corvus/
 │   │       ├── FlappingDetector.cs           # Bellek içi dalgalanma takip ve alarm susturma motoru
 │   │       ├── NotificationService.cs        # Çok kanallı alarm dağıtıcı (Discord, Telegram, SMTP, Slack, Ntfy, Webhook)
 │   │       ├── EventBroadcaster.cs           # Bounded Channel SSE gerçek zamanlı olay yayıncısı
-│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hashleme, kalıcı oturum yönetimi ve RBAC
+│   │       ├── AuthService*.cs               # Zero-Trust SSO, 600k PBKDF2 hashleme (Auth/PasswordHasher.cs), kalıcı oturum yönetimi ve RBAC
 │   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter kimlik doğrulama ve RBAC yetkilendirme katmanı (viewer/operator/admin)
 │   │       ├── SystemAuthService.cs          # Kriptografik güvenli düğüm token üreteci ve sabit zamanlı doğrulayıcı
 │   │       ├── SystemTunnelManager.cs        # Aktif WebSocket tünelleri havuzu, correlation tabanlı RPC yönlendirici ve ikili PTY köprüsü

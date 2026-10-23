@@ -137,7 +137,7 @@ corvus/
 │   │       ├── FlappingDetector.cs           # In-memory sliding-window transition tracker & alert debounce engine
 │   │       ├── NotificationService.cs        # Multi-channel alert dispatcher (Discord, Telegram, SMTP Email, Slack, Ntfy, Webhook, crash alerts)
 │   │       ├── EventBroadcaster.cs           # Bounded Channel SSE real-time event publisher
-│   │       ├── AuthService.cs                # Zero-Trust SSO, 100k PBKDF2 hashing, persistent SQLite session store & RBAC
+│   │       ├── AuthService*.cs               # Zero-Trust SSO, 600k PBKDF2 hashing (Auth/PasswordHasher.cs), persistent SQLite session store & RBAC
 │   │       ├── CorvusAuthFilter.cs           # Minimal API EndpointFilter authentication & RBAC authorization layer (viewer/operator/admin)
 │   │       ├── SystemAuthService.cs          # Cryptographically secure node token generator & constant-time validator
 │   │       ├── SystemTunnelManager.cs        # Active WebSocket agent tunnel pool, correlation RPC router, and binary PTY bridge

@@ -1,24 +1,23 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { api, type Service } from '../../api/client';
 import { useI18n } from '../../i18n';
-import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { RefreshCw, Server, Plus } from 'lucide-react';
 import { AddServiceModal } from './AddServiceModal';
 import { EditServiceModal } from './EditServiceModal';
 import { DeleteConfirmSheet } from './DeleteConfirmSheet';
-import { GroupSection } from '../../components/GroupSection';
 import { useEntityGrouping } from '../../utils/grouping';
-import { ServiceCard } from './ServiceCard';
 import { ServicesHeader } from './ServicesHeader';
 import { ServicesStats } from './ServicesStats';
-import { FilterChip } from '../../components/ui/FilterChip';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/ToastContext';
-import { tagHue } from '../../utils/tagHue';
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
 import { SystemdUnitsTab } from './SystemdUnitsTab';
+import { useServicesData } from './useServicesData';
+import { countServiceTags, filterServices } from './services.utils';
+import { ServicesTagFilters } from './ServicesTagFilters';
+import { ServicesGroupedGrid } from './ServicesGroupedGrid';
 
 export interface ServicesPageProps {
   isAdmin?: boolean;
@@ -34,9 +33,17 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
   const isViewer = role === 'viewer';
   const effectiveIsAdmin = isAdmin && !isViewer;
 
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const {
+    services,
+    setServices,
+    loading,
+    refreshing,
+    reordering,
+    activeSystemName,
+    activeSystemId,
+    loadServices,
+    handleMove
+  } = useServicesData();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'containers' | 'systemd'>('containers');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -46,79 +53,6 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [deletingService, setDeletingService] = useState<{ id: string; name: string } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [reordering, setReordering] = useState(false);
-
-  const [activeSystemName, setActiveSystemName] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
-  });
-  const [activeSystemId, setActiveSystemId] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
-  });
-
-  const isMountedRef = useRef(true);
-
-  const loadServices = useCallback(async (isManual = false) => {
-    if (isManual && isMountedRef.current) setRefreshing(true);
-    try {
-      const data = await api.getServices();
-      if (isMountedRef.current) setServices(data);
-    } catch (err: unknown) {
-      if (isMountedRef.current) {
-        toast.error(t('services.loadFailed'));
-        console.error('Servisler yüklenemedi', err);
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-        if (isManual) setRefreshing(false);
-      }
-    }
-  }, [toast, t]);
-
-  useLoadEffect(loadServices);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    const interval = setInterval(() => {
-      if (!document.hidden && isMountedRef.current) loadServices();
-    }, 25000);
-
-    const onVisible = () => {
-      if (!document.hidden && isMountedRef.current) loadServices();
-    };
-
-    const handleCorvusEvent = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      const type: string | undefined = detail?.eventType || detail?.type;
-      if (type?.includes('service') && isMountedRef.current) {
-        loadServices();
-      }
-    };
-
-    const handleSystemChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const sId = customEvent.detail?.systemId || localStorage.getItem('corvus_active_system_id') || 'local-host';
-      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
-      setActiveSystemId(sId);
-      setActiveSystemName(sName);
-      if (isMountedRef.current) {
-        loadServices(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('corvus_event', handleCorvusEvent);
-    window.addEventListener('corvus_active_system_changed', handleSystemChange);
-
-    return () => {
-      isMountedRef.current = false;
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('corvus_event', handleCorvusEvent);
-      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
-    };
-  }, [loadServices]);
 
   const confirmDelete = async () => {
     if (!deletingService) return;
@@ -135,77 +69,14 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
     }
   };
 
-  const handleMove = async (currentIndex: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= services.length) return;
+  const tagsWithCounts = useMemo(() => countServiceTags(services), [services]);
 
-    const newServices = [...services];
-    const temp = newServices[currentIndex];
-    newServices[currentIndex] = newServices[targetIndex];
-    newServices[targetIndex] = temp;
+  const filtered = useMemo(
+    () => filterServices(services, search, selectedTag, selectedStatus),
+    [services, search, selectedTag, selectedStatus]
+  );
 
-    setServices(newServices);
-    setReordering(true);
-
-    try {
-      const ids = newServices.map((s) => s.id);
-      await api.reorderServices(ids);
-    } catch (err: unknown) {
-      console.error('Sıralama güncellenemedi:', err);
-      await loadServices();
-    } finally {
-      setReordering(false);
-    }
-  };
-
-  const tagsWithCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    services.forEach((s) => {
-      s.tags?.forEach((tag) => {
-        const clean = tag.trim();
-        if (clean) {
-          counts.set(clean, (counts.get(clean) || 0) + 1);
-        }
-      });
-    });
-    return Array.from(counts.entries())
-      .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
-  }, [services]);
-
-  const filtered = useMemo(() => {
-    return services.filter((s) => {
-      const q = search.toLowerCase();
-      const matchesSearch =
-        !q ||
-        s.name.toLowerCase().includes(q) ||
-        (s.category && s.category.toLowerCase().includes(q)) ||
-        (s.description && s.description.toLowerCase().includes(q)) ||
-        (s.tags && s.tags.some((t) => t.toLowerCase().includes(q)));
-
-      const matchesTag =
-        !selectedTag ||
-        (s.tags && s.tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase()));
-
-      const matchesStatus = !selectedStatus || s.status === selectedStatus;
-
-      return matchesSearch && matchesTag && matchesStatus;
-    });
-  }, [services, search, selectedTag, selectedStatus]);
-
-  const {
-    groups,
-    collapsed,
-    toggleCollapse,
-    renameGroup,
-    draggingId,
-    dragOverGroup,
-    handleDragStart,
-    handleDragEnd,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
-  } = useEntityGrouping<Service>({
+  const grouping = useEntityGrouping<Service>({
     items: filtered,
     getId: (s) => s.id,
     getName: (s) => s.name,
@@ -268,33 +139,17 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
       {/* 3. Filtre Çipleri (Etiketler + Tümü) */}
       {(tagsWithCounts.length > 0 || selectedTag || selectedStatus) && (
         <MotionItem staggerIndex={2}>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            <FilterChip
-              label={t('common.all')}
-              count={services.length}
-              selected={!selectedTag && !selectedStatus}
-              onClick={() => {
-                setSelectedTag(null);
-                setSelectedStatus(null);
-              }}
-            />
-
-            {tagsWithCounts.map(({ tag, count }) => {
-              const h = tagHue(tag);
-              return (
-                <FilterChip
-                  key={tag}
-                  label={tag}
-                  count={count}
-                  dotColor={`hsl(${h} 80% 65%)`}
-                  selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-                  onClick={() =>
-                    setSelectedTag((prev) => (prev?.toLowerCase() === tag.toLowerCase() ? null : tag))
-                  }
-                />
-              );
-            })}
-          </div>
+          <ServicesTagFilters
+            totalCount={services.length}
+            tagsWithCounts={tagsWithCounts}
+            selectedTag={selectedTag}
+            selectedStatus={selectedStatus}
+            onSelectTag={setSelectedTag}
+            onClearAll={() => {
+              setSelectedTag(null);
+              setSelectedStatus(null);
+            }}
+          />
         </MotionItem>
       )}
 
@@ -346,44 +201,16 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
 
       {/* 4. Gruplanmış Kart Izgarası */}
       <MotionItem staggerIndex={3}>
-        {groups.map((group) => {
-          if (group.items.length === 0) return null;
-
-          return (
-            <GroupSection
-              key={group.name}
-              title={group.name}
-              count={group.items.length}
-              isCollapsed={!!collapsed[group.name]}
-              onToggleCollapse={() => toggleCollapse(group.name)}
-              onRenameGroup={(newName) => renameGroup(group.name, newName)}
-              isDragOver={dragOverGroup === group.name}
-              onDragOver={(e) => handleDragOver(e, group.name)}
-              onDragLeave={() => handleDragLeave(group.name)}
-              onDrop={(e) => handleDrop(e, group.name)}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {group.items.map((service) => (
-                  <ServiceCard
-                    key={service.id}
-                    service={service}
-                    globalIndex={services.findIndex((s) => s.id === service.id)}
-                    totalServices={services.length}
-                    isDragging={draggingId === service.id}
-                    reordering={reordering}
-                    isAdmin={effectiveIsAdmin}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onMove={handleMove}
-                    onDelete={(id, name) => setDeletingService({ id, name })}
-                    onEdit={setEditingService}
-                    onSelectTag={setSelectedTag}
-                  />
-                ))}
-              </div>
-            </GroupSection>
-          );
-        })}
+        <ServicesGroupedGrid
+          grouping={grouping}
+          services={services}
+          reordering={reordering}
+          isAdmin={effectiveIsAdmin}
+          onMove={handleMove}
+          onDelete={(id, name) => setDeletingService({ id, name })}
+          onEdit={setEditingService}
+          onSelectTag={setSelectedTag}
+        />
       </MotionItem>
       </>
       )}

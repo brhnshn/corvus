@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { useI18n } from '../../i18n';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
+import { isPasswordTooShort } from '../../utils/passwordPolicy';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -31,8 +32,8 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
       setError(t('userManagement.usernamePlaceholder'));
       return;
     }
-    if (password.length < 4) {
-      setError(t('userManagement.passwordPlaceholder'));
+    if (isPasswordTooShort(password)) {
+      setError(t('auth.passwordTooShort'));
       return;
     }
 

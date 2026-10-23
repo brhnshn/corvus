@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
+using Corvus.Api.Services.Auth;
 
 namespace Corvus.Api.Services;
 
@@ -25,19 +26,20 @@ public interface IAuthService
     Task<(bool Success, string? ErrorMessage)> CreateUserAsync(string username, string password, string role);
     Task<(bool Success, string? ErrorMessage)> UpdateUserRoleAsync(string id, string newRole, string currentUsername);
     Task<(bool Success, string? ErrorMessage)> DeleteUserAsync(string id, string currentUsername);
-    bool IsLoginRateLimited(string ipOrKey);
-    void RecordLoginFailure(string ipOrKey);
-    void ResetLoginAttempts(string ipOrKey);
 }
 
-public class AuthService : IAuthService
+/// <summary>
+/// Kimlik doğrulama çekirdeği: kayıt ve kimlik bilgisi doğrulama. Oturumlar <c>AuthService.Sessions.cs</c>,
+/// kullanıcı yönetimi <c>AuthService.Users.cs</c> içindedir.
+/// </summary>
+public partial class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepo;
     private readonly ISettingsRepository _settings;
     private readonly ISessionRepository? _sessionRepo;
     private readonly bool _authEnabled;
     private readonly string _defaultUser;
-    private readonly string _defaultPassHash;
+    private readonly byte[] _defaultPassDigest;
     private readonly bool _trustProxyHeaders;
 
     private record SessionItem(string Username, DateTime ExpiresAt);
@@ -45,9 +47,6 @@ public class AuthService : IAuthService
 
     private record RoleCacheItem(string Role, DateTime CachedAt);
     private static readonly ConcurrentDictionary<string, RoleCacheItem> RoleCache = new(StringComparer.OrdinalIgnoreCase);
-
-    private record FailedAttemptInfo(int Count, DateTime FirstAttemptAt, DateTime? LockoutUntil);
-    private static readonly ConcurrentDictionary<string, FailedAttemptInfo> FailedAttempts = new();
 
     public bool IsAuthEnabled => _authEnabled;
 
@@ -66,7 +65,8 @@ public class AuthService : IAuthService
 
         _defaultUser = Environment.GetEnvironmentVariable("CORVUS_AUTH_USER") ?? "admin";
         string rawPass = Environment.GetEnvironmentVariable("CORVUS_AUTH_PASS") ?? "corvus123";
-        _defaultPassHash = HashPassword(rawPass);
+        // AuthService scoped olduğundan her istekte PBKDF2 çalıştırmamak için yalnızca ucuz bir özet tutulur
+        _defaultPassDigest = SHA256.HashData(Encoding.UTF8.GetBytes(rawPass));
 
         string? envTrust = Environment.GetEnvironmentVariable("CORVUS_TRUST_PROXY_HEADERS") ?? configuration["Auth:TrustProxyHeaders"];
         _trustProxyHeaders = string.Equals(envTrust, "true", StringComparison.OrdinalIgnoreCase);
@@ -112,9 +112,9 @@ public class AuthService : IAuthService
             return (false, "Kullanıcı adı en az 3 karakter olmalıdır.");
         }
 
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 4)
+        if (string.IsNullOrWhiteSpace(password) || password.Length < PasswordHasher.MinPasswordLength)
         {
-            return (false, "Şifre en az 4 karakter olmalıdır.");
+            return (false, $"Şifre en az {PasswordHasher.MinPasswordLength} karakter olmalıdır.");
         }
 
         var existing = await _userRepo.GetByUsernameAsync(cleanUser);
@@ -129,7 +129,7 @@ public class AuthService : IAuthService
         {
             Id = Guid.NewGuid().ToString("N"),
             Username = cleanUser,
-            PasswordHash = HashPassword(password),
+            PasswordHash = PasswordHasher.Hash(password),
             Role = role,
             CreatedAt = DateTime.UtcNow.ToString("o")
         };
@@ -157,13 +157,13 @@ public class AuthService : IAuthService
         var user = await _userRepo.GetByUsernameAsync(cleanUser);
         if (user != null)
         {
-            bool match = VerifyPassword(password, user.PasswordHash, out bool needsRehash);
+            bool match = PasswordHasher.Verify(password, user.PasswordHash, out bool needsRehash);
             if (match)
             {
                 if (needsRehash)
                 {
-                    // Eski düz SHA-256 parolasını şeffaf biçimde güvenli PBKDF2'ye yükselt
-                    string upgradedHash = HashPassword(password);
+                    // Eski SHA-256 veya düşük iterasyonlu PBKDF2 parolasını şeffaf biçimde güncel PBKDF2'ye yükselt
+                    string upgradedHash = PasswordHasher.Hash(password);
                     await _userRepo.UpdatePasswordAsync(user.Username, upgradedHash);
                 }
                 return (true, user.Username);
@@ -175,510 +175,17 @@ public class AuthService : IAuthService
         int userCount = await _userRepo.GetCountAsync();
         if (userCount == 0 && string.Equals(cleanUser, _defaultUser, StringComparison.Ordinal))
         {
-            bool match = VerifyPassword(password, _defaultPassHash, out _);
+            bool match = VerifyDefaultPassword(password);
             return match ? (true, _defaultUser) : (false, null);
         }
 
         return (false, null);
     }
 
-    public static void CleanExpiredSessions()
+    private bool VerifyDefaultPassword(string password)
     {
-        var now = DateTime.UtcNow;
-        foreach (var kvp in ActiveSessions)
-        {
-            if (now >= kvp.Value.ExpiresAt)
-            {
-                ActiveSessions.TryRemove(kvp.Key, out _);
-            }
-        }
-    }
-
-    public string GenerateSessionToken(string username)
-    {
-        // Periyodik bayat oturum temizliği (bellek sızıntısı koruması)
-        CleanExpiredSessions();
-
-        byte[] bytes = new byte[32];
-        RandomNumberGenerator.Fill(bytes);
-        string token = Convert.ToHexString(bytes);
-        var expiresAt = DateTime.UtcNow.AddDays(7);
-        ActiveSessions[token] = new SessionItem(username, expiresAt);
-
-        if (_sessionRepo != null)
-        {
-            try
-            {
-                _ = _sessionRepo.CreateSessionAsync(token, username, expiresAt);
-            }
-            catch { }
-        }
-
-        return token;
-    }
-
-    public (bool IsValid, string? Username) ValidateSessionToken(string? token)
-    {
-        if (!_authEnabled) return (true, "anonymous");
-        if (string.IsNullOrWhiteSpace(token)) return (false, null);
-
-        var now = DateTime.UtcNow;
-
-        // 1. Fast-Path: In-memory cache kontrolü
-        if (ActiveSessions.TryGetValue(token, out var session))
-        {
-            if (now < session.ExpiresAt)
-            {
-                return (true, session.Username);
-            }
-
-            // Süresi dolmuş oturumu bellekten temizle
-            ActiveSessions.TryRemove(token, out _);
-            if (_sessionRepo != null)
-            {
-                try { _ = _sessionRepo.DeleteSessionAsync(token); } catch { }
-            }
-            return (false, null);
-        }
-
-        // 2. Durability Fallback: Konteyner yeniden başladıysa SQLite tablosundan doğrula ve RAM'i hydrate et
-        if (_sessionRepo != null)
-        {
-            try
-            {
-                var (exists, username, expiresAt) = _sessionRepo.GetSessionAsync(token).GetAwaiter().GetResult();
-                if (exists && username != null)
-                {
-                    if (now < expiresAt)
-                    {
-                        ActiveSessions[token] = new SessionItem(username, expiresAt);
-                        return (true, username);
-                    }
-
-                    // Süresi dolmuş oturumu SQLite'tan sil
-                    try { _ = _sessionRepo.DeleteSessionAsync(token); } catch { }
-                }
-            }
-            catch { }
-        }
-
-        return (false, null);
-    }
-
-    public void InvalidateSessionToken(string? token)
-    {
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            ActiveSessions.TryRemove(token, out _);
-            if (_sessionRepo != null)
-            {
-                try { _ = _sessionRepo.DeleteSessionAsync(token); } catch { }
-            }
-        }
-    }
-
-    public string? CheckProxyAuthHeader(IHeaderDictionary headers, IPAddress? remoteIp = null)
-    {
-        // Güvenlik Sertleştirmesi (CWE-306 / CWE-290 Engelleme):
-        // Ters proxy başlıkları varsayılan olarak kabul edilmez.
-        // Sadece CORVUS_TRUST_PROXY_HEADERS=true ve güvenilir IP (Loopback veya CORVUS_TRUSTED_PROXIES) ise işletilir.
-        if (!_trustProxyHeaders)
-        {
-            return null;
-        }
-
-        if (remoteIp != null && !IPAddress.IsLoopback(remoteIp))
-        {
-            string? trustedProxies = Environment.GetEnvironmentVariable("CORVUS_TRUSTED_PROXIES");
-            if (string.IsNullOrWhiteSpace(trustedProxies))
-            {
-                return null;
-            }
-
-            var allowedIps = trustedProxies.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            if (!allowedIps.Contains(remoteIp.ToString()))
-            {
-                return null;
-            }
-        }
-
-        string[] candidateHeaders = [
-            "Tailscale-User-Login",
-            "Cf-Access-Authenticated-User-Email",
-            "Remote-User",
-            "X-Forwarded-User"
-        ];
-
-        foreach (var h in candidateHeaders)
-        {
-            if (headers.TryGetValue(h, out var value) && !string.IsNullOrWhiteSpace(value))
-            {
-                return value.ToString().Trim();
-            }
-        }
-
-        return null;
-    }
-
-    public async Task<string> GetUserRoleAsync(string username)
-    {
-        if (!_authEnabled || string.Equals(username, "anonymous", StringComparison.OrdinalIgnoreCase))
-        {
-            return "admin";
-        }
-
-        var now = DateTime.UtcNow;
-        if (RoleCache.TryGetValue(username, out var cached) && (now - cached.CachedAt).TotalSeconds < 30)
-        {
-            return cached.Role;
-        }
-
-        var user = await _userRepo.GetByUsernameAsync(username);
-        string role;
-        if (user != null)
-        {
-            role = string.IsNullOrWhiteSpace(user.Role) ? "viewer" : user.Role;
-        }
-        else
-        {
-            int userCount = await _userRepo.GetCountAsync();
-            if (userCount == 0 && string.Equals(username, _defaultUser, StringComparison.OrdinalIgnoreCase))
-            {
-                role = "admin";
-            }
-            else
-            {
-                role = "viewer";
-            }
-        }
-        RoleCache[username] = new RoleCacheItem(role, now);
-        return role;
-    }
-
-    public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(string username, string currentPassword, string newPassword)
-    {
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            return (false, "Kullanıcı bilgisi geçersiz.");
-        }
-
-        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 4)
-        {
-            return (false, "Yeni şifre en az 4 karakter olmalıdır.");
-        }
-
-        var user = await _userRepo.GetByUsernameAsync(username);
-        if (user != null)
-        {
-            if (!VerifyPassword(currentPassword, user.PasswordHash, out _))
-            {
-                return (false, "Mevcut şifre hatalı.");
-            }
-
-            string newHash = HashPassword(newPassword);
-            bool updated = await _userRepo.UpdatePasswordAsync(username, newHash);
-            return updated ? (true, null) : (false, "Şifre güncellenemedi.");
-        }
-
-        // Fallback default admin kontrolü (eğer henüz users tablosunda kullanıcı yoksa)
-        if (string.Equals(username, _defaultUser, StringComparison.OrdinalIgnoreCase))
-        {
-            if (!VerifyPassword(currentPassword, _defaultPassHash, out _))
-            {
-                return (false, "Mevcut şifre hatalı.");
-            }
-
-            var newUser = new User
-            {
-                Id = Guid.NewGuid().ToString("N"),
-                Username = _defaultUser,
-                PasswordHash = HashPassword(newPassword),
-                Role = "admin",
-                CreatedAt = DateTime.UtcNow.ToString("o")
-            };
-            await _userRepo.CreateAsync(newUser);
-            return (true, null);
-        }
-
-        return (false, "Kullanıcı bulunamadı.");
-    }
-
-    public async Task<List<UserDto>> GetAllUsersAsync()
-    {
-        var users = await _userRepo.GetAllAsync();
-        if (users.Count == 0 && !string.IsNullOrEmpty(_defaultUser))
-        {
-            return new List<UserDto>
-            {
-                new("default", _defaultUser, "admin", DateTime.UtcNow.ToString("o"))
-            };
-        }
-
-        var result = new List<UserDto>(users.Count);
-        foreach (var u in users)
-        {
-            result.Add(new UserDto(u.Id, u.Username, u.Role, u.CreatedAt));
-        }
-        return result;
-    }
-
-    public async Task<(bool Success, string? ErrorMessage)> CreateUserAsync(string username, string password, string role)
-    {
-        string cleanUser = username?.Trim() ?? string.Empty;
-        if (cleanUser.Length < 3)
-        {
-            return (false, "Kullanıcı adı en az 3 karakter olmalıdır.");
-        }
-
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 4)
-        {
-            return (false, "Şifre en az 4 karakter olmalıdır.");
-        }
-
-        string cleanRole = role?.Trim().ToLowerInvariant() switch
-        {
-            "admin" => "admin",
-            "operator" => "operator",
-            "viewer" => "viewer",
-            _ => "viewer"
-        };
-
-        var existing = await _userRepo.GetByUsernameAsync(cleanUser);
-        if (existing != null || (await _userRepo.GetCountAsync() == 0 && string.Equals(cleanUser, _defaultUser, StringComparison.OrdinalIgnoreCase)))
-        {
-            return (false, "Bu kullanıcı adı zaten kayıtlı.");
-        }
-
-        var user = new User
-        {
-            Id = Guid.NewGuid().ToString("N"),
-            Username = cleanUser,
-            PasswordHash = HashPassword(password),
-            Role = cleanRole,
-            CreatedAt = DateTime.UtcNow.ToString("o")
-        };
-
-        await _userRepo.CreateAsync(user);
-        return (true, null);
-    }
-
-    public async Task<(bool Success, string? ErrorMessage)> UpdateUserRoleAsync(string id, string newRole, string currentUsername)
-    {
-        var user = await _userRepo.GetByIdAsync(id);
-        if (user == null)
-        {
-            return (false, "Kullanıcı bulunamadı.");
-        }
-
-        string cleanRole = newRole?.Trim().ToLowerInvariant() switch
-        {
-            "admin" => "admin",
-            "operator" => "operator",
-            "viewer" => "viewer",
-            _ => "viewer"
-        };
-
-        if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase) && cleanRole != "admin")
-        {
-            return (false, "Kendi yönetici rolünüzü değiştiremezsiniz.");
-        }
-
-        if (string.Equals(user.Role, "admin", StringComparison.OrdinalIgnoreCase) && cleanRole != "admin")
-        {
-            var allUsers = await _userRepo.GetAllAsync();
-            int adminCount = allUsers.Count(u => string.Equals(u.Role, "admin", StringComparison.OrdinalIgnoreCase));
-            if (adminCount <= 1)
-            {
-                return (false, "Sistemdeki son yönetici rolü değiştirilemez.");
-            }
-        }
-
-        bool updated = await _userRepo.UpdateRoleAsync(id, cleanRole);
-        if (!updated)
-        {
-            return (false, "Rol güncellenemedi.");
-        }
-
-        RoleCache.TryRemove(user.Username, out _);
-
-        return (true, null);
-    }
-
-    public async Task<(bool Success, string? ErrorMessage)> DeleteUserAsync(string id, string currentUsername)
-    {
-        var user = await _userRepo.GetByIdAsync(id);
-        if (user == null)
-        {
-            return (false, "Kullanıcı bulunamadı.");
-        }
-
-        if (string.Equals(user.Username, currentUsername, StringComparison.OrdinalIgnoreCase))
-        {
-            return (false, "Kendi hesabınızı silemezsiniz.");
-        }
-
-        if (string.Equals(user.Role, "admin", StringComparison.OrdinalIgnoreCase))
-        {
-            var allUsers = await _userRepo.GetAllAsync();
-            int adminCount = allUsers.Count(u => string.Equals(u.Role, "admin", StringComparison.OrdinalIgnoreCase));
-            if (adminCount <= 1)
-            {
-                return (false, "Sistemdeki son yönetici hesabı silinemez.");
-            }
-        }
-
-        bool deleted = await _userRepo.DeleteAsync(id);
-        if (!deleted)
-        {
-            return (false, "Kullanıcı silinemedi.");
-        }
-
-        // Kullanıcının aktif oturumlarını temizle
-        if (_sessionRepo != null)
-        {
-            await _sessionRepo.DeleteSessionsByUsernameAsync(user.Username);
-        }
-
-        foreach (var pair in ActiveSessions)
-        {
-            if (string.Equals(pair.Value.Username, user.Username, StringComparison.OrdinalIgnoreCase))
-            {
-                ActiveSessions.TryRemove(pair.Key, out _);
-            }
-        }
-
-        RoleCache.TryRemove(user.Username, out _);
-
-        return (true, null);
-    }
-
-    public bool IsLoginRateLimited(string ipOrKey)
-    {
-        if (string.IsNullOrWhiteSpace(ipOrKey)) return false;
-
-        if (FailedAttempts.TryGetValue(ipOrKey, out var info))
-        {
-            var now = DateTime.UtcNow;
-            if (info.LockoutUntil.HasValue)
-            {
-                if (now < info.LockoutUntil.Value)
-                {
-                    return true;
-                }
-                FailedAttempts.TryRemove(ipOrKey, out _);
-                return false;
-            }
-
-            if (now - info.FirstAttemptAt > TimeSpan.FromMinutes(1))
-            {
-                FailedAttempts.TryRemove(ipOrKey, out _);
-                return false;
-            }
-        }
-        return false;
-    }
-
-    public void RecordLoginFailure(string ipOrKey)
-    {
-        if (string.IsNullOrWhiteSpace(ipOrKey)) return;
-
-        var now = DateTime.UtcNow;
-        FailedAttempts.AddOrUpdate(ipOrKey,
-            _ => new FailedAttemptInfo(1, now, null),
-            (_, existing) =>
-            {
-                if (now - existing.FirstAttemptAt > TimeSpan.FromMinutes(1))
-                {
-                    return new FailedAttemptInfo(1, now, null);
-                }
-                int newCount = existing.Count + 1;
-                DateTime? lockout = newCount >= 5 ? now.AddMinutes(1) : null;
-                return new FailedAttemptInfo(newCount, existing.FirstAttemptAt, lockout);
-            });
-
-        // Bellek sızıntısını önlemek için bayat girdileri temizle
-        if (FailedAttempts.Count > 200)
-        {
-            foreach (var kvp in FailedAttempts)
-            {
-                if (now - kvp.Value.FirstAttemptAt > TimeSpan.FromMinutes(2))
-                {
-                    FailedAttempts.TryRemove(kvp.Key, out _);
-                }
-            }
-        }
-    }
-
-    public void ResetLoginAttempts(string ipOrKey)
-    {
-        if (!string.IsNullOrWhiteSpace(ipOrKey))
-        {
-            FailedAttempts.TryRemove(ipOrKey, out _);
-        }
-    }
-
-    public static string HashPassword(string password)
-    {
-        byte[] salt = RandomNumberGenerator.GetBytes(16);
-        const int iterations = 100_000;
-        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
-            password,
-            salt,
-            iterations,
-            HashAlgorithmName.SHA256,
-            32);
-
-        return $"pbkdf2:{iterations}:{Convert.ToHexString(salt)}:{Convert.ToHexString(hash)}";
-    }
-
-    public static bool VerifyPassword(string password, string storedHash, out bool needsRehash)
-    {
-        needsRehash = false;
-        if (string.IsNullOrWhiteSpace(storedHash) || string.IsNullOrWhiteSpace(password))
-            return false;
-
-        // Modern PBKDF2 Formatı (pbkdf2:iterasyon:salt:hash)
-        if (storedHash.StartsWith("pbkdf2:", StringComparison.OrdinalIgnoreCase))
-        {
-            var parts = storedHash.Split(':');
-            if (parts.Length == 4 && int.TryParse(parts[1], out int iterations) && iterations > 0)
-            {
-                try
-                {
-                    byte[] salt = Convert.FromHexString(parts[2]);
-                    byte[] expectedHash = Convert.FromHexString(parts[3]);
-                    byte[] actualHash = Rfc2898DeriveBytes.Pbkdf2(
-                        password,
-                        salt,
-                        iterations,
-                        HashAlgorithmName.SHA256,
-                        expectedHash.Length);
-
-                    return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-            return false;
-        }
-
-        // Eski düz SHA-256 kontrolü (Geriye dönük uyumluluk)
-        byte[] inputHash = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        try
-        {
-            byte[] legacyExpected = Convert.FromHexString(storedHash);
-            bool legacyMatch = CryptographicOperations.FixedTimeEquals(inputHash, legacyExpected);
-            if (legacyMatch)
-            {
-                needsRehash = true; // İlk başarılı girişte PBKDF2'ye yükselt
-            }
-            return legacyMatch;
-        }
-        catch
-        {
-            return false;
-        }
+        if (string.IsNullOrEmpty(password)) return false;
+        byte[] digest = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+        return CryptographicOperations.FixedTimeEquals(digest, _defaultPassDigest);
     }
 }

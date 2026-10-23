@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Veritabanı" />
-  <img src="https://img.shields.io/badge/Testler-435_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-441_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -278,7 +278,7 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
   - **Sistem Duyuruları & Planlı Bakım Afişleri:** Yönetici paneli olay yönetim sekmesinden oluşturulan aktif arıza, araştırma ve planlı bakım duyurularını (`service_incidents`) ziyaretçilere anında duyurur.
   - **Hafif Yıllık SLA Özeti:** 365 günlük günlük istatistik özeti tablosu (`uptime_daily_stats`) ile minimum disk alanıyla uzun vadeli SLA takibi sağlar.
 - **🛡️ Sertleştirilmiş Kimlik Doğrulama, Zero-Trust SSO & DoS Koruması:**
-  - **100k İterasyonlu PBKDF2 & Tuzlama:** 16-byte kriptografik rastgele tuz ve PBKDF2-HMAC-SHA256 parola hashleme; eski parolalar için şeffaf otomatik rehash desteği.
+  - **600k İterasyonlu PBKDF2 (OWASP 2023) & Tuzlama:** 16-byte kriptografik rastgele tuz ve PBKDF2-HMAC-SHA256 parola hashleme; eski ve düşük iterasyonlu parolalar için şeffaf otomatik rehash desteği; en az 8 karakterlik parola politikası.
   - **Brute-Force & CPU DoS Koruması:** 1 dakika içinde 5 başarısız denemede otomatik 1 dakikalık IP/kullanıcı bazlı geçici kilitleme (`HTTP 429`).
   - **Ters Vekil (Reverse Proxy) Güvenliği:** `CORVUS_TRUST_PROXY_HEADERS` opt-in ve IP whitelist doğrulamasıyla sahte başlık (`Remote-User`, `Tailscale`, `Cloudflare Access`, `X-Forwarded-User`) spoofing engellemesi.
   - **Sertleştirilmiş CORS:** Kimlik bilgisi içeren istekler yalnızca tanımlı `CORVUS_ALLOWED_ORIGINS` veya yerel geliştirme ortamına izin verir.
@@ -409,9 +409,9 @@ labels:
    cd ../Corvus.Api
    dotnet run
    ```
-3. **Otomatik Testleri Çalıştırma (Toplam 435 Test):**
+3. **Otomatik Testleri Çalıştırma (Toplam 441 Test):**
    ```bash
-   # Backend Testleri (369 başarılı xUnit testi)
+   # Backend Testleri (375 başarılı xUnit testi)
    dotnet test tests/Corvus.Api.Tests
 
    # Frontend Testleri (66 başarılı Vitest testi)

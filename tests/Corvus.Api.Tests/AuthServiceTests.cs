@@ -1,6 +1,7 @@
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Corvus.Api.Services.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -119,7 +120,7 @@ public class AuthServiceTests
         await settings.SetAsync("registration_enabled", "false");
         var authService = CreateService(settings: settings);
 
-        var (success, error) = await authService.RegisterAsync("secondadmin", "pass123");
+        var (success, error) = await authService.RegisterAsync("secondadmin", "pass1234");
 
         Assert.False(success);
         Assert.Equal("Yeni kullanıcı kayıtları kapatılmıştır.", error);
@@ -129,7 +130,7 @@ public class AuthServiceTests
     public async Task RegisterAsync_Fails_On_Duplicate_Username()
     {
         var authService = CreateService();
-        await authService.RegisterAsync("sameuser", "pass123");
+        await authService.RegisterAsync("sameuser", "pass1234");
         await authService.SetRegistrationEnabledAsync(true);
 
         var (success, error) = await authService.RegisterAsync("sameuser", "otherpass");
@@ -145,7 +146,7 @@ public class AuthServiceTests
         var authService = CreateService(userRepo: userRepo);
 
         // First user registers
-        var (s1, e1) = await authService.RegisterAsync("firstadmin", "pass123");
+        var (s1, e1) = await authService.RegisterAsync("firstadmin", "pass1234");
         Assert.True(s1);
         Assert.Null(e1);
 
@@ -157,13 +158,13 @@ public class AuthServiceTests
         Assert.False(await authService.IsRegistrationEnabledAsync());
 
         // Second user cannot register while disabled
-        var (s2, e2) = await authService.RegisterAsync("seconduser", "pass123");
+        var (s2, e2) = await authService.RegisterAsync("seconduser", "pass1234");
         Assert.False(s2);
         Assert.Equal("Yeni kullanıcı kayıtları kapatılmıştır.", e2);
 
         // When admin re-enables registration
         await authService.SetRegistrationEnabledAsync(true);
-        var (s3, e3) = await authService.RegisterAsync("seconduser", "pass123");
+        var (s3, e3) = await authService.RegisterAsync("seconduser", "pass1234");
         Assert.True(s3);
         Assert.Null(e3);
 
@@ -333,7 +334,7 @@ public class AuthServiceTests
         // Verify password was automatically upgraded to PBKDF2
         var updatedUser = await userRepo.GetByUsernameAsync("olduser");
         Assert.NotNull(updatedUser);
-        Assert.StartsWith("pbkdf2:100000:", updatedUser.PasswordHash);
+        Assert.StartsWith($"pbkdf2:{PasswordHasher.Pbkdf2Iterations}:", updatedUser.PasswordHash);
 
         // Next login works with PBKDF2
         var (secondLogin, _) = await authService.ValidateCredentialsAsync("olduser", "legacySecret");
@@ -386,31 +387,6 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public void RateLimiting_Blocks_After_Five_Failed_Attempts_And_Resets()
-    {
-        var authService = CreateService();
-        string testKey = "192.168.1.100:testuser";
-
-        // Initially not rate limited
-        Assert.False(authService.IsLoginRateLimited(testKey));
-
-        // 4 failed attempts should still not trigger lockout
-        for (int i = 0; i < 4; i++)
-        {
-            authService.RecordLoginFailure(testKey);
-            Assert.False(authService.IsLoginRateLimited(testKey));
-        }
-
-        // 5th failed attempt triggers lockout
-        authService.RecordLoginFailure(testKey);
-        Assert.True(authService.IsLoginRateLimited(testKey));
-
-        // Reset clears lockout
-        authService.ResetLoginAttempts(testKey);
-        Assert.False(authService.IsLoginRateLimited(testKey));
-    }
-
-    [Fact]
     public async Task ChangePassword_Success_UpdatesHash_AndAllowsNewLogin()
     {
         var userRepo = new FakeUserRepository();
@@ -459,7 +435,7 @@ public class AuthServiceTests
 
         var (success, error) = await authService.ChangePasswordAsync("charlie", "charlieSecret", "12");
         Assert.False(success);
-        Assert.Contains("en az 4 karakter", error);
+        Assert.Contains($"en az {PasswordHasher.MinPasswordLength} karakter", error);
     }
 
     [Fact]

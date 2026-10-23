@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.18] - 2026-10-24 — Deploy Webhook Brute-Force Lock, OWASP Password Hashing & Sub-300-Line Modular Architecture
+
+### Security
+- **Deploy Webhook Brute-Force Protection**:
+  - `Corvus.Api/Services/Deployments/DeployWebhookTokenValidator.cs` (new): Token validation for `POST /api/hooks/deploy/{token}` moved out of the endpoint into a dedicated, unit-tested service. After 5 invalid tokens within 1 minute the caller IP is locked out for 1 minute (`429 Too Many Requests`), closing the unlimited token guessing gap from the 2026-10-20 audit (finding 3.1).
+  - Token comparison now hashes both values with SHA-256 before `FixedTimeEquals`, so the token length no longer leaks through timing.
+- **OWASP-Aligned Password Hashing**:
+  - `Corvus.Api/Services/Auth/PasswordHasher.cs` (new): PBKDF2-HMAC-SHA256 iterations raised from 100,000 to 600,000 (OWASP 2023). Existing low-iteration and legacy SHA-256 hashes are transparently upgraded on the next successful login; no password reset is required.
+  - Minimum password length raised from 4 to 8 characters for registration, user creation and password changes (backend + all four frontend forms via the shared `utils/passwordPolicy.ts`). Existing accounts with shorter passwords can still sign in.
+- **Secret Masking in Notifications**: Dead Man's Snitch "period exceeded" alerts no longer send the full push token to Discord/Telegram/Slack/SMTP/Ntfy/Webhook channels; only the first 4 characters are shown (`SecuritySanitizer.MaskToken`).
+
+### Performance
+- `AuthService` is request-scoped and previously ran a full PBKDF2 derivation of the default `CORVUS_AUTH_PASS` in its constructor on every authenticated request. It now keeps only a cheap SHA-256 digest and compares it in constant time, removing that per-request CPU cost (and making the stronger iteration count safe to adopt).
+
+### Changed
+- **Backend Clean Modular Architecture (≤ 300 Lines per File)** — all splits are partial classes or extracted services with unchanged public contracts:
+  - `AuthService.cs` (684) → `AuthService.cs`, `AuthService.Sessions.cs`, `AuthService.Users.cs`, plus `Services/Auth/PasswordHasher.cs` and `Services/Auth/LoginRateLimiter.cs` (shared singleton `ILoginRateLimiter` used by login, register and deploy webhook).
+  - `ServicesRepository.cs` (731) → core, `.Mapping`, `.Mutations`, `.Docker`.
+  - `SystemsEndpoints.cs` (636) → core, `.Telemetry`, `.Containers`, `.Systemd`.
+  - `DockerContainerClient.cs` (585) → core, `.Lifecycle`, `.Configuration`, `.Telemetry`.
+  - `NotificationService.cs` (524) → core, `.ServiceAlerts`, `.ContainerAlerts`, `.MetricAlerts`.
+  - `UptimeCheckerService.cs` (509): the 320-line `ExecuteAsync` loop was decomposed into `RefreshSettingsCacheAsync`, `RefreshServicesCacheAsync`, `RunDueServiceChecksAsync`, `ProcessSslInfoAsync`, `ApplyDownResultAsync`, `ApplyUpResultAsync` and `CheckPushMonitorsAsync` across `.StateMachine` and `.Probes` partials.
+  - `SystemMetricsCollector.cs` (433) → core + `.HostProbes`; `Corvus.Agent/AgentDockerClient.cs` (513) → core, `.Transport`, `.RpcHandlers`.
+  - `ContainersEndpoints.cs` (353) → core + `.PowerState`; `ComposeFileService.cs` → core + `.Deploy`; `OciRegistryClient.cs` → core + `.Auth`; `DeploymentEngine.Scratch.cs` → `.Scratch` + `.ScratchPipeline`.
+  - `Models/DockerModels.cs` (754) split by domain into `DockerModels.cs`, `DockerInspectModels.cs`, `DockerContainerRequestModels.cs`, `DockerPruneModels.cs` and `DockerImageComposeModels.cs`.
+- **Frontend Types**: `src/types/index.ts` (504) split into `services.ts`, `telemetry.ts`, `platform.ts`, `docker.ts` and `alerts.ts`; `index.ts` remains a barrel so all imports are unchanged.
+- **Frontend Clean Modular Decomposition (12 largest components)** — pure structural refactor; props, exports, i18n keys and API calls unchanged. State and side effects moved to co-located `use*` hooks, pure helpers to `*.utils.ts`, and UI sections to their own components:
+  - `ContainerResourcesTab.tsx` 528 → 156, `SystemPruneModal.tsx` 502 → 164, `ComposeConfigModal.tsx` 450 → 140, `ContainerTerminalModal.tsx` 409 → 94 (new `prune/`, `compose/`, `terminal/` sub-folders).
+  - `EditServiceModal.tsx` 451 → 139, `Services/index.tsx` 426 → 253, `SystemdUnitsTab.tsx` 400 → 152, `Settings/UsersTab.tsx` 418 → 115.
+  - `SystemsTable.tsx` 446 → 58, `ContainerDetail/index.tsx` 398 → 215, `ContainerResourceLimitsModal.tsx` 395 → 131, `NewDeploymentModal.tsx` 392 → 137.
+- Test count badges in `README.md` / `README.tr.md` updated to 441 (375 backend xUnit + 66 frontend Vitest).
+
+### Tests
+- Added `AuthSecurityHardeningTests.cs` (rate limiter, PBKDF2 iteration upgrade, deploy webhook validator: valid/invalid/empty/unconfigured tokens and per-IP lockout).
+
 ## [1.6.17] - 2026-10-20 — Comprehensive Security Hardening, Clean Modular Architecture & Full Zero-Warning Oxlint Cleansing
 
 ### Security

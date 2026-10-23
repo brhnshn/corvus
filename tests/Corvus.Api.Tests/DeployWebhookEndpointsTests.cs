@@ -102,18 +102,4 @@ public class DeployWebhookEndpointsTests
         await mockEngine.WaitForCompletionAsync(record.Id, TimeSpan.FromSeconds(120));
         Assert.True(mockEngine.WaitForCompletionCalled);
     }
-
-    [Fact]
-    public void TimingSafeTokenComparison_MatchesExpected()
-    {
-        byte[] a = System.Text.Encoding.UTF8.GetBytes("super-secret-token");
-        byte[] b = System.Text.Encoding.UTF8.GetBytes("super-secret-token");
-        byte[] c = System.Text.Encoding.UTF8.GetBytes("wrong-token");
-
-        bool isValid = a.Length == b.Length && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(a, b);
-        bool isInvalid = a.Length == c.Length && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(a, c);
-
-        Assert.True(isValid);
-        Assert.False(isInvalid);
-    }
 }

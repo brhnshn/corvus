@@ -1,22 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  Layers, 
-  Cpu, 
-  Key, 
-  Network, 
-  HardDrive, 
-  FileText, 
-  Terminal as TerminalIcon, 
-  RefreshCw,
-  AlertCircle
-} from 'lucide-react';
-import { api, containersApi, type DockerContainer, type DockerContainerInspectInfo, type ContainerStats } from '../../api/client';
+import React, { useState } from 'react';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useToast } from '../../components/ui/ToastContext';
-import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { ContainerDetailHeader } from './ContainerDetailHeader';
 import { ContainerTelemetryHero } from './ContainerTelemetryHero';
-import { ContainerHistoricalCharts, type ContainerTelemetryPoint } from './ContainerHistoricalCharts';
+import { ContainerHistoricalCharts } from './ContainerHistoricalCharts';
+import { ContainerDetailTabsNav } from './ContainerDetailTabsNav';
+import { ContainerDeleteConfirmModal } from './ContainerDeleteConfirmModal';
+import { useContainerDetailData } from './useContainerDetailData';
 import type { ContainerDetailTab, ContainerDetailPageProps } from './types';
 import { getInspectEnv, getInspectHostConfig, getInspectConfig } from '../Containers/detail/inspectHelpers';
 
@@ -30,7 +21,6 @@ import { ContainerResourceLimitsModal } from '../Containers/detail/ContainerReso
 import { LogsTab } from './tabs/LogsTab';
 import { TerminalTab } from './tabs/TerminalTab';
 import { ImageUpdateModal } from '../Containers/ImageUpdateModal';
-import { ConfirmModal } from '../../components/ui/ConfirmModal';
 
 export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
   containerId,
@@ -45,158 +35,30 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
     const validTabs: ContainerDetailTab[] = ['overview', 'resources', 'env', 'networking', 'storage', 'logs', 'terminal'];
     return (validTabs.includes(queryTab as ContainerDetailTab) ? queryTab : 'overview') as ContainerDetailTab;
   });
-  const [container, setContainer] = useState<DockerContainer | null>(null);
-  const [inspect, setInspect] = useState<DockerContainerInspectInfo | null>(null);
-  const [stats, setStats] = useState<ContainerStats | null>(null);
-  const [telemetryHistory, setTelemetryHistory] = useState<ContainerTelemetryPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showResourceLimitsModal, setShowResourceLimitsModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteForce, setDeleteForce] = useState(true);
-  const [deleteVolumes, setDeleteVolumes] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  const isMountedRef = useRef(true);
-
-  // 1. Ana Konteyner ve Inspect Verilerini Yükle
-  const loadContainerData = useCallback(async () => {
-    try {
-      const [allContainers, inspectData] = await Promise.all([
-        api.getContainers(),
-        containersApi.inspectContainer(containerId)
-      ]);
-
-      if (!isMountedRef.current) return;
-
-      if (Array.isArray(allContainers)) {
-        const found = allContainers.find(
-          (c) => c.Id === containerId || c.Id.startsWith(containerId)
-        );
-        if (found) setContainer(found);
-      }
-
-      setInspect(inspectData);
-      setError(null);
-    } catch (err: unknown) {
-      if (isMountedRef.current) {
-        console.error('Konteyner detayları alınamadı:', err);
-        setError(err instanceof Error ? err.message : t('containers.notFoundTitle'));
-      }
-    } finally {
-      if (isMountedRef.current) setLoading(false);
-    }
-  }, [containerId, t]);
-
-  // 2. Canlı Telemetriyi (CPU/RAM/Net) Arka Planda Güncelle ve Tarihsel Seriye Ekle
-  const fetchLiveStats = useCallback(async () => {
-    try {
-      const liveData = await containersApi.getContainerStats(containerId);
-      if (liveData && isMountedRef.current) {
-        setStats(liveData);
-        const now = new Date();
-        const newPoint: ContainerTelemetryPoint = {
-          time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          fullTime: now.toLocaleTimeString(),
-          cpuPercent: +liveData.cpuPercent.toFixed(1),
-          memoryUsageBytes: liveData.memoryUsageBytes,
-          memoryPercent: +liveData.memoryPercent.toFixed(1),
-          networkRxBytes: liveData.networkRxBytes,
-          networkTxBytes: liveData.networkTxBytes
-        };
-        setTelemetryHistory((prev) => {
-          const next = [...prev, newPoint];
-          return next.slice(-30);
-        });
-      }
-    } catch {
-      // sessizce geç
-    }
-  }, [containerId]);
-
-  const initLoad = useCallback(() => {
-    setLoading(true);
-    loadContainerData();
-    fetchLiveStats();
-  }, [loadContainerData, fetchLiveStats]);
-
-  useLoadEffect(initLoad);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    // 5 saniyede bir canlı telemetriyi güncelle
-    const statsInterval = setInterval(() => {
-      if (!document.hidden && isMountedRef.current) {
-        fetchLiveStats();
-      }
-    }, 5000);
-
-    return () => {
-      isMountedRef.current = false;
-      clearInterval(statsInterval);
-    };
-  }, [fetchLiveStats]);
-
-  // 3. Yaşam Döngüsü Eylemleri (Start, Stop, Restart, Pause, Unpause)
-  const handleAction = async (action: 'start' | 'stop' | 'pause' | 'unpause' | 'restart') => {
-    const cleanName = container?.Names?.[0]?.replace(/^\//, '') || containerId.slice(0, 12);
-    const actionLabels: Record<string, string> = {
-      start: t('containers.actionInProgressStart'),
-      stop: t('containers.actionInProgressStop'),
-      pause: t('containers.actionInProgressPause'),
-      unpause: t('containers.actionInProgressUnpause'),
-      restart: t('containers.actionInProgressRestart')
-    };
-
-    setActionInProgress(action);
-    toast.info(`"${cleanName}" ${actionLabels[action]}…`);
-
-    try {
-      if (action === 'start') await api.startContainer(containerId);
-      else if (action === 'stop') await api.stopContainer(containerId);
-      else if (action === 'pause') await api.pauseContainer(containerId);
-      else if (action === 'unpause') await api.unpauseContainer(containerId);
-      else if (action === 'restart') await api.restartContainer(containerId);
-
-      toast.success(t('containers.actionCompletedToast', { name: cleanName }));
-      await loadContainerData();
-      await fetchLiveStats();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('containers.actionFailedToast'));
-    } finally {
-      if (isMountedRef.current) setActionInProgress(null);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    const cleanName = container?.Names?.[0]?.replace(/^\//, '') || containerId.slice(0, 12);
-    setDeleting(true);
-    try {
-      await api.deleteContainer(containerId, deleteForce, deleteVolumes);
-      toast.success(t('containers.deleteSuccess', { name: cleanName }));
-      setShowDeleteModal(false);
-      onBack();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('containers.deleteError'));
-    } finally {
-      if (isMountedRef.current) setDeleting(false);
-    }
-  };
+  const {
+    container,
+    inspect,
+    stats,
+    telemetryHistory,
+    loading,
+    error,
+    actionInProgress,
+    loadContainerData,
+    handleAction,
+    showDeleteModal,
+    setShowDeleteModal,
+    deleteForce,
+    setDeleteForce,
+    deleteVolumes,
+    setDeleteVolumes,
+    deleting,
+    handleConfirmDelete,
+  } = useContainerDetailData(containerId, onBack);
 
   const isRunning = container?.State?.toLowerCase() === 'running';
-
-  const tabs = [
-    { id: 'overview' as const, label: t('containers.tabOverview'), icon: Layers },
-    { id: 'resources' as const, label: t('containers.tabResources'), icon: Cpu },
-    { id: 'env' as const, label: t('containers.tabEnv'), icon: Key },
-    { id: 'networking' as const, label: t('containers.tabNetworking'), icon: Network },
-    { id: 'storage' as const, label: t('containers.tabStorage'), icon: HardDrive },
-    { id: 'logs' as const, label: t('containers.tabLogs'), icon: FileText },
-    ...(isAdmin ? [{ id: 'terminal' as const, label: t('containers.tabTerminal'), icon: TerminalIcon }] : [])
-  ];
 
   if (loading && !inspect) {
     return (
@@ -256,27 +118,7 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
       />
 
       {/* 3. Çok Sekmeli Gezinme Çubuğu */}
-      <div className="glass rounded-[20px] p-[4px] flex gap-1 overflow-x-auto no-scrollbar shadow-xs">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-[16px] text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                isActive
-                  ? 'bg-white text-black shadow-xs font-bold'
-                  : 'text-[#9ba0b5] hover:text-[#eceef6] hover:bg-white/[0.04]'
-              }`}
-            >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-black' : 'text-[#9ba0b5]'}`} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      <ContainerDetailTabsNav activeTab={activeTab} onSelectTab={setActiveTab} isAdmin={isAdmin} />
 
       {/* 4. Aktif Sekme İçeriği */}
       <div className="animate-in fade-in-0 duration-200">
@@ -354,43 +196,18 @@ export const ContainerDetailPage: React.FC<ContainerDetailPageProps> = ({
         />
       )}
 
-      <ConfirmModal
+      <ContainerDeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleConfirmDelete}
-        title={t('containers.deleteTitle')}
-        description={t('containers.deleteConfirm', { name: containerName })}
-        confirmLabel={deleting ? t('containers.deleting') : t('containers.delete')}
-        cancelLabel={t('common.cancel')}
-        variant="danger"
-        loading={deleting}
-      >
-        <div className="space-y-2 pt-1 text-xs">
-          {isRunning && (
-            <div className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--status-warn-bg)] border border-[var(--status-warn)]/30 text-[var(--status-warn)]">
-              {t('containers.deleteRunningWarning')}
-            </div>
-          )}
-          <label className="flex items-center gap-2 text-[var(--text-secondary)] cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={deleteForce}
-              onChange={(e) => setDeleteForce(e.target.checked)}
-              className="rounded border-white/20 bg-white/5 text-rose-500 focus:ring-0 cursor-pointer"
-            />
-            <span>{t('containers.deleteForceLabel')}</span>
-          </label>
-          <label className="flex items-center gap-2 text-[var(--text-secondary)] cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={deleteVolumes}
-              onChange={(e) => setDeleteVolumes(e.target.checked)}
-              className="rounded border-white/20 bg-white/5 text-rose-500 focus:ring-0 cursor-pointer"
-            />
-            <span>{t('containers.deleteVolumesLabel')}</span>
-          </label>
-        </div>
-      </ConfirmModal>
+        containerName={containerName}
+        isRunning={isRunning}
+        deleting={deleting}
+        deleteForce={deleteForce}
+        onDeleteForceChange={setDeleteForce}
+        deleteVolumes={deleteVolumes}
+        onDeleteVolumesChange={setDeleteVolumes}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Lock, User, UserPlus, LogIn, AlertCircle, CheckCircle2, Info, Eye, EyeO
 import { useI18n } from '../../i18n';
 import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { Button } from '../../components/ui/Button';
+import { isPasswordTooShort } from '../../utils/passwordPolicy';
 
 interface AuthPageProps {
   authStatus: AuthStatus;
@@ -38,7 +39,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ authStatus, onAuthSuccess })
       return;
     }
 
-    if (password.length < 4) {
+    if (isPasswordTooShort(password)) {
       setError(t('auth.passwordTooShort'));
       return;
     }

@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Database" />
-  <img src="https://img.shields.io/badge/Tests-435_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-441_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -282,7 +282,7 @@ Corvus is built from the ground up to challenge the misconception that modern en
   - **System Incidents & Scheduled Maintenance Banners:** Real-time operational incident and scheduled maintenance notices (`service_incidents`) managed via the administrative Incidents tab.
   - **Lightweight Yearly Rollup:** Backed by 365-day daily summaries (`uptime_daily_stats`), providing long-term SLA insights with minimal disk footprint.
 - **🛡️ Hardened Authentication, Zero-Trust SSO & DoS Protection:**
-  - **100k Iteration PBKDF2 & Cryptographic Salting:** 16-byte cryptographic random salt with PBKDF2-HMAC-SHA256 password hashing; automatic transparent rehash migration for legacy accounts.
+  - **600k Iteration PBKDF2 (OWASP 2023) & Cryptographic Salting:** 16-byte cryptographic random salt with PBKDF2-HMAC-SHA256 password hashing; automatic transparent rehash migration for legacy and low-iteration accounts; 8-character minimum password policy.
   - **Brute-Force & CPU DoS Mitigation:** In-memory rate limiting blocks client IP/username after 5 failed attempts in 1 minute with a 1-minute temporary lockout (`HTTP 429`).
   - **Hardened Reverse Proxy Headers:** Spoofing prevention for SSO headers (`Tailscale`, `Cloudflare Access`, `Remote-User`, `X-Forwarded-User`) via opt-in `CORVUS_TRUST_PROXY_HEADERS` and trusted IP verification.
   - **Strict CORS Policy:** Credentialed cross-origin requests restricted to explicitly defined `CORVUS_ALLOWED_ORIGINS` or local development.
@@ -412,9 +412,9 @@ labels:
    cd ../Corvus.Api
    dotnet run
    ```
-3. **Running Automated Tests (435 Total):**
+3. **Running Automated Tests (441 Total):**
    ```bash
-   # Backend Tests (369 passing xUnit tests)
+   # Backend Tests (375 passing xUnit tests)
    dotnet test tests/Corvus.Api.Tests
 
    # Frontend Tests (66 passing Vitest tests)

@@ -51,9 +51,11 @@ builder.Services.AddScoped<ISystemMetricRepository, SystemMetricRepository>();
 builder.Services.AddSingleton<IDeploymentRepository, DeploymentRepository>();
 builder.Services.AddSingleton<Corvus.Api.Services.Deployments.IDeploymentLockManager, Corvus.Api.Services.Deployments.DeploymentLockManager>();
 builder.Services.AddSingleton<Corvus.Api.Services.Deployments.IDeploymentEngine, Corvus.Api.Services.Deployments.DeploymentEngine>();
+builder.Services.AddSingleton<Corvus.Api.Services.Deployments.IDeployWebhookTokenValidator, Corvus.Api.Services.Deployments.DeployWebhookTokenValidator>();
 
 builder.Services.AddSingleton<IDockerHttpClient, DockerHttpClient>();
 builder.Services.AddSingleton<IDockerService, DockerService>();
+builder.Services.AddSingleton<Corvus.Api.Services.Auth.ILoginRateLimiter, Corvus.Api.Services.Auth.LoginRateLimiter>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<CorvusAuthFilter>();
 builder.Services.AddSingleton<Corvus.Api.Services.Notifications.IDiscordChannelSender, Corvus.Api.Services.Notifications.DiscordChannelSender>();

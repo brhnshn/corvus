@@ -3,6 +3,7 @@ import { KeyRound, Shield, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide
 import { api } from '../../api';
 import { useI18n } from '../../i18n';
 import { Button } from '../../components/ui/Button';
+import { isPasswordTooShort } from '../../utils/passwordPolicy';
 
 interface ProfileSecurityTabProps {
   currentUsername: string;
@@ -33,8 +34,8 @@ export const ProfileSecurityTab: React.FC<ProfileSecurityTabProps> = ({
       setError(t('userManagement.currentPasswordPlaceholder'));
       return;
     }
-    if (newPassword.length < 4) {
-      setError(t('userManagement.newPasswordPlaceholder'));
+    if (isPasswordTooShort(newPassword)) {
+      setError(t('auth.passwordTooShort'));
       return;
     }
     if (newPassword !== confirmPassword) {

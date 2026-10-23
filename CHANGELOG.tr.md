@@ -3,6 +3,41 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.18] - 2026-10-24 — Deploy Webhook Brute-Force Kilidi, OWASP Uyumlu Parola Özetleme ve 300 Satır Altı Modüler Mimari
+
+### Güvenlik (Security)
+- **Deploy Webhook Brute-Force Koruması**:
+  - `Corvus.Api/Services/Deployments/DeployWebhookTokenValidator.cs` (yeni): `POST /api/hooks/deploy/{token}` token doğrulaması uç noktadan çıkarılarak birim testli bağımsız bir servise taşındı. 1 dakika içinde 5 geçersiz token denemesinden sonra istemci IP'si 1 dakika kilitlenir (`429 Too Many Requests`); 2026-10-20 denetimindeki sınırsız token tahmini açığı (bulgu 3.1) kapatıldı.
+  - Token karşılaştırmasında her iki değer önce SHA-256 ile özetlenip `FixedTimeEquals` ile karşılaştırılır; token uzunluğu artık zamanlama üzerinden sızmaz.
+- **OWASP Uyumlu Parola Özetleme**:
+  - `Corvus.Api/Services/Auth/PasswordHasher.cs` (yeni): PBKDF2-HMAC-SHA256 iterasyon sayısı 100.000'den 600.000'e çıkarıldı (OWASP 2023). Düşük iterasyonlu ve eski SHA-256 özetler bir sonraki başarılı girişte şeffaf biçimde yükseltilir; parola sıfırlamaya gerek yoktur.
+  - Minimum parola uzunluğu kayıt, kullanıcı oluşturma ve parola değiştirmede 4'ten 8 karaktere çıkarıldı (backend + ortak `utils/passwordPolicy.ts` üzerinden dört frontend formu). Daha kısa parolalı mevcut hesaplar giriş yapmaya devam edebilir.
+- **Bildirimlerde Gizli Bilgi Maskeleme**: Dead Man's Snitch "periyot aşıldı" alarmları artık push token'ın tamamını Discord/Telegram/Slack/SMTP/Ntfy/Webhook kanallarına göndermez; yalnızca ilk 4 karakter gösterilir (`SecuritySanitizer.MaskToken`).
+
+### Performans (Performance)
+- İstek kapsamlı (scoped) `AuthService`, daha önce her kimlik doğrulamalı istekte constructor içinde varsayılan `CORVUS_AUTH_PASS` için tam bir PBKDF2 türetmesi çalıştırıyordu. Artık yalnızca ucuz bir SHA-256 özeti tutulup sabit zamanlı karşılaştırılıyor; istek başına CPU maliyeti kaldırıldı (ve yüksek iterasyon sayısı güvenle uygulanabilir hale geldi).
+
+### Değiştirilenler (Changed)
+- **Backend Temiz Modüler Mimari (Dosya Başına ≤ 300 Satır)** — tüm bölmeler, genel sözleşmeler değişmeden partial class veya ayrıştırılmış servis olarak yapıldı:
+  - `AuthService.cs` (684) → `AuthService.cs`, `AuthService.Sessions.cs`, `AuthService.Users.cs` ile `Services/Auth/PasswordHasher.cs` ve `Services/Auth/LoginRateLimiter.cs` (giriş, kayıt ve deploy webhook tarafından ortak kullanılan singleton `ILoginRateLimiter`).
+  - `ServicesRepository.cs` (731) → çekirdek, `.Mapping`, `.Mutations`, `.Docker`.
+  - `SystemsEndpoints.cs` (636) → çekirdek, `.Telemetry`, `.Containers`, `.Systemd`.
+  - `DockerContainerClient.cs` (585) → çekirdek, `.Lifecycle`, `.Configuration`, `.Telemetry`.
+  - `NotificationService.cs` (524) → çekirdek, `.ServiceAlerts`, `.ContainerAlerts`, `.MetricAlerts`.
+  - `UptimeCheckerService.cs` (509): 320 satırlık `ExecuteAsync` döngüsü `.StateMachine` ve `.Probes` partial dosyalarında `RefreshSettingsCacheAsync`, `RefreshServicesCacheAsync`, `RunDueServiceChecksAsync`, `ProcessSslInfoAsync`, `ApplyDownResultAsync`, `ApplyUpResultAsync` ve `CheckPushMonitorsAsync` metotlarına ayrıştırıldı.
+  - `SystemMetricsCollector.cs` (433) → çekirdek + `.HostProbes`; `Corvus.Agent/AgentDockerClient.cs` (513) → çekirdek, `.Transport`, `.RpcHandlers`.
+  - `ContainersEndpoints.cs` (353) → çekirdek + `.PowerState`; `ComposeFileService.cs` → çekirdek + `.Deploy`; `OciRegistryClient.cs` → çekirdek + `.Auth`; `DeploymentEngine.Scratch.cs` → `.Scratch` + `.ScratchPipeline`.
+  - `Models/DockerModels.cs` (754) alan bazında `DockerModels.cs`, `DockerInspectModels.cs`, `DockerContainerRequestModels.cs`, `DockerPruneModels.cs` ve `DockerImageComposeModels.cs` dosyalarına bölündü.
+- **Frontend Tipleri**: `src/types/index.ts` (504) `services.ts`, `telemetry.ts`, `platform.ts`, `docker.ts` ve `alerts.ts` modüllerine bölündü; `index.ts` barrel olarak kaldığından tüm import'lar değişmedi.
+- **Frontend Temiz Modüler Ayrıştırma (En büyük 12 bileşen)** — salt yapısal refactor; props, export'lar, i18n anahtarları ve API çağrıları değişmedi. Durum ve yan etkiler aynı klasördeki `use*` kancalarına, saf yardımcılar `*.utils.ts` dosyalarına, arayüz bölümleri kendi bileşenlerine taşındı:
+  - `ContainerResourcesTab.tsx` 528 → 156, `SystemPruneModal.tsx` 502 → 164, `ComposeConfigModal.tsx` 450 → 140, `ContainerTerminalModal.tsx` 409 → 94 (yeni `prune/`, `compose/`, `terminal/` alt klasörleri).
+  - `EditServiceModal.tsx` 451 → 139, `Services/index.tsx` 426 → 253, `SystemdUnitsTab.tsx` 400 → 152, `Settings/UsersTab.tsx` 418 → 115.
+  - `SystemsTable.tsx` 446 → 58, `ContainerDetail/index.tsx` 398 → 215, `ContainerResourceLimitsModal.tsx` 395 → 131, `NewDeploymentModal.tsx` 392 → 137.
+- `README.md` / `README.tr.md` test rozetleri 441'e güncellendi (375 backend xUnit + 66 frontend Vitest).
+
+### Testler (Tests)
+- `AuthSecurityHardeningTests.cs` eklendi (rate limiter, PBKDF2 iterasyon yükseltmesi, deploy webhook doğrulayıcı: geçerli/geçersiz/boş/yapılandırılmamış token ve IP bazlı kilit).
+
 ## [1.6.17] - 2026-10-20 — Kapsamlı Güvenlik Sertleştirmesi, Temiz Modüler Mimari ve Sıfır Uyarılı Oxlint Temizliği
 
 ### Güvenlik (Security)

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
-import { api, type Service } from '../../api/client';
+import type { Service } from '../../api/client';
 import { AdvancedCheckOptions } from './AdvancedCheckOptions';
-import { TagInput } from '../../components/common/TagInput';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
+import { useEditServiceForm } from './useEditServiceForm';
+import { EditServiceCheckTypeSection } from './EditServiceCheckTypeSection';
+import { EditServiceMetaSection } from './EditServiceMetaSection';
 
 interface EditServiceModalProps {
   isOpen: boolean;
@@ -21,114 +23,9 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   onSuccess
 }) => {
   const { t } = useI18n();
-  const [formName, setFormName] = useState(service?.name || '');
-  const [formUrl, setFormUrl] = useState(service?.url || '');
-  const [formCategory, setFormCategory] = useState(service?.category || '');
-  const [formTags, setFormTags] = useState<string[]>(service?.tags || []);
-  const [formDesc, setFormDesc] = useState(service?.description || '');
-  const [formHealth, setFormHealth] = useState(service?.healthCheckUrl || '');
-  const [formIcon, setFormIcon] = useState(service?.icon || '');
-  const [formCheckType, setFormCheckType] = useState<'http' | 'tcp' | 'docker' | 'none' | 'ping'>(
-    (service?.checkType as 'http' | 'tcp' | 'docker' | 'none' | 'ping') || (service?.source === 'docker' && !service?.url ? 'docker' : 'http')
-  );
-  const [formPort, setFormPort] = useState<number | ''>(service?.port !== undefined && service?.port !== null ? service.port : '');
-  const [formIsPublic, setFormIsPublic] = useState(service?.isPublic === true);
-  const [formCheckInterval, setFormCheckInterval] = useState<number | ''>(service?.checkInterval ?? 60);
-  const [formTimeoutSeconds, setFormTimeoutSeconds] = useState<number | ''>(service?.timeoutSeconds ?? 5);
-  const [formMaxRetries, setFormMaxRetries] = useState<number | ''>(service?.maxRetries ?? 1);
-  const [formRetryInterval, setFormRetryInterval] = useState<number | ''>(service?.retryInterval ?? 30);
-  const [formIgnoreTls, setFormIgnoreTls] = useState(service?.ignoreTls === true);
-  const [formAcceptedStatusCodes, setFormAcceptedStatusCodes] = useState(service?.acceptedStatusCodes || '200-299');
-  const [formHttpMethod, setFormHttpMethod] = useState(service?.httpMethod || 'GET');
-  const [formExpectedBody, setFormExpectedBody] = useState(service?.expectedBody || '');
-  const [saving, setSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const [prevServiceId, setPrevServiceId] = useState(service?.id);
-  if (service && service.id !== prevServiceId) {
-    setPrevServiceId(service.id);
-    setFormName(service.name || '');
-    setFormUrl(service.url || '');
-    setFormCategory(service.category || '');
-    setFormDesc(service.description || '');
-    setFormHealth(service.healthCheckUrl || '');
-    setFormIcon(service.icon || '');
-    setFormCheckType((service.checkType as 'http' | 'tcp' | 'docker' | 'none' | 'ping') || (service.source === 'docker' && !service.url ? 'docker' : 'http'));
-    setFormPort(service.port !== undefined && service.port !== null ? service.port : '');
-    setFormIsPublic(service.isPublic === true);
-    setFormCheckInterval(service.checkInterval ?? 60);
-    setFormTimeoutSeconds(service.timeoutSeconds ?? 5);
-    setFormMaxRetries(service.maxRetries ?? 1);
-    setFormRetryInterval(service.retryInterval ?? 30);
-    setFormIgnoreTls(service.ignoreTls === true);
-    setFormAcceptedStatusCodes(service.acceptedStatusCodes || '200-299');
-    setFormHttpMethod(service.httpMethod || 'GET');
-    setFormExpectedBody(service.expectedBody || '');
-    setFormTags(service.tags || []);
-    setErrorMsg(null);
-  }
+  const form = useEditServiceForm({ service, onClose, onSuccess });
 
   if (!isOpen || !service) return null;
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName.trim()) return;
-
-    let finalUrl = formUrl.trim();
-    if (finalUrl && !/^https?:\/\//i.test(finalUrl) && formCheckType === 'http') {
-      finalUrl = `https://${finalUrl}`;
-    }
-
-    let finalHealth = formHealth.trim();
-    if (finalHealth && !/^https?:\/\//i.test(finalHealth) && formCheckType === 'http') {
-      if (finalHealth.startsWith('/')) {
-        if (finalUrl) {
-          try {
-            const parsed = new URL(finalUrl);
-            finalHealth = `${parsed.origin}${finalHealth}`;
-          } catch {
-            finalHealth = `${finalUrl}${finalHealth}`;
-          }
-        }
-      } else {
-        finalHealth = `https://${finalHealth}`;
-      }
-    }
-
-    setSaving(true);
-    setErrorMsg(null);
-
-    try {
-      await api.updateService(service.id, {
-        name: formName.trim(),
-        url: finalUrl || undefined,
-        category: formCategory.trim() || undefined,
-        description: formDesc.trim() || undefined,
-        healthCheckUrl: finalHealth || undefined,
-        icon: formIcon.trim() || undefined,
-        checkType: formCheckType,
-        port: formPort !== '' ? Number(formPort) : undefined,
-        isPublic: formIsPublic,
-        checkInterval: formCheckInterval !== '' ? Number(formCheckInterval) : 60,
-        timeoutSeconds: formTimeoutSeconds !== '' ? Number(formTimeoutSeconds) : 5,
-        maxRetries: formMaxRetries !== '' ? Number(formMaxRetries) : 1,
-        retryInterval: formRetryInterval !== '' ? Number(formRetryInterval) : 30,
-        ignoreTls: formIgnoreTls,
-        acceptedStatusCodes: formAcceptedStatusCodes.trim() || '200-299',
-        httpMethod: formHttpMethod || 'GET',
-        expectedBody: formExpectedBody.trim() || undefined,
-        tags: formTags
-      });
-
-      onClose();
-      await onSuccess();
-    } catch (err: unknown) {
-      console.error('Servis güncellenemedi:', err);
-      setErrorMsg(err instanceof Error ? err.message : t('services.updateError'));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <Modal
@@ -138,14 +35,14 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       subtitle={service.source === 'docker' ? `${service.name} (${t('services.dockerContainerTag')})` : service.name}
       maxWidth="max-w-lg"
     >
-      {errorMsg && (
+      {form.errorMsg && (
         <div className="p-3.5 rounded-[var(--radius-sm)] bg-[var(--status-down-bg)] border border-[var(--status-down)]/30 text-[var(--status-down)] text-xs flex items-center gap-2.5 mb-4">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{errorMsg}</span>
+          <span>{form.errorMsg}</span>
         </div>
       )}
 
-        <form onSubmit={handleSave} className="space-y-3.5 text-sm">
+        <form onSubmit={form.handleSave} className="space-y-3.5 text-sm">
           {/* Servis Adı */}
           <div>
             <label className="block text-xs font-medium text-white/60 mb-1">
@@ -154,264 +51,55 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             <input
               type="text"
               required
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
+              value={form.formName}
+              onChange={(e) => form.setFormName(e.target.value)}
               className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm font-medium"
             />
           </div>
 
-          {/* Kontrol Türü (Check Type) */}
-          <div>
-            <label className="block text-xs font-medium text-white/60 mb-1.5">
-              {t('services.formCheckType')}
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
-                formCheckType === 'http'
-                  ? 'bg-white text-black font-semibold border-white shadow-xs'
-                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
-              }`}>
-                <input
-                  type="radio"
-                  name="editCheckType"
-                  value="http"
-                  checked={formCheckType === 'http'}
-                  onChange={() => setFormCheckType('http')}
-                  className="sr-only"
-                />
-                <span>HTTP / HTTPS</span>
-              </label>
+          {/* Kontrol Türü ve Uç Nokta Alanları */}
+          <EditServiceCheckTypeSection
+            checkType={form.formCheckType}
+            onChangeCheckType={form.setFormCheckType}
+            url={form.formUrl}
+            onChangeUrl={form.setFormUrl}
+            health={form.formHealth}
+            onChangeHealth={form.setFormHealth}
+            port={form.formPort}
+            onChangePort={form.setFormPort}
+          />
 
-              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
-                formCheckType === 'tcp'
-                  ? 'bg-white text-black font-semibold border-white shadow-xs'
-                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
-              }`}>
-                <input
-                  type="radio"
-                  name="editCheckType"
-                  value="tcp"
-                  checked={formCheckType === 'tcp'}
-                  onChange={() => setFormCheckType('tcp')}
-                  className="sr-only"
-                />
-                <span>TCP Port</span>
-              </label>
-
-              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
-                formCheckType === 'ping'
-                  ? 'bg-white text-black font-semibold border-white shadow-xs'
-                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
-              }`}>
-                <input
-                  type="radio"
-                  name="editCheckType"
-                  value="ping"
-                  checked={formCheckType === 'ping'}
-                  onChange={() => setFormCheckType('ping')}
-                  className="sr-only"
-                />
-                <span>ICMP Ping</span>
-              </label>
-
-              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
-                formCheckType === 'docker'
-                  ? 'bg-white text-black font-semibold border-white shadow-xs'
-                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
-              }`}>
-                <input
-                  type="radio"
-                  name="editCheckType"
-                  value="docker"
-                  checked={formCheckType === 'docker'}
-                  onChange={() => setFormCheckType('docker')}
-                  className="sr-only"
-                />
-                <span>{t('services.checkTypeDocker')}</span>
-              </label>
-
-              <label className={`flex flex-col items-center justify-center p-2.5 rounded-xl border cursor-pointer text-xs transition-all ${
-                formCheckType === 'none'
-                  ? 'bg-white text-black font-semibold border-white shadow-xs'
-                  : 'bg-white/[0.02] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.05]'
-              }`}>
-                <input
-                  type="radio"
-                  name="editCheckType"
-                  value="none"
-                  checked={formCheckType === 'none'}
-                  onChange={() => setFormCheckType('none')}
-                  className="sr-only"
-                />
-                <span>{t('services.checkTypeNone')}</span>
-              </label>
-            </div>
-          </div>
-
-          {/* URL & Reverse Proxy Alan Adı */}
-          {formCheckType === 'http' && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">
-                  {t('services.formUrlReverseProxy', { url: t('services.formUrl') })}
-                </label>
-                <input
-                  type="text"
-                  placeholder={t('services.formUrlPlaceholder')}
-                  value={formUrl}
-                  onChange={(e) => setFormUrl(e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
-                />
-                <p className="text-[11px] text-white/40 mt-1">
-                  {t('services.reverseProxyHint')}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">
-                  {t('services.formHealthUrl')}
-                </label>
-                <input
-                  type="text"
-                  placeholder={t('services.formHealthPlaceholder')}
-                  value={formHealth}
-                  onChange={(e) => setFormHealth(e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* TCP Ayarları */}
-          {formCheckType === 'tcp' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">
-                  {t('services.formHost')}
-                </label>
-                <input
-                  type="text"
-                  placeholder={t('services.formHostPlaceholder')}
-                  value={formUrl}
-                  onChange={(e) => setFormUrl(e.target.value)}
-                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-white/60 mb-1">
-                  {t('services.formPort')}
-                </label>
-                <input
-                  type="number"
-                  placeholder="5010"
-                  value={formPort}
-                  onChange={(e) => setFormPort(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ICMP Ping Ayarları */}
-          {formCheckType === 'ping' && (
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1">
-                {t('services.formPingHost')}
-              </label>
-              <input
-                type="text"
-                required
-                placeholder={t('services.formPingHostPlaceholder')}
-                value={formUrl}
-                onChange={(e) => setFormUrl(e.target.value)}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
-              />
-              <p className="text-[11px] text-white/40 mt-1">
-                {t('services.formPingHint')}
-              </p>
-            </div>
-          )}
-
-          {formCheckType === 'docker' && (
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-white/70">
-              {t('services.dockerDaemonHint')}
-            </div>
-          )}
-
-          {/* Kategori ve İkon */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1">
-                {t('services.formCategory')}
-              </label>
-              <input
-                type="text"
-                placeholder={t('services.defaultCategory')}
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1">
-                {t('services.formIcon')} ({t('services.formIconHint')})
-              </label>
-              <input
-                type="text"
-                maxLength={4}
-                placeholder={t('services.formIconPlaceholder')}
-                value={formIcon}
-                onChange={(e) => setFormIcon(e.target.value)}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs sm:text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Etiketler (Ortam / Grup) */}
-          <div>
-            <label className="block text-xs font-medium text-white/60 mb-1">
-              {t('services.formTags')}
-            </label>
-            <TagInput
-              tags={formTags}
-              onChange={setFormTags}
-              placeholder={t('services.tagPlaceholder')}
-            />
-          </div>
-
-          {/* Açıklama */}
-          <div>
-            <label className="block text-xs font-medium text-white/60 mb-1">
-              {t('services.formDescription')}
-            </label>
-            <textarea
-              rows={2}
-              placeholder={t('services.formDescriptionPlaceholder')}
-              value={formDesc}
-              onChange={(e) => setFormDesc(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all text-xs resize-none"
-            />
-          </div>
+          {/* Kategori, İkon, Etiketler ve Açıklama */}
+          <EditServiceMetaSection
+            category={form.formCategory}
+            onChangeCategory={form.setFormCategory}
+            icon={form.formIcon}
+            onChangeIcon={form.setFormIcon}
+            tags={form.formTags}
+            onChangeTags={form.setFormTags}
+            description={form.formDesc}
+            onChangeDescription={form.setFormDesc}
+          />
 
           {/* Gelişmiş Uptime & Kontrol Parametreleri (Modüler Bileşen) */}
           <AdvancedCheckOptions
-            checkType={formCheckType}
-            checkInterval={formCheckInterval}
-            onChangeCheckInterval={setFormCheckInterval}
-            timeoutSeconds={formTimeoutSeconds}
-            onChangeTimeoutSeconds={setFormTimeoutSeconds}
-            maxRetries={formMaxRetries}
-            onChangeMaxRetries={setFormMaxRetries}
-            retryInterval={formRetryInterval}
-            onChangeRetryInterval={setFormRetryInterval}
-            ignoreTls={formIgnoreTls}
-            onChangeIgnoreTls={setFormIgnoreTls}
-            acceptedStatusCodes={formAcceptedStatusCodes}
-            onChangeAcceptedStatusCodes={setFormAcceptedStatusCodes}
-            httpMethod={formHttpMethod}
-            onChangeHttpMethod={setFormHttpMethod}
-            expectedBody={formExpectedBody}
-            onChangeExpectedBody={setFormExpectedBody}
+            checkType={form.formCheckType}
+            checkInterval={form.formCheckInterval}
+            onChangeCheckInterval={form.setFormCheckInterval}
+            timeoutSeconds={form.formTimeoutSeconds}
+            onChangeTimeoutSeconds={form.setFormTimeoutSeconds}
+            maxRetries={form.formMaxRetries}
+            onChangeMaxRetries={form.setFormMaxRetries}
+            retryInterval={form.formRetryInterval}
+            onChangeRetryInterval={form.setFormRetryInterval}
+            ignoreTls={form.formIgnoreTls}
+            onChangeIgnoreTls={form.setFormIgnoreTls}
+            acceptedStatusCodes={form.formAcceptedStatusCodes}
+            onChangeAcceptedStatusCodes={form.setFormAcceptedStatusCodes}
+            httpMethod={form.formHttpMethod}
+            onChangeHttpMethod={form.setFormHttpMethod}
+            expectedBody={form.formExpectedBody}
+            onChangeExpectedBody={form.setFormExpectedBody}
           />
 
           {/* Genel Durum Sayfası Görünürlüğü */}
@@ -419,8 +107,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             <label className="flex items-center gap-2 cursor-pointer text-xs text-white/80">
               <input
                 type="checkbox"
-                checked={formIsPublic}
-                onChange={(e) => setFormIsPublic(e.target.checked)}
+                checked={form.formIsPublic}
+                onChange={(e) => form.setFormIsPublic(e.target.checked)}
                 className="accent-white rounded"
               />
               <span>{t('services.formIsPublic')}</span>
@@ -439,10 +127,10 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             <Button
               type="submit"
               variant="primary"
-              disabled={saving}
+              disabled={form.saving}
               icon={<Save className="w-3.5 h-3.5" />}
             >
-              {saving ? t('common.saving') : t('common.save')}
+              {form.saving ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </form>

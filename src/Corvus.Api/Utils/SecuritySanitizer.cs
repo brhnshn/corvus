@@ -15,4 +15,18 @@ public static class SecuritySanitizer
 
         return input.Replace("\r", "").Replace("\n", "").Trim();
     }
+
+    /// <summary>
+    /// Gizli belirteçleri (push token, webhook token vb.) bildirim ve log çıktılarında maskeleyerek ifşayı önler.
+    /// Ayırt edilebilirlik için yalnızca ilk 4 karakter bırakılır.
+    /// </summary>
+    public static string MaskToken(string? token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            return string.Empty;
+        }
+
+        return token.Length <= 8 ? "******" : $"{token[..4]}******";
+    }
 }
