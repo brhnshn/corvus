@@ -1,21 +1,15 @@
 import React from 'react';
 import type { DockerContainer } from '../../api/client';
-import { RefreshCw, Boxes, Layers, List } from 'lucide-react';
 import { ContainerList } from './ContainerList';
 import { ComposeStackGroup } from './ComposeStackGroup';
 import { ContainersHeader } from './ContainersHeader';
 import { ContainersStats } from './ContainersStats';
 import { ContainersModals } from './ContainersModals';
-import { SearchInput } from '../../components/ui/SearchInput';
-import { Segment } from '../../components/ui/Segment';
-import { FilterChip } from '../../components/ui/FilterChip';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { Button } from '../../components/ui/Button';
-import { useI18n } from '../../i18n';
-import { tagHue } from '../../utils/tagHue';
+import { ContainersToolbar } from './ContainersToolbar';
+import { ContainersFilterChips } from './ContainersFilterChips';
+import { ContainersEmptyStates } from './ContainersEmptyStates';
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { useEntityGrouping, deriveSmartGroup } from '../../utils/grouping';
-
 import { useContainersPageState } from './useContainersPageState';
 import { useActiveSystem } from '../../hooks';
 
@@ -32,7 +26,6 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
   onNavigateToDetail,
   initialAction
 }) => {
-  const { t } = useI18n();
   const isViewer = role === 'viewer';
   const effectiveIsAdmin = isAdmin && !isViewer;
 
@@ -101,6 +94,20 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
     }
   };
 
+  const handleOpenImageUpdate = (c: DockerContainer) => {
+    setImageUpdateContainer({
+      id: c.Id,
+      name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
+      image: c.Image
+    });
+  };
+
+  const handleRequestDelete = (c: DockerContainer) => {
+    setDeleteForce(false);
+    setDeleteVolumes(false);
+    setDeletingContainer(c);
+  };
+
   return (
     <PageStage className="space-y-4">
       {/* 1. Başlık & Hızlı İşlemler */}
@@ -125,108 +132,40 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
 
       {/* 3. Arama Çubuğu & Görünüm Segmenti */}
       <MotionItem staggerIndex={2}>
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-          <div className="flex-1 min-w-[200px]">
-            <SearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder={t('containers.searchPlaceholder')}
-            />
-          </div>
-
-          <Segment
-            value={viewMode}
-            onChange={(v) => setViewMode(v as 'flat' | 'compose')}
-            options={[
-              {
-                value: 'flat',
-                label: t('containers.viewFlat'),
-                icon: <List className="w-3.5 h-3.5" />,
-              },
-              {
-                value: 'compose',
-                label: t('containers.viewGroups'),
-                icon: <Layers className="w-3.5 h-3.5" />,
-              },
-            ]}
-          />
-        </div>
+        <ContainersToolbar
+          search={search}
+          onSearchChange={setSearch}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
       </MotionItem>
 
       {/* 4. Filtre Çipleri (Etiketler + Tümü) */}
       {(tagsWithCounts.length > 0 || selectedTag || selectedState) && (
         <MotionItem staggerIndex={2}>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          <FilterChip
-            label={t('common.all')}
-            count={containers.length}
-            selected={!selectedTag && !selectedState}
-            onClick={() => {
-              setSelectedTag(null);
-              setSelectedState(null);
-            }}
+          <ContainersFilterChips
+            totalCount={containers.length}
+            selectedTag={selectedTag}
+            selectedState={selectedState}
+            tagsWithCounts={tagsWithCounts}
+            onSelectTag={setSelectedTag}
+            onSelectState={setSelectedState}
           />
-
-          {tagsWithCounts.map(({ tag, count }) => {
-            const h = tagHue(tag);
-            return (
-              <FilterChip
-                key={tag}
-                label={tag}
-                count={count}
-                dotColor={`hsl(${h} 80% 65%)`}
-                selected={selectedTag?.toLowerCase() === tag.toLowerCase()}
-                onClick={() =>
-                  setSelectedTag((prev) => (prev?.toLowerCase() === tag.toLowerCase() ? null : tag))
-                }
-              />
-            );
-          })}
-        </div>
-      </MotionItem>
+        </MotionItem>
       )}
 
-      {/* Yükleniyor Durumu */}
-      {loading && containers.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-64 text-[#9ba0b5]">
-          <RefreshCw className="w-7 h-7 animate-spin text-[#d5d5dc] mb-3" />
-          <span className="text-xs font-mono tracking-wider">{t('common.loading')}</span>
-        </div>
-      )}
-
-      {/* Boş Durum */}
-      {!loading && containers.length === 0 && (
-        <EmptyState
-          icon={<Boxes className="w-6 h-6" />}
-          title={t('containers.noContainersFound')}
-          description={t('containers.noContainersDesc')}
-          action={
-            <Button variant="secondary" onClick={() => loadContainers(true)}>
-              {t('containers.refreshList')}
-            </Button>
-          }
-        />
-      )}
-
-      {/* Filtre Sonucu Boş Durumu */}
-      {!loading && containers.length > 0 && filteredContainers.length === 0 && (
-        <EmptyState
-          title={t('containers.noMatchingTitle')}
-          description={t('containers.noMatchingDesc')}
-          action={
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setSearch('');
-                setSelectedTag(null);
-                setSelectedState(null);
-              }}
-            >
-              {t('containers.clearFilters')}
-            </Button>
-          }
-        />
-      )}
+      {/* Yükleniyor / Boş Durumlar */}
+      <ContainersEmptyStates
+        loading={loading}
+        total={containers.length}
+        filteredCount={filteredContainers.length}
+        onRefresh={() => loadContainers(true)}
+        onClearFilters={() => {
+          setSearch('');
+          setSelectedTag(null);
+          setSelectedState(null);
+        }}
+      />
 
       {/* 5. Konteyner Listesi: Düz Liste vs Gruplanmış Görünüm */}
       <MotionItem staggerIndex={3}>
@@ -241,17 +180,9 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
             selectedTag={selectedTag}
             onSelectTag={setSelectedTag}
             isAdmin={effectiveIsAdmin}
-            onOpenImageUpdate={(c) => setImageUpdateContainer({
-              id: c.Id,
-              name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
-              image: c.Image
-            })}
+            onOpenImageUpdate={handleOpenImageUpdate}
             onDeploy={handleTriggerDeploy}
-            onDelete={(c) => {
-              setDeleteForce(false);
-              setDeleteVolumes(false);
-              setDeletingContainer(c);
-            }}
+            onDelete={handleRequestDelete}
           />
         )}
 
@@ -276,17 +207,9 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
             onSelectTag={setSelectedTag}
             isAdmin={effectiveIsAdmin}
             onOpenComposeConfig={(name) => setComposeConfigProject(name)}
-            onOpenImageUpdate={(c) => setImageUpdateContainer({
-              id: c.Id,
-              name: c.Names?.[0]?.replace(/^\//, '') || c.Id.slice(0, 12),
-              image: c.Image
-            })}
+            onOpenImageUpdate={handleOpenImageUpdate}
             onDeploy={handleTriggerDeploy}
-            onDelete={(c) => {
-              setDeleteForce(false);
-              setDeleteVolumes(false);
-              setDeletingContainer(c);
-            }}
+            onDelete={handleRequestDelete}
           />
         )}
       </MotionItem>

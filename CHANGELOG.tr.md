@@ -10,6 +10,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Komut Paleti Düğüm Değiştirme**: Komut paletindeki `> switch` komutu artık hem sistem ID'sini hem adını depolamaya yazıyor, önbelleği temizliyor, genel aktif sistem değişim olayını tetikliyor ve açık sayfaların eski düğümde kalmasını engelleyerek gösterge paneline yönlendiriyor.
 
 ### Değiştirilenler (Changed)
+- **Modüler Bileşen Ayrımı (ContainersPage)**: Containers/index.tsx (319 → 202 satır) dosyası ContainersToolbar, ContainersFilterChips ve ContainersEmptyStates alt bileşenlerine ayrıştırıldı ve ortak eylem işleyicileri birleştirildi.
 - **Modüler Bileşen Ayrımı (Sidebar)**: Sidebar.tsx (327 → 85 satır) dosyası components/sidebar/ altında useSidebarResize, useNavPills, SidebarNav ve SidebarFooter alt bileşenlerine ayrıştırıldı.
 - **Modüler Bileşen Ayrımı (IncidentsTab)**: IncidentsTab.tsx (335 → 99 satır) dosyası pages/Uptime/incidents/ altında useIncidents kancası, IncidentsToolbar, IncidentCard ve incidents.utils.tsx modüllerine ayrıştırıldı.
 - **Modüler Bileşen Ayrımı (ContainerRow)**: ContainerRow.tsx (357 → 105 satır) dosyası pages/Containers/row/ altında ContainerRowNameCell, ContainerRowResources, ContainerRowImagePorts ve ContainerRowActions alt bileşenlerine ayrıştırıldı.
