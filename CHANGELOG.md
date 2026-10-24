@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Active System State Consolidation**: Centralized selected node (`activeSystemId` / `activeSystemName`) state management into `activeSystemStore.ts` and `useActiveSystem` hook. Replaced duplicate `useState` and manual listener logic across pages (`Dashboard`, `Containers`, `Services`, `SystemMetrics`, `Uptime`, `ActivityTimeline`, `Systems`, and `AppLayout`).
+- **Activity Timeline Race Condition**: Removed redundant event listener that dispatched stale requests in `ActivityTimeline`.
+
 ## [1.6.19] - 2026-10-24 — Live UI Audit Fixes: Offline Node Status, Chart Peaks & Readable Activity Log
 
 ### Fixed

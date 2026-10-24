@@ -4,7 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { StatusDot } from '../../components/ui/StatusDot';
-import { useSystemMetricsStream } from '../../hooks';
+import { useSystemMetricsStream, useActiveSystem } from '../../hooks';
 import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { SystemKpiCards } from './SystemKpiCards';
 import { CpuMetricsChart } from './CpuMetricsChart';
@@ -17,12 +17,7 @@ export const SystemMetricsPage: React.FC = () => {
   const [range, setRange] = useState('24h');
   const [loading, setLoading] = useState(true);
 
-  const [activeSystemName, setActiveSystemName] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
-  });
-  const [activeSystemId, setActiveSystemId] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
-  });
+  const { systemId: activeSystemId, systemName: activeSystemName } = useActiveSystem();
 
   // Canlı SSE Telemetri Akışı (100ms Sync - scoped to active system)
   const { latestMetric: streamMetric, isConnected: isLiveStream } = useSystemMetricsStream(activeSystemId);
@@ -56,12 +51,7 @@ export const SystemMetricsPage: React.FC = () => {
     };
     document.addEventListener('visibilitychange', onVisible);
 
-    const handleSystemChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const sId = customEvent.detail?.systemId || localStorage.getItem('corvus_active_system_id') || 'local-host';
-      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
-      setActiveSystemId(sId);
-      setActiveSystemName(sName);
+    const handleSystemChange = () => {
       if (isMountedRef.current) {
         loadData();
       }

@@ -12,7 +12,8 @@ import { useI18n } from '../../i18n';
 import type { PageId } from '../../components/Sidebar';
 import type { SystemSummaryDto } from '../../types';
 
-import { api, invalidateCache } from '../../api';
+import { api } from '../../api';
+import { setActiveSystem } from '../../hooks';
 
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 
@@ -93,10 +94,7 @@ export const SystemsPage: React.FC<SystemsPageProps> = ({
   const handleSelectSystem = (systemId: string) => {
     const selected = systems.find((s) => s.id === systemId);
     const systemName = selected ? selected.name : systemId === 'local-host' ? 'Host' : systemId;
-    localStorage.setItem('corvus_active_system_id', systemId);
-    localStorage.setItem('corvus_active_system_name', systemName);
-    invalidateCache();
-    window.dispatchEvent(new CustomEvent('corvus_active_system_changed', { detail: { systemId, systemName } }));
+    setActiveSystem(systemId, systemName);
     if (onNavigate) {
       onNavigate('dashboard');
     }

@@ -3,6 +3,12 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [Unreleased]
+
+### Değiştirilenler (Changed)
+- **Aktif Sistem Durumu Birleştirmesi**: Seçili düğüm (`activeSystemId` / `activeSystemName`) yönetimi `activeSystemStore.ts` ve `useActiveSystem` kancasında merkezileştirildi. Sayfalardaki (`Dashboard`, `Containers`, `Services`, `SystemMetrics`, `Uptime`, `ActivityTimeline`, `Systems` ve `AppLayout`) mükerrer `useState` ve manuel dinleyici kodları temizlendi.
+- **Aktivite Zaman Çizelgesi Yarış Durumu**: `ActivityTimeline` sayfasında eski durumla çift istek atan dinleyici kaldırılarak veri yarış durumu çözüldü.
+
 ## [1.6.19] - 2026-10-24 — Canlı Arayüz Denetimi Düzeltmeleri: Çevrimdışı Düğüm Durumu, Grafik Zirvesi ve Okunabilir Olay Günlüğü
 
 ### Düzeltilenler (Fixed)

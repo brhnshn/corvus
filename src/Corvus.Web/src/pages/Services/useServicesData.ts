@@ -3,6 +3,7 @@ import { api, type Service } from '../../api/client';
 import { useI18n } from '../../i18n';
 import { useLoadEffect } from '../../hooks/useLoadEffect';
 import { useToast } from '../../components/ui/ToastContext';
+import { useActiveSystem } from '../../hooks';
 
 /** Servis listesini yükler, periyodik/olay tabanlı yenilemeyi ve sıralamayı yönetir. */
 export const useServicesData = () => {
@@ -14,12 +15,7 @@ export const useServicesData = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [reordering, setReordering] = useState(false);
 
-  const [activeSystemName, setActiveSystemName] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
-  });
-  const [activeSystemId, setActiveSystemId] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
-  });
+  const { systemId: activeSystemId, systemName: activeSystemName } = useActiveSystem();
 
   const isMountedRef = useRef(true);
 
@@ -62,12 +58,7 @@ export const useServicesData = () => {
       }
     };
 
-    const handleSystemChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const sId = customEvent.detail?.systemId || localStorage.getItem('corvus_active_system_id') || 'local-host';
-      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
-      setActiveSystemId(sId);
-      setActiveSystemName(sName);
+    const handleSystemChange = () => {
       if (isMountedRef.current) {
         loadServices(true);
       }

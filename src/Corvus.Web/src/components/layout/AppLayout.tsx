@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Sidebar, type PageId } from '../Sidebar';
 import { BottomNav } from '../BottomNav';
 import { ToastProvider } from '../ui/Toast';
 import { Header } from './Header';
-import { useActiveSystemStatus } from '../../hooks/useActiveSystemStatus';
+import { useActiveSystemStatus, useActiveSystem } from '../../hooks';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -28,18 +28,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onRefresh,
   isRefreshing = false,
 }) => {
-  const [activeSystemName, setActiveSystemName] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'Host';
-    return localStorage.getItem('corvus_active_system_name') || 'Host';
-  });
-
-  useEffect(() => {
-    const handleSystemChange = () => {
-      setActiveSystemName(localStorage.getItem('corvus_active_system_name') || 'Host');
-    };
-    window.addEventListener('corvus_active_system_changed', handleSystemChange);
-    return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
-  }, []);
+  const { systemName: activeSystemName } = useActiveSystem();
 
   const activeSystemStatus = useActiveSystemStatus();
 

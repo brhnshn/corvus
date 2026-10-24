@@ -8,6 +8,7 @@ import { IncidentsTab } from './IncidentsTab';
 
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { useLoadEffect } from '../../hooks/useLoadEffect';
+import { useActiveSystem } from '../../hooks';
 
 export const UptimePage: React.FC = () => {
   const { t } = useI18n();
@@ -21,9 +22,7 @@ export const UptimePage: React.FC = () => {
   const [snitches, setSnitches] = useState<PushMonitor[]>([]);
   const [loadingSnitches, setLoadingSnitches] = useState(false);
 
-  const [activeSystemName, setActiveSystemName] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
-  });
+  const { systemName: activeSystemName } = useActiveSystem();
 
   const isMountedRef = React.useRef(true);
 
@@ -103,10 +102,7 @@ export const UptimePage: React.FC = () => {
       }
     };
 
-    const handleSystemChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
-      setActiveSystemName(sName);
+    const handleSystemChange = () => {
       if (isMountedRef.current && activeTab === 'uptime') {
         fetchServices();
       }

@@ -17,6 +17,7 @@ import { PageStage, MotionItem } from '../../components/ui/MotionStage';
 import { useEntityGrouping, deriveSmartGroup } from '../../utils/grouping';
 
 import { useContainersPageState } from './useContainersPageState';
+import { useActiveSystem } from '../../hooks';
 
 export interface ContainersPageProps {
   isAdmin?: boolean;
@@ -35,23 +36,7 @@ export const ContainersPage: React.FC<ContainersPageProps> = ({
   const isViewer = role === 'viewer';
   const effectiveIsAdmin = isAdmin && !isViewer;
 
-  const [activeSystemName, setActiveSystemName] = React.useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
-  });
-
-  React.useEffect(() => {
-    const handleSystemChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail?.systemName) {
-        setActiveSystemName(customEvent.detail.systemName);
-      } else {
-        const savedName = localStorage.getItem('corvus_active_system_name') || 'Host';
-        setActiveSystemName(savedName);
-      }
-    };
-    window.addEventListener('corvus_active_system_changed', handleSystemChange);
-    return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
-  }, []);
+  const { systemName: activeSystemName } = useActiveSystem();
 
   const pageState = useContainersPageState({ initialAction });
   const {

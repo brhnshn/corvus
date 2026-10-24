@@ -14,7 +14,7 @@ import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 // Modüler Alt Bileşenler (ObsidianUI & Clean Architecture)
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
-import { useSystemMetricsStream, useActiveSystemStatus } from '../../hooks';
+import { useSystemMetricsStream, useActiveSystemStatus, useActiveSystem } from '../../hooks';
 import { DashboardHeader } from './DashboardHeader';
 import { SystemBanner } from './SystemBanner';
 import { DashboardKpis } from './DashboardKpis';
@@ -39,9 +39,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeSystemName, setActiveSystemName] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
-  });
+  const { systemName: activeSystemName } = useActiveSystem();
   const isMountedRef = useRef(true);
 
   // Canlı SSE Telemetri Akışı
@@ -128,14 +126,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       }
     };
 
-    const handleSystemChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail?.systemName) {
-        setActiveSystemName(customEvent.detail.systemName);
-      } else {
-        const savedName = localStorage.getItem('corvus_active_system_name') || 'Host';
-        setActiveSystemName(savedName);
-      }
+    const handleSystemChange = () => {
       invalidateCache();
       if (isMountedRef.current) {
         loadData();

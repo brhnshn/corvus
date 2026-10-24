@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { History, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api, type ActivityLogEntry } from '../../api/client';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -8,6 +8,7 @@ import { ActivityTimelineItem } from './ActivityTimelineItem';
 import { ActivityTimelineFilter } from './ActivityTimelineFilter';
 import { useI18n } from '../../i18n';
 import { useLoadEffect } from '../../hooks/useLoadEffect';
+import { useActiveSystem } from '../../hooks';
 
 export const ActivityTimelinePage: React.FC = () => {
   const { t } = useI18n();
@@ -21,12 +22,7 @@ export const ActivityTimelinePage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [scope, setScope] = useState<'node' | 'all'>('node');
 
-  const [activeSystemName, setActiveSystemName] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_name') : null) || 'Host';
-  });
-  const [activeSystemId, setActiveSystemId] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
-  });
+  const { systemId: activeSystemId, systemName: activeSystemName } = useActiveSystem();
 
   const fetchLogs = useCallback(async (isRefresh = false) => {
     try {
@@ -47,19 +43,6 @@ export const ActivityTimelinePage: React.FC = () => {
   }, [page, category, search, scope, activeSystemId]);
 
   useLoadEffect(fetchLogs);
-
-  useEffect(() => {
-    const handleSystemChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const sId = customEvent.detail?.systemId || localStorage.getItem('corvus_active_system_id') || 'local-host';
-      const sName = customEvent.detail?.systemName || localStorage.getItem('corvus_active_system_name') || 'Host';
-      setActiveSystemId(sId);
-      setActiveSystemName(sName);
-      fetchLogs(true);
-    };
-    window.addEventListener('corvus_active_system_changed', handleSystemChange);
-    return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
-  }, [fetchLogs]);
 
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
