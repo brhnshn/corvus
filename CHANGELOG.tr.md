@@ -10,6 +10,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Komut Paleti Düğüm Değiştirme**: Komut paletindeki `> switch` komutu artık hem sistem ID'sini hem adını depolamaya yazıyor, önbelleği temizliyor, genel aktif sistem değişim olayını tetikliyor ve açık sayfaların eski düğümde kalmasını engelleyerek gösterge paneline yönlendiriyor.
 
 ### Değiştirilenler (Changed)
+- **Modüler Bileşen Ayrımı (ContainerOverviewTab)**: ContainerOverviewTab.tsx (317 → 85 satır) dosyası detail/overview/ altında OverviewActionsToolbar, OverviewStatusCards, OverviewLimitCards ve OverviewRuntimeInfo alt bileşenlerine ayrıştırıldı.
 - **Modüler Bileşen Ayrımı (ContainerDetailModal)**: ContainerDetailModal.tsx (311 → 144 satır) dosyası useContainerInspect kancası, ContainerDetailTabNav ve ContainerDetailTabContent alt bileşenlerine ayrıştırıldı.
 - **Modüler Bileşen Ayrımı (TerminalTab)**: TerminalTab.tsx (304 → 52 satır) dosyası useTabTerminal kancası ve TerminalToolbar alt bileşenine bölünerek ortak terminal.utils.ts yardımcıları kullanıldı.
 - **Aktif Sistem Durumu Birleştirmesi**: Seçili düğüm (`activeSystemId` / `activeSystemName`) yönetimi `activeSystemStore.ts` ve `useActiveSystem` kancasında merkezileştirildi. Sayfalardaki (`Dashboard`, `Containers`, `Services`, `SystemMetrics`, `Uptime`, `ActivityTimeline`, `Systems` ve `AppLayout`) mükerrer `useState` ve manuel dinleyici kodları temizlendi.
