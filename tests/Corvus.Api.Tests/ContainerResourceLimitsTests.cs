@@ -77,7 +77,7 @@ public class ContainerResourceLimitsTests
 
         Assert.False(result.Success);
         Assert.Equal(400, result.StatusCode);
-        Assert.Contains("Container ID", result.Message);
+        Assert.Contains("Konteyner ID", result.Message);
     }
 
     [Fact]

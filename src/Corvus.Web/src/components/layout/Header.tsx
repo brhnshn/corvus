@@ -6,12 +6,15 @@ import { useI18n } from '../../i18n';
 import { getThemeMode, toggleThemeMode } from '../../lib/motion';
 import { getPageTitle } from '../../utils/pageTitle';
 import type { PageId } from '../Sidebar';
+import type { SystemStatus } from '../../types/systems';
+import { systemStatusToDot } from '../../hooks/useActiveSystemStatus';
 
 export interface HeaderProps {
   currentPage: PageId;
   onSelectPage: (page: PageId) => void;
   activeSystemName?: string | null;
   activeSystemIp?: string | null;
+  activeSystemStatus?: SystemStatus | null;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   username?: string | null;
@@ -24,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectPage,
   activeSystemName,
   activeSystemIp,
+  activeSystemStatus = null,
   onRefresh,
   isRefreshing = false,
   username,
@@ -63,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
           <>
             <span style={{ color: 'var(--border-strong)' }}>/</span>
             <div className="header-context truncate">
-              <StatusDot status="up" size={6} />
+              <StatusDot status={systemStatusToDot(activeSystemStatus)} size={6} />
               <span className="truncate">{displayContext}</span>
             </div>
           </>

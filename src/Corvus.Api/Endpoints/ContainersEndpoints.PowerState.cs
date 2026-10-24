@@ -23,6 +23,7 @@ public static partial class ContainersEndpoints
                 ?? httpContext.Request.Query["systemId"].FirstOrDefault();
             string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
 
+            var label = await ResolveContainerLabelAsync(docker, systemId, id);
             docker.ClearContainerManualStop(id);
 
             if (systemId != "local-host")
@@ -31,21 +32,21 @@ public static partial class ContainersEndpoints
                 if (rpcResp.Success)
                 {
                     var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                    activityLogger?.Log(username, "container_restart", "container", id, rpcResp.Message);
-                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container yeniden başlatıldı."));
+                    activityLogger?.Log(username, "container_restart", "container", label, rpcResp.Message, systemId: systemId);
+                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Konteyner yeniden başlatıldı."));
                 }
-                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container yeniden başlatılamadı."));
+                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Konteyner yeniden başlatılamadı."));
             }
 
             var result = await docker.RestartContainerAsync(id);
             if (result.Success)
             {
                 var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                activityLogger?.Log(username, "container_restart", "container", id, result.Message);
+                activityLogger?.Log(username, "container_restart", "container", label, result.Message, systemId: systemId);
             }
             return result.Success 
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container yeniden başlatıldı.")) 
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden başlatılamadı."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner yeniden başlatıldı.")) 
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner yeniden başlatılamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
@@ -61,6 +62,7 @@ public static partial class ContainersEndpoints
                 ?? httpContext.Request.Query["systemId"].FirstOrDefault();
             string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
 
+            var label = await ResolveContainerLabelAsync(docker, systemId, id);
             docker.ClearContainerManualStop(id);
 
             if (systemId != "local-host")
@@ -69,21 +71,21 @@ public static partial class ContainersEndpoints
                 if (rpcResp.Success)
                 {
                     var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                    activityLogger?.Log(username, "container_start", "container", id, rpcResp.Message);
-                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container başlatıldı."));
+                    activityLogger?.Log(username, "container_start", "container", label, rpcResp.Message, systemId: systemId);
+                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Konteyner başlatıldı."));
                 }
-                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container başlatılamadı."));
+                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Konteyner başlatılamadı."));
             }
 
             var result = await docker.StartContainerAsync(id);
             if (result.Success)
             {
                 var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                activityLogger?.Log(username, "container_start", "container", id, result.Message);
+                activityLogger?.Log(username, "container_start", "container", label, result.Message, systemId: systemId);
             }
             return result.Success 
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container başlatıldı.")) 
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container başlatılamadı."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner başlatıldı.")) 
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner başlatılamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
@@ -99,6 +101,7 @@ public static partial class ContainersEndpoints
                 ?? httpContext.Request.Query["systemId"].FirstOrDefault();
             string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
 
+            var label = await ResolveContainerLabelAsync(docker, systemId, id);
             docker.MarkContainerManuallyStopped(id);
 
             if (systemId != "local-host")
@@ -107,21 +110,21 @@ public static partial class ContainersEndpoints
                 if (rpcResp.Success)
                 {
                     var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                    activityLogger?.Log(username, "container_stop", "container", id, rpcResp.Message);
-                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container durduruldu."));
+                    activityLogger?.Log(username, "container_stop", "container", label, rpcResp.Message, systemId: systemId);
+                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Konteyner durduruldu."));
                 }
-                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container durdurulamadı."));
+                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Konteyner durdurulamadı."));
             }
 
             var result = await docker.StopContainerAsync(id);
             if (result.Success)
             {
                 var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                activityLogger?.Log(username, "container_stop", "container", id, result.Message);
+                activityLogger?.Log(username, "container_stop", "container", label, result.Message, systemId: systemId);
             }
             return result.Success 
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container durduruldu.")) 
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container durdurulamadı."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner durduruldu.")) 
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner durdurulamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
@@ -139,13 +142,14 @@ public static partial class ContainersEndpoints
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                return Results.BadRequest(new GenericApiResponse(false, "Container ID boş olamaz."));
+                return Results.BadRequest(new GenericApiResponse(false, "Konteyner ID boş olamaz."));
             }
 
             string? requestedSystemId = httpContext.Request.Headers["X-System-Id"].FirstOrDefault()
                 ?? httpContext.Request.Query["systemId"].FirstOrDefault();
             string systemId = string.IsNullOrWhiteSpace(requestedSystemId) ? "local-host" : requestedSystemId.Trim();
 
+            var label = await ResolveContainerLabelAsync(docker, systemId, id);
             docker.MarkContainerManuallyStopped(id);
 
             if (systemId != "local-host")
@@ -155,25 +159,25 @@ public static partial class ContainersEndpoints
                 {
                     docker.ClearContainerManualStop(id);
                     var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                    activityLogger?.Log(username, "container_delete", "container", id, rpcResp.Message);
+                    activityLogger?.Log(username, "container_delete", "container", label, rpcResp.Message, systemId: systemId);
                     var payloadJson = JsonSerializer.Serialize(new ContainerDeletedEventPayload(id), CorvusJsonSerializerContext.Default.ContainerDeletedEventPayload);
                     broadcaster?.Broadcast("container_deleted", payloadJson);
-                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container silindi."));
+                    return Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Konteyner silindi."));
                 }
-                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container silinemedi."));
+                return Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Konteyner silinemedi."));
             }
 
             var result = await docker.DeleteContainerAsync(id, force ?? false, removeVolumes ?? false, ct);
             if (result.Success)
             {
                 var username = httpContext.User.Identity?.Name ?? httpContext.Items["Corvus_User"] as string ?? "system";
-                activityLogger?.Log(username, "container_delete", "container", id, result.Message);
+                activityLogger?.Log(username, "container_delete", "container", label, result.Message, systemId: systemId);
                 var payloadJson = JsonSerializer.Serialize(new ContainerDeletedEventPayload(id), CorvusJsonSerializerContext.Default.ContainerDeletedEventPayload);
                 broadcaster?.Broadcast("container_deleted", payloadJson);
             }
             return result.Success
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container silindi."))
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container silinemedi."),
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner silindi."))
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner silinemedi."),
                                CorvusJsonSerializerContext.Default.GenericApiResponse,
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
@@ -192,14 +196,14 @@ public static partial class ContainersEndpoints
             {
                 var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "pause", ContainerId: id));
                 return rpcResp.Success
-                    ? Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container duraklatıldı."))
-                    : Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container duraklatılamadı."));
+                    ? Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Konteyner duraklatıldı."))
+                    : Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Konteyner duraklatılamadı."));
             }
 
             var result = await docker.PauseContainerAsync(id);
             return result.Success 
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container duraklatıldı.")) 
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container duraklatılamadı."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner duraklatıldı.")) 
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner duraklatılamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
@@ -218,16 +222,38 @@ public static partial class ContainersEndpoints
             {
                 var rpcResp = await tunnelManager.SendDockerRequestAsync(systemId, new DockerRpcRequest(Action: "unpause", ContainerId: id));
                 return rpcResp.Success
-                    ? Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Container devam ettirildi."))
-                    : Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Container devam ettirilemedi."));
+                    ? Results.Ok(new GenericApiResponse(true, rpcResp.Message ?? "Konteyner devam ettirildi."))
+                    : Results.BadRequest(new GenericApiResponse(false, rpcResp.Message ?? "Konteyner devam ettirilemedi."));
             }
 
             var result = await docker.UnpauseContainerAsync(id);
             return result.Success 
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container devam ettirildi.")) 
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container devam ettirilemedi."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner devam ettirildi.")) 
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner devam ettirilemedi."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
+    }
+
+    // Olay günlüğünde 64 karakterlik ID yerine okunabilir konteyner adı gösterilir.
+    // Uzak düğümde ad bilinmediği için kısa ID'ye düşülür.
+    public static async Task<string> ResolveContainerLabelAsync(IDockerService docker, string systemId, string id)
+    {
+        var shortId = id.Length > 12 ? id[..12] : id;
+        if (systemId != "local-host") return shortId;
+
+        try
+        {
+            var containers = await docker.GetContainersAsync();
+            var match = containers.FirstOrDefault(c =>
+                c.Id.Equals(id, StringComparison.OrdinalIgnoreCase) ||
+                c.Id.StartsWith(id, StringComparison.OrdinalIgnoreCase));
+            var name = match?.Names?.FirstOrDefault()?.TrimStart('/');
+            return string.IsNullOrWhiteSpace(name) ? shortId : name;
+        }
+        catch
+        {
+            return shortId;
+        }
     }
 }

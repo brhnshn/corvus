@@ -4,6 +4,7 @@ import { TableWrap } from '../../components/ui/ExpandableTable';
 import { StatusDot } from '../../components/ui/StatusDot';
 import { activityLogsApi } from '../../api/activityLogs';
 import { useI18n } from '../../i18n';
+import { formatTargetResource } from '../../utils/format';
 import type { Service, DockerContainer, BackupEvent, ActivityLogEntry } from '../../types';
 
 export interface EventItem {
@@ -67,7 +68,7 @@ export const RecentEventsCard: React.FC<RecentEventsCardProps> = ({
     return {
       id: log.id,
       status: isErr ? 'err' : isWarn ? 'warn' : 'ok',
-      title: `${log.actorUsername || 'system'}: ${log.actionType} (${log.targetResource})`,
+      title: `${formatTargetResource(log.targetResource)} · ${log.actionType.replace(/_/g, ' ')} (${log.actorUsername || 'system'})`,
       timeAgo,
       category: log.category || 'Audit',
     };

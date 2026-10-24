@@ -3,6 +3,19 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.19] - 2026-10-24 — Canlı Arayüz Denetimi Düzeltmeleri: Çevrimdışı Düğüm Durumu, Grafik Zirvesi ve Okunabilir Olay Günlüğü
+
+### Düzeltilenler (Fixed)
+- **Grafik Zirve Değeri**: `ObsidianAreaChart` "Zirve" olarak ölçülen en yüksek değer yerine eksen üst sınırını gösteriyordu (CPU "%100", RAM "2.9 / 2.9 GB"). Artık gerçek veri zirvesi gösteriliyor.
+- **Çevrimdışı Düğümün Sağlıklı Görünmesi**: Kenar çubuğu ve başlıktaki düğüm durum noktası koda sabit yeşildi. Yeni `useActiveSystemStatus` kancası seçili düğümün durumunu 30 saniyede bir okuyup noktayı buna göre renklendiriyor. Seçili düğümün ajanı veri göndermiyorsa Genel Bakış banner'ı "Tüm servisler sağlıklı" yerine "düğüm çevrimdışı" diyor.
+- **Okunabilir Olay Günlüğü**: Konteyner yeniden başlatma/başlatma/durdurma/silme olayları 64 karakterlik ID yerine konteyner adıyla (bulunamazsa 12 karakterlik kısa ID) ve doğru `systemId` ile kaydediliyor; uzak düğüm olayları artık yerel sunucu altına düşmüyor. Eski kayıtlardaki ham ID'ler arayüzde kısaltılıyor. Türkçe API mesajlarında "Container" yerine "Konteyner" kullanılıyor.
+- **Sayfa Geçişinde Kaydırma**: Sayfa değişince içerik en üste dönüyor; yeni sayfa önceki sayfanın kaydırma konumunda açılmıyor.
+- **Sayı Biçimleri**: Servis ve konteyner sayaçları artık "0.0" olarak görünmüyor; dağıtım başarı oranı arayüzün geri kalanı gibi `%` önekiyle yazılıyor; disk KPI'ı toplam değer gibi tam GB gösteriyor.
+- **Saklama Süresi Seçimi**: `retention_days` hiç kaydedilmemişse Ayarlar sayfası hiçbir seçeneği işaretlemek yerine backend varsayılanını (30 gün) seçili gösteriyor.
+
+### Testler (Tests)
+- `ContainerLabelResolutionTests` (3 xUnit) ve grafik zirve regresyon testi (Vitest) eklendi. Toplam: 378 backend + 67 frontend.
+
 ## [1.6.18] - 2026-10-24 — Deploy Webhook Brute-Force Kilidi, OWASP Uyumlu Parola Özetleme ve 300 Satır Altı Modüler Mimari
 
 ### Güvenlik (Security)

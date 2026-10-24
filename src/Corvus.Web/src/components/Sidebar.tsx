@@ -16,6 +16,8 @@ import {
 import { StatusDot } from './ui/StatusDot';
 import { api, type VersionInfo } from '../api/client';
 import { useI18n } from '../i18n';
+import { systemStatusToDot } from '../hooks/useActiveSystemStatus';
+import type { SystemStatus } from '../types/systems';
 
 export type PageId = 'dashboard' | 'services' | 'containers' | 'deployments' | 'systems' | 'metrics' | 'uptime' | 'activity' | 'settings' | 'profile';
 
@@ -25,14 +27,16 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onOpenCommandPalette?: () => void;
   activeSystemName?: string | null;
+  activeSystemStatus?: SystemStatus | null;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  currentPage, 
+export const Sidebar: React.FC<SidebarProps> = ({
+  currentPage,
   onSelectPage,
   isCollapsed = false,
   onOpenCommandPalette,
   activeSystemName = 'Host',
+  activeSystemStatus = null,
 }) => {
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -233,7 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title={`${activeSystemName} (${t('nav.dashboard')})`}
           >
             <span className="flex items-center gap-2 min-w-0">
-              <StatusDot status="up" size={6} />
+              <StatusDot status={systemStatusToDot(activeSystemStatus)} size={6} />
               <span className="font-mono text-xs font-semibold truncate text-[var(--cloud-100)]">{activeSystemName}</span>
             </span>
             <span className="font-mono text-[9.5px] uppercase tracking-wider text-[var(--text-muted)] bg-[var(--bg-card)] border border-[var(--border-hairline)] px-1.5 py-0.5 rounded">

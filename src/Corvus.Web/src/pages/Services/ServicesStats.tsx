@@ -27,6 +27,7 @@ export const ServicesStats: React.FC<ServicesStatsProps> = ({
       <KpiCard
         label={t('services.statTotalServices')}
         value={total}
+        decimals={0}
         subtext={t('services.statActiveOutage', { active: healthy, outage: down })}
         onClick={() => onFilterStatus?.(null)}
         className={selectedStatus === null ? 'border-[var(--cloud-400)]' : ''}
@@ -36,6 +37,7 @@ export const ServicesStats: React.FC<ServicesStatsProps> = ({
         label={t('services.statOnline')}
         meta={<StatusDot status="up" />}
         value={healthy}
+        decimals={0}
         subtext={t('services.statOnlineSubtext')}
         onClick={() => onFilterStatus?.('healthy')}
         className={selectedStatus === 'healthy' ? 'border-[var(--status-up)]' : ''}
@@ -45,6 +47,7 @@ export const ServicesStats: React.FC<ServicesStatsProps> = ({
         label={t('services.statDegraded')}
         meta={<StatusDot status="warn" />}
         value={degraded}
+        decimals={0}
         subtext={t('services.statDegradedSubtext')}
         onClick={() => onFilterStatus?.('degraded')}
         className={selectedStatus === 'degraded' ? 'border-[var(--status-warn)]' : ''}
@@ -54,6 +57,7 @@ export const ServicesStats: React.FC<ServicesStatsProps> = ({
         label={t('services.statDown')}
         meta={<StatusDot status="down" />}
         value={down}
+        decimals={0}
         subtext={t('services.statDownSubtext')}
         onClick={() => onFilterStatus?.('down')}
         className={selectedStatus === 'down' ? 'border-[var(--status-down)]' : ''}

@@ -20,7 +20,7 @@ describe('DeploymentsOverview', () => {
     );
 
     expect(screen.getByText('42')).toBeInTheDocument();
-    expect(screen.getByText('95.2%')).toBeInTheDocument();
+    expect(screen.getByText('%95.2')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('4.3 s')).toBeInTheDocument();
   });

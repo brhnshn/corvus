@@ -40,7 +40,7 @@ public partial class DockerContainerClient
     {
         if (string.IsNullOrWhiteSpace(containerId))
         {
-            return new DockerActionResult(false, "Container ID boş olamaz.", 400);
+            return new DockerActionResult(false, "Konteyner ID boş olamaz.", 400);
         }
 
         if (request == null)
@@ -148,10 +148,10 @@ public partial class DockerContainerClient
             using var response = await _transport.HttpClient.PostAsync(url, null, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
-                return new DockerActionResult(true, "Container yeniden adlandırıldı.");
+                return new DockerActionResult(true, "Konteyner yeniden adlandırıldı.");
             }
 
-            string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Container yeniden adlandırılamadı.");
+            string error = await DockerImageClient.ExtractErrorMessageAsync(response, "Konteyner yeniden adlandırılamadı.");
             _logger.LogWarning("Docker rename hatası ({StatusCode}): {ContainerId} -> {NewName} - {Error}",
                 response.StatusCode,
                 Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId),
@@ -161,7 +161,7 @@ public partial class DockerContainerClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container yeniden adlandırılamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
+            _logger.LogError(ex, "Konteyner yeniden adlandırılamadı: {ContainerId}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(containerId));
             return new DockerActionResult(false, $"Docker bağlantı hatası: {ex.Message}", 500);
         }
     }
@@ -193,7 +193,7 @@ public partial class DockerContainerClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Container oluşturulamadı: {Name}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(name ?? ""));
+            _logger.LogError(ex, "Konteyner oluşturulamadı: {Name}", Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(name ?? ""));
             return null;
         }
     }

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar, type PageId } from '../Sidebar';
 import { BottomNav } from '../BottomNav';
 import { ToastProvider } from '../ui/Toast';
 import { Header } from './Header';
+import { useActiveSystemStatus } from '../../hooks/useActiveSystemStatus';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     return () => window.removeEventListener('corvus_active_system_changed', handleSystemChange);
   }, []);
 
+  const activeSystemStatus = useActiveSystemStatus();
+
+  // Sayfa değişince yeni sayfa önceki sayfanın kaydırma konumunda açılmasın
+  const pageBodyRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    pageBodyRef.current?.scrollTo?.({ top: 0 });
+  }, [currentPage]);
+
   return (
     <ToastProvider>
       <div className="shell selection:bg-[var(--cloud-300)] selection:text-[var(--bg-canvas)]">
@@ -49,6 +58,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onSelectPage={onSelectPage}
           onOpenCommandPalette={onOpenCommandPalette}
           activeSystemName={activeSystemName}
+          activeSystemStatus={activeSystemStatus}
         />
 
         {/* Main Workspace Area (Header + Scrollable Page Body) */}
@@ -57,6 +67,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             currentPage={currentPage}
             onSelectPage={onSelectPage}
             activeSystemName={activeSystemName}
+            activeSystemStatus={activeSystemStatus}
             onRefresh={onRefresh}
             isRefreshing={isRefreshing}
             username={username}
@@ -64,7 +75,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             onLogout={onLogout}
           />
 
-          <main className="page-body">
+          <main ref={pageBodyRef} className="page-body">
             <div className={`w-full mx-auto pb-24 lg:pb-12 ${currentPage === 'systems' ? 'max-w-[1440px]' : currentPage === 'settings' ? 'max-w-5xl' : 'max-w-[1240px]'}`}>
               {children}
             </div>

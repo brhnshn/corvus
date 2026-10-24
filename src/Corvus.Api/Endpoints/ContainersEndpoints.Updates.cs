@@ -13,7 +13,7 @@ public static partial class ContainersEndpoints
             var inspect = await docker.InspectContainerAsync(id, ct);
             if (inspect == null)
             {
-                return Results.Json(new GenericApiResponse(false, "Container inspect verisi alınamadı."), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 404);
+                return Results.Json(new GenericApiResponse(false, "Konteyner inspect verisi alınamadı."), CorvusJsonSerializerContext.Default.GenericApiResponse, statusCode: 404);
             }
 
             string? role = context.Items["Corvus_Role"] as string;
@@ -33,8 +33,8 @@ public static partial class ContainersEndpoints
         {
             var result = await docker.UpdateContainerAsync(id, request, ct);
             return result.Success
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container yapılandırması başarıyla güncellendi."))
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yapılandırması güncellenemedi."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner yapılandırması başarıyla güncellendi."))
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner yapılandırması güncellenemedi."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
@@ -60,8 +60,8 @@ public static partial class ContainersEndpoints
             bool pullLatest = request?.PullLatest ?? true;
             var result = await docker.RecreateContainerAsync(id, pullLatest, ct);
             return result.Success
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container yeniden oluşturuldu."))
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden oluşturulamadı."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner yeniden oluşturuldu."))
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner yeniden oluşturulamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).RequireAdmin();
@@ -71,8 +71,8 @@ public static partial class ContainersEndpoints
             bool pullLatest = request?.PullLatest ?? true;
             var result = await docker.RecreateContainerAsync(id, pullLatest, ct);
             return result.Success
-                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Container yeniden oluşturuldu."))
-                : Results.Json(new GenericApiResponse(false, result.Message ?? "Container yeniden oluşturulamadı."), 
+                ? Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner yeniden oluşturuldu."))
+                : Results.Json(new GenericApiResponse(false, result.Message ?? "Konteyner yeniden oluşturulamadı."), 
                                CorvusJsonSerializerContext.Default.GenericApiResponse, 
                                statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }).AddEndpointFilter<CorvusAuthFilter>()
@@ -91,14 +91,14 @@ public static partial class ContainersEndpoints
     {
         if (string.IsNullOrWhiteSpace(id))
         {
-            return Results.BadRequest(new GenericApiResponse(false, "Container ID boş olamaz."));
+            return Results.BadRequest(new GenericApiResponse(false, "Konteyner ID boş olamaz."));
         }
 
         var result = await docker.UpdateContainerConfigAsync(id, request, ct);
         if (!result.Success)
         {
             return Results.Json(
-                new GenericApiResponse(false, result.Message ?? "Container kaynak limitleri güncellenemedi."),
+                new GenericApiResponse(false, result.Message ?? "Konteyner kaynak limitleri güncellenemedi."),
                 CorvusJsonSerializerContext.Default.GenericApiResponse,
                 statusCode: result.StatusCode == 200 ? 400 : result.StatusCode);
         }
@@ -127,6 +127,6 @@ public static partial class ContainersEndpoints
         var payloadJson = JsonSerializer.Serialize(eventPayload, CorvusJsonSerializerContext.Default.ContainerResourcesUpdatedEventPayload);
         broadcaster.Broadcast("container_resources_updated", payloadJson);
 
-        return Results.Ok(new GenericApiResponse(true, result.Message ?? "Container kaynak limitleri başarıyla güncellendi."));
+        return Results.Ok(new GenericApiResponse(true, result.Message ?? "Konteyner kaynak limitleri başarıyla güncellendi."));
     }
 }

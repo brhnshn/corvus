@@ -55,7 +55,7 @@ export const DeploymentsOverview: React.FC<DeploymentsOverviewProps> = ({
             }
           />
         }
-        value={stats.total > 0 ? `${stats.successRate.toFixed(1)}%` : '-'}
+        value={stats.total > 0 ? `%${stats.successRate.toFixed(1)}` : '-'}
         subtext={t('deployments.stableDeployments')}
         onClick={() => onFilterStatus?.('success')}
         className={statusFilter === 'success' ? 'border-[var(--status-up)]' : ''}

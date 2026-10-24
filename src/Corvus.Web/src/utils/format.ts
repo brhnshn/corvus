@@ -10,6 +10,14 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
+ * Shorten raw 64-char Docker IDs (older activity log rows) to the usual 12-char form
+ */
+export function formatTargetResource(target?: string | null): string {
+  if (!target) return '-';
+  return /^[0-9a-f]{64}$/i.test(target) ? target.slice(0, 12) : target;
+}
+
+/**
  * Format date string into human-readable relative time string
  */
 export function formatRelativeTime(dateStr?: string | null, isTr = true): string {

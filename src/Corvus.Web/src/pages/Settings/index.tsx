@@ -68,8 +68,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   useEffect(() => {
     api.getSettings()
       .then((data) => {
-        setSettings(data);
-        const days = data['retention_days'] ?? '30';
+        // Ayar hiç kaydedilmemişse backend varsayılanı (30 gün) seçili görünsün
+        const days = data['retention_days'] || '30';
+        setSettings({ ...data, retention_days: days });
         const known = ['7', '15', '30', '60', '90', '180', '365', '0'];
         if (!known.includes(days) && days !== '') {
           setIsCustomDays(true);

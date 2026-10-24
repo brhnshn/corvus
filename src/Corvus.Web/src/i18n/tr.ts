@@ -186,6 +186,8 @@ export const tr: TranslationDictionary = {
     allServicesHealthy: 'Tüm servisler sağlıklı · {count}/{total} aktif',
     itemsNeedAttention: '{count} öğe dikkat gerektiriyor',
     allSystemsNormal: 'Tüm sistemler normal operasyonel sınırda',
+    nodeOffline: '{name} düğümü çevrimdışı',
+    nodeOfflineDesc: 'Ajan veri göndermiyor; gösterilen değerler güncel değil.',
     issuesSummary: '{down} kesinti, {stopped} durmuş konteyner, {ssl} SSL uyarısı',
     serviceUnreachable: 'erişilemiyor',
     serviceNoResponse: '({url} yanıt vermiyor)',

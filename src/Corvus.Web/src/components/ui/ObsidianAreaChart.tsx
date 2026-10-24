@@ -47,13 +47,18 @@ export const ObsidianAreaChart: React.FC<ObsidianAreaChartProps> = ({
   const plotW = svgWidth - padLeft - padRight;
   const plotH = svgHeight - padTop - padBottom;
 
+  // Ölçülen en yüksek değer ("Zirve" etiketi bunu gösterir, eksen üst sınırını değil)
+  const dataPeak = useMemo(() => {
+    if (data.length === 0) return 0;
+    return Math.max(...data.map((d) => (typeof d.value === 'number' && !isNaN(d.value) ? d.value : 0)));
+  }, [data]);
+
   // Veri aralığı hesabı
   const computedMax = useMemo(() => {
     if (typeof max === 'number') return max;
     if (data.length === 0) return 100;
-    const peak = Math.max(...data.map((d) => (typeof d.value === 'number' && !isNaN(d.value) ? d.value : 0)));
-    return peak > 0 ? Math.ceil(peak * 1.15) : 100;
-  }, [max, data]);
+    return dataPeak > 0 ? Math.ceil(dataPeak * 1.15) : 100;
+  }, [max, data.length, dataPeak]);
 
   const computedMin = min;
   const range = Math.max(1, computedMax - computedMin);
@@ -179,7 +184,7 @@ export const ObsidianAreaChart: React.FC<ObsidianAreaChartProps> = ({
               {data.length > 0 ? `${data[0].time} — ${data[data.length - 1].time}` : ''}
             </span>
             <span className="text-[var(--text-muted)] text-[11px]">
-              {t('metrics.peakValue', { value: formatDisplay(computedMax) })}
+              {t('metrics.peakValue', { value: formatDisplay(dataPeak) })}
             </span>
           </>
         )}

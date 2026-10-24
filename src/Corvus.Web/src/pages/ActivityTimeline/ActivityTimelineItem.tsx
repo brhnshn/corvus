@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatTargetResource } from '../../utils/format';
 import { 
   Play, 
   RotateCw, 
@@ -66,7 +67,7 @@ export const ActivityTimelineItem: React.FC<ActivityTimelineItemProps> = ({ entr
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-xs text-[var(--cloud-100)] font-mono">
-              {entry.targetResource}
+              {formatTargetResource(entry.targetResource)}
             </span>
             <span className={`badge ${getActionBadgeColor()}`}>
               {entry.actionType}

@@ -77,7 +77,7 @@ export const SystemKpiCards: React.FC<SystemKpiCardsProps> = ({ metrics, latestM
         label={t('metrics.diskChartTitle')}
         meta={<StatusDot status={diskStatus} />}
         value={current.diskUsedGb}
-        decimals={1}
+        decimals={0}
         suffix={` / ${current.diskTotalGb} GB`}
         barPercentage={diskPercent}
         barColor={diskStatus === 'down' ? 'var(--status-down)' : diskStatus === 'warn' ? 'var(--status-warn)' : 'var(--cloud-200)'}

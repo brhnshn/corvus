@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.19] - 2026-10-24 — Live UI Audit Fixes: Offline Node Status, Chart Peaks & Readable Activity Log
+
+### Fixed
+- **Chart Peak Value**: `ObsidianAreaChart` showed the axis ceiling as "Peak" (CPU "100%", RAM "2.9 / 2.9 GB") instead of the highest measured value. It now shows the real data peak.
+- **Offline Node Shown as Healthy**: The node status dot in the sidebar and header was hard-coded green. The new `useActiveSystemStatus` hook reads the selected node's status (polled every 30 s) and colours the dot accordingly. The Overview banner now reports "node is offline" instead of "All services healthy" when the selected node's agent is not reporting.
+- **Readable Activity Log**: Container restart/start/stop/delete events are logged with the container name (falls back to the 12-char short ID) instead of the full 64-char ID, and with the correct `systemId` so remote-node events no longer land under the local host. Older rows with raw IDs are shortened in the UI. Turkish API messages now say "Konteyner" instead of "Container".
+- **Scroll Position on Navigation**: Switching pages now scrolls the page body back to the top instead of opening the new page mid-scroll.
+- **Number Formatting**: Count KPIs (total/running/paused/stopped services and containers) no longer render as "0.0"; deployment success rate uses the same `%` prefix style as the rest of the UI; disk usage KPI shows whole GB like its total.
+- **Retention Setting Selection**: When `retention_days` has never been saved, the Settings page now highlights the backend default (30 days) instead of no option.
+
+### Tests
+- Added `ContainerLabelResolutionTests` (3 xUnit) and a chart peak regression test (Vitest). Totals: 378 backend + 67 frontend.
+
 ## [1.6.18] - 2026-10-24 — Deploy Webhook Brute-Force Lock, OWASP Password Hashing & Sub-300-Line Modular Architecture
 
 ### Security

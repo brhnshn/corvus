@@ -28,6 +28,7 @@ export const ContainersStats: React.FC<ContainersStatsProps> = ({
       <KpiCard
         label={t('containers.kpiTotalContainers')}
         value={total}
+        decimals={0}
         subtext={t('containers.kpiTotalSubtext', { running, stopped })}
         onClick={() => onFilterState?.(null)}
         className={selectedState === null ? 'border-[var(--cloud-400)]' : ''}
@@ -37,6 +38,7 @@ export const ContainersStats: React.FC<ContainersStatsProps> = ({
         label={t('containers.kpiRunningLabel')}
         meta={<StatusDot status="up" />}
         value={running}
+        decimals={0}
         subtext={t('containers.kpiRunningSubtext')}
         onClick={() => onFilterState?.('running')}
         className={selectedState === 'running' ? 'border-[var(--status-up)]' : ''}
@@ -46,6 +48,7 @@ export const ContainersStats: React.FC<ContainersStatsProps> = ({
         label={t('containers.kpiPausedLabel')}
         meta={<StatusDot status="warn" />}
         value={paused}
+        decimals={0}
         subtext={t('containers.kpiPausedSubtext')}
         onClick={() => onFilterState?.('paused')}
         className={selectedState === 'paused' ? 'border-[var(--status-warn)]' : ''}
@@ -55,6 +58,7 @@ export const ContainersStats: React.FC<ContainersStatsProps> = ({
         label={t('containers.kpiStoppedLabel')}
         meta={<StatusDot status="muted" />}
         value={stopped}
+        decimals={0}
         subtext={t('containers.kpiStoppedSubtext')}
         onClick={() => onFilterState?.('stopped')}
         className={selectedState === 'stopped' ? 'border-[var(--status-down)]' : ''}

@@ -184,6 +184,8 @@ export const en = {
     allServicesHealthy: 'All services healthy · {count}/{total} active',
     itemsNeedAttention: '{count} items require attention',
     allSystemsNormal: 'All systems within normal operational limits',
+    nodeOffline: '{name} node is offline',
+    nodeOfflineDesc: 'The agent is not reporting; the values shown are not current.',
     issuesSummary: '{down} down, {stopped} stopped containers, {ssl} SSL alerts',
     serviceUnreachable: 'is unreachable',
     serviceNoResponse: '({url} is not responding)',

@@ -49,4 +49,10 @@ describe('ObsidianAreaChart Component', () => {
     expect(screen.getByText(/12:00 — 12:03/)).toBeInTheDocument();
     expect(screen.getByText(/Zirve:/)).toBeInTheDocument();
   });
+
+  it('shows the measured peak, not the axis maximum, even when max is fixed', () => {
+    render(<ObsidianAreaChart data={sampleData} unit="%" max={100} />);
+
+    expect(screen.getByText('Zirve: 80.0%')).toBeInTheDocument();
+  });
 });

@@ -14,7 +14,7 @@ import { useLoadEffect } from '../../hooks/useLoadEffect';
 
 // Modüler Alt Bileşenler (ObsidianUI & Clean Architecture)
 import { PageStage, MotionItem } from '../../components/ui/MotionStage';
-import { useSystemMetricsStream } from '../../hooks';
+import { useSystemMetricsStream, useActiveSystemStatus } from '../../hooks';
 import { DashboardHeader } from './DashboardHeader';
 import { SystemBanner } from './SystemBanner';
 import { DashboardKpis } from './DashboardKpis';
@@ -46,6 +46,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   // Canlı SSE Telemetri Akışı
   const { latestMetric: streamMetric } = useSystemMetricsStream();
+  const activeSystemStatus = useActiveSystemStatus();
 
   const loadStats = useCallback(async () => {
     try {
@@ -177,23 +178,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         (s) => typeof s.sslExpiryDays === 'number' && s.sslExpiryDays <= 14 && s.sslExpiryDays >= 0
       ).length;
 
+  // Çevrimdışı düğümde boş listeler "sağlıklı" sayılmamalı
+  const isNodeOffline = activeSystemStatus === 'offline';
   const totalIssues =
     downServices + degradedServices + failedPushMonitors.length + stoppedContainers.length + sslWarningCount;
-  const isOverallHealthy = totalIssues === 0;
+  const isOverallHealthy = totalIssues === 0 && !isNodeOffline;
   const bannerStatus: 'ok' | 'warn' | 'err' = isOverallHealthy
     ? 'ok'
-    : downServices > 0 || failedPushMonitors.length > 0 || stoppedContainers.length > 0
+    : isNodeOffline || downServices > 0 || failedPushMonitors.length > 0 || stoppedContainers.length > 0
     ? 'err'
     : 'warn';
 
   const healthyServices = summary?.healthyServices ?? 0;
   const totalServices = summary?.totalServices ?? 0;
 
-  const bannerMessage = isOverallHealthy
+  const bannerMessage = isNodeOffline
+    ? t('dashboard.nodeOffline', { name: activeSystemName })
+    : isOverallHealthy
     ? t('dashboard.allServicesHealthy', { count: healthyServices, total: totalServices })
     : t('dashboard.itemsNeedAttention', { count: totalIssues });
 
-  const bannerSubtext = isOverallHealthy
+  const bannerSubtext = isNodeOffline
+    ? t('dashboard.nodeOfflineDesc')
+    : isOverallHealthy
     ? t('dashboard.allSystemsNormal')
     : t('dashboard.issuesSummary', { down: downServices, stopped: stoppedContainers.length, ssl: sslWarningCount });
 
@@ -203,7 +210,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       <MotionItem staggerIndex={0}>
         <DashboardHeader
           subtitle={
-            isOverallHealthy
+            isNodeOffline
+              ? t('dashboard.nodeOfflineDesc')
+              : isOverallHealthy
               ? t('dashboard.allOperationalDesc')
               : `${totalIssues} ${t('dashboard.attentionIssues')}`
           }
