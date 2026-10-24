@@ -1,23 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useI18n } from '../../../i18n';
-import { Layers, Key, Network, HardDrive, Cpu, Loader2, AlertCircle, Rocket } from 'lucide-react';
-import { containersApi } from '../../../api/containers';
-import { ContainerOverviewTab } from './ContainerOverviewTab';
-import { ContainerEnvTab } from './ContainerEnvTab';
-import { ContainerNetworkingTab } from './ContainerNetworkingTab';
-import { ContainerStorageTab } from './ContainerStorageTab';
-import { ContainerResourcesTab } from './ContainerResourcesTab';
-import { ContainerDeploymentsTab } from './ContainerDeploymentsTab';
-import { ContainerResourceLimitsModal } from './ContainerResourceLimitsModal';
+import { Layers } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
-import { Button } from '../../../components/ui/Button';
-import { useLoadEffect } from '../../../hooks/useLoadEffect';
-import type { DockerContainerInspectInfo, DockerContainer, ContainerStats } from '../../../types';
+import { ContainerResourceLimitsModal } from './ContainerResourceLimitsModal';
+import { useContainerInspect, type DetailTabType } from './useContainerInspect';
+import { ContainerDetailTabNav } from './ContainerDetailTabNav';
+import { ContainerDetailTabContent } from './ContainerDetailTabContent';
+import type { DockerContainer, ContainerStats } from '../../../types';
 
-interface ContainerDetailModalProps {
+export type { DetailTabType as TabType };
+
+export interface ContainerDetailModalProps {
   containerId: string | null;
   containerSummary?: DockerContainer;
-  initialTab?: TabType;
+  initialTab?: DetailTabType;
   liveStats?: ContainerStats;
   isOpen: boolean;
   isAdmin: boolean;
@@ -27,8 +23,6 @@ interface ContainerDetailModalProps {
   onTriggerDeploy?: (container: DockerContainer) => void;
   onContainerActionSuccess?: () => void;
 }
-
-type TabType = 'overview' | 'env' | 'networking' | 'storage' | 'resources' | 'deployments';
 
 export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   containerId,
@@ -41,75 +35,39 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
   onOpenTerminal,
   onOpenLogs,
   onTriggerDeploy,
-  onContainerActionSuccess
+  onContainerActionSuccess,
 }) => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
-  const [inspectData, setInspectData] = useState<DockerContainerInspectInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
   const [showResourceLimitsModal, setShowResourceLimitsModal] = useState(false);
 
-  const loadInspectData = useCallback(async () => {
-    if (!containerId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await containersApi.inspectContainer(containerId);
-      setInspectData(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load container details');
-    } finally {
-      setLoading(false);
-    }
-  }, [containerId]);
-
-  const [prevOpenState, setPrevOpenState] = useState({ isOpen, containerId, initialTab });
-  if (
-    prevOpenState.isOpen !== isOpen ||
-    prevOpenState.containerId !== containerId ||
-    prevOpenState.initialTab !== initialTab
-  ) {
-    setPrevOpenState({ isOpen, containerId, initialTab });
-    if (isOpen && containerId) {
-      setActiveTab(initialTab);
-    } else {
-      setInspectData(null);
-      setError(null);
-    }
-  }
-
-  const loadDataWhenOpen = useCallback(() => {
-    if (isOpen && containerId) {
-      loadInspectData();
-    }
-  }, [isOpen, containerId, loadInspectData]);
-
-  useLoadEffect(loadDataWhenOpen);
+  const {
+    activeTab,
+    setActiveTab,
+    inspectData,
+    loading,
+    error,
+    actionLoading,
+    loadInspectData,
+    handleAction,
+  } = useContainerInspect({
+    containerId,
+    isOpen,
+    initialTab,
+    onContainerActionSuccess,
+  });
 
   if (!isOpen || !containerId) return null;
 
-  const containerName = containerSummary?.Names?.[0]?.replace(/^\//, '') || inspectData?.name?.replace(/^\//, '') || containerId.substring(0, 12);
-
-  const handleAction = async (actionFn: () => Promise<any>) => {
-    setActionLoading(true);
-    try {
-      await actionFn();
-      await loadInspectData();
-      if (onContainerActionSuccess) {
-        onContainerActionSuccess();
-      }
-    } catch (err) {
-      console.error('Container action failed:', err);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  const containerName =
+    containerSummary?.Names?.[0]?.replace(/^\//, '') ||
+    inspectData?.name?.replace(/^\//, '') ||
+    containerId.substring(0, 12);
 
   const envCount = inspectData?.config?.env?.length ?? 0;
   const mountsCount = inspectData?.mounts?.length ?? 0;
-  const portsCount = Object.keys(inspectData?.networkSettings?.ports || inspectData?.hostConfig?.portBindings || {}).length;
+  const portsCount = Object.keys(
+    inspectData?.networkSettings?.ports || inspectData?.hostConfig?.portBindings || {}
+  ).length;
 
   const modalTitle = (
     <div className="flex items-center gap-2 flex-wrap">
@@ -130,165 +88,35 @@ export const ContainerDetailModal: React.FC<ContainerDetailModalProps> = ({
       maxWidth="max-w-4xl"
     >
       <div className="flex flex-col max-h-[75vh]">
-        {/* Tab Navigation */}
-        <div className="tabs border-b border-[var(--border-hairline)] pb-2 overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => setActiveTab('overview')}
-            className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>{t('containers.tabOverview')}</span>
-          </button>
+        <ContainerDetailTabNav
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          envCount={envCount}
+          portsCount={portsCount}
+          mountsCount={mountsCount}
+        />
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('env')}
-            className={`tab ${activeTab === 'env' ? 'active' : ''}`}
-          >
-            <Key className="w-3.5 h-3.5" />
-            <span>{t('containers.tabEnv')}</span>
-            {envCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
-                {envCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('networking')}
-            className={`tab ${activeTab === 'networking' ? 'active' : ''}`}
-          >
-            <Network className="w-3.5 h-3.5" />
-            <span>{t('containers.tabNetworking')}</span>
-            {portsCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
-                {portsCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('storage')}
-            className={`tab ${activeTab === 'storage' ? 'active' : ''}`}
-          >
-            <HardDrive className="w-3.5 h-3.5" />
-            <span>{t('containers.tabStorage')}</span>
-            {mountsCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
-                {mountsCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('resources')}
-            className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
-          >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>{t('containers.tabResources')}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('deployments')}
-            className={`tab ${activeTab === 'deployments' ? 'active' : ''}`}
-          >
-            <Rocket className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{t('containers.deployHistoryTab')}</span>
-          </button>
-        </div>
-
-        {/* Content Body */}
-        <div className="py-4 overflow-y-auto flex-1">
-          {loading ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3 text-[var(--text-secondary)]">
-              <Loader2 className="w-7 h-7 text-[var(--text-primary)] animate-spin" />
-              <span className="text-xs">{t('common.loading')}</span>
-            </div>
-          ) : error ? (
-            <div className="py-12 flex flex-col items-center justify-center gap-3 text-[var(--status-down)] text-center">
-              <AlertCircle className="w-8 h-8" />
-              <p className="text-xs">{error}</p>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={loadInspectData}
-                className="mt-2"
-              >
-                {t('common.retry')}
-              </Button>
-            </div>
-          ) : inspectData ? (
-            <>
-              {activeTab === 'overview' && (
-                <ContainerOverviewTab
-                  inspect={inspectData}
-                  containerSummary={containerSummary}
-                  isAdmin={isAdmin}
-                  actionLoading={actionLoading}
-                  onStart={() => handleAction(() => containersApi.startContainer(containerId))}
-                  onStop={() => handleAction(() => containersApi.stopContainer(containerId))}
-                  onRestart={() => handleAction(() => containersApi.restartContainer(containerId))}
-                  onPause={() => handleAction(() => containersApi.pauseContainer(containerId))}
-                  onUnpause={() => handleAction(() => containersApi.unpauseContainer(containerId))}
-                  onOpenTerminal={() => {
-                    onClose();
-                    onOpenTerminal(containerId, containerName);
-                  }}
-                  onOpenLogs={() => {
-                    onClose();
-                    onOpenLogs(containerId, containerName);
-                  }}
-                  onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
-                />
-              )}
-
-              {activeTab === 'env' && (
-                <ContainerEnvTab envList={inspectData.config?.env} />
-              )}
-
-              {activeTab === 'networking' && (
-                <ContainerNetworkingTab inspect={inspectData} />
-              )}
-
-              {activeTab === 'storage' && (
-                <ContainerStorageTab inspect={inspectData} />
-              )}
-
-              {activeTab === 'resources' && (
-                <ContainerResourcesTab
-                  inspect={inspectData}
-                  isAdmin={isAdmin}
-                  initialStats={liveStats}
-                  onUpdated={() => {
-                    loadInspectData();
-                    if (onContainerActionSuccess) {
-                      onContainerActionSuccess();
-                    }
-                  }}
-                  onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
-                />
-              )}
-
-              {activeTab === 'deployments' && (
-                <ContainerDeploymentsTab
-                  containerId={containerId}
-                  containerName={containerName}
-                  isAdmin={isAdmin}
-                  onTriggerDeploy={() => {
-                    if (containerSummary && onTriggerDeploy) {
-                      onTriggerDeploy(containerSummary);
-                    }
-                  }}
-                />
-              )}
-            </>
-          ) : null}
-        </div>
+        <ContainerDetailTabContent
+          activeTab={activeTab}
+          inspectData={inspectData}
+          containerSummary={containerSummary}
+          containerId={containerId}
+          containerName={containerName}
+          loading={loading}
+          error={error}
+          actionLoading={actionLoading}
+          isAdmin={isAdmin}
+          liveStats={liveStats}
+          onRetry={loadInspectData}
+          handleAction={handleAction}
+          onClose={onClose}
+          onOpenTerminal={onOpenTerminal}
+          onOpenLogs={onOpenLogs}
+          onOpenResourceLimitsModal={() => setShowResourceLimitsModal(true)}
+          onTriggerDeploy={onTriggerDeploy}
+          onContainerActionSuccess={onContainerActionSuccess}
+          loadInspectData={loadInspectData}
+        />
       </div>
 
       {showResourceLimitsModal && inspectData && containerId && (
