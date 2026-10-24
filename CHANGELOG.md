@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Command Palette Node Switch**: Command palette `> switch` command now updates both system ID and name in storage, invalidates cache, dispatches the global active system change event, and routes to dashboard instead of leaving open views on the stale node.
 
 ### Changed
+- **Modular Component Decomposition (ContainerRow)**: Split ContainerRow.tsx (357 → 105 lines) into ContainerRowNameCell, ContainerRowResources, ContainerRowImagePorts, and ContainerRowActions in pages/Containers/row/.
 - **Modular Component Decomposition (ContainerOverviewTab)**: Split ContainerOverviewTab.tsx (317 → 85 lines) into OverviewActionsToolbar, OverviewStatusCards, OverviewLimitCards, and OverviewRuntimeInfo sub-components in detail/overview/.
 - **Modular Component Decomposition (ContainerDetailModal)**: Split ContainerDetailModal.tsx (311 → 144 lines) into useContainerInspect hook, ContainerDetailTabNav, and ContainerDetailTabContent sub-components.
 - **Modular Component Decomposition (TerminalTab)**: Split TerminalTab.tsx (304 → 52 lines) into useTabTerminal hook and TerminalToolbar sub-component, reusing shared terminalnal.utils.ts.
