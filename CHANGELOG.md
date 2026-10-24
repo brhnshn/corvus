@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Command Palette Node Switch**: Command palette `> switch` command now updates both system ID and name in storage, invalidates cache, dispatches the global active system change event, and routes to dashboard instead of leaving open views on the stale node.
 
 ### Changed
+- **Modular Component Decomposition (AppRoot)**: Split App.tsx (339 → 168 lines) into lazyPages module registry, PageLoader sub-component, and custom hooks (useAuthStatus, useEventStream, useDocumentTitle).
 - **Modular State Hook Decomposition (ContainersPageState)**: Split useContainersPageState.ts (346 → 82 lines) into focused domain hooks in pages/Containers/pageState/ (useContainersData, useContainerFilters, useContainerActions, useContainerDeployment) while maintaining exact ReturnType signature.
 - **Modular Component Decomposition (SettingsPage)**: Split Settings/index.tsx (343 → 144 lines) into useSettingsPage hook, SettingsTabNav, and SettingsHeader sub-components.
 - **Modular Component Decomposition (ContainersPage)**: Split Containers/index.tsx (319 → 202 lines) into ContainersToolbar, ContainersFilterChips, and ContainersEmptyStates sub-components, consolidating shared action handlers.

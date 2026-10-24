@@ -1,9 +1,7 @@
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
-import { api, type AuthStatus, invalidateCache } from './api/client';
-import { useLoadEffect } from './hooks/useLoadEffect';
+import React, { useEffect, useState, Suspense } from 'react';
+import { invalidateCache } from './api/client';
 import { AppLayout } from './components/layout/AppLayout';
 import { RegistrationPromptModal } from './components/RegistrationPromptModal';
-import { RefreshCw } from 'lucide-react';
 import { useI18n } from './i18n';
 import { 
   useCommandPalette, 
@@ -13,194 +11,61 @@ import {
 } from './components/common/CommandPalette';
 import { PageTransition } from './components/common/PageTransition';
 import { useToast } from './components/ui/ToastContext';
-import { lazyWithRetry } from './utils/lazyWithRetry';
-import { getPageTitle, formatDocumentTitle } from './utils/pageTitle';
 import { ChunkErrorBoundary } from './components/common/ChunkErrorBoundary';
-
-// Code-splitting via lazyWithRetry for bundle optimization (Roadmap 3.1)
-const DashboardPage = lazyWithRetry(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
-const ServicesPage = lazyWithRetry(() => import('./pages/Services').then(m => ({ default: m.ServicesPage })));
-const ContainersPage = lazyWithRetry(() => import('./pages/Containers').then(m => ({ default: m.ContainersPage })));
-const DeploymentsPage = lazyWithRetry(() => import('./pages/Deployments').then(m => ({ default: m.DeploymentsPage })));
-const SystemsPage = lazyWithRetry(() => import('./pages/Systems').then(m => ({ default: m.SystemsPage })));
-const SystemMetricsPage = lazyWithRetry(() => import('./pages/SystemMetrics').then(m => ({ default: m.SystemMetricsPage })));
-const UptimePage = lazyWithRetry(() => import('./pages/Uptime').then(m => ({ default: m.UptimePage })));
-const SettingsPage = lazyWithRetry(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
-const ProfilePage = lazyWithRetry(() => import('./pages/Profile').then(m => ({ default: m.ProfilePage })));
-const ContainerDetailPage = lazyWithRetry(() => import('./pages/ContainerDetail').then(m => ({ default: m.ContainerDetailPage })));
-const ActivityTimelinePage = lazyWithRetry(() => import('./pages/ActivityTimeline').then(m => ({ default: m.ActivityTimelinePage })));
-const AuthPage = lazyWithRetry(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
-const PublicStatus = lazyWithRetry(() => import('./pages/PublicStatus'));
-
-const PageLoader = () => (
-  <div className="flex items-center justify-center py-20 text-[#9ca3af]">
-    <div className="flex flex-col items-center gap-2">
-      <RefreshCw className="w-6 h-6 animate-spin text-indigo-400" />
-      <span className="text-xs font-mono">Loading...</span>
-    </div>
-  </div>
-);
-
+import { PageLoader } from './components/common/PageLoader';
 import { useAppNavigation } from './hooks/useAppNavigation';
+import { useAuthStatus } from './hooks/useAuthStatus';
+import { useEventStream } from './hooks/useEventStream';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { AppRouter } from './components/layout/AppRouter';
+import {
+  DashboardPage,
+  ServicesPage,
+  ContainersPage,
+  DeploymentsPage,
+  SystemsPage,
+  SystemMetricsPage,
+  UptimePage,
+  SettingsPage,
+  ProfilePage,
+  ContainerDetailPage,
+  ActivityTimelinePage,
+  AuthPage,
+  PublicStatus,
+} from './lazyPages';
 
 export const App: React.FC = () => {
   const { t } = useI18n();
   const toast = useToast();
   const isStatusPath = window.location.pathname === '/status' || window.location.pathname.startsWith('/status');
-  const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
-  const [authLoading, setAuthLoading] = useState(!isStatusPath);
-  const { currentPage, selectedContainerId, initialAction, navigateTo } = useAppNavigation();
-  const [showRegPrompt, setShowRegPrompt] = useState(false);
 
+  const {
+    authStatus,
+    authLoading,
+    showRegPrompt,
+    setShowRegPrompt,
+    handleAuthSuccess,
+    handleLogout,
+    handleRegistrationDisabled,
+  } = useAuthStatus(isStatusPath);
+
+  const { currentPage, selectedContainerId, initialAction, navigateTo } = useAppNavigation();
   const { isOpen: isCmdOpen, open: openCmd, close: closeCmd } = useCommandPalette();
   const [commandItems, setCommandItems] = useState<CommandItem[]>([]);
 
-  const checkAuth = useCallback(async () => {
-    try {
-      const status = await api.getAuthStatus();
-      setAuthStatus(status);
-    } catch (err) {
-      console.error('Auth durumu sorgulanamadı:', err);
-    } finally {
-      setAuthLoading(false);
-    }
-  }, []);
+  useEventStream({
+    isStatusPath,
+    authLoading,
+    authEnabled: authStatus?.authEnabled,
+    isAuthenticated: authStatus?.isAuthenticated,
+  });
 
-  const loadAuth = useCallback(() => {
-    if (!isStatusPath) {
-      checkAuth();
-    }
-  }, [isStatusPath, checkAuth]);
-
-  useLoadEffect(loadAuth);
-
-  useEffect(() => {
-    const handleUnauthorized = () => {
-      checkAuth();
-    };
-
-    window.addEventListener('corvus_unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('corvus_unauthorized', handleUnauthorized);
-  }, [checkAuth]);
-
-  const authEnabled = authStatus?.authEnabled;
-  const isAuthenticated = authStatus?.isAuthenticated;
-
-  // Server-Sent Events (SSE) — Canlı Veri Yayını Bağlantısı (Yüksek Dayanıklılık Mimarisi)
-  // Ağ kopsa bile asla pes etmez; backoff ile dener, internet geri geldiğinde veya
-  useEffect(() => {
-    if (isStatusPath) return;
-    if (authLoading) return;
-    if (authEnabled && !isAuthenticated) return;
-
-    let eventSource: EventSource | null = null;
-    let retryCount = 0;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let isDisposed = false;
-
-    const connect = () => {
-      if (isDisposed) return;
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
-      }
-
-      try {
-        eventSource = new EventSource('/api/stream/events');
-
-        eventSource.onopen = () => {
-          retryCount = 0; // Bağlantı başarılıysa sayacı sıfırla
-        };
-
-        eventSource.onmessage = (event) => {
-          try {
-            const parsed = JSON.parse(event.data);
-            window.dispatchEvent(new CustomEvent('corvus_event', { detail: parsed }));
-            const eventType: string | undefined = parsed.eventType || parsed.type;
-            if (eventType?.includes('container')) {
-              invalidateCache('/containers');
-              invalidateCache('/dashboard');
-              const containerId = parsed.containerId || parsed.id || parsed.ContainerId;
-              if (containerId) {
-                invalidateCache(`/containers/${containerId}/inspect`);
-              }
-            } else if (eventType?.includes('service')) {
-              invalidateCache('/services');
-              invalidateCache('/dashboard');
-            } else if (eventType?.includes('push') || eventType?.includes('snitch')) {
-              invalidateCache('/push-monitors');
-              invalidateCache('/dashboard');
-            }
-          } catch {
-            // keepalive/ping mesajları JSON olmayabilir
-          }
-        };
-
-        eventSource.onerror = () => {
-          if (isDisposed) return;
-          eventSource?.close();
-          eventSource = null;
-
-          // Üstel geri çekilme (exponential backoff): 1s, 2s, 4s, 8s, 16s ... max 20s aralıkla yeniden bağlan
-          const delay = Math.min(1000 * 2 ** Math.min(retryCount, 4), 20000);
-          retryCount++;
-          if (retryTimer) clearTimeout(retryTimer);
-          retryTimer = setTimeout(connect, delay);
-        };
-      } catch (e) {
-        console.warn('[SSE] EventSource oluşturulamadı:', e);
-      }
-    };
-
-    const handleOnline = () => {
-      if (isDisposed) return;
-      if (retryTimer) clearTimeout(retryTimer);
-      retryCount = 0;
-      invalidateCache(); // İnternet geri geldiğinde bayat önbelleği temizle
-      connect();
-    };
-
-    const handleVisibility = () => {
-      if (isDisposed) return;
-      if (document.visibilityState === 'visible') {
-        // Sekme tekrar öne geldiğinde bağlantı kopuksa hemen canlandır
-        if (!eventSource || eventSource.readyState === EventSource.CLOSED) {
-          if (retryTimer) clearTimeout(retryTimer);
-          retryCount = 0;
-          invalidateCache();
-          connect();
-        }
-      }
-    };
-
-    connect();
-    window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      isDisposed = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      window.removeEventListener('online', handleOnline);
-      document.removeEventListener('visibilitychange', handleVisibility);
-      eventSource?.close();
-    };
-  }, [isStatusPath, authLoading, isAuthenticated, authEnabled]);
-
-  // Sayfa ve dil değişimlerine göre dinamik tarayıcı sekme başlığı (document.title)
-  // Kurallar gereği tüm hook'lar erken dönüşlerden (return) önce çağrılmalıdır
-  useEffect(() => {
-    if (isStatusPath) {
-      const statusTitle = t('publicStatus.badge') || 'Status';
-      document.title = formatDocumentTitle(statusTitle);
-    } else if (authStatus && authStatus.authEnabled && !authStatus.isAuthenticated) {
-      const loginTitle = t('auth.tabLogin') || 'Login';
-      document.title = formatDocumentTitle(loginTitle);
-    } else {
-      const pageTitle = getPageTitle(currentPage, t, { selectedContainerId });
-      document.title = formatDocumentTitle(pageTitle);
-    }
-  }, [currentPage, selectedContainerId, isStatusPath, authStatus, t]);
+  useDocumentTitle({
+    currentPage,
+    selectedContainerId,
+    isStatusPath,
+    authStatus,
+  });
 
   // Komut paleti açıldığında taze öğeleri yükle (Tüm hook'lar erken return'lerden ÖNCE olmalıdır)
   useEffect(() => {
@@ -225,37 +90,6 @@ export const App: React.FC = () => {
     );
   }
 
-  const handleAuthSuccess = async (isNewRegistration: boolean) => {
-    try {
-      const status = await api.getAuthStatus();
-      setAuthStatus(status);
-
-      if (isNewRegistration && status.registrationEnabled) {
-        setShowRegPrompt(true);
-      }
-    } catch (err) {
-      console.error('Auth yenilenemedi:', err);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await api.logout();
-      await checkAuth();
-    } catch (err) {
-      console.error('Çıkış hatası:', err);
-    }
-  };
-
-  const handleRegistrationDisabled = () => {
-    if (authStatus) {
-      setAuthStatus({
-        ...authStatus,
-        registrationEnabled: false
-      });
-    }
-  };
-
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -275,7 +109,6 @@ export const App: React.FC = () => {
       </Suspense>
     );
   }
-
 
   const isAdmin = !authStatus?.authEnabled || authStatus?.role === 'admin';
 
