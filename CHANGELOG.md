@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Fixed
+- **Deleted Node Fallback**: `useActiveSystemStatus` now automatically falls back to the default `local-host` if the currently active node was removed from the fleet, preventing stale selections on deleted systems.
 - **Command Palette Node Switch**: Command palette `> switch` command now updates both system ID and name in storage, invalidates cache, dispatches the global active system change event, and routes to dashboard instead of leaving open views on the stale node.
 
 ### Changed

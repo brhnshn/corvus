@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import { systemsApi } from '../api/systems';
 import type { SystemStatus } from '../types/systems';
+import {
+  readActiveSystem,
+  setActiveSystem,
+  DEFAULT_SYSTEM_ID,
+  DEFAULT_SYSTEM_NAME,
+  ACTIVE_SYSTEM_CHANGED_EVENT,
+} from './activeSystemStore';
 
 const POLL_INTERVAL_MS = 30000;
 
-const readActiveSystemId = (): string =>
-  (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
+const readActiveSystemId = (): string => readActiveSystem().id;
 
 /**
  * Seçili düğümün canlı bağlantı durumunu döner (online/offline/...).
@@ -22,7 +28,14 @@ export function useActiveSystemStatus(): SystemStatus | null {
         const systems = await systemsApi.getSystems();
         if (cancelled) return;
         const activeId = readActiveSystemId();
-        setStatus(systems.find((s) => s.id === activeId)?.status ?? null);
+        const found = systems.find((s) => s.id === activeId);
+
+        if (!found && activeId !== DEFAULT_SYSTEM_ID) {
+          setActiveSystem(DEFAULT_SYSTEM_ID, DEFAULT_SYSTEM_NAME);
+          return;
+        }
+
+        setStatus(found?.status ?? null);
       } catch {
         // Durum okunamazsa önceki değeri koru; ana arayüz bundan etkilenmez
       }
@@ -37,12 +50,12 @@ export function useActiveSystemStatus(): SystemStatus | null {
       setStatus(null);
       load();
     };
-    window.addEventListener('corvus_active_system_changed', handleSystemChange);
+    window.addEventListener(ACTIVE_SYSTEM_CHANGED_EVENT, handleSystemChange);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
-      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
+      window.removeEventListener(ACTIVE_SYSTEM_CHANGED_EVENT, handleSystemChange);
     };
   }, []);
 

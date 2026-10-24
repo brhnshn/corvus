@@ -6,6 +6,7 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 ## [Unreleased]
 
 ### Düzeltilenler (Fixed)
+- **Silinmiş Düğüm Geri Dönüşü**: `useActiveSystemStatus` kancası, filodan silinmiş bir düğüm seçili kaldığında otomatik olarak varsayılan `local-host` düğümüne dönerek geçersiz düğüm seçimlerini engelliyor.
 - **Komut Paleti Düğüm Değiştirme**: Komut paletindeki `> switch` komutu artık hem sistem ID'sini hem adını depolamaya yazıyor, önbelleği temizliyor, genel aktif sistem değişim olayını tetikliyor ve açık sayfaların eski düğümde kalmasını engelleyerek gösterge paneline yönlendiriyor.
 
 ### Değiştirilenler (Changed)
