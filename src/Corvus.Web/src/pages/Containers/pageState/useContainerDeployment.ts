@@ -46,7 +46,7 @@ export function useContainerDeployment() {
       setIsDeployModalOpen(true);
       toast.success(t('deployments.deployStartedToast', { name: cleanName }));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t('deployments.deployFailedToast');
+      const msg = (err as { message?: string } | null)?.message || t('deployments.deployFailedToast');
       toast.error(msg);
     }
   }, [toast, t]);

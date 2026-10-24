@@ -22,6 +22,8 @@ export function useActiveSystemStatus(): SystemStatus | null {
 
   useEffect(() => {
     let cancelled = false;
+    // Depolama yazılamıyorsa aynı id için sıfırlamayı tekrar tekrar tetikleme
+    let lastResetId: string | null = null;
 
     const load = async () => {
       try {
@@ -31,6 +33,8 @@ export function useActiveSystemStatus(): SystemStatus | null {
         const found = systems.find((s) => s.id === activeId);
 
         if (!found && activeId !== DEFAULT_SYSTEM_ID) {
+          if (lastResetId === activeId) return;
+          lastResetId = activeId;
           setActiveSystem(DEFAULT_SYSTEM_ID, DEFAULT_SYSTEM_NAME);
           return;
         }

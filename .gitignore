@@ -73,3 +73,6 @@ videos/
 *.webm
 *.mov
 
+
+# Model handoff working notes (local only)
+docs/handoff/

@@ -25,7 +25,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-hairline)]">
+    <>
       <div>
         <div className="flex flex-wrap items-center gap-2.5">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -81,6 +81,6 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
           </Button>
         </div>
       )}
-    </div>
+    </>
   );
 };

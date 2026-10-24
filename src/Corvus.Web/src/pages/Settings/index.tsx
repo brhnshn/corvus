@@ -56,7 +56,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   return (
     <PageStage className="space-y-6">
       {/* Üst Başlık & Hızlı Kaydet Butonu */}
-      <MotionItem staggerIndex={0}>
+      <MotionItem staggerIndex={0} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-hairline)]">
         <SettingsHeader
           versionInfo={versionInfo}
           activeTab={activeTab}

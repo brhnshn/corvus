@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [Unreleased]
+## [1.6.20] - 2026-10-25 — Aktif Düğüm Durumu Birleştirmesi, Komut Paleti Geçiş Düzeltmesi ve Frontend Modülerleştirme
 
 ### Düzeltilenler (Fixed)
 - **Silinmiş Düğüm Geri Dönüşü**: `useActiveSystemStatus` kancası, filodan silinmiş bir düğüm seçili kaldığında otomatik olarak varsayılan `local-host` düğümüne dönerek geçersiz düğüm seçimlerini engelliyor.

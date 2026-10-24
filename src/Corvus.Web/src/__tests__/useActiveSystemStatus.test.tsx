@@ -59,6 +59,25 @@ describe('useActiveSystemStatus (B3 fallback for deleted system)', () => {
     expect(localStorage.getItem(ACTIVE_SYSTEM_NAME_KEY)).toBe('Custom Node');
   });
 
+  it('does not loop when storage is not writable during reset', async () => {
+    localStorage.setItem(ACTIVE_SYSTEM_ID_KEY, 'deleted-node-123');
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    vi.mocked(systemsApi.getSystems).mockResolvedValue([
+      { id: 'local-host', name: 'Host', status: 'online' } as any,
+    ]);
+
+    renderHook(() => useActiveSystemStatus());
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // İlk yükleme + sıfırlama olayının tetiklediği tek yeniden yükleme
+    expect(vi.mocked(systemsApi.getSystems).mock.calls.length).toBeLessThanOrEqual(2);
+    setItemSpy.mockRestore();
+  });
+
   it('returns correct systemStatusToDot values', () => {
     expect(systemStatusToDot('online')).toBe('up');
     expect(systemStatusToDot('degraded')).toBe('warn');
