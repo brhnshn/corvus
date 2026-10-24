@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Command Palette Node Switch**: Command palette `> switch` command now updates both system ID and name in storage, invalidates cache, dispatches the global active system change event, and routes to dashboard instead of leaving open views on the stale node.
 
 ### Changed
+- **Modular Component Decomposition (SettingsPage)**: Split Settings/index.tsx (343 → 144 lines) into useSettingsPage hook, SettingsTabNav, and SettingsHeader sub-components.
 - **Modular Component Decomposition (ContainersPage)**: Split Containers/index.tsx (319 → 202 lines) into ContainersToolbar, ContainersFilterChips, and ContainersEmptyStates sub-components, consolidating shared action handlers.
 - **Modular Component Decomposition (Sidebar)**: Split Sidebar.tsx (327 → 85 lines) into useSidebarResize, useNavPills, SidebarNav, and SidebarFooter in components/sidebar/.
 - **Modular Component Decomposition (IncidentsTab)**: Split IncidentsTab.tsx (335 → 99 lines) into useIncidents hook, IncidentsToolbar, IncidentCard, and incidents.utils.tsx in pages/Uptime/incidents/.
