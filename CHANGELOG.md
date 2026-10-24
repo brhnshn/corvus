@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **Command Palette Node Switch**: Command palette `> switch` command now updates both system ID and name in storage, invalidates cache, dispatches the global active system change event, and routes to dashboard instead of leaving open views on the stale node.
+
 ### Changed
 - **Active System State Consolidation**: Centralized selected node (`activeSystemId` / `activeSystemName`) state management into `activeSystemStore.ts` and `useActiveSystem` hook. Replaced duplicate `useState` and manual listener logic across pages (`Dashboard`, `Containers`, `Services`, `SystemMetrics`, `Uptime`, `ActivityTimeline`, `Systems`, and `AppLayout`).
 - **Activity Timeline Race Condition**: Removed redundant event listener that dispatched stale requests in `ActivityTimeline`.

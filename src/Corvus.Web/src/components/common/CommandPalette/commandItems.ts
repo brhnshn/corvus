@@ -18,6 +18,7 @@ import {
 import type { CommandItem } from './types';
 import type { PageId } from '../../Sidebar';
 import { api, invalidateCache } from '../../../api';
+import { setActiveSystem } from '../../../hooks/activeSystemStore';
 
 interface GenerateCommandItemsOptions {
   t: (key: any, params?: any) => string;
@@ -219,9 +220,8 @@ export async function fetchCommandItems({
           icon: Server,
           onSelect: () => {
             try {
-              localStorage.setItem('corvus_active_system_id', s.id);
-              window.dispatchEvent(new CustomEvent('corvus_system_switch', { detail: s }));
-              onNavigate('systems', s.id);
+              setActiveSystem(s.id, s.name);
+              onNavigate('dashboard');
               toast?.success(t('commandPalette.switchedToSystem', { name: s.name }));
             } catch (err) {
               console.error('Failed to switch system', err);
