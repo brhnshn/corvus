@@ -24,6 +24,14 @@ describe('HTTP Client (fetchJson & caching)', () => {
     }));
   });
 
+  it('falls back to the default system id in X-System-Id when none is stored', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) } as unknown as Response);
+    await fetchJson('/test');
+    expect(global.fetch).toHaveBeenCalledWith('/api/test', expect.objectContaining({
+      headers: expect.objectContaining({ 'X-System-Id': 'local-host' }),
+    }));
+  });
+
   it('attaches X-System-Id header if set in localStorage', async () => {
     localStorage.setItem('corvus_active_system_id', 'node-99');
     global.fetch = vi.fn().mockResolvedValue({

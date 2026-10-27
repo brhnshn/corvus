@@ -40,7 +40,6 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
     refreshing,
     reordering,
     activeSystemName,
-    activeSystemId,
     loadServices,
     handleMove
   } = useServicesData();
@@ -111,7 +110,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
       </MotionItem>
 
       {viewMode === 'systemd' ? (
-        <SystemdUnitsTab isAdmin={effectiveIsAdmin} selectedSystemId={activeSystemId} />
+        <SystemdUnitsTab isAdmin={effectiveIsAdmin} />
       ) : (
         <>
           {/* 1. Başlık & Arama & Hızlı Aksiyonlar */}

@@ -1,9 +1,6 @@
-const API_BASE = '/api';
+import { getActiveSystemId } from '../hooks/activeSystemStore';
 
-function getActiveSystemId(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('corvus_active_system_id');
-}
+const API_BASE = '/api';
 
 export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const activeSystemId = getActiveSystemId();

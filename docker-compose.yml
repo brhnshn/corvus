@@ -27,5 +27,24 @@ services:
       # Persistent SQLite database volume
       - corvus-data:/data
 
+# Optional: least-privilege Docker access via tecnativa/docker-socket-proxy.
+# Note: the default setup above mounts the Docker socket directly; read-write access is effectively root on the host.
+# With the proxy, Corvus talks plain HTTP over TCP and only the API sections you enable are reachable.
+# To use it: uncomment the service below, remove the docker.sock volume and DOCKER_SOCKET line from 'corvus',
+# set DOCKER_HOST=tcp://socket-proxy:2375 and add 'depends_on: [socket-proxy]' to 'corvus' (TLS-enabled tcp:// endpoints are not supported).
+#
+#  socket-proxy:
+#    image: tecnativa/docker-socket-proxy:latest
+#    container_name: corvus-socket-proxy
+#    restart: unless-stopped
+#    environment:
+#      - CONTAINERS=1   # list/inspect/stats/logs
+#      - IMAGES=1
+#      - INFO=1
+#      - VOLUMES=1
+#      - POST=0         # 0 = read-only monitoring; set POST=1 (+ EXEC=1 for the web terminal) for lifecycle controls
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+
 volumes:
   corvus-data:

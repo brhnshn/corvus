@@ -3,6 +3,19 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [Unreleased]
+
+### Eklenenler (Added)
+- **Docker Socket Proxy Desteği**: Corvus artık `DOCKER_HOST=tcp://host:port` ile Docker'a düz TCP üzerinden bağlanabiliyor (ör. `tecnativa/docker-socket-proxy`); exec/terminal akışları da dahil. `DOCKER_HOST`, `DOCKER_SOCKET`'ten önceliklidir; `unix://` öneki kabul edilir, TLS'li uç noktalar açık bir log mesajıyla reddedilir. `docker-compose.yml` içine yorum satırı halinde en az yetkili proxy örneği eklendi.
+
+### Düzeltilenler (Fixed)
+- **TLS Doğrulama Varsayılanı**: `POST /api/uptime/test-connection`, `ignoreTls` gönderilmediğinde artık sertifika doğrulamasını atlamıyor; varsayılan `false` oldu. "TLS'i yok say" seçeneği açık monitörlerin davranışı değişmedi.
+- **Sistem Durumu Saklama Süresi**: Durum uç noktası sabit bir saklama süresi (SQLite için 7 gün, PostgreSQL için süresiz) bildiriyordu. Artık geçerli `retention_days` ayarını (ardından `CORVUS_METRICS_RETENTION_DAYS`, sonra 30) bildiriyor; `RetentionCleanupService` ile aynı.
+- **Systemd Düğüm Seçimi**: Systemd birimleri sekmesi kendi seçili düğümünü tutuyordu (varsayılanı `local-host` yerine `local`). Artık ortak `useActiveSystem` store'unu kullanıyor; `http.ts`, `deployments.ts` ve `useSystemMetricsStream` aktif düğümü `localStorage` yerine `getActiveSystemId()` ile okuyor.
+
+### Testler (Tests)
+- `DockerEndpointTests` (ayrıştırma + loopback TCP aktarımı), `TestConnectionDefaultsTests`, saklama süresi ayarı testi, `activeSystemStore` ve `useSystemdUnits` Vitest paketleri eklendi. Toplam: 394 backend + 86 frontend.
+
 ## [1.6.20] - 2026-10-25 — Aktif Düğüm Durumu Birleştirmesi, Komut Paleti Geçiş Düzeltmesi ve Frontend Modülerleştirme
 
 ### Düzeltilenler (Fixed)

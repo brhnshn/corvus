@@ -1,4 +1,5 @@
 import { fetchJson } from './http';
+import { getActiveSystemId } from '../hooks/activeSystemStore';
 import type { 
   DeploymentRecord, 
   TriggerDeployResponse, 
@@ -75,7 +76,7 @@ export const deploymentsApi = {
     onMessage: (event: DeploymentStreamEvent) => void,
     onError?: (error: Event) => void
   ): () => void {
-    const activeSystemId = typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null;
+    const activeSystemId = getActiveSystemId();
     let url = `/api/deployments/${encodeURIComponent(deploymentId)}/stream`;
     if (activeSystemId) {
       url += `?systemId=${encodeURIComponent(activeSystemId)}`;

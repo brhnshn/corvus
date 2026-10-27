@@ -170,7 +170,7 @@ public static class UptimeEndpoints
                     {
                         AllowAutoRedirect = false
                     };
-                    if (req.IgnoreTls ?? true)
+                    if (req.IgnoreTls ?? false)
                     {
                         handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
                     }

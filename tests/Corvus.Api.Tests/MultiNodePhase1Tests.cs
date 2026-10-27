@@ -226,14 +226,28 @@ public class MultiNodePhase1Tests : IDisposable
         var ringBuffer = new TelemetryRingBuffer();
         var config = new ConfigurationBuilder().Build();
 
-        var service = new SystemStatusService(sysRepo, ringBuffer, config);
+        var service = new SystemStatusService(sysRepo, ringBuffer, config, new SettingsRepository(_dbFactory));
 
         var status = await service.GetStatusAsync();
         Assert.NotNull(status);
         Assert.Equal("sqlite", status.Engine);
         Assert.True(status.IsWalMode);
-        Assert.Equal(7, status.RetentionDays);
+        Assert.Equal(30, status.RetentionDays);
         Assert.Equal(0, status.TotalSystems);
+    }
+
+    [Fact]
+    public async Task SystemStatusService_Uses_RetentionDays_Setting()
+    {
+        var settings = new SettingsRepository(_dbFactory);
+        var service = new SystemStatusService(
+            new SystemRepository(_dbFactory), new TelemetryRingBuffer(), new ConfigurationBuilder().Build(), settings);
+
+        await settings.SetAsync("retention_days", "90");
+        Assert.Equal(90, (await service.GetStatusAsync()).RetentionDays);
+
+        await settings.SetAsync("retention_days", "0");
+        Assert.Equal(0, (await service.GetStatusAsync()).RetentionDays);
     }
 
     public void Dispose()

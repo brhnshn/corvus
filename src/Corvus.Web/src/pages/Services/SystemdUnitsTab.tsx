@@ -10,12 +10,10 @@ import { SystemdUnitRow } from './SystemdUnitRow';
 
 export interface SystemdUnitsTabProps {
   isAdmin?: boolean;
-  selectedSystemId?: string;
 }
 
 export const SystemdUnitsTab: React.FC<SystemdUnitsTabProps> = ({
-  isAdmin = true,
-  selectedSystemId
+  isAdmin = true
 }) => {
   const { t } = useI18n();
   const {
@@ -47,7 +45,7 @@ export const SystemdUnitsTab: React.FC<SystemdUnitsTabProps> = ({
     activeCount,
     failedCount,
     inactiveCount
-  } = useSystemdUnits({ isAdmin, selectedSystemId });
+  } = useSystemdUnits({ isAdmin });
 
   return (
     <div className="space-y-4">

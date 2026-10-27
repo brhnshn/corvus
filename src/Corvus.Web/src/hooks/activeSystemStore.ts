@@ -24,6 +24,11 @@ export function readActiveSystem(): ActiveSystem {
   }
 }
 
+/** React dışı kod (fetch yardımcıları, SSE vb.) için senkron okuyucu. */
+export function getActiveSystemId(): string {
+  return readActiveSystem().id;
+}
+
 export function setActiveSystem(id: string, name?: string): void {
   const resolvedName = (name && name.trim()) ? name : (id === DEFAULT_SYSTEM_ID ? DEFAULT_SYSTEM_NAME : id);
   if (typeof window !== 'undefined') {

@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Docker Socket Proxy Support**: Corvus can now reach Docker over plain TCP via `DOCKER_HOST=tcp://host:port` (e.g. `tecnativa/docker-socket-proxy`), including exec/terminal streams. `DOCKER_HOST` takes precedence over `DOCKER_SOCKET`; `unix://` prefixes are accepted, TLS-enabled endpoints are rejected with a clear log message. `docker-compose.yml` ships a commented least-privilege proxy example.
+
+### Fixed
+- **TLS Verification Default**: `POST /api/uptime/test-connection` no longer skips certificate validation when `ignoreTls` is omitted; it now defaults to `false`. Monitors with "ignore TLS" enabled keep their behaviour.
+- **System Status Retention**: The status endpoint reported a hard-coded retention (7 days for SQLite, unlimited for PostgreSQL). It now reports the effective `retention_days` setting (then `CORVUS_METRICS_RETENTION_DAYS`, then 30), matching `RetentionCleanupService`.
+- **Systemd Node Selection**: The systemd units tab kept its own selected node (defaulting to `local` instead of `local-host`). It now uses the shared `useActiveSystem` store, and `http.ts`, `deployments.ts` and `useSystemMetricsStream` read the active node through `getActiveSystemId()` instead of `localStorage`.
+
+### Tests
+- Added `DockerEndpointTests` (parsing + loopback TCP transport), `TestConnectionDefaultsTests`, a retention setting test, `activeSystemStore` and `useSystemdUnits` Vitest suites. Totals: 394 backend + 86 frontend.
+
 ## [1.6.20] - 2026-10-25 — Active Node State Consolidation, Command Palette Switch Fix & Frontend Modularization
 
 ### Fixed

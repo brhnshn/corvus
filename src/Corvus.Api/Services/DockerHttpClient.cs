@@ -14,7 +14,7 @@ public class DockerHttpClient : IDockerHttpClient, IDisposable
 
     public DockerHttpClient(ILogger<DockerHttpClient> logger, IConfiguration configuration)
     {
-        _transport = new DockerHttpTransport(configuration);
+        _transport = new DockerHttpTransport(configuration, logger);
         _systemClient = new DockerSystemClient(_transport, logger);
         _containerClient = new DockerContainerClient(_transport, logger);
         _imageClient = new DockerImageClient(_transport, logger);

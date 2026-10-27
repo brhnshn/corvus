@@ -5,15 +5,19 @@ import type { SystemdUnitDto, SystemSummaryDto } from '../../types';
 import { useI18n } from '../../i18n';
 import { useToast } from '../../components/ui/ToastContext';
 import { useLoadEffect } from '../../hooks/useLoadEffect';
+import { useActiveSystem } from '../../hooks/useActiveSystem';
+import { DEFAULT_SYSTEM_ID } from '../../hooks/activeSystemStore';
 import { filterSystemdUnits, countUnitsByState, type SystemdUnitFilter } from './systemdUnits.utils';
 
 interface UseSystemdUnitsOptions {
   isAdmin: boolean;
-  selectedSystemId?: string;
 }
 
+/** Systemd API'sinde yerel host 'local' ile temsil edilir; merkezi store ise 'local-host' kullanır. */
+const SYSTEMD_LOCAL_ID = 'local';
+
 /** Systemd birimlerinin yüklenmesi, journalctl logları ve birim kontrol aksiyonlarını yönetir. */
-export const useSystemdUnits = ({ isAdmin, selectedSystemId }: UseSystemdUnitsOptions) => {
+export const useSystemdUnits = ({ isAdmin }: UseSystemdUnitsOptions) => {
   const { t } = useI18n();
   const toast = useToast();
 
@@ -25,12 +29,16 @@ export const useSystemdUnits = ({ isAdmin, selectedSystemId }: UseSystemdUnitsOp
 
   // Multi-node selection support
   const [systems, setSystems] = useState<SystemSummaryDto[]>([]);
-  const [activeSystemId, setActiveSystemId] = useState<string>(selectedSystemId || 'local');
-  const [prevSelectedSystemId, setPrevSelectedSystemId] = useState(selectedSystemId);
-  if (selectedSystemId && selectedSystemId !== prevSelectedSystemId) {
-    setPrevSelectedSystemId(selectedSystemId);
-    setActiveSystemId(selectedSystemId);
-  }
+  const { systemId: storeSystemId, setActiveSystem } = useActiveSystem();
+  const activeSystemId = storeSystemId === DEFAULT_SYSTEM_ID ? SYSTEMD_LOCAL_ID : storeSystemId;
+  const setActiveSystemId = useCallback((id: string) => {
+    if (id === SYSTEMD_LOCAL_ID) {
+      setActiveSystem(DEFAULT_SYSTEM_ID);
+      return;
+    }
+    const name = systems.find((s) => s.id === id)?.name;
+    setActiveSystem(id, name);
+  }, [setActiveSystem, systems]);
 
   // Logs modal state
   const [logsModalUnit, setLogsModalUnit] = useState<string | null>(null);

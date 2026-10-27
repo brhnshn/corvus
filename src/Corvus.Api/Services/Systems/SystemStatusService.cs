@@ -13,15 +13,18 @@ public class SystemStatusService : ISystemStatusService
     private readonly ISystemRepository _systemRepo;
     private readonly ITelemetryRingBuffer _ringBuffer;
     private readonly IConfiguration _configuration;
+    private readonly ISettingsRepository _settingsRepo;
 
     public SystemStatusService(
         ISystemRepository systemRepo,
         ITelemetryRingBuffer ringBuffer,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ISettingsRepository settingsRepo)
     {
         _systemRepo = systemRepo;
         _ringBuffer = ringBuffer;
         _configuration = configuration;
+        _settingsRepo = settingsRepo;
     }
 
     public async Task<SystemStatusDto> GetStatusAsync()
@@ -39,7 +42,7 @@ public class SystemStatusService : ISystemStatusService
         bool isPostgres = provider.Equals("PostgreSql", StringComparison.OrdinalIgnoreCase);
         string engine = isPostgres ? "postgresql" : "sqlite";
         bool isWalMode = !isPostgres;
-        int retentionDays = isPostgres ? 0 : 7; // SQLite 7 gun, PostgreSQL suresiz
+        int retentionDays = await ResolveRetentionDaysAsync(); // 0 = suresiz (RetentionCleanupService ile ayni semantik)
 
         long memoryBytes = _ringBuffer.EstimateMemoryBytes();
 
@@ -54,5 +57,20 @@ public class SystemStatusService : ISystemStatusService
             BufferMemoryBytes: memoryBytes,
             ServerTimeUtc: DateTime.UtcNow.ToString("o")
         );
+    }
+
+    /// <summary>RetentionCleanupService ile aynı öncelik: ayarlar deposu, ortam değişkeni, varsayılan 30 gün.</summary>
+    private async Task<int> ResolveRetentionDaysAsync()
+    {
+        string? rawDays = await _settingsRepo.GetAsync("retention_days");
+        if (!string.IsNullOrWhiteSpace(rawDays) && int.TryParse(rawDays, out int parsed))
+        {
+            return parsed;
+        }
+
+        string? envRetention = Environment.GetEnvironmentVariable("CORVUS_METRICS_RETENTION_DAYS");
+        if (int.TryParse(envRetention, out int envVal)) return envVal;
+
+        return 30;
     }
 }

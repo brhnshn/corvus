@@ -67,7 +67,7 @@ public record TestConnectionRequest(
     string? Url = null,
     int? Port = null,
     int? TimeoutSeconds = 5,
-    bool? IgnoreTls = true,
+    bool? IgnoreTls = false,
     string? ExpectedBody = null
 );
 

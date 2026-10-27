@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import type { SystemTelemetryStreamDto, SystemMetric } from '../types';
 import { api } from '../api/client';
 import { useI18n } from '../i18n';
+import { getActiveSystemId, ACTIVE_SYSTEM_CHANGED_EVENT } from './activeSystemStore';
 
 export interface UseSystemMetricsStreamResult {
   livePoint: SystemTelemetryStreamDto | null;
@@ -47,7 +48,7 @@ export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetric
   const connectSSERef = useRef<() => void>(() => {});
 
   // Aktif sistem kimliğini belirle
-  const resolvedSystemId = targetSystemId || (typeof window !== 'undefined' ? localStorage.getItem('corvus_active_system_id') : null) || 'local-host';
+  const resolvedSystemId = targetSystemId || getActiveSystemId();
 
   const clearTimers = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -171,13 +172,13 @@ export function useSystemMetricsStream(targetSystemId?: string): UseSystemMetric
       connectSSE();
     };
 
-    window.addEventListener('corvus_active_system_changed', handleSystemChange);
+    window.addEventListener(ACTIVE_SYSTEM_CHANGED_EVENT, handleSystemChange);
 
     return () => {
       isMountedRef.current = false;
       clearTimers();
       closeEventSource();
-      window.removeEventListener('corvus_active_system_changed', handleSystemChange);
+      window.removeEventListener(ACTIVE_SYSTEM_CHANGED_EVENT, handleSystemChange);
     };
   }, [connectSSE, clearTimers, closeEventSource]);
 
