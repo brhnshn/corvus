@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.21] - 2026-10-28 — Docker Socket Proxy Support, Safe TLS Default & README Landing Refresh
 
 ### Added
 - **Docker Socket Proxy Support**: Corvus can now reach Docker over plain TCP via `DOCKER_HOST=tcp://host:port` (e.g. `tecnativa/docker-socket-proxy`), including exec/terminal streams. `DOCKER_HOST` takes precedence over `DOCKER_SOCKET`; `unix://` prefixes are accepted, TLS-enabled endpoints are rejected with a clear log message. `docker-compose.yml` ships a commented least-privilege proxy example.

@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [Unreleased]
+## [1.6.21] - 2026-10-28 — Docker Socket Proxy Desteği, Güvenli TLS Varsayılanı ve README Açılış Sayfası Yenilemesi
 
 ### Eklenenler (Added)
 - **Docker Socket Proxy Desteği**: Corvus artık `DOCKER_HOST=tcp://host:port` ile Docker'a düz TCP üzerinden bağlanabiliyor (ör. `tecnativa/docker-socket-proxy`); exec/terminal akışları da dahil. `DOCKER_HOST`, `DOCKER_SOCKET`'ten önceliklidir; `unix://` öneki kabul edilir, TLS'li uç noktalar açık bir log mesajıyla reddedilir. `docker-compose.yml` içine yorum satırı halinde en az yetkili proxy örneği eklendi.
