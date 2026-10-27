@@ -5,7 +5,11 @@
 <h1 align="center">Corvus</h1>
 
 <p align="center">
-  <strong>Lightweight, Native AOT Server Launcher & Monitoring Dashboard for Self-Hosted Nodes</strong>
+  <strong>One container. Under 30 MB RAM. Docker, uptime, SSL and a public status page.</strong>
+</p>
+
+<p align="center">
+  A self-hosted cockpit for homelabs and VPS fleets, built with .NET 9 Native AOT.
 </p>
 
 <p align="center">
@@ -15,7 +19,7 @@
   <img src="https://img.shields.io/badge/RAM_Usage-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Container-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Database-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Database" />
-  <img src="https://img.shields.io/badge/Tests-441_Passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-480_Passing-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-English_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -27,16 +31,25 @@
   <a href="README.tr.md"><img src="https://img.shields.io/badge/Dil-Türkçe-red?style=for-the-badge" alt="Türkçe" /></a>
 </p>
 
+<p align="center">
+  <a href="https://demo.usecorvus.me"><img src=".github/assets/corvus-demo.gif" alt="Corvus: dashboard, containers, uptime and public status page" width="100%" /></a>
+</p>
+
+<p align="center">
+  <strong><a href="https://demo.usecorvus.me">▶ Try the live demo</a></strong> · no install, no sign-up
+</p>
+
 ---
 
 ## 🌟 Overview
 
-**Corvus** is an ultra-lightweight, self-hosted server launcher, container manager, and observability dashboard designed for homelabs, VPS instances, and self-hosted environments. 
+Most homelabs end up running a container manager, an uptime monitor and a status page side by side. **Corvus does all of it in one container**, with an embedded SQLite database and no external services.
 
-> 🎮 **Try the In-Browser Live Demo (No Install Needed):**  
-> **[https://demo.usecorvus.me](https://demo.usecorvus.me)** — Explore live Docker management, interactive terminal, and real-time telemetry sandbox with zero server load.
+| 🐳 Docker | 📈 Uptime & SSL | 🌐 Status Page | 🛰️ Multi-Node |
+|:---|:---|:---|:---|
+| Start, stop, logs, web terminal, Compose editor and 1-click deployments with rollback | HTTP/TCP/ping checks, SSL expiry, alerts to Discord, Telegram, Slack, email, ntfy and webhooks | Public, unauthenticated status page with incidents and maintenance notes | Outbound-only edge agent (<10 MB RAM) brings remote VPS nodes into the same panel |
 
-Engineered with **ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time compilation) and an embedded **SQLite WAL engine** (with optional PostgreSQL backend), Corvus runs in a single self-contained container with a deterministic **<30 MB RAM footprint**. It consolidates real-time Docker container discovery, multi-node edge agent telemetry, interactive web terminal access, multi-protocol uptime & SSL monitoring, time-series telemetry downsampling, and an unauthenticated public status page into a single featherweight binary.
+**How light is it?** In production, next to 17 other containers, `docker stats` reports **~26 MB** for Corvus. That comes from Native AOT compilation (no JIT, no runtime VM), a ~45 MB image and aggressive GC/`malloc_trim` tuning, [explained below](#-the-native-aot-engineering-advantage).
 
 ---
 
@@ -83,6 +96,8 @@ volumes:
 docker compose up -d
 ```
 
+**Optional: socket proxy (`tecnativa/docker-socket-proxy`).** Mounting `docker.sock` read-write is effectively root access to the host. Instead, Corvus can reach Docker over plain TCP (`DOCKER_HOST=tcp://socket-proxy:2375`, which takes precedence over `DOCKER_SOCKET`; TLS-enabled TCP is not supported). A commented example is included in [`docker-compose.yml`](docker-compose.yml). `unix://` prefixes are also accepted.
+
 ### Option C: Corvus Edge Agent (For Remote / Monitored Nodes)
 Deploy the ultra-lightweight (<10 MB RAM) edge agent to monitor additional VPS nodes without opening inbound ports:
 ```bash
@@ -106,9 +121,9 @@ Open your browser at **`http://localhost:8090`** (or public status page at **`ht
 | Architectural Aspect | Corvus Design Approach | Traditional Heavy Stacks |
 |:---|:---|:---|
 | **Container Footprint** | **Single All-in-One Container** (~45 MB image) | Multi-container setups (App + Database + Cache) |
-| **Idle Memory (RAM)** | **Strictly <30 MB RAM** (Workstation GC + `malloc_trim`) | 300 MB – 1 GB+ (JVM/Node/WiredTiger caches) |
-| **Database Dependency**| **Zero External DB** (Embedded SQLite WAL, single `.db` file) | Requires dedicated PostgreSQL or MongoDB |
-| **Docker Integration** | **Non-invasive read-only socket** (`/var/run/docker.sock:ro`) | Agent daemons or invasive file hijackers |
+| **Idle Memory (RAM)** | **<30 MB RAM** for all features combined (Workstation GC + `malloc_trim`) | One process per tool, each with its own memory budget |
+| **Database Dependency**| **Zero External DB** (Embedded SQLite WAL, single `.db` file) | Some tools require a dedicated PostgreSQL or MongoDB |
+| **Docker Integration** | **Socket (`:ro` for monitoring only) or least-privilege [socket proxy](#option-b-docker-compose-composeyaml)** | Direct root-equivalent socket access |
 | **Combined Scope** | **Container Lifecycle + Extended Uptime & SSL + Public Status Page** | Fragmented across 2-3 separate tools |
 | **Backup / Portability**| **Single-file copy or `VACUUM INTO` snapshot download** | Database dumps (`pg_dump`, `mongodump`, volume exports) |
 
@@ -130,6 +145,9 @@ Corvus is built from the ground up to challenge the misconception that modern en
 ---
 
 ## ✨ Key Features
+
+<details>
+<summary><strong>Show the full feature list</strong> (deployments, multi-node, systemd, alerting, RBAC, backups and more)</summary>
 
 - **🚀 Native AOT Container Deployment Center & CI/CD Inbound Webhook:**
   - **Self-Hosted PaaS Engine (`DeploymentEngine.cs`):** 1-click rolling container deployments with discrete 5-step visual progress stepper (`Queued` ➔ `Pulling` ➔ `Recreating` ➔ `Healthcheck` ➔ `Live`).
@@ -297,6 +315,8 @@ Corvus is built from the ground up to challenge the misconception that modern en
   - Container-level glibc arena constraints (`MALLOC_ARENA_MAX=2`) and zero-body streaming response reads to eliminate multi-threaded memory bloat.
   - Composite indexes on time-series telemetry tables (`004_performance_indexes.sql`).
   - Route code-splitting via `React.lazy` and Vite `manualChunks` (initial bundle <200 KB).
+
+</details>
 
 ---
 

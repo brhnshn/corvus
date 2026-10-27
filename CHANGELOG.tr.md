@@ -13,6 +13,9 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Sistem Durumu Saklama Süresi**: Durum uç noktası sabit bir saklama süresi (SQLite için 7 gün, PostgreSQL için süresiz) bildiriyordu. Artık geçerli `retention_days` ayarını (ardından `CORVUS_METRICS_RETENTION_DAYS`, sonra 30) bildiriyor; `RetentionCleanupService` ile aynı.
 - **Systemd Düğüm Seçimi**: Systemd birimleri sekmesi kendi seçili düğümünü tutuyordu (varsayılanı `local-host` yerine `local`). Artık ortak `useActiveSystem` store'unu kullanıyor; `http.ts`, `deployments.ts` ve `useSystemMetricsStream` aktif düğümü `localStorage` yerine `getActiveSystemId()` ile okuyor.
 
+### Belgeler (Documentation)
+- **README Açılış Sayfası Yenilemesi (EN + TR)**: Yeni slogan ("Tek konteyner. 30 MB'ın altında RAM."), canlı demoya bağlanan 10 saniyelik demo GIF'i, dört sütunlu genel bakış (Docker, Uptime & SSL, Durum Sayfası, Çoklu Sunucu), üretimde ölçülen ~26 MB bellek kullanımı, socket proxy kurulum notları ve katlanabilir tam özellik listesi. Karşılaştırma tablosu artık diğer araçlar için 300 MB – 1 GB ya da varsayılan salt-okunur soket iddia etmiyor.
+
 ### Testler (Tests)
 - `DockerEndpointTests` (ayrıştırma + loopback TCP aktarımı), `TestConnectionDefaultsTests`, saklama süresi ayarı testi, `activeSystemStore` ve `useSystemdUnits` Vitest paketleri eklendi. Toplam: 394 backend + 86 frontend.
 

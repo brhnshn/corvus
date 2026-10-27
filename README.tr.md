@@ -5,7 +5,11 @@
 <h1 align="center">Corvus</h1>
 
 <p align="center">
-  <strong>Kendi Sunucularınız İçin Ultra Hafif, Native AOT Servis Başlatıcı ve İzleme Paneli</strong>
+  <strong>Tek konteyner. 30 MB'ın altında RAM. Docker, uptime, SSL ve herkese açık durum sayfası.</strong>
+</p>
+
+<p align="center">
+  Homelab'ler ve VPS filoları için .NET 9 Native AOT ile yazılmış self-hosted kontrol paneli.
 </p>
 
 <p align="center">
@@ -15,7 +19,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Veritabanı" />
-  <img src="https://img.shields.io/badge/Testler-441_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-480_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -27,16 +31,25 @@
   <a href="README.tr.md"><img src="https://img.shields.io/badge/Dil-T%C3%BCrk%C3%A7e-red?style=for-the-badge" alt="Türkçe" /></a>
 </p>
 
+<p align="center">
+  <a href="https://demo.usecorvus.me"><img src=".github/assets/corvus-demo.gif" alt="Corvus: genel bakış, konteynerler, uptime ve herkese açık durum sayfası" width="100%" /></a>
+</p>
+
+<p align="center">
+  <strong><a href="https://demo.usecorvus.me">▶ Canlı demoyu deneyin</a></strong> · kurulum ve kayıt gerekmez
+</p>
+
 ---
 
 ## 🌟 Genel Bakış
 
-**Corvus**, homelab ortamları, VPS sunucuları ve self-hosted altyapılar için tasarlanmış ultra hafif, hepsi-bir-arada konteyner yöneticisi ve gözlemlenebilirlik (observability) kontrol panelidir. 
+Çoğu homelab'de bir konteyner yöneticisi, bir uptime izleyici ve bir durum sayfası yan yana çalışır. **Corvus bunların hepsini tek konteynerde yapar**; gömülü SQLite veritabanı kullanır, harici servis gerektirmez.
 
-> 🎮 **Kurulum Yapmadan Tarayıcıda Canlı Demoyu Deneyin:**  
-> **[https://demo.usecorvus.me](https://demo.usecorvus.me)** — Sıfır sunucu yüküyle çalışan tarayıcı içi simülasyon ortamında Docker yönetimini, etkileşimli terminali ve telemetri grafiklerini anında keşfedin.
+| 🐳 Docker | 📈 Uptime & SSL | 🌐 Durum Sayfası | 🛰️ Çoklu Sunucu |
+|:---|:---|:---|:---|
+| Başlat/durdur, loglar, web terminali, Compose editörü ve geri almalı tek tık dağıtım | HTTP/TCP/ping kontrolleri, SSL bitiş takibi; Discord, Telegram, Slack, e-posta, ntfy ve webhook bildirimleri | Olay ve bakım notları içeren, giriş gerektirmeyen herkese açık durum sayfası | Sadece dışa bağlanan uç ajan (<10 MB RAM) uzak VPS'leri aynı panele getirir |
 
-**ASP.NET Core (.NET 9) Native AOT** (Ahead-Of-Time derleme) ve gömülü **SQLite WAL motoru** (isteğe bağlı PostgreSQL desteğiyle) ile sıfırdan inşa edilen Corvus, tek bir bağımsız konteyner içinde ve kararlı biçimde **<30 MB RAM ayak iziyle** çalışır. Gerçek zamanlı Docker konteyner keşfi, çoklu sunucu uç ajan telemetrisi, tarayıcı içi etkileşimli web terminali (WebSocket), çoklu protokol uptime & SSL sertifika takibi, zaman serisi telemetri sıkıştırması ve kamuya açık şifresiz sistem durum sayfasını tek bir tüy kadar hafif ikili (binary) pakette toplar.
+**Ne kadar hafif?** Üretimde, 17 başka konteynerin yanında `docker stats` Corvus için **~26 MB** gösteriyor. Bunun sebebi Native AOT derleme (JIT ve çalışma zamanı sanal makinesi yok), ~45 MB imaj ve agresif GC/`malloc_trim` ayarları; ayrıntılar [aşağıda](#-native-aot-mühendislik-avantajı).
 
 ---
 
@@ -83,6 +96,8 @@ volumes:
 docker compose up -d
 ```
 
+**Opsiyonel: socket proxy (`tecnativa/docker-socket-proxy`).** `docker.sock` dosyasını okuma-yazma bağlamak fiilen host üzerinde root erişimi demektir. Bunun yerine Corvus, Docker'a düz TCP üzerinden bağlanabilir (`DOCKER_HOST=tcp://socket-proxy:2375`; `DOCKER_SOCKET`'ten önceliklidir, TLS'li TCP desteklenmez). Yorum satırı halinde bir örnek [`docker-compose.yml`](docker-compose.yml) içinde bulunur. `unix://` öneki de kabul edilir.
+
 ### Seçenek C: Corvus Uç Ajan (Edge Agent - Uzak Düğümler İçin)
 Ek VPS ve uç sunucularınızı dışa açık port açmadan izlemek için ultra hafif (<10 MB RAM) ajanı başlatın:
 ```bash
@@ -106,9 +121,9 @@ Tarayıcınızdan **`http://localhost:8090`** adresine (veya kamuya açık durum
 | Mimari Boyut | Corvus Tasarım Yaklaşımı | Geleneksel Hantal Çözümler |
 |:---|:---|:---|
 | **Konteyner Ayak İzi** | **Tek ve Bağımsız Konteyner** (~45 MB imaj) | Çoklu konteyner zorunluluğu (Uygulama + DB + Önbellek) |
-| **Boşta RAM Tüketimi** | **Kesinlikle <30 MB RAM** (Workstation GC + `malloc_trim`) | 300 MB – 1 GB+ (JVM/Node/WiredTiger önbellekleri) |
-| **Veritabanı Bağımlılığı**| **Sıfır Harici DB** (Gömülü SQLite WAL, tek `.db` dosyası) | Ayrı PostgreSQL veya MongoDB sunucusu zorunluluğu |
-| **Docker Entegrasyonu** | **Müdahalesiz salt-okunur soket** (`/var/run/docker.sock:ro`) | Ağır ajan servisleri veya compose dosyalarını rehin alma |
+| **Boşta RAM Tüketimi** | **Tüm özellikler birlikte <30 MB RAM** (Workstation GC + `malloc_trim`) | Her araç ayrı süreç, her birinin ayrı bellek bütçesi |
+| **Veritabanı Bağımlılığı**| **Sıfır Harici DB** (Gömülü SQLite WAL, tek `.db` dosyası) | Bazı araçlar ayrı PostgreSQL veya MongoDB ister |
+| **Docker Entegrasyonu** | **Soket (sadece izleme için `:ro`) veya en az yetkili [socket proxy](#seçenek-b-docker-compose-composeyaml)** | Doğrudan, root eşdeğeri soket erişimi |
 | **Birleşik Kapsam** | **Konteyner Yaşam Döngüsü + Uptime & SSL + Kamusal Durum Sayfası** | 2-3 farklı bağımsız araca bölünmüş mimari |
 | **Yedekleme ve Taşınabilirlik**| **Tek dosya kopyalama veya `VACUUM INTO` anlık görüntü indirme** | Veritabanı dökümleri (`pg_dump`, `mongodump`, volume dışa aktarma) |
 
@@ -130,6 +145,9 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
 ---
 
 ## ✨ Temel Özellikler
+
+<details>
+<summary><strong>Tüm özellik listesini göster</strong> (dağıtımlar, çoklu sunucu, systemd, alarmlar, RBAC, yedekler ve dahası)</summary>
 
 - **🚀 Native AOT Konteyner Dağıtım Merkezi & CI/CD Dağıtım Webhook'u:**
   - **Self-Hosted PaaS Motoru (`DeploymentEngine.cs`):** 5 aşamalı görsel ilerleme çubuğu (`Kuyrukta` ➔ `İmaj Çekiliyor` ➔ `Yeniden Oluşturuluyor` ➔ `Sağlık Kontrolü` ➔ `Canlı`) ile tek tıkla konteyner dağıtımı.
@@ -293,6 +311,8 @@ Corvus, modern kurumsal çatıların ağır konteynerler gerektirdiği yanılgı
   - Çok iş parçacıklı bellek şişmesini engelleyen konteyner seviyesinde glibc arena sınırlaması (`MALLOC_ARENA_MAX=2`) ve akış tabanlı HTTP başlık okuması.
   - Zaman serisi telemetri tablolarında kompozit performans indeksleri (`004_performance_indexes.sql`).
   - `React.lazy` ve Vite `manualChunks` ile kod ayrıştırma (ilk paket boyutu <200 KB).
+
+</details>
 
 ---
 

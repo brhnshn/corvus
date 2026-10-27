@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **System Status Retention**: The status endpoint reported a hard-coded retention (7 days for SQLite, unlimited for PostgreSQL). It now reports the effective `retention_days` setting (then `CORVUS_METRICS_RETENTION_DAYS`, then 30), matching `RetentionCleanupService`.
 - **Systemd Node Selection**: The systemd units tab kept its own selected node (defaulting to `local` instead of `local-host`). It now uses the shared `useActiveSystem` store, and `http.ts`, `deployments.ts` and `useSystemMetricsStream` read the active node through `getActiveSystemId()` instead of `localStorage`.
 
+### Documentation
+- **README Landing Refresh (EN + TR)**: New tagline ("One container. Under 30 MB RAM."), 10-second demo GIF linking to the live demo, a four-column overview (Docker, Uptime & SSL, Status Page, Multi-Node), a measured ~26 MB production footprint, socket-proxy setup notes and a collapsible full feature list. The comparison table no longer claims 300 MB – 1 GB for other tools or a read-only socket by default.
+
 ### Tests
 - Added `DockerEndpointTests` (parsing + loopback TCP transport), `TestConnectionDefaultsTests`, a retention setting test, `activeSystemStore` and `useSystemdUnits` Vitest suites. Totals: 394 backend + 86 frontend.
 
