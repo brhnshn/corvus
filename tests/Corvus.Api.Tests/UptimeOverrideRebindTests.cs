@@ -118,6 +118,44 @@ public class UptimeOverrideRebindTests : IDisposable
     }
 
     [Fact]
+    public async Task Recreated_container_keeps_uptime_check_history()
+    {
+        await _repo.SyncDockerBatchAsync([Discovered(OldId, "portfolio_web")], [OldId]);
+        await EnableUptimeAsync($"docker_{OldId[..12]}", "portfolio_web");
+        var uptime = new UptimeRepository(_dbFactory);
+        await uptime.InsertAsync(new UptimeCheck { ServiceId = $"docker_{OldId[..12]}", Status = "up", ResponseTimeMs = 12 });
+
+        await _repo.SyncDockerBatchAsync([Discovered(NewId, "portfolio_web")], [NewId]);
+
+        var history = await uptime.GetByServiceAsync($"docker_{NewId[..12]}", "7d");
+        Assert.Single(history);
+    }
+
+    [Fact]
+    public async Task Daily_stats_orphaned_by_an_earlier_recreate_are_restored()
+    {
+        await _repo.SyncDockerBatchAsync([Discovered(OldId, "internal-memos")], [OldId]);
+        await EnableUptimeAsync($"docker_{OldId[..12]}", "internal-memos");
+        string yesterday = DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd");
+        using (var conn = (Microsoft.Data.Sqlite.SqliteConnection)_dbFactory.CreateConnection())
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "INSERT INTO uptime_daily_stats (service_id, date, total_checks, up_checks, avg_response_time_ms) VALUES ($id, $d, 1440, 1440, 20)";
+            cmd.Parameters.AddWithValue("$id", $"docker_{OldId[..12]}");
+            cmd.Parameters.AddWithValue("$d", yesterday);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        // Eski sürüm: konteyner gitti, servis satırı silindi, istatistik ve ayar sahipsiz kaldı
+        const string OtherId = "dddddddddddd4444444444444444444444444444444444444444444444444444";
+        await _repo.SyncDockerBatchAsync([Discovered(OtherId, "core-redis")], [OtherId]);
+
+        await _repo.SyncDockerBatchAsync([Discovered(NewId, "internal-memos"), Discovered(OtherId, "core-redis")], [NewId, OtherId]);
+
+        var stats = await new UptimeRepository(_dbFactory).GetDailyStatsAsync($"docker_{NewId[..12]}");
+        Assert.Contains(stats, d => d.Date == yesterday && d.TotalChecks == 1440);
+    }
+
+    [Fact]
     public async Task Docker_name_is_refreshed_when_transient_compose_name_was_captured_first()
     {
         await _repo.SyncDockerBatchAsync([Discovered(NewId, "e52e83aff78a_portfolio_web")], [NewId]);

@@ -103,12 +103,14 @@ public partial class ServicesRepository
         string targetSystemId = services.FirstOrDefault()?.SystemId ?? "local-host";
         if (string.IsNullOrWhiteSpace(targetSystemId)) targetSystemId = "local-host";
 
-        await RebindOrphanedOverridesAsync(conn, tx, services, activeContainerIds, targetSystemId);
+        var moved = await RebindOrphanedOverridesAsync(conn, tx, services, activeContainerIds, targetSystemId);
 
         foreach (var s in services)
         {
             await ExecuteDockerUpsertAsync(conn, s, targetSystemId, tx);
         }
+
+        await MoveUptimeHistoryAsync(conn, tx, moved);
 
         if (activeContainerIds.Count == 0)
         {
