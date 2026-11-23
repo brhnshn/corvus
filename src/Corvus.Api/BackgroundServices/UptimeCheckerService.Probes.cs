@@ -20,11 +20,6 @@ public partial class UptimeCheckerService
             return (s, null, null);
         }
 
-        if (s.Source == "docker" && s.Status == "down")
-        {
-            return (s, null, null);
-        }
-
         string? targetUrl = !string.IsNullOrWhiteSpace(s.HealthCheckUrl) ? s.HealthCheckUrl : s.Url;
         bool isDockerCheck = string.Equals(s.CheckType, "docker", StringComparison.OrdinalIgnoreCase) ||
                              (s.Source == "docker" && string.IsNullOrWhiteSpace(targetUrl) && !string.Equals(s.CheckType, "tcp", StringComparison.OrdinalIgnoreCase) && !string.Equals(s.CheckType, "ping", StringComparison.OrdinalIgnoreCase));

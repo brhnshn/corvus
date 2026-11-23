@@ -104,7 +104,7 @@ public partial class ServicesRepository
 
         var sql = @"
             UPDATE services 
-            SET name = @Name, description = @Description, url = @Url, icon = @Icon, 
+            SET name = CASE WHEN source = 'docker' THEN name ELSE @Name END, description = @Description, url = @Url, icon = @Icon, 
                 category = @Category, health_check_url = @HealthCheckUrl, updated_at = @now,
                 check_type = @checkType, port = @port, is_public = @isPublicInt, is_uptime_enabled = @isUptimeEnabledInt,
                 check_interval = @checkInterval, max_retries = @maxRetries, retry_interval = @retryInterval,
@@ -139,12 +139,15 @@ public partial class ServicesRepository
 
         if (existing.Source == "docker")
         {
+            // Docker servisinde kullanıcının verdiği ad yalnız override'da durur; services.name konteyner adı
+            // olarak kalır ki konteyner yeniden oluşturulunca ayarlar o adla geri bağlanabilsin.
             string overrideKey = !string.IsNullOrEmpty(existing.ContainerId) ? existing.ContainerId : id;
             var overrideSql = @"
-                INSERT INTO service_overrides (container_id, service_id, name, description, url, icon, category, health_check_url, check_type, port, is_public, is_uptime_enabled, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body, tags)
-                VALUES (@overrideKey, @id, @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @isUptimeEnabledInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod, @expectedBody, @tagsSerialized)
+                INSERT INTO service_overrides (container_id, service_id, container_name, name, description, url, icon, category, health_check_url, check_type, port, is_public, is_uptime_enabled, check_interval, max_retries, retry_interval, timeout_seconds, ignore_tls, accepted_status_codes, http_method, expected_body, tags)
+                VALUES (@overrideKey, @id, (SELECT name FROM services WHERE id = @id), @Name, @Description, @Url, @Icon, @Category, @HealthCheckUrl, @checkType, @port, @isPublicInt, @isUptimeEnabledInt, @checkInterval, @maxRetries, @retryInterval, @timeoutSeconds, @ignoreTlsInt, @acceptedStatusCodes, @httpMethod, @expectedBody, @tagsSerialized)
                 ON CONFLICT(container_id) DO UPDATE SET
                     service_id = excluded.service_id,
+                    container_name = excluded.container_name,
                     name = excluded.name,
                     description = excluded.description,
                     url = excluded.url,

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Uptime Settings Lost on Container Recreate**: User settings in `service_overrides` are keyed by container ID and `docker_<first 12>` service ID, so a Watchtower update or `docker compose up` that recreated a container left its uptime toggle, public URL and check options orphaned; the new container silently fell back to "uptime off". Discovery now rebinds an orphaned override to the new container with the same name (also when the old name was compose's transient `<old id>_<name>`), and overrides remember the Docker container name (migration `020`) so renamed services follow too. Overrides that belong to another node's container are never taken.
+- **Discovery Overwriting Uptime Status**: The Docker upsert decided status ownership from `services.is_uptime_enabled` only, while the effective flag lives in `service_overrides`. For services enabled through an override, every discovery sync reset the checker's `down`/`degraded` back to the Docker state (`healthy`). The upsert now uses the effective flag.
+- **Discovery Sync Every 10 s**: Docker returns a container's port list in random order. Mapping picked the first published port, so the default URL and the discovery fingerprint changed almost every cycle and the whole batch was rewritten to SQLite every 10–20 s. The lowest published port is now chosen.
+- **Uptime Checks Stuck After `down`**: The checker skipped Docker services whose stored status was `down`, which it also writes itself; once a check marked a service down it was never checked again. The skip now uses the container's actual Docker state and falls back to the stored status only when Docker is unreachable or the container is on another node.
+- **Stale Transient Container Names**: A service first discovered under compose's transient name (`e52e83aff78a_portfolio_web`) kept it forever; the Docker name is now refreshed on every sync. A user-set name for a Docker service stays in its override.
+
+### Tests
+- Added `UptimeOverrideRebindTests` (10). Total: 413 backend tests.
+
 ## [1.6.22] - 2026-11-23 — Push Monitor Failure Alerts
 
 ### Fixed

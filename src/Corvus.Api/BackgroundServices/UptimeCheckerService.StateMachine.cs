@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Corvus.Api.Services.Uptime;
 using Corvus.Api.Services.Uptime.Checkers;
 using Corvus.Api.Utils;
 
@@ -16,14 +17,15 @@ public partial class UptimeCheckerService
     private async Task RunDueServiceChecksAsync(DateTime now, int alertThreshold, CancellationToken stoppingToken)
     {
         var allServices = _cachedServices;
+        var containerStates = await GetLocalContainerStatesAsync(allServices, stoppingToken);
 
         // SADECE Uptime takibi kullanıcı tarafından aktif edilmiş servisler denetlenir!
         var servicesToCheck = allServices
             .Where(s => s.IsUptimeEnabled && !string.Equals(s.CheckType, "none", StringComparison.OrdinalIgnoreCase))
             .Where(s =>
             {
-                // Konteyner Docker'da durdurulmuşsa (down) kontrolü atla (skip), degraded yapma!
-                if (s.Source == "docker" && s.Status == "down")
+                // Konteyner Docker'da durdurulmuşsa kontrolü atla (skip), degraded yapma!
+                if (UptimeCheckEligibility.IsContainerStopped(s, containerStates))
                 {
                     return false;
                 }
@@ -92,6 +94,33 @@ public partial class UptimeCheckerService
                     await ApplyUpResultAsync(s, targetUrl, now, servicesRepo, notifService, stoppingToken);
                 }
             }
+        }
+    }
+
+    // Yerel Docker konteyner durumları (Id -> State). Docker erişilemezse null döner.
+    private async Task<IReadOnlyDictionary<string, string>?> GetLocalContainerStatesAsync(List<Service> services, CancellationToken ct)
+    {
+        if (!services.Any(s => s.Source == "docker" && s.IsUptimeEnabled))
+        {
+            return null;
+        }
+
+        try
+        {
+            var docker = _services.GetService<IDockerService>();
+            if (docker == null) return null;
+            var containers = await docker.GetContainersAsync(ct);
+            var states = new Dictionary<string, string>(containers.Count, StringComparer.OrdinalIgnoreCase);
+            foreach (var c in containers)
+            {
+                states[c.Id] = c.State?.ToLowerInvariant() ?? "unknown";
+            }
+            return states;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogDebug(ex, "Uptime denetimi için konteyner durumları okunamadı.");
+            return null;
         }
     }
 

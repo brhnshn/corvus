@@ -3,6 +3,18 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [Unreleased]
+
+### Düzeltilenler (Fixed)
+- **Konteyner Yeniden Oluşturulunca Kaybolan Uptime Ayarları**: `service_overrides` içindeki kullanıcı ayarları konteyner ID'si ve `docker_<ilk 12>` servis ID'siyle anahtarlıydı; Watchtower güncellemesi veya `docker compose up` konteyneri yeniden oluşturunca uptime anahtarı, genel URL ve denetim seçenekleri sahipsiz kalıyor, yeni konteyner sessizce "uptime kapalı"ya düşüyordu. Keşif artık sahipsiz ayarı aynı adlı yeni konteynere geri bağlıyor (eski ad compose'un geçici `<eski id>_<ad>` biçiminde olsa da); ayarlar Docker konteyner adını da saklıyor (`020` göçü), böylece yeniden adlandırılmış servisler de izleniyor. Başka bir düğümün konteynerine ait ayar asla alınmıyor.
+- **Keşfin Uptime Durumunu Ezmesi**: Docker upsert'i durum sahipliğine yalnız `services.is_uptime_enabled` ile karar veriyordu, oysa etkin bayrak `service_overrides` içinde. Takibi override ile açılmış servislerde her keşif senkronu denetimin yazdığı `down`/`degraded` değerini Docker durumuna (`healthy`) geri çeviriyordu. Upsert artık etkin bayrağı kullanıyor.
+- **10 Saniyede Bir Keşif Senkronu**: Docker konteynerin port listesini rastgele sırayla döndürüyor. Eşleme ilk yayınlanmış portu aldığı için varsayılan URL ve keşif parmak izi neredeyse her döngüde değişiyor, bütün grup 10–20 sn'de bir SQLite'a yeniden yazılıyordu. Artık en küçük yayınlanmış port seçiliyor.
+- **`down` Sonrası Takılı Kalan Denetimler**: Denetleyici kayıtlı durumu `down` olan Docker servislerini atlıyordu; bu değeri kendisi de yazdığı için bir kez `down` diyen servis bir daha denetlenmiyordu. Atlama artık konteynerin gerçek Docker durumuna bakıyor; kayıtlı duruma yalnız Docker'a erişilemezse veya konteyner başka düğümdeyse güveniyor.
+- **Eskimiş Geçici Konteyner Adları**: Compose'un geçici adıyla (`e52e83aff78a_portfolio_web`) ilk kez görülen servis bu adı sonsuza dek taşıyordu; Docker adı artık her senkronda yenileniyor. Docker servisine kullanıcının verdiği ad override'da kalıyor.
+
+### Testler (Tests)
+- `UptimeOverrideRebindTests` (10) eklendi. Toplam: 413 backend testi.
+
 ## [1.6.22] - 2026-11-23 — Push Monitörü Hata Alarmları
 
 ### Düzeltilenler (Fixed)

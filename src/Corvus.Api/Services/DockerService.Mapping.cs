@@ -188,7 +188,7 @@ public partial class DockerService
             // Port bindings'den varsayılan URL türetme
             if (string.IsNullOrWhiteSpace(url))
             {
-                var pubPort = container.Ports?.FirstOrDefault(p => p.PublicPort.HasValue && p.PublicPort > 0);
+                var pubPort = FirstPublishedPort(container);
                 if (pubPort?.PublicPort != null)
                 {
                     string host = Environment.GetEnvironmentVariable("CORVUS_PUBLIC_HOST") ?? "localhost";
@@ -231,14 +231,14 @@ public partial class DockerService
         }
 
         int? port = null;
-        var firstPubPort = container.Ports?.FirstOrDefault(p => p.PublicPort.HasValue && p.PublicPort > 0);
+        var firstPubPort = FirstPublishedPort(container);
         if (firstPubPort != null)
         {
             port = firstPubPort.PublicPort;
         }
         else if (container.Ports?.Count > 0)
         {
-            port = container.Ports[0].PrivatePort;
+            port = container.Ports.Min(p => p.PrivatePort);
         }
 
         var tags = ExtractTagsFromLabels(labels);
@@ -263,6 +263,14 @@ public partial class DockerService
             Tags = tags
         };
     }
+
+    // Docker /containers/json port dizisinin sırası çağrıdan çağrıya değişir (Go map sırası).
+    // En küçük yayınlanmış port seçilir; yoksa keşif parmak izi her döngüde değişir ve durum her 10 sn'de yeniden yazılır.
+    private static DockerPortInfo? FirstPublishedPort(DockerContainerInfo container) =>
+        container.Ports?
+            .Where(p => p.PublicPort.HasValue && p.PublicPort > 0)
+            .OrderBy(p => p.PublicPort)
+            .FirstOrDefault();
 
     public static string DeriveCategoryFromName(string name)
     {
