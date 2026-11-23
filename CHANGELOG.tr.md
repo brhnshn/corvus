@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [Unreleased]
+## [1.6.22] - 2026-11-23 — Push Monitörü Hata Alarmları
 
 ### Düzeltilenler (Fixed)
 - **Push Monitörü Hata Durumu**: `/api/push/{token}` adresine gelen `failure` push'u (POST gövdesindeki `status` ya da GET `?status=`), Dead Man's Snitch monitörünü `healthy` yapıp sayacını sıfırlıyordu; başarısız bir yedeğin alarmı böylece susuyordu. Hata push'u (`failure` veya `down`, büyük/küçük harf duyarsız) artık monitörü `last_seen_at`'e dokunmadan `down` yapıyor ve mevcut servis alarmı kanallarından, `down`'a her geçişte bir kez alarm gönderiyor. `success` push'unun davranışı değişmedi; iki sonuç da `backup_events` tablosuna yazılmaya devam ediyor.

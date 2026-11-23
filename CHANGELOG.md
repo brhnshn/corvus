@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.22] - 2026-11-23 — Push Monitor Failure Alerts
 
 ### Fixed
 - **Push Monitor Failure Status**: A `failure` push to `/api/push/{token}` (POST body `status` or GET `?status=`) used to mark the Dead Man's Snitch monitor `healthy` and reset its timer, silencing the alarm for a failed backup. A failure push (`failure` or `down`, case-insensitive) now sets the monitor to `down` without touching `last_seen_at` and sends a down alert through the existing service alert channels, once per transition to `down`. `success` pushes behave as before, and both outcomes are still recorded in `backup_events`.
