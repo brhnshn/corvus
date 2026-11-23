@@ -3,6 +3,14 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [Unreleased]
+
+### Düzeltilenler (Fixed)
+- **Push Monitörü Hata Durumu**: `/api/push/{token}` adresine gelen `failure` push'u (POST gövdesindeki `status` ya da GET `?status=`), Dead Man's Snitch monitörünü `healthy` yapıp sayacını sıfırlıyordu; başarısız bir yedeğin alarmı böylece susuyordu. Hata push'u (`failure` veya `down`, büyük/küçük harf duyarsız) artık monitörü `last_seen_at`'e dokunmadan `down` yapıyor ve mevcut servis alarmı kanallarından, `down`'a her geçişte bir kez alarm gönderiyor. `success` push'unun davranışı değişmedi; iki sonuç da `backup_events` tablosuna yazılmaya devam ediyor.
+
+### Testler (Tests)
+- Hata, `down` varyantları, tekrarlanan hatalar, olay kaydı ve başarıyla toparlanmayı kapsayan `PushEndpointsTests` eklendi. Toplam: 403 backend testi.
+
 ## [1.6.21] - 2026-10-28 — Docker Socket Proxy Desteği, Güvenli TLS Varsayılanı ve README Açılış Sayfası Yenilemesi
 
 ### Eklenenler (Added)

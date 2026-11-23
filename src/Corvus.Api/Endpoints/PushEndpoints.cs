@@ -2,6 +2,7 @@ using System.Text.Json;
 using Corvus.Api.Data;
 using Corvus.Api.Models;
 using Corvus.Api.Services;
+using Corvus.Api.Utils;
 
 namespace Corvus.Api.Endpoints;
 
@@ -10,91 +11,99 @@ public static class PushEndpoints
     public static void MapPushEndpoints(this IEndpointRouteBuilder app)
     {
         // Push monitor endpoint (backup.sh vb. harici scriptler ve cron bildirimleri)
-        app.MapPost("/api/push/{token}", async (
-            string token, 
-            PushBackupRequest? body, 
-            IBackupRepository repo, 
+        app.MapPost("/api/push/{token}", (
+            string token,
+            PushBackupRequest? body,
+            IBackupRepository repo,
             IPushMonitorRepository pushRepo,
             ISettingsRepository settingsRepo,
+            INotificationService notifService,
             IEventBroadcaster broadcaster) =>
-        {
-            var monitor = await pushRepo.GetByTokenAsync(token);
-            string? backupToken = await settingsRepo.GetAsync("backup_push_token");
-            bool isBackupToken = !string.IsNullOrEmpty(backupToken) && string.Equals(backupToken, token, StringComparison.Ordinal);
-
-            if (monitor == null && !isBackupToken)
-            {
-                return Results.NotFound(new GenericApiResponse(false, "Geçersiz veya bulunamayan push belirteci."));
-            }
-
-            var evt = new BackupEvent
-            {
-                Token = token,
-                ReceivedAt = DateTime.UtcNow.ToString("o"),
-                Status = body?.Status?.ToLowerInvariant() == "failure" ? "failure" : "success",
-                SizeBytes = body?.SizeBytes,
-                Message = body?.Message
-            };
-
-            await repo.InsertAsync(evt);
-            if (monitor != null)
-            {
-                await pushRepo.RecordPingAsync(token);
-            }
-
-            var payloadJson = JsonSerializer.Serialize(
-                new PushReceivedEventPayload(token, evt.Status),
-                CorvusJsonSerializerContext.Default.PushReceivedEventPayload);
-            broadcaster.Broadcast("push_received", payloadJson);
-
-            return Results.Ok(new GenericApiResponse(true, "Push bildirimi başarıyla kaydedildi."));
-        });
+            HandlePushAsync(token, body?.Status, body?.SizeBytes, body?.Message,
+                repo, pushRepo, settingsRepo, notifService, broadcaster));
 
         // Alternatif query param ile push GET (örn. curl http://corvus/api/push/token?status=up&msg=OK)
-        app.MapGet("/api/push/{token}", async (
-            string token, 
-            string? status, 
-            string? msg, 
-            IBackupRepository repo, 
+        app.MapGet("/api/push/{token}", (
+            string token,
+            string? status,
+            string? msg,
+            IBackupRepository repo,
             IPushMonitorRepository pushRepo,
             ISettingsRepository settingsRepo,
+            INotificationService notifService,
             IEventBroadcaster broadcaster) =>
-        {
-            var monitor = await pushRepo.GetByTokenAsync(token);
-            string? backupToken = await settingsRepo.GetAsync("backup_push_token");
-            bool isBackupToken = !string.IsNullOrEmpty(backupToken) && string.Equals(backupToken, token, StringComparison.Ordinal);
-
-            if (monitor == null && !isBackupToken)
-            {
-                return Results.NotFound(new GenericApiResponse(false, "Geçersiz veya bulunamayan push belirteci."));
-            }
-
-            var evt = new BackupEvent
-            {
-                Token = token,
-                ReceivedAt = DateTime.UtcNow.ToString("o"),
-                Status = status?.ToLowerInvariant() == "failure" ? "failure" : "success",
-                Message = msg
-            };
-
-            await repo.InsertAsync(evt);
-            if (monitor != null)
-            {
-                await pushRepo.RecordPingAsync(token);
-            }
-
-            var payloadJson = JsonSerializer.Serialize(
-                new PushReceivedEventPayload(token, evt.Status),
-                CorvusJsonSerializerContext.Default.PushReceivedEventPayload);
-            broadcaster.Broadcast("push_received", payloadJson);
-
-            return Results.Ok(new GenericApiResponse(true, "Push bildirimi başarıyla kaydedildi."));
-        });
+            HandlePushAsync(token, status, null, msg,
+                repo, pushRepo, settingsRepo, notifService, broadcaster));
 
         // Dead Man's Snitch Monitör Yönetimi (Hem /api/push-monitors hem de /api/push/monitors desteklenir)
         MapPushMonitorRoutes(app.MapGroup("/api/push-monitors"));
         MapPushMonitorRoutes(app.MapGroup("/api/push/monitors"));
     }
+
+    public static async Task<IResult> HandlePushAsync(
+        string token,
+        string? status,
+        long? sizeBytes,
+        string? message,
+        IBackupRepository repo,
+        IPushMonitorRepository pushRepo,
+        ISettingsRepository settingsRepo,
+        INotificationService notifService,
+        IEventBroadcaster broadcaster)
+    {
+        var monitor = await pushRepo.GetByTokenAsync(token);
+        string? backupToken = await settingsRepo.GetAsync("backup_push_token");
+        bool isBackupToken = !string.IsNullOrEmpty(backupToken) && string.Equals(backupToken, token, StringComparison.Ordinal);
+
+        if (monitor == null && !isBackupToken)
+        {
+            return Results.NotFound(new GenericApiResponse(false, "Geçersiz veya bulunamayan push belirteci."));
+        }
+
+        bool isFailure = IsFailureStatus(status);
+        var evt = new BackupEvent
+        {
+            Token = token,
+            ReceivedAt = DateTime.UtcNow.ToString("o"),
+            Status = isFailure ? "failure" : "success",
+            SizeBytes = sizeBytes,
+            Message = message
+        };
+
+        await repo.InsertAsync(evt);
+        if (monitor != null)
+        {
+            if (!isFailure)
+            {
+                await pushRepo.RecordPingAsync(token);
+            }
+            else if (monitor.Status != "down")
+            {
+                // Hata bildirimi snitch sayacını sıfırlamaz; monitör hemen down olur ve
+                // periyot aşımıyla aynı kanaldan, yalnız down'a geçişte bir kez alarm üretilir.
+                await pushRepo.UpdateStatusAsync(monitor.Id, "down");
+                _ = notifService.DispatchServiceAlertAsync(
+                    $"Dead Man's Snitch: {monitor.Name}",
+                    $"Token: {SecuritySanitizer.MaskToken(monitor.Token)}",
+                    isDown: true,
+                    string.IsNullOrWhiteSpace(message)
+                        ? "Push ile hata bildirildi."
+                        : $"Push ile hata bildirildi: {message}");
+                broadcaster.Broadcast("snitch_status_changed", $"{{\"id\":\"{monitor.Id}\",\"status\":\"down\"}}");
+            }
+        }
+
+        var payloadJson = JsonSerializer.Serialize(
+            new PushReceivedEventPayload(token, evt.Status),
+            CorvusJsonSerializerContext.Default.PushReceivedEventPayload);
+        broadcaster.Broadcast("push_received", payloadJson);
+
+        return Results.Ok(new GenericApiResponse(true, "Push bildirimi başarıyla kaydedildi."));
+    }
+
+    private static bool IsFailureStatus(string? status) =>
+        string.Equals(status, "failure", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(status, "down", StringComparison.OrdinalIgnoreCase);
 
     private static void MapPushMonitorRoutes(RouteGroupBuilder group)
     {
