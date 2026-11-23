@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - **Response Time Included Retry Wait**: HTTP and TCP checks timed the whole check, retries and the retry interval included, so a failed 5 s check was stored as ~40 s and a recovered service showed ~30 s for a 12 ms response. Response time is now the duration of the last attempt.
 
+### Security
+- **Secrets in HTTP Client Logs**: `System.Net.Http.HttpClient` logged every outgoing request URL at Information level, which put the Telegram bot token (and any webhook token in a URL) into container logs. The category now logs at Warning. If you ran an earlier version with Telegram notifications, rotate the bot token.
+
 ### Tests
 - Added `UptimeOverrideRebindTests` (10). Total: 413 backend tests.
 

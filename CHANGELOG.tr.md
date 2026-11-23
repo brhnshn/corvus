@@ -15,6 +15,9 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 
 - **Yanıt Süresine Eklenen Retry Beklemesi**: HTTP ve TCP denetimleri yeniden denemeler ve bekleme dahil bütün süreyi ölçüyordu; 5 sn'lik başarısız denetim ~40 sn, toparlanan servis 12 ms'lik yanıt için ~30 sn görünüyordu. Yanıt süresi artık son denemenin süresi.
 
+### Güvenlik (Security)
+- **HTTP İstemci Loglarında Gizli Bilgi**: `System.Net.Http.HttpClient` giden her isteğin URL'ini Information seviyesinde logluyordu; Telegram bot token'ı (ve URL'deki webhook token'ları) konteyner loglarına düşüyordu. Kategori artık Warning seviyesinde. Önceki bir sürümü Telegram bildirimiyle çalıştırdıysanız bot token'ını yenileyin.
+
 ### Testler (Tests)
 - `UptimeOverrideRebindTests` (10) eklendi. Toplam: 413 backend testi.
 
