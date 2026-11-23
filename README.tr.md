@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/RAM_T%C3%BCketimi-%3C30_MB-success" alt="RAM <30MB" />
   <img src="https://img.shields.io/badge/Konteyner-ghcr.io%2Fbrhnshn%2Fcorvus-24292e?logo=github" alt="GHCR Image" />
   <img src="https://img.shields.io/badge/Veritaban%C4%B1-SQLite_+_PostgreSQL_+_Dapper.AOT-003B57?logo=sqlite" alt="Veritabanı" />
-  <img src="https://img.shields.io/badge/Testler-480_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Testler-503_Ba%C5%9Far%C4%B1l%C4%B1-brightgreen" alt="Tests" />
   <a href="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml"><img src="https://github.com/brhnshn/Corvus/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" /></a>
   <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/CodeRabbit-Reviewed-ff5722?logo=coderabbit" alt="CodeRabbit" /></a>
   <img src="https://img.shields.io/badge/i18n-%C4%B0ngilizce_%7C_T%C3%BCrk%C3%A7e-blue" alt="i18n" />
@@ -431,10 +431,10 @@ labels:
    ```
 3. **Otomatik Testleri Çalıştırma (Toplam 441 Test):**
    ```bash
-   # Backend Testleri (375 başarılı xUnit testi)
+   # Backend Testleri (417 başarılı xUnit testi)
    dotnet test tests/Corvus.Api.Tests
 
-   # Frontend Testleri (66 başarılı Vitest testi)
+   # Frontend Testleri (86 başarılı Vitest testi)
    cd src/Corvus.Web && npm test
    ```
 

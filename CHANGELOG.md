@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.23] - 2026-11-23 — Uptime Settings Survive Container Recreates
 
 ### Fixed
 - **Uptime Settings Lost on Container Recreate**: User settings in `service_overrides` are keyed by container ID and `docker_<first 12>` service ID, so a Watchtower update or `docker compose up` that recreated a container left its uptime toggle, public URL and check options orphaned; the new container silently fell back to "uptime off". Discovery now rebinds an orphaned override to the new container with the same name (also when the old name was compose's transient `<old id>_<name>`), and overrides remember the Docker container name (migration `020`) so renamed services follow too. Overrides that belong to another node's container are never taken.
@@ -12,14 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Uptime Checks Stuck After `down`**: The checker skipped Docker services whose stored status was `down`, which it also writes itself; once a check marked a service down it was never checked again. The skip now uses the container's actual Docker state and falls back to the stored status only when Docker is unreachable or the container is on another node.
 - **Uptime History Lost on Container Recreate**: Removing the old service row cascaded its `uptime_checks` away, and its daily stats stayed under the old ID. When an override is rebound to the recreated container, its checks and daily stats now move to the new service ID too, which also restores daily stats left behind by earlier recreates.
 - **Stale Transient Container Names**: A service first discovered under compose's transient name (`e52e83aff78a_portfolio_web`) kept it forever; the Docker name is now refreshed on every sync. A user-set name for a Docker service stays in its override.
-
 - **Response Time Included Retry Wait**: HTTP and TCP checks timed the whole check, retries and the retry interval included, so a failed 5 s check was stored as ~40 s and a recovered service showed ~30 s for a 12 ms response. Response time is now the duration of the last attempt.
 
 ### Security
 - **Secrets in HTTP Client Logs**: `System.Net.Http.HttpClient` logged every outgoing request URL at Information level, which put the Telegram bot token (and any webhook token in a URL) into container logs. The category now logs at Warning. If you ran an earlier version with Telegram notifications, rotate the bot token.
 
 ### Tests
-- Added `UptimeOverrideRebindTests` (10). Total: 413 backend tests.
+- Added `UptimeOverrideRebindTests` (12), `UptimeResponseTimeTests` and `LoggingSecretsTests`. Total: 417 backend tests.
 
 ## [1.6.22] - 2026-11-23 — Push Monitor Failure Alerts
 

@@ -552,6 +552,8 @@ Corvus incorporates a tag and category grouping system designed for granular wor
 ### 2. Automatic Docker Label Derivation & Override Protection
 - **Label Mapping (`DockerService`):** Automatically extracts tags from container labels: `corvus.tags` (comma-separated), `environment`, `env`, and Compose project names (`com.docker.compose.project`).
 - **Persistent Override Retention:** Custom tags applied to Docker containers are stored in `service_overrides`. Periodic rediscovery cycles merge container lifecycle state without overwriting user-assigned tags.
+- **Override Identity Across Recreates (1.6.23):** Overrides are keyed by container ID and `docker_<first 12>` service ID, both of which change when a container is recreated. `SyncDockerBatchAsync` rebinds an orphaned override to the new container with the same Docker name (`container_name`, migration `020`; compose's transient `<12 hex>_` prefix is ignored) and moves its `uptime_checks` and `uptime_daily_stats` to the new service ID. Overrides tied to another node's service row are never rebound.
+- **Status Ownership:** `services.status` has two writers. Discovery owns it while uptime is off; once uptime is on (effective flag = `service_overrides.is_uptime_enabled`, then `services.is_uptime_enabled`) the checker owns it and discovery only forces `down` for a stopped container. The checker skips a Docker service only when Docker reports its container as not running.
 
 ### 3. Modular UI Components & Deterministic Palette
 - **Semantic & Hash-Based Styling (`tagColor.ts`):** Environment keywords (`prod`, `staging`, `dev`, `internal`, `db`, `api`) receive predefined semantic color tokens. Custom arbitrary tags receive deterministic pastel backgrounds and border accents via FNV-1a string hashing.

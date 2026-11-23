@@ -522,6 +522,8 @@ Corvus, ilişkisel veritabanı karmaşıklığı yaratmadan servisleri ve kontey
 ### 2. Otomatik Docker Etiket Çıkarımı & Override Koruması
 - **Etiket Eşleme (`DockerService`):** Konteyner etiketlerinden (`corvus.tags`, `environment`, `env` ve Compose proje adı `com.docker.compose.project`) otomatik olarak ortam etiketleri türetilir.
 - **Kalıcı Override Güvencesi:** Docker konteynerlerine arayüzden atanan özel etiketler `service_overrides` tablosunda saklanır; periyodik konteyner keşif döngülerinde kullanıcının belirlediği etiketler asla ezilmez.
+- **Yeniden Oluşturmada Override Kimliği (1.6.23):** Override'lar konteyner ID'si ve `docker_<ilk 12>` servis ID'siyle anahtarlıdır; konteyner yeniden oluşturulunca ikisi de değişir. `SyncDockerBatchAsync` sahipsiz override'ı aynı Docker adlı yeni konteynere bağlar (`container_name`, `020` göçü; compose'un geçici `<12 hex>_` öneki yok sayılır) ve `uptime_checks` ile `uptime_daily_stats` kayıtlarını yeni servis ID'sine taşır. Başka düğümün servis satırına bağlı override'lar asla taşınmaz.
+- **Durum Sahipliği:** `services.status` alanının iki yazıcısı vardır. Uptime kapalıyken sahibi keşiftir; açıkken (etkin bayrak = önce `service_overrides.is_uptime_enabled`, sonra `services.is_uptime_enabled`) sahibi denetleyicidir ve keşif yalnız durmuş konteyner için `down` yazar. Denetleyici Docker servisini yalnız Docker konteyneri çalışmıyor dediğinde atlar.
 
 ### 3. Modüler Arayüz Bileşenleri & Deterministik Renk Paleti
 - **Anlamsal ve Hash Bazlı Renklendirme (`tagColor.ts`):** `prod`, `staging`, `dev`, `internal`, `db`, `api` gibi yaygın ortam anahtar kelimeleri anlamsal özel renk temalarına sahiptir. Diğer tüm serbest etiketler FNV-1a dize hash algoritmasıyla deterministik ve göz yormayan pastel renklere bürünür.

@@ -3,7 +3,7 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
-## [Unreleased]
+## [1.6.23] - 2026-11-23 — Uptime Ayarları Konteyner Yenilenince Korunuyor
 
 ### Düzeltilenler (Fixed)
 - **Konteyner Yeniden Oluşturulunca Kaybolan Uptime Ayarları**: `service_overrides` içindeki kullanıcı ayarları konteyner ID'si ve `docker_<ilk 12>` servis ID'siyle anahtarlıydı; Watchtower güncellemesi veya `docker compose up` konteyneri yeniden oluşturunca uptime anahtarı, genel URL ve denetim seçenekleri sahipsiz kalıyor, yeni konteyner sessizce "uptime kapalı"ya düşüyordu. Keşif artık sahipsiz ayarı aynı adlı yeni konteynere geri bağlıyor (eski ad compose'un geçici `<eski id>_<ad>` biçiminde olsa da); ayarlar Docker konteyner adını da saklıyor (`020` göçü), böylece yeniden adlandırılmış servisler de izleniyor. Başka bir düğümün konteynerine ait ayar asla alınmıyor.
@@ -12,14 +12,13 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **`down` Sonrası Takılı Kalan Denetimler**: Denetleyici kayıtlı durumu `down` olan Docker servislerini atlıyordu; bu değeri kendisi de yazdığı için bir kez `down` diyen servis bir daha denetlenmiyordu. Atlama artık konteynerin gerçek Docker durumuna bakıyor; kayıtlı duruma yalnız Docker'a erişilemezse veya konteyner başka düğümdeyse güveniyor.
 - **Konteyner Yeniden Oluşturulunca Kaybolan Uptime Geçmişi**: Eski servis satırının silinmesi `uptime_checks` kayıtlarını ON DELETE CASCADE ile siliyor, günlük istatistikler eski ID altında sahipsiz kalıyordu. Ayar yeni konteynere geri bağlanınca denetim kayıtları ve günlük istatistikler de yeni servis ID'sine taşınıyor; önceki yeniden oluşturmalarda geride kalan günlük istatistikler de böylece geri geliyor.
 - **Eskimiş Geçici Konteyner Adları**: Compose'un geçici adıyla (`e52e83aff78a_portfolio_web`) ilk kez görülen servis bu adı sonsuza dek taşıyordu; Docker adı artık her senkronda yenileniyor. Docker servisine kullanıcının verdiği ad override'da kalıyor.
-
 - **Yanıt Süresine Eklenen Retry Beklemesi**: HTTP ve TCP denetimleri yeniden denemeler ve bekleme dahil bütün süreyi ölçüyordu; 5 sn'lik başarısız denetim ~40 sn, toparlanan servis 12 ms'lik yanıt için ~30 sn görünüyordu. Yanıt süresi artık son denemenin süresi.
 
 ### Güvenlik (Security)
 - **HTTP İstemci Loglarında Gizli Bilgi**: `System.Net.Http.HttpClient` giden her isteğin URL'ini Information seviyesinde logluyordu; Telegram bot token'ı (ve URL'deki webhook token'ları) konteyner loglarına düşüyordu. Kategori artık Warning seviyesinde. Önceki bir sürümü Telegram bildirimiyle çalıştırdıysanız bot token'ını yenileyin.
 
 ### Testler (Tests)
-- `UptimeOverrideRebindTests` (10) eklendi. Toplam: 413 backend testi.
+- `UptimeOverrideRebindTests` (12), `UptimeResponseTimeTests` ve `LoggingSecretsTests` eklendi. Toplam: 417 backend testi.
 
 ## [1.6.22] - 2026-11-23 — Push Monitörü Hata Alarmları
 
