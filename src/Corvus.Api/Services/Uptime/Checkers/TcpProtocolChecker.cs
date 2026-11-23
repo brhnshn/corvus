@@ -32,8 +32,10 @@ public static class TcpProtocolChecker
         string checkHost = NetworkAddressResolver.ResolveHealthCheckHost(host);
         var sw = Stopwatch.StartNew();
 
+        // Yanıt süresi son denemenin süresidir: her denemede kronometre sıfırlanır, retry beklemesi sayılmaz
         async Task<Exception?> TryConnectTcpAsync()
         {
+            sw.Restart();
             try
             {
                 using var tcp = new TcpClient();

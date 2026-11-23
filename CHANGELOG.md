@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Uptime History Lost on Container Recreate**: Removing the old service row cascaded its `uptime_checks` away, and its daily stats stayed under the old ID. When an override is rebound to the recreated container, its checks and daily stats now move to the new service ID too, which also restores daily stats left behind by earlier recreates.
 - **Stale Transient Container Names**: A service first discovered under compose's transient name (`e52e83aff78a_portfolio_web`) kept it forever; the Docker name is now refreshed on every sync. A user-set name for a Docker service stays in its override.
 
+- **Response Time Included Retry Wait**: HTTP and TCP checks timed the whole check, retries and the retry interval included, so a failed 5 s check was stored as ~40 s and a recovered service showed ~30 s for a 12 ms response. Response time is now the duration of the last attempt.
+
 ### Tests
 - Added `UptimeOverrideRebindTests` (10). Total: 413 backend tests.
 

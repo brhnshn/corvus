@@ -13,6 +13,8 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına day
 - **Konteyner Yeniden Oluşturulunca Kaybolan Uptime Geçmişi**: Eski servis satırının silinmesi `uptime_checks` kayıtlarını ON DELETE CASCADE ile siliyor, günlük istatistikler eski ID altında sahipsiz kalıyordu. Ayar yeni konteynere geri bağlanınca denetim kayıtları ve günlük istatistikler de yeni servis ID'sine taşınıyor; önceki yeniden oluşturmalarda geride kalan günlük istatistikler de böylece geri geliyor.
 - **Eskimiş Geçici Konteyner Adları**: Compose'un geçici adıyla (`e52e83aff78a_portfolio_web`) ilk kez görülen servis bu adı sonsuza dek taşıyordu; Docker adı artık her senkronda yenileniyor. Docker servisine kullanıcının verdiği ad override'da kalıyor.
 
+- **Yanıt Süresine Eklenen Retry Beklemesi**: HTTP ve TCP denetimleri yeniden denemeler ve bekleme dahil bütün süreyi ölçüyordu; 5 sn'lik başarısız denetim ~40 sn, toparlanan servis 12 ms'lik yanıt için ~30 sn görünüyordu. Yanıt süresi artık son denemenin süresi.
+
 ### Testler (Tests)
 - `UptimeOverrideRebindTests` (10) eklendi. Toplam: 413 backend testi.
 

@@ -31,8 +31,10 @@ public static class HttpProtocolChecker
         var sslHolder = new SslInfoHolder();
         var sw = Stopwatch.StartNew();
 
+        // Yanıt süresi son denemenin süresidir: her denemede kronometre sıfırlanır, retry beklemesi sayılmaz
         async Task<(bool Ok, string? Error)> TrySendHttpAsync()
         {
+            sw.Restart();
             var method = new HttpMethod(string.IsNullOrWhiteSpace(service.HttpMethod) ? "GET" : service.HttpMethod.Trim().ToUpperInvariant());
             using var request = new HttpRequestMessage(method, internalCheckUrl);
             try
