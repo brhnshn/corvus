@@ -11,6 +11,9 @@ namespace Corvus.Api.Endpoints;
 
 public static class AgentTunnelEndpoints
 {
+    private static readonly TimeSpan ReceiveIdleTimeout = TimeSpan.FromSeconds(90);
+    private const int MaxMessageBytes = 1024 * 1024;
+
     public static void MapAgentTunnelEndpoints(this IEndpointRouteBuilder app)
     {
         // Outbound WSS tunnel endpoint: Uç sunucudaki ajan buraya bağlanır
@@ -18,6 +21,7 @@ public static class AgentTunnelEndpoints
             HttpContext context,
             ISystemAuthService authService,
             ISystemRepository systemRepo,
+            IServiceScopeFactory scopeFactory,
             ITelemetryRingBuffer ringBuffer,
             ISystemTunnelManager tunnelManager,
             ILoggerFactory loggerFactory) =>
@@ -62,22 +66,55 @@ public static class AgentTunnelEndpoints
 
             // Sıfır-tahsisli (zero-allocation) ArrayPool bellek tamponu
             byte[] buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
+            MemoryStream? fragmentStream = null;
 
             try
             {
-                while (webSocket.State == WebSocketState.Open)
+                while (webSocket.State == WebSocketState.Open && !context.RequestAborted.IsCancellationRequested)
                 {
-                    var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    using var receiveCts = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
+                    receiveCts.CancelAfter(ReceiveIdleTimeout);
+
+                    var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), receiveCts.Token);
 
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
                         break;
                     }
 
-                    if (result.MessageType == WebSocketMessageType.Text && result.Count > 0)
+                    if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        // String nesnesi üretmeden doğrudan ReadOnlySpan<byte> üzerinden sıfır tahsisle ayrıştır
-                        ProcessTextMessage(buffer.AsSpan(0, result.Count), systemId, ringBuffer, systemRepo, tunnelManager, logger);
+                        if (fragmentStream == null && result.EndOfMessage)
+                        {
+                            if (result.Count > 0)
+                            {
+                                // String nesnesi üretmeden doğrudan ReadOnlySpan<byte> üzerinden sıfır tahsisle ayrıştır
+                                ProcessTextMessage(buffer.AsSpan(0, result.Count), systemId, ringBuffer, scopeFactory, tunnelManager, logger);
+                            }
+                            continue;
+                        }
+
+                        fragmentStream ??= new MemoryStream();
+                        if (fragmentStream.Length + result.Count > MaxMessageBytes)
+                        {
+                            logger.LogWarning("Agent tunnel mesaj boyutu sınırı aşıldı ({SystemId}), bağlantı kapatılıyor.", systemId);
+                            await webSocket.CloseAsync(WebSocketCloseStatus.MessageTooBig, "Message too large", CancellationToken.None);
+                            break;
+                        }
+
+                        if (result.Count > 0)
+                        {
+                            fragmentStream.Write(buffer, 0, result.Count);
+                        }
+
+                        if (result.EndOfMessage)
+                        {
+                            if (fragmentStream.TryGetBuffer(out var seg) && seg.Count > 0)
+                            {
+                                ProcessTextMessage(seg.AsSpan(), systemId, ringBuffer, scopeFactory, tunnelManager, logger);
+                            }
+                            fragmentStream.SetLength(0);
+                        }
                     }
                     else if (result.MessageType == WebSocketMessageType.Binary)
                     {
@@ -86,12 +123,17 @@ public static class AgentTunnelEndpoints
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                logger.LogInformation("Agent tunnel zaman aşımı veya iptal nedeniyle kapatıldı: {SystemId}", systemId);
+            }
             catch (Exception ex)
             {
                 logger.LogDebug(ex, "Agent tunnel bağlantı akışında hata: {SystemId}", systemId);
             }
             finally
             {
+                fragmentStream?.Dispose();
                 ArrayPool<byte>.Shared.Return(buffer);
                 tunnelManager.UnregisterTunnel(systemId, webSocket);
                 logger.LogInformation("Agent tunnel kapandı: {SystemId}", systemId);
@@ -110,7 +152,7 @@ public static class AgentTunnelEndpoints
         ReadOnlySpan<byte> utf8Json,
         string systemId,
         ITelemetryRingBuffer ringBuffer,
-        ISystemRepository systemRepo,
+        IServiceScopeFactory scopeFactory,
         ISystemTunnelManager tunnelManager,
         ILogger logger)
     {
@@ -141,17 +183,19 @@ public static class AgentTunnelEndpoints
 
                 ringBuffer.Push(systemId, in point, tel.Containers);
 
-                // Uç sistem durumunu canlı güncelle (Fire-and-forget task ile SQLite kilitlenmesini engelle)
+                // Uç sistem durumunu canlı güncelle (Scoped repository yeni scope içinde çözümlenir)
                 _ = Task.Run(async () =>
                 {
                     try
                     {
+                        using var scope = scopeFactory.CreateScope();
+                        var scopedRepo = scope.ServiceProvider.GetRequiredService<ISystemRepository>();
                         string nowIso = DateTime.UtcNow.ToString("o");
-                        await systemRepo.UpdateStatusAsync(systemId, "online", nowIso);
+                        await scopedRepo.UpdateStatusAsync(systemId, "online", nowIso);
 
                         if (tel.Containers != null && tel.Containers.Count > 0)
                         {
-                            await systemRepo.UpsertContainersCacheAsync(systemId, tel.Containers);
+                            await scopedRepo.UpsertContainersCacheAsync(systemId, tel.Containers);
                         }
                     }
                     catch { }

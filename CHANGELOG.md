@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.24] - 2026-11-28 — Trivy CI & Security Hardening
+
+### Security
+- **Trivy CI Security Scanning**: Added `.github/workflows/trivy.yml` for filesystem (`vuln,secret,misconfig`) and local Docker image vulnerability scanning (CRITICAL/HIGH) with SARIF upload, pinned to `aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25` (v0.36.0) and Trivy `v0.76.2`.
+- **Activity Log LIKE Wildcard Escaping**: Escaped `%`, `_`, and `\` characters in `ActivityLogRepository.GetPagedAsync` search queries using `ESCAPE '\'` to prevent SQL `LIKE` wildcard injection.
+- **Uptime Test-Connection URL Scheme Enforcement**: Enforced `http://`/`https://` scheme validation before `SsrfGuard` evaluation in `POST /api/uptime/test-connection`.
+- **Agent Tunnel Timeout & Frame Guard**: Added bounded send timeouts to `SystemTunnelManager` (`SendDockerRequestAsync` and `SendRawBinaryAsync`) to prevent `SendLock` deadlocks on stalled sockets, added a 90-second receive idle timeout, 1 MB fragmented frame limit, and scoped `IServiceScopeFactory` resolution in `AgentTunnelEndpoints`.
+
+### Tests
+- Added `GetPagedAsync_EscapesLikeWildcards_InSearch` in `ActivityLogRepositoryTests` and `TunnelAndSecurityTests` (3 tests). Total: 421 backend tests.
+
 ## [1.6.23] - 2026-11-23 — Uptime Settings Survive Container Recreates
 
 ### Fixed

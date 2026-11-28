@@ -158,12 +158,15 @@ public static class UptimeEndpoints
                         targetUrl = $"http://{targetUrl}";
                     }
 
-                    if (Uri.TryCreate(targetUrl, UriKind.Absolute, out var targetUri))
+                    if (!Uri.TryCreate(targetUrl, UriKind.Absolute, out var targetUri) ||
+                        (targetUri.Scheme != Uri.UriSchemeHttp && targetUri.Scheme != Uri.UriSchemeHttps))
                     {
-                        if (SsrfGuard.IsBlockedHostOrIp(targetUri.DnsSafeHost, out var httpSsrfErr))
-                        {
-                            return Results.BadRequest(new TestConnectionResponse(false, null, 0, httpSsrfErr ?? "SSRF Engellendi"));
-                        }
+                        return Results.BadRequest(new TestConnectionResponse(false, null, 0, "Geçerli bir HTTP veya HTTPS adresi belirtilmelidir."));
+                    }
+
+                    if (SsrfGuard.IsBlockedHostOrIp(targetUri.DnsSafeHost, out var httpSsrfErr))
+                    {
+                        return Results.BadRequest(new TestConnectionResponse(false, null, 0, httpSsrfErr ?? "SSRF Engellendi"));
                     }
 
                     var handler = new HttpClientHandler

@@ -31,6 +31,9 @@ public sealed class TunnelConnection
 
 public class SystemTunnelManager : ISystemTunnelManager
 {
+    private static readonly TimeSpan DefaultRpcTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan DefaultSendTimeout = TimeSpan.FromSeconds(10);
+
     private readonly ConcurrentDictionary<string, TunnelConnection> _connections = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<DockerRpcResponse>> _pendingRpc = new();
     private readonly ILogger<SystemTunnelManager> _logger;
@@ -101,14 +104,18 @@ public class SystemTunnelManager : ISystemTunnelManager
 
         byte[] jsonBytes = JsonSerializer.SerializeToUtf8Bytes(message, CorvusJsonSerializerContext.Default.AgentTunnelMessage);
 
+        var effectiveTimeout = timeout is { TotalMilliseconds: > 0 } validTimeout ? validTimeout : DefaultRpcTimeout;
+        var sendTimeout = effectiveTimeout < DefaultSendTimeout ? effectiveTimeout : DefaultSendTimeout;
+
         try
         {
-            await conn.SendLock.WaitAsync(CancellationToken.None);
+            using var sendCts = new CancellationTokenSource(sendTimeout);
+            await conn.SendLock.WaitAsync(sendCts.Token);
             try
             {
                 if (conn.Socket.State == WebSocketState.Open)
                 {
-                    await conn.Socket.SendAsync(new ArraySegment<byte>(jsonBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                    await conn.Socket.SendAsync(new ArraySegment<byte>(jsonBytes), WebSocketMessageType.Text, true, sendCts.Token);
                 }
                 else
                 {
@@ -121,13 +128,19 @@ public class SystemTunnelManager : ISystemTunnelManager
                 conn.SendLock.Release();
             }
         }
+        catch (OperationCanceledException)
+        {
+            _pendingRpc.TryRemove(correlationId, out _);
+            return new DockerRpcResponse(Success: false, Message: $"Tunnel send timed out after {sendTimeout.TotalSeconds:0.#}s.");
+        }
         catch (Exception ex)
         {
             _pendingRpc.TryRemove(correlationId, out _);
-            return new DockerRpcResponse(Success: false, Message: $"Failed to send command to tunnel: {ex.Message}");
+            _logger.LogWarning(ex, "Failed to send Docker RPC command to tunnel for system: {SystemId}",
+                Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(systemId));
+            return new DockerRpcResponse(Success: false, Message: "Failed to send command to tunnel.");
         }
 
-        var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(15);
         using var cts = new CancellationTokenSource(effectiveTimeout);
 
         try
@@ -153,17 +166,31 @@ public class SystemTunnelManager : ISystemTunnelManager
     {
         if (_connections.TryGetValue(systemId, out var conn) && conn.Socket.State == WebSocketState.Open)
         {
-            await conn.SendLock.WaitAsync(CancellationToken.None);
+            using var sendCts = new CancellationTokenSource(DefaultSendTimeout);
             try
             {
-                if (conn.Socket.State == WebSocketState.Open)
+                await conn.SendLock.WaitAsync(sendCts.Token);
+                try
                 {
-                    await conn.Socket.SendAsync(binaryPayload, WebSocketMessageType.Binary, true, CancellationToken.None);
+                    if (conn.Socket.State == WebSocketState.Open)
+                    {
+                        await conn.Socket.SendAsync(binaryPayload, WebSocketMessageType.Binary, true, sendCts.Token);
+                    }
+                }
+                finally
+                {
+                    conn.SendLock.Release();
                 }
             }
-            finally
+            catch (OperationCanceledException)
             {
-                conn.SendLock.Release();
+                _logger.LogWarning("Binary tunnel send timed out for system: {SystemId}",
+                    Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(systemId));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Binary tunnel send failed for system: {SystemId}",
+                    Corvus.Api.Utils.SecuritySanitizer.SanitizeLog(systemId));
             }
         }
     }

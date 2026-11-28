@@ -3,6 +3,17 @@
 Bu projedeki tüm önemli değişiklikler bu dosyada belgelenir.
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına dayanır ve bu proje [Semantik Versiyonlama](https://semver.org/lang/tr/) kurallarını benimser.
 
+## [1.6.24] - 2026-11-28 — Trivy CI ve Güvenlik Sertleştirmesi
+
+### Güvenlik (Security)
+- **Trivy CI Güvenlik Taraması**: Dosya sistemi (`vuln,secret,misconfig`) ve lokal Docker imajı (CRITICAL/HIGH) taramaları ile SARIF yüklemesi için `.github/workflows/trivy.yml` eklendi; `aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25` (v0.36.0) ve Trivy `v0.76.2` ile sabitlendi.
+- **Aktivite Günlüğü LIKE Joker Karakter Kaçışı**: `ActivityLogRepository.GetPagedAsync` arama sorgularında `%`, `_` ve `\` karakterleri `ESCAPE '\'` ile kaçırılarak SQL `LIKE` joker karakter enjeksiyonu engellendi.
+- **Uptime Bağlantı Testi URL Şema Doğrulaması**: `POST /api/uptime/test-connection` uç noktasında `SsrfGuard` kontrolünden önce `http://`/`https://` şema doğrulaması zorunlu hale getirildi.
+- **Ajan Tüneli Zaman Aşımı ve Çerçeve Koruması**: Takılı kalan soketlerde `SendLock` kilitlenmesini önlemek için `SystemTunnelManager` (`SendDockerRequestAsync` ve `SendRawBinaryAsync`) gönderim zaman aşımı eklendi; `AgentTunnelEndpoints` içine 90 sn alım boşta kalma zaman aşımı, 1 MB parçalı çerçeve sınırı ve güvenli `IServiceScopeFactory` kapsam yönetimi eklendi.
+
+### Testler (Tests)
+- `ActivityLogRepositoryTests` içine `GetPagedAsync_EscapesLikeWildcards_InSearch` testi ve `TunnelAndSecurityTests` (3 test) eklendi. Toplam: 421 backend testi.
+
 ## [1.6.23] - 2026-11-23 — Uptime Ayarları Konteyner Yenilenince Korunuyor
 
 ### Düzeltilenler (Fixed)

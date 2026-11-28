@@ -114,8 +114,12 @@ public class ActivityLogRepository : IActivityLogRepository
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            whereClauses.Add("(target_resource LIKE @Search OR actor_username LIKE @Search OR action_type LIKE @Search)");
-            parameters.Add("Search", $"%{search.Trim()}%");
+            string escapedSearch = search.Trim()
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_");
+            whereClauses.Add("(target_resource LIKE @Search ESCAPE '\\' OR actor_username LIKE @Search ESCAPE '\\' OR action_type LIKE @Search ESCAPE '\\')");
+            parameters.Add("Search", $"%{escapedSearch}%");
         }
 
         string whereSql = whereClauses.Count > 0 ? "WHERE " + string.Join(" AND ", whereClauses) : "";

@@ -157,4 +157,37 @@ public class ActivityLogRepositoryTests
         var allLogs = await repo.GetPagedAsync(systemId: "all");
         Assert.Equal(2, allLogs.TotalCount);
     }
+
+    [Fact]
+    public async Task GetPagedAsync_EscapesLikeWildcards_InSearch()
+    {
+        using var scope = new TempDbScope();
+        var repo = new ActivityLogRepository(scope.DbFactory);
+
+        await repo.InsertAsync(new ActivityLogEntry
+        {
+            Category = "system",
+            ActionType = "system.normal",
+            ActorUsername = "admin",
+            TargetResource = "web-app",
+            CreatedAt = DateTime.UtcNow.AddMinutes(-1)
+        });
+
+        await repo.InsertAsync(new ActivityLogEntry
+        {
+            Category = "system",
+            ActionType = "system.percent",
+            ActorUsername = "admin",
+            TargetResource = "100%_disk_alert",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var percentOnly = await repo.GetPagedAsync(search: "%");
+        Assert.Equal(1, percentOnly.TotalCount);
+        Assert.Equal("100%_disk_alert", percentOnly.Items[0].TargetResource);
+
+        var underscoreOnly = await repo.GetPagedAsync(search: "_");
+        Assert.Equal(1, underscoreOnly.TotalCount);
+        Assert.Equal("100%_disk_alert", underscoreOnly.Items[0].TargetResource);
+    }
 }
